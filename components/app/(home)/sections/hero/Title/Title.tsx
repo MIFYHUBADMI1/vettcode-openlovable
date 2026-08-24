@@ -256,8 +256,8 @@ export const encryptText = (
 
 export default function HomeHeroTitle() {
   return (
-    <h1 className="text-title-h1 mx-auto text-center [&_span]:text-heat-100 mb-12 lg:mb-16">
-     Open Lovable <span>v3</span>
+    <h1 className="text-title-h1 mx-auto text-center mb-12 lg:mb-16">
+     <span className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 bg-clip-text text-transparent">MirrorSite</span> <span className="text-heat-100">AI</span>
     </h1>
   );
 }

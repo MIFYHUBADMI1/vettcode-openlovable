@@ -51,31 +51,147 @@ export const appConfig = {
   // AI Model Configuration
   ai: {
     // Default AI model
-    defaultModel: 'google/gemini-3-pro-preview',
+    defaultModel: 'qwen/qwen3.6-27b',
     
-    // Available models
+    // Available models (default to free models - max 3 shown in builder)
     availableModels: [
-      'openai/gpt-5',
-      'moonshotai/kimi-k2-instruct-0905',
-      'anthropic/claude-sonnet-4-20250514',
-      'google/gemini-3-pro-preview'
+      // Groq Models (Free)
+      'groq/compound',
+      'groq/compound-mini',
+      'openai/gpt-oss-120b',
+      
+      // OpenRouter Free Models (shown by default)
+      'openrouter/nvidia/nemotron-3.5-lightning:free',
+      'openrouter/nvidia/nemotron-3-ultra-550b-a55b:free',
+      'openrouter/poolside/laguna-s-2.1:free',
+      'openrouter/google/gemma-4-26b-a4b-it',
     ],
     
-    // Model display names
+    // Default models to show in builder (max 3)
+    defaultBuilderModels: [
+      'groq/compound',
+      'openrouter/nvidia/nemotron-3.5-lightning:free',
+      'openrouter/google/gemma-4-26b-a4b-it',
+    ],
+    
+    // Model display names (clean, no provider prefixes)
     modelDisplayNames: {
-      'openai/gpt-5': 'GPT-5',
-      'moonshotai/kimi-k2-instruct-0905': 'Kimi K2 (Groq)',
-      'anthropic/claude-sonnet-4-20250514': 'Sonnet 4',
-      'google/gemini-3-pro-preview': 'Gemini 3 Pro (Preview)'
+      // Groq Models
+      'groq/compound': 'Compound Latest',
+      'groq/compound-mini': 'Compound Mini',
+      'openai/gpt-oss-120b': 'GPT OSS 120B',
+      'qwen/qwen3.6-27b': 'Qwen 3.6 27B',
+      
+      // OpenRouter - OpenAI Models
+      'openrouter/openai/gpt-5.6-luna-pro': 'GPT-5.6 Luna Pro',
+      'openrouter/openai/gpt-5.6-luna': 'GPT-5.6 Luna',
+      'openrouter/openai/gpt-5.6-terra': 'GPT-5.6 Terra',
+      'openrouter/openai/gpt-5.6-sol': 'GPT-5.6 Sol',
+      'openrouter/openai/gpt-5.5': 'GPT-5.5',
+      'openrouter/openai/gpt-5.4': 'GPT-5.4',
+      'openrouter/openai/gpt-5.3-codex': 'GPT-5.3 Codex',
+      
+      // OpenRouter - Anthropic Models
+      'openrouter/anthropic/claude-opus-5': 'Claude Opus 5',
+      'openrouter/anthropic/claude-sonnet-5': 'Claude Sonnet 5',
+      'openrouter/anthropic/claude-fable-5': 'Claude Fable 5',
+      'openrouter/anthropic/claude-opus-4.8': 'Claude Opus 4.8',
+      'openrouter/anthropic/claude-opus-4.7': 'Claude Opus 4.7',
+      'openrouter/anthropic/claude-opus-4.6': 'Claude Opus 4.6',
+      'openrouter/anthropic/claude-sonnet-4.6': 'Claude Sonnet 4.6',
+      'openrouter/anthropic/claude-haiku-4.5': 'Claude Haiku 4.5',
+      
+      // OpenRouter - Google Models
+      'openrouter/google/gemini-3.7-flash': 'Gemini 3.7 Flash',
+      'openrouter/google/gemini-3.6-flash': 'Gemini 3.6 Flash',
+      'openrouter/google/gemini-3.1-pro-preview': 'Gemini 3.1 Pro Preview',
+      'openrouter/google/gemini-3.1-flash-lite': 'Gemini 3.1 Flash Lite',
+      'openrouter/google/gemini-3-flash-preview': 'Gemini 3 Flash Preview',
+      'openrouter/google/gemini-2.5-flash-lite': 'Gemini 2.5 Flash Lite',
+      'openrouter/google/gemma-4-26b-a4b-it': 'Gemma 4 26B',
+      
+      // OpenRouter - DeepSeek Models
+      'openrouter/deepseek/deepseek-v4-pro-0813': 'DeepSeek V4 Pro',
+      'openrouter/deepseek/deepseek-v4-pro': 'DeepSeek V4 Pro',
+      'openrouter/deepseek/deepseek-v4-flash-0731': 'DeepSeek V4 Flash',
+      'openrouter/deepseek/deepseek-v4-flash': 'DeepSeek V4 Flash',
+      
+      // OpenRouter - X.AI Models
+      'openrouter/x-ai/grok-4.6': 'Grok 4.6',
+      'openrouter/x-ai/grok-4.5': 'Grok 4.5',
+      
+      // OpenRouter - Qwen Models
+      'openrouter/qwen/qwen3.8-27b': 'Qwen 3.8 27B',
+      'openrouter/qwen/qwen3.6-35b-a3b': 'Qwen 3.6 35B',
+      
+      // OpenRouter - Zhipu AI Models
+      'openrouter/z-ai/glm-5.3': 'GLM 5.3',
+      'openrouter/z-ai/glm-5.2': 'GLM 5.2',
+      'openrouter/z-ai/glm-5v-turbo': 'GLM 5V Turbo',
+      
+      // OpenRouter - Moonshot AI Models
+      'openrouter/moonshotai/kimi-k2.7-code': 'Kimi K2.7 Code',
+      'openrouter/moonshotai/kimi-k2.6': 'Kimi K2.6',
+      
+      // OpenRouter - Other Models
+      'openrouter/upstage/solar-pro4': 'Solar Pro 4',
+      'openrouter/meta/muse-spark-1.2': 'Muse Spark 1.2',
+      'openrouter/tencent/hy3': 'Hunyuan 3',
+      'openrouter/minimax/minimax-m3': 'MiniMax M3',
+      'openrouter/stepfun/step-3.7-flash': 'Step 3.7 Flash',
+      'openrouter/xiaomi/mimo-v2.5-pro': 'Mimo V2.5 Pro',
+      'openrouter/xiaomi/mimo-v2.5': 'Mimo V2.5',
+      
+      // OpenRouter - NVIDIA Models
+      'openrouter/nvidia/nemotron-3.5-lightning:free': 'Nemotron 3.5 Lightning',
+      'openrouter/nvidia/nemotron-3-ultra-550b-a55b:free': 'Nemotron 3 Ultra 550B',
+      
+      // OpenRouter - Other Free Models
+      'openrouter/poolside/laguna-s-2.1:free': 'Laguna S 2.1',
+      'openrouter/stealth/ox-alpha': 'OX Alpha',
     } as Record<string, string>,
     
     // Model API configuration
     modelApiConfig: {
-      'moonshotai/kimi-k2-instruct-0905': {
+      // Groq Models
+      'groq/compound': {
         provider: 'groq',
-        model: 'moonshotai/kimi-k2-instruct-0905'
-      }
-    },
+        model: 'groq/compound'
+      },
+      'groq/compound-mini': {
+        provider: 'groq',
+        model: 'groq/compound-mini'
+      },
+      'openai/gpt-oss-120b': {
+        provider: 'groq',
+        model: 'openai/gpt-oss-120b'
+      },
+      'qwen/qwen3.6-27b': {
+        provider: 'groq',
+        model: 'qwen/qwen3.6-27b'
+      },
+      
+      // OpenRouter Models - All models with openrouter/ prefix use OpenRouter
+      'openrouter/nvidia/nemotron-3.5-lightning:free': {
+        provider: 'openrouter',
+        model: 'nvidia/nemotron-3.5-lightning:free'
+      },
+      'openrouter/nvidia/nemotron-3-ultra-550b-a55b:free': {
+        provider: 'openrouter',
+        model: 'nvidia/nemotron-3-ultra-550b-a55b:free'
+      },
+      'openrouter/google/gemma-4-26b-a4b-it': {
+        provider: 'openrouter',
+        model: 'google/gemma-4-27b-it'
+      },
+      'openrouter/poolside/laguna-s-2.1:free': {
+        provider: 'openrouter',
+        model: 'poolside/laguna-s-2.1:free'
+      },
+      
+      // Add remaining OpenRouter models as needed
+      // Note: Any model starting with 'openrouter/' will automatically use OpenRouter provider
+    } as Record<string, { provider: string; model: string }>,
     
     // Temperature settings for non-reasoning models
     defaultTemperature: 0.7,

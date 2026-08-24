@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Roboto_Mono } from "next/font/google";
 import localFont from "next/font/local";
+import SessionProvider from "@/components/providers/SessionProvider";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const inter = Inter({ 
@@ -26,8 +28,8 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Open Lovable v3",
-  description: "Re-imagine any website in seconds with AI-powered website builder.",
+  title: "MirrorSite AI - Clone Any Website with AI",
+  description: "Transform any website into your own with AI-powered design cloning. Built by ATAI Enterprises.",
 };
 
 export default function RootLayout({
@@ -38,7 +40,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${geistSans.variable} ${geistMono.variable} ${robotoMono.variable} font-sans`}>
-        {children}
+        <SessionProvider>
+          {children}
+          <Toaster 
+            position="top-right" 
+            richColors 
+            closeButton
+            toastOptions={{
+              duration: 4000,
+            }}
+          />
+        </SessionProvider>
       </body>
     </html>
   );

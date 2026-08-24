@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { appConfig } from '@/config/app.config';
 import HeroInput from '@/components/HeroInput';
 import SidebarInput from '@/components/app/generation/SidebarInput';
@@ -61,6 +63,8 @@ interface ScrapeData {
 }
 
 function AISandboxPage() {
+  const { data: session, status: authStatus } = useSession();
+  const router = useRouter();
   const [sandboxData, setSandboxData] = useState<SandboxData | null>(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState({ text: 'Not connected', active: false });
@@ -77,11 +81,61 @@ function AISandboxPage() {
   const [aiChatInput, setAiChatInput] = useState('');
   const [aiEnabled] = useState(true);
   const searchParams = useSearchParams();
-  const router = useRouter();
+  
+  // Protect the route - redirect to login if not authenticated
+  useEffect(() => {
+    if (authStatus === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [authStatus, router]);
+  
+  // Show loading while checking authentication
+  if (authStatus === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-red-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Don't render if not authenticated
+  if (!session) {
+    return null;
+  }
+  
   const [aiModel, setAiModel] = useState(() => {
     const modelParam = searchParams.get('model');
+    // Try to load from localStorage first
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('selectedModels');
+      if (saved) {
+        const userModels = JSON.parse(saved);
+        if (modelParam && userModels.includes(modelParam)) {
+          return modelParam;
+        }
+        return userModels[0] || appConfig.ai.defaultModel;
+      }
+    }
     return appConfig.ai.availableModels.includes(modelParam || '') ? modelParam! : appConfig.ai.defaultModel;
   });
+  
+  const [userModels, setUserModels] = useState<string[]>([]);
+  
+  // Load user's selected models
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('selectedModels');
+      if (saved) {
+        setUserModels(JSON.parse(saved));
+      } else {
+        const defaults = appConfig.ai.defaultBuilderModels || appConfig.ai.availableModels.slice(0, 3);
+        setUserModels(defaults);
+      }
+    }
+  }, []);
   const [urlOverlayVisible, setUrlOverlayVisible] = useState(false);
   const [urlInput, setUrlInput] = useState('');
   const [urlStatus, setUrlStatus] = useState<string[]>([]);
@@ -534,6 +588,31 @@ function AISandboxPage() {
     if (sandboxCreationRef.current) {
       console.log('[createSandbox] Sandbox creation already in progress, skipping...');
       return null;
+    }
+    
+    // Note: Token validation is now done at generation time based on actual content size
+    // Minimum balance check only
+    try {
+      const tokenRes = await fetch('/api/tokens/balance');
+      if (tokenRes.ok) {
+        const tokenData = await tokenRes.json();
+        if (tokenData.tokens < 5000) {
+          const proceed = confirm(
+            `Low Token Balance!\n\n` +
+            `Your balance: ${tokenData.tokens.toLocaleString()} tokens\n` +
+            `Recommended minimum: 5,000 tokens\n\n` +
+            `Token usage depends on content size (1 token = 1 character).\n` +
+            `Would you like to purchase more tokens?`
+          );
+          
+          if (proceed) {
+            router.push('/tokens');
+          }
+          return null;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking token balance:', error);
     }
     
     sandboxCreationRef.current = true;
@@ -1598,7 +1677,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
               ref={iframeRef}
               src={sandboxData.url}
               className="w-full h-full border-none"
-              title="Open Lovable Sandbox"
+              title="MirrorSite AI Sandbox"
               allow="clipboard-write"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
             />
@@ -2977,7 +3056,26 @@ Focus on building something NEW, minimal, and functional that perfectly matches 
 
           prompt = `I want to recreate the ${url} website as a complete React application based on the scraped content below.
 
-${JSON.stringify(scrapeData, null, 2)}
+${(() => {
+  // Truncate content if it's too large for the API
+  const contentStr = JSON.stringify(scrapeData, null, 2);
+  const maxLength = 5000; // Very conservative limit to avoid rate limits
+  
+  if (contentStr.length > maxLength) {
+    console.log(`[generation] Content too large (${contentStr.length} chars), truncating to ${maxLength}`);
+    // Try to parse and truncate the content field specifically
+    try {
+      const parsed = JSON.parse(contentStr);
+      if (parsed.content && parsed.content.length > maxLength) {
+        parsed.content = parsed.content.substring(0, maxLength) + '\n\n[Content truncated due to size...]';
+      }
+      return JSON.stringify(parsed, null, 2);
+    } catch {
+      return contentStr.substring(0, maxLength) + '\n\n[Content truncated due to size...]';
+    }
+  }
+  return contentStr;
+})()}
 
 ${filteredContext ? `ADDITIONAL CONTEXT/REQUIREMENTS FROM USER:
 ${filteredContext}
@@ -2996,6 +3094,49 @@ IMPORTANT INSTRUCTIONS:
 ${filteredContext ? '- Apply the user\'s context/theme requirements throughout the application' : ''}
 
 Focus on the key sections and content, making it clean and modern.`;
+        }
+
+        // ESTIMATE TOKEN USAGE BEFORE GENERATION
+        const promptTokens = prompt.length;
+        const scrapedTokens = JSON.stringify(scrapeData).length;
+        const estimatedResponseTokens = Math.ceil((promptTokens + scrapedTokens) * 1.5);
+        const totalEstimated = promptTokens + scrapedTokens + estimatedResponseTokens;
+        const requiredTokens = totalEstimated * 3; // User needs 3x tokens
+
+        // Check token balance
+        try {
+          const tokenRes = await fetch('/api/tokens/balance');
+          if (tokenRes.ok) {
+            const tokenData = await tokenRes.json();
+            
+            if (tokenData.tokens < requiredTokens) {
+              const shortfall = requiredTokens - tokenData.tokens;
+              const proceed = confirm(
+                `Insufficient Tokens!\n\n` +
+                `Your balance: ${tokenData.tokens.toLocaleString()} tokens\n` +
+                `Required: ${requiredTokens.toLocaleString()} tokens\n` +
+                `Shortage: ${shortfall.toLocaleString()} tokens\n\n` +
+                `This website requires more tokens than you currently have.\n` +
+                `Would you like to purchase more tokens?`
+              );
+              
+              if (proceed) {
+                router.push('/tokens');
+              }
+              
+              setLoading(false);
+              setShowLoadingBackground(false);
+              return;
+            }
+            
+            // Simple token notification without technical details
+            addChatMessage(
+              `Starting generation... (Estimated cost: ${totalEstimated.toLocaleString()} tokens)`,
+              'system'
+            );
+          }
+        } catch (error) {
+          console.error('Error checking token balance:', error);
         }
 
         setGenerationProgress(prev => ({
@@ -3197,6 +3338,51 @@ Focus on the key sections and content, making it clean and modern.`;
         }));
         
         if (generatedCode) {
+          // CALCULATE AND DEDUCT ACTUAL TOKENS USED
+          const actualPromptTokens = prompt.length;
+          const actualScrapedTokens = JSON.stringify(scrapeData).length;
+          const actualResponseTokens = generatedCode.length;
+          const totalTokensUsed = actualPromptTokens + actualScrapedTokens + actualResponseTokens;
+
+          // Deduct tokens from user account
+          try {
+            const deductRes = await fetch('/api/tokens/deduct', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                amount: totalTokensUsed,
+                metadata: {
+                  prompt: actualPromptTokens,
+                  scraped: actualScrapedTokens,
+                  response: actualResponseTokens,
+                  url: url
+                }
+              })
+            });
+            
+            if (deductRes.ok) {
+              const deductData = await deductRes.json();
+              addChatMessage(
+                `✅ Clone generated successfully!\n\n` +
+                `Tokens used: ${totalTokensUsed.toLocaleString()}\n` +
+                `Remaining balance: ${deductData.remainingTokens.toLocaleString()} tokens`,
+                'system'
+              );
+            } else {
+              // Deduction failed but generation succeeded
+              addChatMessage(
+                `⚠️ Warning: Token deduction failed but code was generated successfully.`,
+                'system'
+              );
+            }
+          } catch (error) {
+            console.error('Error deducting tokens:', error);
+            addChatMessage(
+              `⚠️ Warning: Could not deduct tokens. Please contact support.`,
+              'system'
+            );
+          }
+          
           addChatMessage('AI recreation generated!', 'system');
           
           // Add the explanation to chat if available
@@ -3299,12 +3485,21 @@ Focus on the key sections and content, making it clean and modern.`;
             }}
             className="px-3 py-1.5 text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-300 transition-colors"
           >
-            {appConfig.ai.availableModels.map(model => (
+            {userModels.map(model => (
               <option key={model} value={model}>
                 {appConfig.ai.modelDisplayNames?.[model] || model}
               </option>
             ))}
           </select>
+          
+          {/* Manage Models Link */}
+          <Link 
+            href="/models" 
+            className="text-xs text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap px-2"
+          >
+            Manage ({userModels.length}/3)
+          </Link>
+          
           <button 
             onClick={() => createSandbox()}
             className="p-8 rounded-lg transition-colors bg-gray-50 border border-gray-200 text-gray-700 hover:bg-gray-100"

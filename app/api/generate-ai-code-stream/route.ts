@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createGroq } from '@ai-sdk/groq';
-import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText } from 'ai';
 import type { SandboxState } from '@/types/sandbox';
 import { selectFilesForEdit, getFileContents, formatFilesForAI } from '@/lib/context-selector';
@@ -29,19 +27,9 @@ const groq = createGroq({
   baseURL: isUsingAIGateway ? aiGatewayBaseURL : undefined,
 });
 
-const anthropic = createAnthropic({
-  apiKey: process.env.AI_GATEWAY_API_KEY ?? process.env.ANTHROPIC_API_KEY,
-  baseURL: isUsingAIGateway ? aiGatewayBaseURL : (process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com/v1'),
-});
-
-const googleGenerativeAI = createGoogleGenerativeAI({
-  apiKey: process.env.AI_GATEWAY_API_KEY ?? process.env.GEMINI_API_KEY,
-  baseURL: isUsingAIGateway ? aiGatewayBaseURL : undefined,
-});
-
-const openai = createOpenAI({
-  apiKey: process.env.AI_GATEWAY_API_KEY ?? process.env.OPENAI_API_KEY,
-  baseURL: isUsingAIGateway ? aiGatewayBaseURL : process.env.OPENAI_BASE_URL,
+const openrouter = createOpenAI({
+  apiKey: process.env.OPENROUTER_API_KEY,
+  baseURL: 'https://openrouter.ai/api/v1',
 });
 
 // Helper function to analyze user preferences from conversation history
@@ -1202,6 +1190,13 @@ MORPH FAST APPLY MODE (EDIT-ONLY):
               contextParts.push('</file>');
             }
             fullPrompt = `CONTEXT:\n${contextParts.join('\n')}\n\nUSER REQUEST:\n${prompt}`;
+            
+            // Truncate if too large for API limits (aggressive truncation to save tokens)
+            const maxPromptLength = 12000; // Very conservative limit to avoid rate limits
+            if (fullPrompt.length > maxPromptLength) {
+              console.log(`[generate-ai-code-stream] Prompt too large (${fullPrompt.length} chars), truncating to ${maxPromptLength}`);
+              fullPrompt = fullPrompt.substring(0, maxPromptLength) + '\n\n[Context truncated due to size. Focus on the user request above.]';
+            }
           }
         }
         
@@ -1212,33 +1207,34 @@ MORPH FAST APPLY MODE (EDIT-ONLY):
         // Track packages that need to be installed
         const packagesToInstall: string[] = [];
         
-        // Determine which provider to use based on model
-        const isAnthropic = model.startsWith('anthropic/');
-        const isGoogle = model.startsWith('google/');
-        const isOpenAI = model.startsWith('openai/');
-        const isKimiGroq = model === 'moonshotai/kimi-k2-instruct-0905';
-        const modelProvider = isAnthropic ? anthropic : 
-                              (isOpenAI ? openai : 
-                              (isGoogle ? googleGenerativeAI : 
-                              (isKimiGroq ? groq : groq)));
+        // Determine which provider to use based on modelApiConfig
+        // Get the actual provider from config instead of relying on model name prefix
+        const modelConfig = appConfig.ai.modelApiConfig[model as keyof typeof appConfig.ai.modelApiConfig];
         
-        // Fix model name transformation for different providers
-        let actualModel: string;
-        if (isAnthropic) {
-          actualModel = model.replace('anthropic/', '');
-        } else if (isOpenAI) {
-          actualModel = model.replace('openai/', '');
-        } else if (isKimiGroq) {
-          // Kimi on Groq - use full model string
-          actualModel = 'moonshotai/kimi-k2-instruct-0905';
-        } else if (isGoogle) {
-          // Google uses specific model names - convert our naming to theirs  
-          actualModel = model.replace('google/', '');
+        // Auto-detect OpenRouter models by prefix if not in config
+        let actualProvider = modelConfig?.provider || 'groq';
+        let actualModel: string = model;
+        
+        // If model starts with 'openrouter/', use OpenRouter provider
+        if (model.startsWith('openrouter/')) {
+          actualProvider = 'openrouter';
+          // Remove 'openrouter/' prefix for the actual API call
+          actualModel = model.replace('openrouter/', '');
+        } else if (modelConfig) {
+          actualModel = modelConfig.model;
+        }
+        
+        // Select the correct API client based on actual provider
+        let modelProvider;
+        
+        if (actualProvider === 'openrouter') {
+          modelProvider = openrouter;
         } else {
-          actualModel = model;
+          // Default to Groq for all other models
+          modelProvider = groq;
         }
 
-        console.log(`[generate-ai-code-stream] Using provider: ${isAnthropic ? 'Anthropic' : isGoogle ? 'Google' : isOpenAI ? 'OpenAI' : 'Groq'}, model: ${actualModel}`);
+        console.log(`[generate-ai-code-stream] Using provider: ${actualProvider}, model: ${actualModel}`);
         console.log(`[generate-ai-code-stream] AI Gateway enabled: ${isUsingAIGateway}`);
         console.log(`[generate-ai-code-stream] Model string: ${model}`);
 
@@ -1316,8 +1312,8 @@ It's better to have 3 complete files than 10 incomplete files.`
           streamOptions.temperature = 0.7;
         }
         
-        // Add reasoning effort for GPT-5 models
-        if (isOpenAI) {
+        // Add reasoning effort for GPT-5 models (only for OpenAI provider)
+        if (actualProvider === 'openai' && model.startsWith('openai/gpt-5')) {
           streamOptions.experimental_providerMetadata = {
             openai: {
               reasoningEffort: 'high'
