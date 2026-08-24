@@ -129,6 +129,9 @@ function AISandboxPage() {
   const [hasInitialSubmission, setHasInitialSubmission] = useState<boolean>(false);
   const [fileStructure, setFileStructure] = useState<string>('');
   
+  // Refs - must be declared at the top with all hooks
+  const sandboxCreationRef = useRef<boolean>(false);
+  
   // Low balance modal state
   const [showLowBalanceModal, setShowLowBalanceModal] = useState(false);
   const [lowBalanceData, setLowBalanceData] = useState({
@@ -595,8 +598,6 @@ function AISandboxPage() {
       }
     }
   };
-
-  const sandboxCreationRef = useRef<boolean>(false);
   
   const createSandbox = async (fromHomeScreen = false) => {
     // Prevent duplicate sandbox creation

@@ -74,8 +74,9 @@ const authOptions: NextAuthOptions = {
       if (token.id) {
         try {
           const db = await getDatabase();
+          const { ObjectId } = await import('mongodb');
           const dbUser = await db.collection('users').findOne({ 
-            _id: typeof token.id === 'string' ? require('mongodb').ObjectId.createFromHexString(token.id) : token.id 
+            _id: typeof token.id === 'string' ? ObjectId.createFromHexString(token.id) : token.id 
           });
           if (dbUser) {
             token.tokens = dbUser.tokens || 0;
