@@ -431,6 +431,13 @@ function AISandboxPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldAutoGenerate, homeUrlInput, showHomeScreen]);
 
+  // Auto-scroll code display to bottom when streaming
+  useEffect(() => {
+    if (codeDisplayRef.current && generationProgress.isStreaming) {
+      codeDisplayRef.current.scrollTop = codeDisplayRef.current.scrollHeight;
+    }
+  }, [generationProgress.streamedCode, generationProgress.isStreaming]);
+
   // ALL HOOKS DECLARED - NOW WE CAN HAVE CONDITIONAL RETURNS
   
   // Show loading while checking authentication
@@ -2307,13 +2314,6 @@ Tip: I automatically detect and install npm packages from your code imports (lik
     const isEdit = conversationContext.appliedCode.length > 0;
     await applyGeneratedCode(conversationContext.lastGeneratedCode, isEdit);
   };
-
-  // Auto-scroll code display to bottom when streaming
-  useEffect(() => {
-    if (codeDisplayRef.current && generationProgress.isStreaming) {
-      codeDisplayRef.current.scrollTop = codeDisplayRef.current.scrollHeight;
-    }
-  }, [generationProgress.streamedCode, generationProgress.isStreaming]);
 
   const toggleFolder = (folderPath: string) => {
     const newExpanded = new Set(expandedFolders);

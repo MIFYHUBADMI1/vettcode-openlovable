@@ -83,8 +83,6 @@ export default function HomePage() {
         localStorage.setItem('selectedModels', JSON.stringify(defaults));
       }
     }
-    // selectedModel is intentionally in deps to update when it changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedModel]);
   
   // Show loading while checking authentication

@@ -48,6 +48,33 @@ function SearchPageContent() {
     loadSearchHistory();
   }, []);
 
+  const loadSearchHistory = async () => {
+    try {
+      const response = await fetch('/api/search/history');
+      if (response.ok) {
+        const data = await response.json();
+        setSearchHistory(data.history || []);
+      }
+    } catch (error) {
+      console.error('Failed to load search history:', error);
+    }
+  };
+
+  const checkCachedResults = async (query: string): Promise<SearchResult[] | null> => {
+    try {
+      const response = await fetch(`/api/search/get?query=${encodeURIComponent(query)}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.cached && data.results) {
+          return data.results;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check cache:', error);
+    }
+    return null;
+  };
+
   const saveSearchResults = async (query: string, results: SearchResult[]) => {
     try {
       await fetch('/api/search/save', {
