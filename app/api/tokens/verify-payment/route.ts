@@ -295,7 +295,7 @@ Return the JSON object ONLY, no additional text.`,
             timestamp: new Date(),
             status: 'verified'
           }
-        }
+        } as any
       }
     );
 

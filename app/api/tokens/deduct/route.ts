@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
             reason: 'AI generation usage',
             metadata: metadata || {}
           }
-        }
+        } as any
       }
     );
 

@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
             paymentId: paymentId || 'manual',
             reason: 'Token purchase'
           }
-        }
+        } as any
       }
     );
 
