@@ -1,0 +1,46 @@
+{
+  "name": "MirrorSite AI - Clone Any Website with AI",
+  "short_name": "MirrorSite AI",
+  "description": "AI-powered website cloning and code generation platform. Transform any website into production-ready code.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#F97316",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "development", "utilities"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Start Building",
+      "short_name": "Build",
+      "description": "Start cloning a website",
+      "url": "/builder",
+      "icons": [
+        {
+          "src": "/logo.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Search Websites",
+      "short_name": "Search",
+      "description": "Search for websites to clone",
+      "url": "/search",
+      "icons": [
+        {
+          "src": "/logo.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

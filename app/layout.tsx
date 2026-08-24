@@ -28,20 +28,56 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MirrorSite AI - Clone Any Website with AI",
-  description: "Transform any website into your own with AI-powered design cloning. Built by ATAI Enterprises.",
-  keywords: "website cloning, AI web design, code generation, website builder, web development, Uganda tech",
+  metadataBase: new URL(process.env.NEXTAUTH_URL || 'https://vettcode.dev'),
+  title: {
+    default: "MirrorSite AI - Clone Any Website with AI | Website Builder",
+    template: "%s | MirrorSite AI"
+  },
+  description: "Transform any website into your own with AI-powered design cloning. Clone websites, generate production-ready code, and customize designs in seconds. Built by ATAI Enterprises.",
+  keywords: [
+    "website cloning",
+    "AI web design", 
+    "code generation",
+    "website builder",
+    "web development",
+    "AI website generator",
+    "clone website",
+    "website scraper",
+    "design to code",
+    "Uganda tech",
+    "VettCode",
+    "MirrorSite AI",
+    "automated web development",
+    "React code generator",
+    "Next.js builder"
+  ],
+  authors: [{ name: "ATAI Enterprises" }, { name: "VettCode" }],
+  creator: "ATAI Enterprises",
+  publisher: "VettCode",
+  category: "Technology",
+  manifest: "/manifest.json",
   openGraph: {
     title: "MirrorSite AI - Clone Any Website with AI",
-    description: "Transform any website into your own with AI-powered design cloning.",
+    description: "Transform any website into production-ready code with AI-powered design cloning. Fast, accurate, and customizable.",
     type: "website",
     locale: "en_UG",
-    siteName: "MirrorSite AI"
+    url: process.env.NEXTAUTH_URL || 'https://vettcode.dev',
+    siteName: "MirrorSite AI",
+    images: [
+      {
+        url: '/logo.png',
+        width: 1200,
+        height: 630,
+        alt: 'MirrorSite AI - AI-Powered Website Cloning'
+      }
+    ]
   },
   twitter: {
     card: "summary_large_image",
     title: "MirrorSite AI - Clone Any Website with AI",
-    description: "Transform any website into your own with AI-powered design cloning."
+    description: "Transform any website into production-ready code with AI-powered design cloning.",
+    images: ['/logo.png'],
+    creator: "@vettcode"
   },
   robots: {
     index: true,
@@ -54,6 +90,12 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
+  alternates: {
+    canonical: process.env.NEXTAUTH_URL || 'https://vettcode.dev',
+  },
+  verification: {
+    google: 'bbkrXgFBFqHI_aNH3QKoMBn22EHoa4kBZxmFRObvCIQ',
+  },
 };
 
 export default function RootLayout({
@@ -64,7 +106,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <meta name="google-site-verification" content="bbkrXgFBFqHI_aNH3QKoMBn22EHoa4kBZxmFRObvCIQ" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -73,10 +114,13 @@ export default function RootLayout({
               "@type": "SoftwareApplication",
               "name": "MirrorSite AI",
               "applicationCategory": "DeveloperApplication",
+              "operatingSystem": "Web",
+              "url": process.env.NEXTAUTH_URL || "https://vettcode.dev",
               "offers": {
                 "@type": "Offer",
-                "price": "0.001",
+                "price": "0",
                 "priceCurrency": "UGX",
+                "availability": "https://schema.org/InStock",
                 "priceSpecification": {
                   "@type": "UnitPriceSpecification",
                   "price": "1",
@@ -89,11 +133,20 @@ export default function RootLayout({
                 }
               },
               "description": "AI-powered website cloning and code generation platform. Transform any website into production-ready code with advanced AI technology.",
-              "operatingSystem": "Web",
               "aggregateRating": {
                 "@type": "AggregateRating",
                 "ratingValue": "4.9",
-                "reviewCount": "1000"
+                "ratingCount": "1000"
+              },
+              "author": {
+                "@type": "Organization",
+                "name": "ATAI Enterprises",
+                "url": "https://vettcode.dev"
+              },
+              "publisher": {
+                "@type": "Organization",
+                "name": "VettCode",
+                "url": "https://vettcode.dev"
               }
             })
           }}
