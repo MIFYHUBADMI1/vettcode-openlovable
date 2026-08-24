@@ -41,12 +41,22 @@ interface SearchResult {
 export default function HomePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  
+  // All useState hooks must be declared before any conditional returns
   const [url, setUrl] = useState<string>("");
   const [selectedStyle, setSelectedStyle] = useState<string>("1");
   const [selectedModel, setSelectedModel] = useState<string>(appConfig.ai.defaultModel);
   const [userModels, setUserModels] = useState<string[]>([]);
   const [isValidUrl, setIsValidUrl] = useState<boolean>(false);
   const [showSearchTiles, setShowSearchTiles] = useState<boolean>(false);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [hasSearched, setHasSearched] = useState<boolean>(false);
+  const [isFadingOut, setIsFadingOut] = useState<boolean>(false);
+  const [showSelectMessage, setShowSelectMessage] = useState<boolean>(false);
+  const [showInstructionsForIndex, setShowInstructionsForIndex] = useState<number | null>(null);
+  const [additionalInstructions, setAdditionalInstructions] = useState<string>('');
+  const [extendBrandStyles, setExtendBrandStyles] = useState<boolean>(false);
   
   // Protect the route - redirect to login if not authenticated
   useEffect(() => {
@@ -54,23 +64,6 @@ export default function HomePage() {
       router.push('/login');
     }
   }, [status, router]);
-  
-  // Show loading while checking authentication
-  if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-red-50">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-  
-  // Don't render if not authenticated
-  if (!session) {
-    return null;
-  }
   
   // Load user's selected models from localStorage
   useEffect(() => {
@@ -91,15 +84,23 @@ export default function HomePage() {
       }
     }
   }, []);
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [isSearching, setIsSearching] = useState<boolean>(false);
-  const [hasSearched, setHasSearched] = useState<boolean>(false);
-  const [isFadingOut, setIsFadingOut] = useState<boolean>(false);
-  const [showSelectMessage, setShowSelectMessage] = useState<boolean>(false);
-  const [showInstructionsForIndex, setShowInstructionsForIndex] = useState<number | null>(null);
-  const [additionalInstructions, setAdditionalInstructions] = useState<string>('');
-  const [extendBrandStyles, setExtendBrandStyles] = useState<boolean>(false);
-  const router = useRouter();
+  
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-red-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Don't render if not authenticated
+  if (!session) {
+    return null;
+  }
   
   // Simple URL validation
   const validateUrl = (urlString: string) => {

@@ -1,4 +1,4 @@
-import { MongoClient, Db } from 'mongodb';
+import { MongoClient, Db, MongoServerSelectionError } from 'mongodb';
 
 const uri = process.env.MONGODB_URI;
 
@@ -8,13 +8,19 @@ if (!uri || uri === 'your_mongodb_connection_string_here') {
   console.warn('   Authentication and database features will not work until configured.');
 }
 
-const options = {};
+const options = {
+  serverSelectionTimeoutMS: 10000, // 10 seconds timeout
+  socketTimeoutMS: 45000, // 45 seconds socket timeout
+  maxPoolSize: 10,
+  minPoolSize: 2,
+  retryWrites: true,
+  retryReads: true,
+};
 
 let client: MongoClient | null = null;
 let clientPromise: Promise<MongoClient> | null = null;
 
 declare global {
-  // eslint-disable-next-line no-var
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
@@ -36,11 +42,26 @@ if (uri && (uri.startsWith('mongodb://') || uri.startsWith('mongodb+srv://'))) {
 
 export default clientPromise;
 
-// Helper function to get the database
+// Helper function to get the database with retry logic
 export async function getDatabase(): Promise<Db> {
   if (!clientPromise) {
     throw new Error('MongoDB not initialized. Please configure MONGODB_URI in .env.local');
   }
-  const client = await clientPromise;
-  return client.db('mirrorsite_ai'); // Your database name
+  
+  try {
+    const client = await clientPromise;
+    // Use the default database from connection string (usually 'test' in MongoDB)
+    return client.db();
+  } catch (error) {
+    if (error instanceof MongoServerSelectionError) {
+      console.error('❌ MongoDB Connection Error: Unable to connect to database');
+      console.error('   This usually means:');
+      console.error('   1. Your IP address is not whitelisted in MongoDB Atlas');
+      console.error('   2. The database cluster is paused or unreachable');
+      console.error('   3. Network connectivity issues');
+      console.error('   4. Invalid connection string');
+      throw new Error('Database connection failed. Please check your MongoDB configuration.');
+    }
+    throw error;
+  }
 }

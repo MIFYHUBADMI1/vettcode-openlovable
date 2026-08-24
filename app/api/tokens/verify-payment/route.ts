@@ -3,13 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { getDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
-import Anthropic from '@anthropic-ai/sdk';
 import ImageKit from 'imagekit';
-
-// Initialize Anthropic client for vision analysis
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
 
 // Initialize ImageKit for screenshot storage
 const imagekit = new ImageKit({
@@ -26,6 +20,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
+      );
+    }
+
+    // Check if OpenRouter API key is configured
+    if (!process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY === 'your_openrouter_api_key') {
+      console.error('[Payment Verification] OpenRouter API key not configured');
+      return NextResponse.json(
+        { error: 'Payment verification service is not configured. Please contact support.' },
+        { status: 503 }
       );
     }
 
@@ -68,25 +71,31 @@ export async function POST(req: NextRequest) {
       // Continue with verification even if upload fails
     }
 
-    // Use Claude's vision API to analyze the payment screenshot
-    const message = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: mimeType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
-                data: base64Image,
+    // Use OpenRouter's vision model to analyze the payment screenshot
+    // Using Google's Gemini Flash which supports vision and is free/low-cost
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': process.env.NEXTAUTH_URL || 'http://localhost:3000',
+        'X-Title': 'MirrorSite AI - Payment Verification',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-flash-1.5-8b',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:${mimeType};base64,${base64Image}`,
+                },
               },
-            },
-            {
-              type: 'text',
-              text: `You are a payment verification AI. Analyze this mobile money payment screenshot and extract the following information. Return ONLY a JSON object with these exact fields:
+              {
+                type: 'text',
+                text: `You are a payment verification AI. Analyze this mobile money payment screenshot and extract the following information. Return ONLY a JSON object with these exact fields:
 
 {
   "isValid": boolean (true if this is a genuine payment confirmation screenshot),
@@ -118,14 +127,25 @@ Check for these fraud indicators:
 - Transaction status is not "success" or "completed"
 
 Return the JSON object ONLY, no additional text.`,
-            },
-          ],
-        },
-      ],
+              },
+            ],
+          },
+        ],
+        temperature: 0.3,
+        max_tokens: 1024,
+      }),
     });
 
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('[Payment Verification] OpenRouter API error:', errorData);
+      throw new Error(`OpenRouter API error: ${errorData.error?.message || 'Unknown error'}`);
+    }
+
+    const completion = await response.json();
+    
     // Parse the AI response
-    const responseText = message.content[0].type === 'text' ? message.content[0].text : '';
+    const responseText = completion.choices?.[0]?.message?.content || '';
     
     let analysisResult;
     try {

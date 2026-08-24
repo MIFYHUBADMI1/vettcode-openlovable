@@ -31,6 +31,28 @@ export default function UserMenu() {
     }
   };
 
+  // Format large numbers in a compact way
+  const formatTokenBalance = (tokens: number): string => {
+    if (tokens >= 1000000) {
+      // Format millions (e.g., 1.5M, 2.3M)
+      return (tokens / 1000000).toFixed(1) + 'M';
+    } else if (tokens >= 100000) {
+      // Format hundred thousands (e.g., 250K, 999K)
+      return (tokens / 1000).toFixed(0) + 'K';
+    } else if (tokens >= 10000) {
+      // Format ten thousands (e.g., 25K, 99K)
+      return (tokens / 1000).toFixed(1) + 'K';
+    } else {
+      // Show full number for smaller amounts
+      return tokens.toLocaleString();
+    }
+  };
+
+  // Get full formatted number with commas for tooltip
+  const getFullTokenBalance = (tokens: number): string => {
+    return tokens.toLocaleString();
+  };
+
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -45,7 +67,7 @@ export default function UserMenu() {
   if (status === "loading") {
     return (
       <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse"></div>
+        <div className="w-45 h-45 rounded-full bg-gray-200 animate-pulse"></div>
       </div>
     );
   }
@@ -77,7 +99,7 @@ export default function UserMenu() {
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-orange-50 transition-all duration-200"
       >
-        <div className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center text-white font-bold text-lg shadow-md">
+        <div className="w-45 h-45 rounded-full bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center text-white font-bold text-lg shadow-md">
           {userInitial}
         </div>
         <div className="hidden md:block text-left">
@@ -97,12 +119,12 @@ export default function UserMenu() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border-2 border-gray-200 overflow-hidden z-50"
+            className="absolute right-0 mt-2 w-140 bg-white rounded-xl shadow-2xl border-2 border-gray-200 overflow-hidden z-50"
           >
             {/* User Info */}
             <div className="p-6 bg-gradient-to-r from-orange-50 to-red-50 border-b border-gray-200">
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center text-white font-bold text-2xl shadow-lg flex-shrink-0">
+                <div className="w-46 h-46 rounded-full bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center text-white font-bold text-2xl shadow-lg flex-shrink-0">
                   {userInitial}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -119,13 +141,25 @@ export default function UserMenu() {
               <div className="mt-4 p-3 bg-white rounded-lg border border-orange-200 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Coins className="w-5 h-5 text-orange-500" />
-                    <span className="text-sm font-semibold text-gray-700">Token Balance</span>
+                    <Coins className="w-14 h-14 text-orange-500" />
+                    <span className="text-sm font-semibold text-gray-700">Tokens</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-orange-600">
-                      {tokenBalance !== null ? tokenBalance.toLocaleString() : '...'}
-                    </span>
+                  <div className="flex flex-col items-end">
+                    {tokenBalance !== null ? (
+                      <>
+                        <span 
+                          className="text-2xl font-bold text-orange-600"
+                          title={`${getFullTokenBalance(tokenBalance)} tokens`}
+                        >
+                          {formatTokenBalance(tokenBalance)}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {getFullTokenBalance(tokenBalance)}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-2xl font-bold text-orange-600">...</span>
+                    )}
                   </div>
                 </div>
                 <Link

@@ -527,15 +527,6 @@ export default function ModelsPage() {
       strengths: ['Speed']
     },
     {
-      id: 'openrouter/google/gemma-4-26b-a4b-it',
-      name: 'Gemma 4 26B Instruct',
-      provider: 'openrouter',
-      description: 'Open model from Google with 26B parameters',
-      features: ['Open source', 'Instruction tuned', 'Good value'],
-      contextWindow: '32K tokens',
-      strengths: ['Open source']
-    },
-    {
       id: 'openrouter/stealth/ox-alpha',
       name: 'OX Alpha',
       provider: 'openrouter',

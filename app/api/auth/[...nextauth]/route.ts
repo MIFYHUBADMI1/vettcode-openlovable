@@ -80,8 +80,11 @@ const authOptions: NextAuthOptions = {
           if (dbUser) {
             token.tokens = dbUser.tokens || 0;
           }
-        } catch (error) {
-          console.error('Error fetching tokens in JWT:', error);
+        } catch (error: any) {
+          // Don't fail JWT creation if token fetch fails
+          console.error('Error fetching tokens in JWT:', error.message || error);
+          // Keep existing token value or default to 0
+          token.tokens = token.tokens || 0;
         }
       }
       return token;

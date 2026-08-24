@@ -27,6 +27,7 @@ import {
 } from '@/lib/icons';
 import { motion } from 'framer-motion';
 import CodeApplicationProgress, { type CodeApplicationState } from '@/components/CodeApplicationProgress';
+import LowBalanceModal from '@/components/tokens/LowBalanceModal';
 
 interface SandboxData {
   sandboxId: string;
@@ -65,6 +66,9 @@ interface ScrapeData {
 function AISandboxPage() {
   const { data: session, status: authStatus } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // ALL HOOKS MUST BE DECLARED FIRST - BEFORE ANY CONDITIONAL RETURNS
   const [sandboxData, setSandboxData] = useState<SandboxData | null>(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState({ text: 'Not connected', active: false });
@@ -80,31 +84,6 @@ function AISandboxPage() {
   ]);
   const [aiChatInput, setAiChatInput] = useState('');
   const [aiEnabled] = useState(true);
-  const searchParams = useSearchParams();
-  
-  // Protect the route - redirect to login if not authenticated
-  useEffect(() => {
-    if (authStatus === 'unauthenticated') {
-      router.push('/login');
-    }
-  }, [authStatus, router]);
-  
-  // Show loading while checking authentication
-  if (authStatus === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-red-50">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-  
-  // Don't render if not authenticated
-  if (!session) {
-    return null;
-  }
   
   const [aiModel, setAiModel] = useState(() => {
     const modelParam = searchParams.get('model');
@@ -123,19 +102,6 @@ function AISandboxPage() {
   });
   
   const [userModels, setUserModels] = useState<string[]>([]);
-  
-  // Load user's selected models
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('selectedModels');
-      if (saved) {
-        setUserModels(JSON.parse(saved));
-      } else {
-        const defaults = appConfig.ai.defaultBuilderModels || appConfig.ai.availableModels.slice(0, 3);
-        setUserModels(defaults);
-      }
-    }
-  }, []);
   const [urlOverlayVisible, setUrlOverlayVisible] = useState(false);
   const [urlInput, setUrlInput] = useState('');
   const [urlStatus, setUrlStatus] = useState<string[]>([]);
@@ -162,6 +128,14 @@ function AISandboxPage() {
   const [sandboxFiles, setSandboxFiles] = useState<Record<string, string>>({});
   const [hasInitialSubmission, setHasInitialSubmission] = useState<boolean>(false);
   const [fileStructure, setFileStructure] = useState<string>('');
+  
+  // Low balance modal state
+  const [showLowBalanceModal, setShowLowBalanceModal] = useState(false);
+  const [lowBalanceData, setLowBalanceData] = useState({
+    currentBalance: 0,
+    estimatedTokens: 5000,
+    targetUrl: ''
+  });
   
   const [conversationContext, setConversationContext] = useState<{
     scrapedWebsites: Array<{ url: string; content: any; timestamp: Date }>;
@@ -208,14 +182,36 @@ function AISandboxPage() {
     isStreaming: false,
     isThinking: false,
     files: [],
-    lastProcessedPosition: 0
+    lastProcessedPosition: 0,
   });
-
+  
   // Store flag to trigger generation after component mounts
   const [shouldAutoGenerate, setShouldAutoGenerate] = useState(false);
-
+  
+  // Protect the route - redirect to login if not authenticated
+  useEffect(() => {
+    if (authStatus === 'unauthenticated') {
+      router.push('/login');
+    }
+  }, [authStatus, router]);
+  
+  // Load user's selected models
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('selectedModels');
+      if (saved) {
+        setUserModels(JSON.parse(saved));
+      } else {
+        const defaults = appConfig.ai.defaultBuilderModels || appConfig.ai.availableModels.slice(0, 3);
+        setUserModels(defaults);
+      }
+    }
+  }, []);
+  
   // Clear old conversation data on component mount and create/restore sandbox
   useEffect(() => {
+    if (authStatus !== 'authenticated' || !session) return; // Don't run if not authenticated
+    
     let isMounted = true;
     let sandboxCreated = false; // Track if sandbox was created in this effect
 
@@ -432,6 +428,25 @@ function AISandboxPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldAutoGenerate, homeUrlInput, showHomeScreen]);
 
+  // ALL HOOKS DECLARED - NOW WE CAN HAVE CONDITIONAL RETURNS
+  
+  // Show loading while checking authentication
+  if (authStatus === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-red-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Don't render if not authenticated
+  if (!session) {
+    return null;
+  }
+
   const updateStatus = (text: string, active: boolean) => {
     setStatus({ text, active });
   };
@@ -596,18 +611,18 @@ function AISandboxPage() {
       const tokenRes = await fetch('/api/tokens/balance');
       if (tokenRes.ok) {
         const tokenData = await tokenRes.json();
-        if (tokenData.tokens < 5000) {
-          const proceed = confirm(
-            `Low Token Balance!\n\n` +
-            `Your balance: ${tokenData.tokens.toLocaleString()} tokens\n` +
-            `Recommended minimum: 5,000 tokens\n\n` +
-            `Token usage depends on content size (1 token = 1 character).\n` +
-            `Would you like to purchase more tokens?`
-          );
-          
-          if (proceed) {
-            router.push('/tokens');
-          }
+        
+        // Use a minimum threshold - detailed calculation happens at generation time
+        const minimumRecommended = 5000;
+        
+        if (tokenData.tokens < minimumRecommended) {
+          // Show the beautiful encouraging modal instead of basic confirm
+          setLowBalanceData({
+            currentBalance: tokenData.tokens,
+            estimatedTokens: minimumRecommended,
+            targetUrl: homeUrlInput || targetUrl || 'websites'
+          });
+          setShowLowBalanceModal(true);
           return null;
         }
       }
@@ -3111,18 +3126,14 @@ Focus on the key sections and content, making it clean and modern.`;
             
             if (tokenData.tokens < requiredTokens) {
               const shortfall = requiredTokens - tokenData.tokens;
-              const proceed = confirm(
-                `Insufficient Tokens!\n\n` +
-                `Your balance: ${tokenData.tokens.toLocaleString()} tokens\n` +
-                `Required: ${requiredTokens.toLocaleString()} tokens\n` +
-                `Shortage: ${shortfall.toLocaleString()} tokens\n\n` +
-                `This website requires more tokens than you currently have.\n` +
-                `Would you like to purchase more tokens?`
-              );
               
-              if (proceed) {
-                router.push('/tokens');
-              }
+              // Show the beautiful encouraging modal with real calculated values
+              setLowBalanceData({
+                currentBalance: tokenData.tokens,
+                estimatedTokens: requiredTokens,
+                targetUrl: homeUrlInput || 'this website'
+              });
+              setShowLowBalanceModal(true);
               
               setLoading(false);
               setShowLoadingBackground(false);
@@ -3466,6 +3477,19 @@ Focus on the key sections and content, making it clean and modern.`;
 
   return (
     <HeaderProvider>
+      {/* Low Balance Modal */}
+      <LowBalanceModal
+        isOpen={showLowBalanceModal}
+        onClose={() => {
+          setShowLowBalanceModal(false);
+          // Redirect back to builder page
+          router.push('/builder');
+        }}
+        currentBalance={lowBalanceData.currentBalance}
+        estimatedTokens={lowBalanceData.estimatedTokens}
+        targetUrl={lowBalanceData.targetUrl}
+      />
+      
       <div className="font-sans bg-background text-foreground h-screen flex flex-col">
       <div className="bg-white py-[15px] py-[8px] border-b border-border-faint flex items-center justify-between shadow-sm">
         <HeaderBrandKit />
