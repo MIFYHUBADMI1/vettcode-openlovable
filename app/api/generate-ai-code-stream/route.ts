@@ -1357,8 +1357,6 @@ It's better to have 3 complete files than 10 incomplete files.`
               });
               
               throw streamError;
-              
-              throw streamError;
             }
           }
         }
