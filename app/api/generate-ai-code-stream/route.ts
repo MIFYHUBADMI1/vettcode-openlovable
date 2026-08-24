@@ -1705,30 +1705,21 @@ Original request: ${prompt}
 Provide the complete file content without any truncation. Include all necessary imports, complete all functions, and close all tags properly.`;
                 
                 // Make a focused API call to complete this specific file
-                // Create a new client for the completion based on the provider
+                // Use the same provider logic as main generation
                 let completionClient;
-                if (model.includes('gpt') || model.includes('openai')) {
-                  completionClient = openai;
-                } else if (model.includes('claude')) {
-                  completionClient = anthropic;
-                } else if (model === 'moonshotai/kimi-k2-instruct-0905') {
-                  completionClient = groq;
+                if (model.startsWith('openrouter/')) {
+                  completionClient = openrouter;
                 } else {
+                  // Default to Groq for all other models
                   completionClient = groq;
                 }
                 
                 // Determine the correct model name for the completion
                 let completionModelName: string;
-                if (model === 'moonshotai/kimi-k2-instruct-0905') {
-                  completionModelName = 'moonshotai/kimi-k2-instruct-0905';
-                } else if (model.includes('openai')) {
-                  completionModelName = model.replace('openai/', '');
-                } else if (model.includes('anthropic')) {
-                  completionModelName = model.replace('anthropic/', '');
-                } else if (model.includes('google')) {
-                  completionModelName = model.replace('google/', '');
+                if (model.startsWith('openrouter/')) {
+                  completionModelName = model.replace('openrouter/', '');
                 } else {
-                  completionModelName = model;
+                  completionModelName = actualModel;
                 }
                 
                 const completionResult = await streamText({
