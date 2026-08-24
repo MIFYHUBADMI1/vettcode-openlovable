@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, Loader2, Globe, ExternalLink, Sparkles, History, Clock } from "lucide-react";
 import { toast } from "sonner";
@@ -31,7 +31,7 @@ interface SearchHistoryItem {
   searchCount: number;
 }
 
-export default function SearchPage() {
+function SearchPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
@@ -48,40 +48,6 @@ export default function SearchPage() {
     loadSearchHistory();
   }, []);
 
-  // Perform search on mount if query exists
-  useEffect(() => {
-    if (initialQuery) {
-      performSearch(initialQuery);
-    }
-  }, [initialQuery]);
-
-  const loadSearchHistory = async () => {
-    try {
-      const response = await fetch('/api/search/history');
-      if (response.ok) {
-        const data = await response.json();
-        setSearchHistory(data.history || []);
-      }
-    } catch (error) {
-      console.error('Failed to load search history:', error);
-    }
-  };
-
-  const checkCachedResults = async (query: string): Promise<SearchResult[] | null> => {
-    try {
-      const response = await fetch(`/api/search/get?query=${encodeURIComponent(query)}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.cached && data.results) {
-          return data.results;
-        }
-      }
-    } catch (error) {
-      console.error('Failed to check cache:', error);
-    }
-    return null;
-  };
-
   const saveSearchResults = async (query: string, results: SearchResult[]) => {
     try {
       await fetch('/api/search/save', {
@@ -96,7 +62,7 @@ export default function SearchPage() {
     }
   };
 
-  const performSearch = async (query: string) => {
+  const performSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
       toast.error("Please enter a search term");
       return;
@@ -160,7 +126,14 @@ export default function SearchPage() {
     } finally {
       setIsSearching(false);
     }
-  };
+  }, []); // Empty deps - function is stable
+
+  // Perform search on mount if query exists
+  useEffect(() => {
+    if (initialQuery) {
+      performSearch(initialQuery);
+    }
+  }, [initialQuery, performSearch]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -490,5 +463,21 @@ export default function SearchPage() {
         </div>
       </div>
     </HeaderProvider>
+  );
+}
+
+// Wrap the component with Suspense boundary
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background-base flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-16 h-16 text-orange-500 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading search...</p>
+        </div>
+      </div>
+    }>
+      <SearchPageContent />
+    </Suspense>
   );
 }

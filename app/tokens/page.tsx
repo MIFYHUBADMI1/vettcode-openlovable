@@ -812,6 +812,7 @@ function ScreenshotUpload({ screenshotPreview, verificationError, loading, onFil
           <label htmlFor="screenshot-upload" className="cursor-pointer block">
             {screenshotPreview ? (
               <div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src={screenshotPreview} 
                   alt="Payment screenshot" 

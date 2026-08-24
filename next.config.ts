@@ -13,6 +13,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  eslint: {
+    // Don't fail build on ESLint warnings
+    ignoreDuringBuilds: false,
+  },
   experimental: {
     turbo: {
       root: process.cwd(),

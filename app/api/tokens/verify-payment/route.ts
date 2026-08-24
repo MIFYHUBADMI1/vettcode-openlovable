@@ -5,12 +5,22 @@ import { getDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import ImageKit from 'imagekit';
 
-// Initialize ImageKit for screenshot storage
-const imagekit = new ImageKit({
-  publicKey: process.env.IMAGEKIT_PUBLIC_KEY || '',
-  privateKey: process.env.IMAGEKIT_PRIVATE_KEY || '',
-  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT || '',
-});
+// Initialize ImageKit for screenshot storage (only if credentials are available)
+let imagekit: ImageKit | null = null;
+
+try {
+  if (process.env.IMAGEKIT_PUBLIC_KEY && 
+      process.env.IMAGEKIT_PRIVATE_KEY && 
+      process.env.IMAGEKIT_URL_ENDPOINT) {
+    imagekit = new ImageKit({
+      publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
+      privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
+      urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT,
+    });
+  }
+} catch (error) {
+  console.error('[ImageKit Init] Failed to initialize:', error);
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -51,24 +61,28 @@ export async function POST(req: NextRequest) {
     const base64Image = Buffer.from(arrayBuffer).toString('base64');
     const mimeType = screenshot.type;
 
-    // Upload screenshot to ImageKit first
+    // Upload screenshot to ImageKit first (only if initialized)
     let screenshotUrl = '';
     let imagekitFileId = '';
     
-    try {
-      const uploadResult = await imagekit.upload({
-        file: base64Image,
-        fileName: `payment_${session.user.id}_${referenceCode}_${Date.now()}.${screenshot.name.split('.').pop()}`,
-        folder: '/payment-screenshots',
-        tags: ['payment', 'verification', referenceCode, session.user.id],
-      });
-      
-      screenshotUrl = uploadResult.url;
-      imagekitFileId = uploadResult.fileId;
-      console.log('[Payment Verification] Screenshot uploaded to ImageKit:', screenshotUrl);
-    } catch (uploadError) {
-      console.error('[Payment Verification] ImageKit upload failed:', uploadError);
-      // Continue with verification even if upload fails
+    if (imagekit) {
+      try {
+        const uploadResult = await imagekit.upload({
+          file: base64Image,
+          fileName: `payment_${session.user.id}_${referenceCode}_${Date.now()}.${screenshot.name.split('.').pop()}`,
+          folder: '/payment-screenshots',
+          tags: ['payment', 'verification', referenceCode, session.user.id],
+        });
+        
+        screenshotUrl = uploadResult.url;
+        imagekitFileId = uploadResult.fileId;
+        console.log('[Payment Verification] Screenshot uploaded to ImageKit:', screenshotUrl);
+      } catch (uploadError) {
+        console.error('[Payment Verification] ImageKit upload failed:', uploadError);
+        // Continue with verification even if upload fails
+      }
+    } else {
+      console.warn('[Payment Verification] ImageKit not initialized, skipping screenshot upload');
     }
 
     // Use OpenRouter's vision model to analyze the payment screenshot
