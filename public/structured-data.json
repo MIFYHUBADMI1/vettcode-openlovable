@@ -1,0 +1,136 @@
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://mirrorsiteai.vercel.app/#software",
+      "name": "MirrorSite AI",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Web",
+      "url": "https://mirrorsiteai.vercel.app",
+      "description": "AI-powered website cloning and code generation platform. Transform any website into production-ready React/Next.js code in seconds.",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "UGX",
+        "availability": "https://schema.org/InStock",
+        "priceSpecification": {
+          "@type": "UnitPriceSpecification",
+          "price": "1",
+          "priceCurrency": "UGX",
+          "referenceQuantity": {
+            "@type": "QuantitativeValue",
+            "value": "1",
+            "unitText": "token"
+          }
+        }
+      },
+      "featureList": [
+        "AI-powered website cloning",
+        "Production-ready code generation",
+        "Multiple AI model support",
+        "Real-time preview",
+        "Smart package detection",
+        "Style customization"
+      ],
+      "screenshot": "https://mirrorsiteai.vercel.app/logo.png",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "ratingCount": "1000",
+        "bestRating": "5",
+        "worstRating": "1"
+      }
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://mirrorsiteai.vercel.app/#organization",
+      "name": "ATAI Enterprises",
+      "url": "https://mirrorsiteai.vercel.app",
+      "logo": "https://mirrorsiteai.vercel.app/logo.png",
+      "description": "Technology company specializing in AI-powered web development tools",
+      "brand": {
+        "@type": "Brand",
+        "name": "VettCode"
+      },
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "support@mirrorsiteai.vercel.app",
+        "contactType": "Customer Support"
+      },
+      "sameAs": [
+        "https://twitter.com/vettcode",
+        "https://github.com/MIFYHUBADMI1/vettcode-openlovable"
+      ]
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://mirrorsiteai.vercel.app/#website",
+      "url": "https://mirrorsiteai.vercel.app",
+      "name": "MirrorSite AI",
+      "description": "Clone any website with AI-powered design and code generation",
+      "publisher": {
+        "@id": "https://mirrorsiteai.vercel.app/#organization"
+      },
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://mirrorsiteai.vercel.app/search?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://mirrorsiteai.vercel.app/#webpage",
+      "url": "https://mirrorsiteai.vercel.app",
+      "name": "MirrorSite AI - Clone Any Website with AI",
+      "description": "Transform any website into production-ready code with AI-powered design cloning",
+      "isPartOf": {
+        "@id": "https://mirrorsiteai.vercel.app/#website"
+      },
+      "about": {
+        "@id": "https://mirrorsiteai.vercel.app/#software"
+      },
+      "primaryImageOfPage": {
+        "@type": "ImageObject",
+        "url": "https://mirrorsiteai.vercel.app/logo.png"
+      }
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is MirrorSite AI?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "MirrorSite AI is an AI-powered platform that clones any website and generates production-ready code. It uses advanced AI models to extract designs, analyze structure, and generate React/Next.js code automatically."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How much does MirrorSite AI cost?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "MirrorSite AI uses a token-based pricing system where 1 token = 1 UGX. New users get 500 free tokens. The minimum purchase is 15,000 tokens. You can pay using MTN Mobile Money or Airtel Money."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What AI models does MirrorSite AI support?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "MirrorSite AI supports multiple AI models including GPT-4, Claude 3.5 Sonnet, Google Gemini, Llama 3, and Mixtral through OpenRouter and Groq APIs."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Can I clone any website?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Yes, you can clone any publicly accessible website. MirrorSite AI uses Firecrawl to scrape content and AI to generate code. However, respect copyright and intellectual property laws when using cloned designs."
+          }
+        }
+      ]
+    }
+  ]
+}

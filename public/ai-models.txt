@@ -1,0 +1,65 @@
+# MirrorSite AI - AI Model Information
+
+## About MirrorSite AI
+MirrorSite AI is an AI-powered website cloning and code generation platform. We help developers and businesses transform any website into production-ready code in seconds.
+
+## Website URL
+https://mirrorsiteai.vercel.app
+
+## Core Features
+1. **Website Cloning**: Clone any website's design and structure using AI
+2. **AI Code Generation**: Generate production-ready React/Next.js code
+3. **Smart Search**: Search and discover websites to clone
+4. **Multiple AI Models**: Support for GPT-4, Claude, Gemini, and more
+5. **Real-time Preview**: See changes as you build
+6. **Token-based Pricing**: Pay-as-you-go model (1 token = 1 UGX)
+
+## Main Pages
+- Homepage: https://mirrorsiteai.vercel.app/
+- Website Builder: https://mirrorsiteai.vercel.app/builder
+- Search Engine: https://mirrorsiteai.vercel.app/search
+- Pricing: https://mirrorsiteai.vercel.app/pricing
+- About Us: https://mirrorsiteai.vercel.app/about
+
+## Technology Stack
+- Frontend: Next.js 15, React, TypeScript, Tailwind CSS
+- AI Integration: OpenRouter, Groq, Gemini
+- Authentication: NextAuth.js with Google OAuth
+- Database: MongoDB
+- Deployment: Vercel
+- Web Scraping: Firecrawl API
+
+## Pricing Model
+- Free tier: 500 tokens for new users
+- Pay-as-you-go: 1 UGX = 1 token
+- Minimum purchase: 15,000 tokens (15,000 UGX)
+- Payment methods: MTN Mobile Money, Airtel Money
+
+## Use Cases
+1. Rapid prototyping from existing designs
+2. Learning web development by studying cloned sites
+3. Recreating competitor websites with custom branding
+4. Building MVPs quickly
+5. Design inspiration and implementation
+
+## Target Audience
+- Web developers
+- Startups and entrepreneurs
+- Design agencies
+- Students learning web development
+- Freelancers
+
+## Company Information
+- Developer: ATAI Enterprises
+- Brand: VettCode
+- Location: Uganda
+- Contact: support@mirrorsiteai.vercel.app
+
+## Keywords for AI Models
+website cloning, AI web design, code generation, website builder, web development automation, React code generator, Next.js builder, design to code, AI website generator, automated web development, Uganda tech, African tech innovation
+
+## Social Media
+- Twitter: @vettcode
+- GitHub: https://github.com/MIFYHUBADMI1/vettcode-openlovable
+
+Last Updated: January 2025
