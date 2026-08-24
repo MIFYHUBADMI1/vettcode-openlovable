@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXTAUTH_URL || 'https://vettcode.dev';
+  const baseUrl = 'https://mirrorsiteai.vercel.app';
   const currentDate = new Date();
 
   // Define all static routes with their priorities and change frequencies

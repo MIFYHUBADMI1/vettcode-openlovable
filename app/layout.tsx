@@ -28,7 +28,7 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXTAUTH_URL || 'https://vettcode.dev'),
+  metadataBase: new URL('https://mirrorsiteai.vercel.app'),
   title: {
     default: "MirrorSite AI - Clone Any Website with AI | Website Builder",
     template: "%s | MirrorSite AI"
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     description: "Transform any website into production-ready code with AI-powered design cloning. Fast, accurate, and customizable.",
     type: "website",
     locale: "en_UG",
-    url: process.env.NEXTAUTH_URL || 'https://vettcode.dev',
+    url: 'https://mirrorsiteai.vercel.app',
     siteName: "MirrorSite AI",
     images: [
       {
@@ -91,7 +91,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: process.env.NEXTAUTH_URL || 'https://vettcode.dev',
+    canonical: 'https://mirrorsiteai.vercel.app',
   },
   verification: {
     google: 'bbkrXgFBFqHI_aNH3QKoMBn22EHoa4kBZxmFRObvCIQ',
@@ -115,7 +115,7 @@ export default function RootLayout({
               "name": "MirrorSite AI",
               "applicationCategory": "DeveloperApplication",
               "operatingSystem": "Web",
-              "url": process.env.NEXTAUTH_URL || "https://vettcode.dev",
+              "url": "https://mirrorsiteai.vercel.app",
               "offers": {
                 "@type": "Offer",
                 "price": "0",
@@ -141,12 +141,12 @@ export default function RootLayout({
               "author": {
                 "@type": "Organization",
                 "name": "ATAI Enterprises",
-                "url": "https://vettcode.dev"
+                "url": "https://mirrorsiteai.vercel.app"
               },
               "publisher": {
                 "@type": "Organization",
                 "name": "VettCode",
-                "url": "https://vettcode.dev"
+                "url": "https://mirrorsiteai.vercel.app"
               }
             })
           }}
