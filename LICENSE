@@ -1,21 +1,101 @@
-MIT License
+# MirrorSite AI Proprietary License
 
-Copyright (c) 2024
+Copyright (c) 2024–2026 ATAI Enterprises. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+## Proprietary and Closed-Source Software
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+MirrorSite AI, including its software, source code, architecture, artificial intelligence workflows, prompts, algorithms, user interface designs, branding, documentation, infrastructure, and associated materials (collectively, the "Software"), is proprietary software owned by ATAI Enterprises and operated under the VettCode technology brand.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+This repository and any associated MirrorSite AI materials are provided for informational, documentation, product reference, and authorized use purposes only.
+
+No permission, license, or right is granted to any person or organization to copy, reproduce, modify, merge, publish, distribute, sublicense, sell, rent, lease, host, deploy, reverse engineer, create derivative works from, or otherwise exploit the proprietary MirrorSite AI Software except where explicitly authorized in writing by ATAI Enterprises.
+
+## Permitted Use
+
+Users may:
+
+* Access and use the official MirrorSite AI service subject to applicable terms and conditions.
+* View and reference publicly available documentation.
+* Share links to official MirrorSite AI pages and documentation.
+* Reference MirrorSite AI for informational, educational, editorial, or review purposes, provided such use does not imply unauthorized affiliation or endorsement.
+
+## Prohibited Use
+
+Without prior written authorization from ATAI Enterprises, you may not:
+
+* Copy or reproduce the MirrorSite AI source code.
+* Clone or recreate the MirrorSite AI platform for redistribution or commercial use.
+* Modify or create derivative versions of the proprietary Software.
+* Self-host, deploy, or distribute MirrorSite AI or any proprietary part of its Software.
+* Sell, sublicense, rent, lease, or commercially exploit the Software.
+* Reverse engineer, decompile, or attempt to discover proprietary implementation details except where such restrictions are prohibited by applicable law.
+* Remove or alter copyright, trademark, ownership, or proprietary notices.
+* Use the MirrorSite AI name, logo, branding, or identity without authorization.
+* Represent an unauthorized product or service as being MirrorSite AI, VettCode, or affiliated with ATAI Enterprises.
+* Use proprietary materials from MirrorSite AI to create a competing or derivative service without written authorization.
+
+## Source Code
+
+MirrorSite AI is a **closed-source, proprietary commercial service**.
+
+The presence of a GitHub repository, documentation, product information, public files, examples, or other materials does not grant permission to access, reproduce, redistribute, or use the underlying proprietary source code or platform.
+
+No rights to the MirrorSite AI source code are granted through this repository unless explicitly stated in a separate written license agreement issued by ATAI Enterprises.
+
+## Intellectual Property
+
+All rights, title, and interest in and to MirrorSite AI, including but not limited to its:
+
+* Software and source code
+* Artificial intelligence systems and workflows
+* Proprietary prompts and configurations
+* Product architecture
+* User interface and visual designs
+* Branding and trademarks
+* Documentation
+* Platform infrastructure
+* Logos and visual assets
+* Product names
+* Associated intellectual property
+
+remain the property of ATAI Enterprises or their respective rights holders.
+
+**MirrorSite AI** and **VettCode** may be protected names, brands, or trademarks. No authorization to use these identities is granted by this license.
+
+## Third-Party Services and Technologies
+
+MirrorSite AI may integrate or interact with third-party technologies, services, frameworks, APIs, and platforms.
+
+Those third-party technologies remain subject to their respective licenses, terms, and conditions.
+
+This proprietary license applies only to materials owned or controlled by ATAI Enterprises and does not replace or modify the licenses of third-party software.
+
+## No Warranty
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SOFTWARE, DOCUMENTATION, AND ASSOCIATED MATERIALS ARE PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTIES OF ANY KIND, WHETHER EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE.
+
+ATAI ENTERPRISES DISCLAIMS ALL WARRANTIES, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AVAILABILITY, ACCURACY, SECURITY, AND RELIABILITY.
+
+## Limitation of Liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, ATAI ENTERPRISES, VETTCODE, AND THEIR REPRESENTATIVES SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, CONSEQUENTIAL, SPECIAL, EXEMPLARY, OR OTHER DAMAGES ARISING FROM OR RELATED TO THE USE OF OR INABILITY TO USE MIRRORSITE AI, ITS SOFTWARE, DOCUMENTATION, OR ASSOCIATED MATERIALS.
+
+## No Implied Rights
+
+No rights or licenses are granted by implication, estoppel, or otherwise.
+
+Any permission to use MirrorSite AI or its proprietary materials beyond the permissions expressly described in this document must be obtained in writing from ATAI Enterprises.
+
+## Contact
+
+For licensing, partnerships, commercial agreements, authorized use, or other inquiries regarding MirrorSite AI, contact ATAI Enterprises through the official MirrorSite AI platform:
+
+https://mirrorsiteai.vercel.app
+
+---
+
+**MirrorSite AI**
+Developed by ATAI Enterprises
+Technology Brand: VettCode
+
+Copyright (c) 2024–2026 ATAI Enterprises. All rights reserved.
