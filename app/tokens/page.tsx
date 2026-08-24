@@ -3,14 +3,33 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Coins, Calculator, Smartphone, ArrowRight, Upload, CheckCircle, Copy, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
+import { 
+  Coins, 
+  Calculator, 
+  Smartphone, 
+  ArrowRight, 
+  Upload, 
+  CheckCircle, 
+  Copy, 
+  AlertCircle, 
+  Shield, 
+  Lock, 
+  Zap, 
+  TrendingUp,
+  Gift,
+  Clock,
+  Phone,
+  Info,
+  DollarSign,
+  CreditCard
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
 
-// Pricing: 1k tokens = 1000 UGX
-const TOKEN_RATE = 1; // 1 UGX = 1 token
+// Pricing: 1 token = 1 UGX
+const TOKEN_RATE = 1;
 
-// Generate random 4-character reference code (letters + numbers)
+// Generate random 4-character reference code
 const generateReferenceCode = () => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
@@ -36,6 +55,11 @@ export default function TokensPage() {
   const [verificationError, setVerificationError] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
 
+  // SEO
+  useEffect(() => {
+    document.title = 'Buy Tokens - Secure Payment | MirrorSite AI';
+  }, []);
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
@@ -44,7 +68,6 @@ export default function TokensPage() {
     }
   }, [status, session, router]);
 
-  // Calculate tokens whenever amount changes
   useEffect(() => {
     const amount = parseFloat(amountUGX) || 0;
     setCalculatedTokens(Math.floor(amount * TOKEN_RATE));
@@ -82,7 +105,6 @@ export default function TokensPage() {
       return;
     }
 
-    // Generate reference code and move to instructions
     const code = generateReferenceCode();
     setReferenceCode(code);
     setPaymentStep('instructions');
@@ -97,7 +119,7 @@ export default function TokensPage() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
         alert('File size must be less than 5MB');
         return;
       }
@@ -109,7 +131,6 @@ export default function TokensPage() {
 
       setScreenshot(file);
       
-      // Create preview
       const reader = new FileReader();
       reader.onloadend = () => {
         setScreenshotPreview(reader.result as string);
@@ -169,90 +190,14 @@ export default function TokensPage() {
     setPhoneNumber('');
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-4">
-              Buy Tokens
-            </h1>
-            <p className="text-xl text-gray-600 mb-6">
-              Purchase tokens using Mobile Money (MTN or Airtel)
-            </p>
-            
-            {/* Current Balance */}
-            <div className="inline-flex items-center gap-3 bg-white rounded-full px-6 py-3 shadow-lg border-2 border-orange-200">
-              <Coins className="w-6 h-6 text-orange-500" />
-              <span className="text-lg font-semibold text-gray-700">
-                Current Balance:
-              </span>
-              <span className="text-2xl font-bold text-orange-600">
-                {tokenBalance !== null ? tokenBalance.toLocaleString() : '...'}
-              </span>
-            </div>
-          </motion.div>
-        </div>
-
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mb-8">
-          <div className="flex items-start gap-4">
-            <div className="bg-blue-500 rounded-full p-2 flex-shrink-0">
-              <Coins className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">How It Works</h3>
-              <ul className="space-y-1 text-gray-700">
-                <li>• <strong>Buy tokens</strong> to clone websites and generate code</li>
-                <li>• <strong>Token usage</strong> varies based on website complexity</li>
-                <li>• <strong>Simple sites</strong> use fewer tokens, complex sites use more</li>
-                <li>• <strong>Pay as you go</strong> - Only use tokens when you generate</li>
-                <li>• New users get <strong>500 free tokens</strong> to try the service</li>
-                <li>• <strong>Purchase rate:</strong> 1,000 tokens = 1,000 UGX</li>
-                <li>• <strong>Minimum purchase:</strong> 15,000 UGX (15,000 tokens)</li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        <AnimatePresence mode="wait">
-          {/* Step 1: Calculator */}
-          {paymentStep === 'calculator' && (
-            <motion.div
-              key="calculator"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <TokenCalculator
-                amountUGX={amountUGX}
-                calculatedTokens={calculatedTokens}
-                selectedProvider={selectedProvider}
-                phoneNumber={phoneNumber}
-                onAmountChange={handleAmountChange}
-                onQuickAmount={handleQuickAmount}
-                onProviderChange={setSelectedProvider}
-                onPhoneChange={setPhoneNumber}
-                onProceed={handleProceedToPayment}
-              />
-            </motion.div>
-          )}
-
-          {/* Step 2: Payment Instructions */}
-          {paymentStep === 'instructions' && (
-            <motion.div
-              key="instructions"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
+  if (paymentStep !== 'calculator') {
+    return (
+      <div className="min-h-screen bg-[#0A0F1E]">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <AnimatePresence mode="wait">
+            {paymentStep === 'instructions' && (
               <PaymentInstructions
+                key="instructions"
                 referenceCode={referenceCode}
                 amount={amountUGX}
                 tokens={calculatedTokens}
@@ -262,19 +207,11 @@ export default function TokensPage() {
                 onNext={() => setPaymentStep('upload')}
                 onBack={() => setPaymentStep('calculator')}
               />
-            </motion.div>
-          )}
+            )}
 
-          {/* Step 3: Upload Screenshot */}
-          {paymentStep === 'upload' && (
-            <motion.div
-              key="upload"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
+            {paymentStep === 'upload' && (
               <ScreenshotUpload
+                key="upload"
                 screenshotPreview={screenshotPreview}
                 verificationError={verificationError}
                 loading={loading}
@@ -282,424 +219,589 @@ export default function TokensPage() {
                 onSubmit={handleSubmitScreenshot}
                 onBack={() => setPaymentStep('instructions')}
               />
-            </motion.div>
-          )}
+            )}
 
-          {/* Step 4: Verifying */}
-          {paymentStep === 'verifying' && (
-            <motion.div
-              key="verifying"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white rounded-2xl shadow-2xl p-12 text-center border-2 border-orange-200"
-            >
-              <div className="w-20 h-20 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Verifying Payment...</h3>
-              <p className="text-gray-600">
-                Our AI is analyzing your payment screenshot. This may take a few moments.
-              </p>
-            </motion.div>
-          )}
+            {paymentStep === 'verifying' && (
+              <motion.div
+                key="verifying"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="bg-[#151B2E] rounded-3xl shadow-2xl p-16 text-center border border-gray-800"
+              >
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                  className="w-24 h-24 border-8 border-orange-500 border-t-transparent rounded-full mx-auto mb-8"
+                />
+                <h3 className="text-3xl font-bold text-white mb-4">Verifying Payment...</h3>
+                <p className="text-lg text-gray-400">
+                  Our AI system is analyzing your payment screenshot.
+                </p>
+              </motion.div>
+            )}
 
-          {/* Step 5: Success */}
-          {paymentStep === 'success' && (
-            <motion.div
-              key="success"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white rounded-2xl shadow-2xl p-12 text-center border-2 border-green-500"
-            >
-              <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-6" />
-              <h3 className="text-3xl font-bold text-gray-900 mb-3">Payment Verified!</h3>
-              <p className="text-lg text-gray-600 mb-6">
-                {calculatedTokens.toLocaleString()} tokens have been added to your account.
-              </p>
-              <div className="bg-green-50 rounded-lg p-4 mb-6 inline-block">
-                <div className="flex items-center gap-3">
-                  <Coins className="w-8 h-8 text-green-600" />
-                  <div>
-                    <p className="text-sm text-gray-600">New Balance</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {tokenBalance !== null ? tokenBalance.toLocaleString() : '...'} tokens
-                    </p>
+            {paymentStep === 'success' && (
+              <motion.div
+                key="success"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="bg-[#151B2E] rounded-3xl shadow-2xl p-16 text-center border-2 border-green-500"
+              >
+                <div className="w-24 h-24 mx-auto mb-8 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
+                  <CheckCircle className="w-32 h-32 text-white" />
+                </div>
+                <h3 className="text-4xl font-bold text-white mb-4">Payment Verified!</h3>
+                <p className="text-xl text-gray-300 mb-8">
+                  {calculatedTokens.toLocaleString()} tokens added to your account.
+                </p>
+                <div className="bg-green-500/10 border border-green-500 rounded-2xl p-6 mb-8 inline-block">
+                  <div className="flex items-center gap-4">
+                    <Coins className="w-24 h-24 text-green-400" />
+                    <div className="text-left">
+                      <p className="text-sm text-gray-400">New Balance</p>
+                      <p className="text-3xl font-bold text-white">
+                        {tokenBalance !== null ? tokenBalance.toLocaleString() : '...'} tokens
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="flex gap-4 justify-center">
-                <button
-                  onClick={resetPayment}
-                  className="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold rounded-lg shadow-lg transition-all"
-                >
-                  Buy More Tokens
-                </button>
-                <button
-                  onClick={() => router.push('/generation')}
-                  className="px-6 py-3 bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-lg shadow-lg transition-all"
-                >
-                  Start Cloning
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Footer Note */}
-        <div className="mt-8 text-center text-gray-600">
-          <p className="text-sm">
-           
-            All transactions are verified before tokens are credited.
-          </p>
+                <div className="flex gap-4 justify-center">
+                  <button
+                    onClick={resetPayment}
+                    className="px-8 py-4 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-bold rounded-xl shadow-lg transition-all"
+                  >
+                    Buy More Tokens
+                  </button>
+                  <button
+                    onClick={() => router.push('/generation')}
+                    className="px-8 py-4 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-xl shadow-lg transition-all"
+                  >
+                    Start Cloning
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-// Calculator Component
-function TokenCalculator({ 
-  amountUGX, 
-  calculatedTokens, 
-  selectedProvider, 
-  phoneNumber,
-  onAmountChange,
-  onQuickAmount,
-  onProviderChange,
-  onPhoneChange,
-  onProceed
-}: any) {
   return (
-    <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-orange-200 mb-8">
-      <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6">
-        <div className="flex items-center gap-3 text-white">
-          <Calculator className="w-8 h-8" />
-          <h2 className="text-2xl font-bold">Token Calculator</h2>
-        </div>
-      </div>
-
-      <div className="p-8">
-        {/* Amount Input */}
-        <div className="mb-6">
-          <label className="block text-sm font-semibold text-gray-700 mb-2">
-            Enter Amount (UGX)
-          </label>
-          <div className="relative">
-            <input
-              type="text"
-              value={amountUGX}
-              onChange={onAmountChange}
-              placeholder="10000"
-              className="w-full px-4 py-4 text-2xl font-bold border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:outline-none"
-            />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">
-              UGX
-            </span>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-orange-50/30">
+      <div className="max-w-[1120px] mx-auto px-6 py-12">
+        
+        {/* Hero Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-12"
+        >
+          {/* Security Badge */}
+          <div className="inline-flex items-center gap-2 bg-green-50 border border-green-300 px-4 py-2 rounded-full mb-6">
+            <Shield className="w-16 h-16 text-green-600" />
+            <span className="text-sm font-medium text-green-700">Secure Payment Processing</span>
           </div>
-        </div>
 
-        {/* Quick Amount Buttons */}
-        <div className="grid grid-cols-4 gap-3 mb-6">
-          {[15000, 30000, 50000, 100000].map((amount) => (
-            <button
-              key={amount}
-              onClick={() => onQuickAmount(amount)}
-              className="px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 font-semibold rounded-lg transition-colors"
-            >
-              {(amount / 1000).toFixed(0)}k
-            </button>
-          ))}
-        </div>
+          {/* Main Heading */}
+          <h1 className="text-5xl md:text-6xl font-bold mb-4">
+            <span className="text-gray-900">Token </span>
+            <span className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-600 bg-clip-text text-transparent">Purchase</span>
+          </h1>
+          <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+            Get tokens to unlock premium AI features and clone unlimited websites.
+          </p>
 
-        {/* Calculation Result */}
-        <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-6 mb-6 border-2 border-orange-200">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-lg font-semibold text-gray-700">Amount to Pay:</span>
-            <span className="text-3xl font-bold text-gray-900">
-              {parseInt(amountUGX || '0').toLocaleString()} UGX
-            </span>
-          </div>
-          <div className="flex items-center justify-center my-3">
-            <ArrowRight className="w-6 h-6 text-orange-500" />
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-lg font-semibold text-gray-700">Tokens You'll Get:</span>
+          {/* Current Balance */}
+          <div className="inline-flex items-center gap-3 bg-white border-2 border-gray-200 rounded-2xl px-6 py-4 shadow-lg">
+            <div className="text-sm text-gray-600 uppercase tracking-wider font-medium">Current Balance</div>
             <div className="flex items-center gap-2">
-              <Coins className="w-6 h-6 text-orange-500" />
-              <span className="text-3xl font-bold text-orange-600">
-                {calculatedTokens.toLocaleString()}
+              <Coins className="w-16 h-16 text-orange-500" />
+              <span className="text-xl font-bold text-gray-900">
+                {tokenBalance !== null ? tokenBalance.toLocaleString() : '...'} <span className="text-sm text-gray-500 font-normal">tokens</span>
               </span>
             </div>
           </div>
-          <div className="mt-3 text-center text-sm text-gray-600">
-            = {Math.floor(calculatedTokens / 10000)} website clone{Math.floor(calculatedTokens / 10000) !== 1 ? 's' : ''}
-          </div>
+        </motion.div>
+
+        {/* Information Cards */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          {/* How It Works */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white border-2 border-gray-200 rounded-2xl p-6 shadow-md"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Info className="w-16 h-16 text-blue-500" />
+              <h3 className="text-lg font-bold text-gray-900">How It Works</h3>
+            </div>
+            <ul className="space-y-3 text-gray-700 text-sm">
+              <li className="flex items-start gap-2">
+                <CheckCircle className="w-12 h-12 text-green-500 flex-shrink-0 mt-0.5" />
+                <span>Purchase tokens for website cloning and AI features</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Lock className="w-12 h-12 text-green-500 flex-shrink-0 mt-0.5" />
+                <span>Usage varies based on website complexity</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <DollarSign className="w-12 h-12 text-green-500 flex-shrink-0 mt-0.5" />
+                <span>Pay-as-you-go — No subscriptions required</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Gift className="w-12 h-12 text-green-500 flex-shrink-0 mt-0.5" />
+                <span>New users get 500 free tokens</span>
+              </li>
+            </ul>
+
+            {/* Bonus Banner */}
+            <div className="mt-4 bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl p-4 flex items-center gap-3">
+              <Gift className="w-20 h-20 text-purple-600 flex-shrink-0" />
+              <div>
+                <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">New User Bonus</p>
+                <p className="text-lg font-bold text-purple-600">500 FREE TOKENS</p>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Pricing Details */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white border-2 border-gray-200 rounded-2xl p-6 shadow-md"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <Coins className="w-16 h-16 text-orange-500" />
+              <h3 className="text-lg font-bold text-gray-900">Pricing Details</h3>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Exchange Rate */}
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Exchange Rate</span>
+                <span className="text-base font-bold text-gray-900">1 Token = 1 UGX</span>
+              </div>
+
+              {/* Minimum Purchase */}
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Minimum Purchase</span>
+                <div className="text-right">
+                  <p className="text-base font-bold text-gray-900">15,000 UGX</p>
+                  <p className="text-xs text-gray-500">(15,000 tokens)</p>
+                </div>
+              </div>
+
+              {/* Token Validity */}
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Token Validity</span>
+                <span className="text-base font-bold text-green-600">Never Expires</span>
+              </div>
+            </div>
+          </motion.div>
         </div>
 
-        {/* Mobile Money Payment */}
-        <div className="border-t-2 border-gray-200 pt-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Smartphone className="w-6 h-6 text-gray-700" />
-            <h3 className="text-xl font-bold text-gray-900">Payment Method</h3>
-          </div>
-
-          {/* Provider Selection */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <button
-              onClick={() => onProviderChange('mtn')}
-              className={`p-4 rounded-xl border-2 transition-all ${
-                selectedProvider === 'mtn'
-                  ? 'border-yellow-500 bg-yellow-50'
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-            >
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-2 bg-yellow-400 rounded-lg flex items-center justify-center">
-                  <span className="text-2xl font-bold text-black">MTN</span>
-                </div>
-                <span className="font-semibold text-gray-900">MTN Mobile Money</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => onProviderChange('airtel')}
-              className={`p-4 rounded-xl border-2 transition-all ${
-                selectedProvider === 'airtel'
-                  ? 'border-red-500 bg-red-50'
-                  : 'border-gray-300 hover:border-gray-400'
-              }`}
-            >
-              <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-2 bg-red-600 rounded-lg flex items-center justify-center">
-                  <span className="text-xl font-bold text-white">Airtel</span>
-                </div>
-                <span className="font-semibold text-gray-900">Airtel Money</span>
-              </div>
-            </button>
-          </div>
-
-          {/* Phone Number Input */}
-          <div className="mb-6">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Your {selectedProvider === 'mtn' ? 'MTN' : 'Airtel'} Phone Number
-            </label>
-            <input
-              type="tel"
-              value={phoneNumber}
-              onChange={(e) => onPhoneChange(e.target.value.replace(/[^0-9]/g, ''))}
-              placeholder="0777123456"
-              maxLength={10}
-              className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-lg focus:border-orange-500 focus:outline-none"
-            />
-            <p className="mt-2 text-sm text-gray-600">
-              Enter your phone number that you'll use to send money
-            </p>
-          </div>
-
-          {/* Proceed Button */}
-          <button
-            onClick={onProceed}
-            disabled={!phoneNumber || calculatedTokens < 1000}
-            className="w-full py-4 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white text-lg font-bold rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+        {/* Main Content Grid */}
+        <div className="grid lg:grid-cols-[1fr_400px] gap-6">
+          {/* Token Calculator */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white border-2 border-gray-200 rounded-2xl p-6 shadow-lg"
           >
-            Proceed to Payment
-          </button>
+            {/* Header */}
+            <div className="flex items-center gap-2 mb-6">
+              <Calculator className="w-16 h-16 text-purple-500" />
+              <h2 className="text-lg font-bold text-gray-900">Token Calculator</h2>
+            </div>
+
+            {/* Amount Input */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Enter Amount (UGX)
+              </label>
+              
+              <div className="relative">
+                <input
+                  type="text"
+                  value={amountUGX}
+                  onChange={handleAmountChange}
+                  placeholder="15000"
+                  className="w-full px-4 py-4 text-2xl font-bold bg-gray-50 border-2 border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold text-sm">
+                  UGX
+                </span>
+              </div>
+
+              <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                <AlertCircle className="w-10 h-10" />
+                Minimum purchase: 15,000 UGX
+              </p>
+            </div>
+
+            {/* Quick Amount Buttons */}
+            <div className="grid grid-cols-5 gap-2 mb-8">
+              {[15000, 30000, 50000, 100000, 200000].map((amount) => (
+                <button
+                  key={amount}
+                  onClick={() => handleQuickAmount(amount)}
+                  className={`px-3 py-2 rounded-lg font-semibold text-sm transition-all ${
+                    amountUGX === amount.toString()
+                      ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white shadow-lg shadow-purple-500/30'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-gray-200'
+                  }`}
+                >
+                  {amount / 1000}K
+                </button>
+              ))}
+            </div>
+
+            {/* Payment Method */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <CreditCard className="w-22 h-22 text-gray-700" />
+                <h3 className="text-base font-bold text-gray-900">Payment Method</h3>
+              </div>
+              
+              <div className="grid sm:grid-cols-2 gap-4">
+                {/* MTN Mobile Money */}
+                <button
+                  onClick={() => setSelectedProvider('mtn')}
+                  type="button"
+                  className={`group relative overflow-hidden rounded-2xl transition-all duration-300 ${
+                    selectedProvider === 'mtn'
+                      ? 'bg-gradient-to-br from-yellow-400 to-yellow-500 shadow-2xl shadow-yellow-500/50 scale-[1.02]'
+                      : 'bg-white border-2 border-gray-200 hover:border-yellow-400 hover:shadow-xl'
+                  }`}
+                >
+                  {/* Background Pattern */}
+                  <div className="absolute inset-0 opacity-10">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -mr-16 -mt-16" />
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full -ml-12 -mb-12" />
+                  </div>
+
+                  <div className="relative p-6">
+                    <div className="flex items-center gap-4">
+                      {/* MTN Logo */}
+                     
+                      {/* Text */}
+                      <div className="flex-1 text-left">
+                        <p className={`font-bold text-base mb-1 ${
+                          selectedProvider === 'mtn' ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          MTN Mobile Money
+                        </p>
+                        <p className={`text-sm ${
+                          selectedProvider === 'mtn' ? 'text-yellow-100' : 'text-gray-500'
+                        }`}>
+                          Pay with MTN
+                        </p>
+                      </div>
+                      
+                      {/* Radio */}
+                      <div className={`w-7 h-7 rounded-full border-3 flex items-center justify-center transition-all ${
+                        selectedProvider === 'mtn' 
+                          ? 'border-white bg-white' 
+                          : 'border-gray-300 bg-white'
+                      }`}>
+                        {selectedProvider === 'mtn' && (
+                          <div className="w-4 h-4 bg-yellow-500 rounded-full" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Airtel Money */}
+                <button
+                  onClick={() => setSelectedProvider('airtel')}
+                  type="button"
+                  className={`group relative overflow-hidden rounded-2xl transition-all duration-300 ${
+                    selectedProvider === 'airtel'
+                      ? 'bg-gradient-to-br from-red-600 to-red-700 shadow-2xl shadow-red-500/50 scale-[1.02]'
+                      : 'bg-white border-2 border-gray-200 hover:border-red-400 hover:shadow-xl'
+                  }`}
+                >
+                  {/* Background Pattern */}
+                  <div className="absolute inset-0 opacity-10">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -mr-16 -mt-16" />
+                    <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full -ml-12 -mb-12" />
+                  </div>
+
+                  <div className="relative p-6">
+                    <div className="flex items-center gap-4">
+                      {/* Airtel Logo */}
+                      
+                      {/* Text */}
+                      <div className="flex-1 text-left">
+                        <p className={`font-bold text-base mb-1 ${
+                          selectedProvider === 'airtel' ? 'text-white' : 'text-gray-900'
+                        }`}>
+                          Airtel Money
+                        </p>
+                        <p className={`text-sm ${
+                          selectedProvider === 'airtel' ? 'text-red-100' : 'text-gray-500'
+                        }`}>
+                          Pay with Airtel
+                        </p>
+                      </div>
+                      
+                      {/* Radio */}
+                      <div className={`w-7 h-7 rounded-full border-3 flex items-center justify-center transition-all ${
+                        selectedProvider === 'airtel' 
+                          ? 'border-white bg-white' 
+                          : 'border-gray-300 bg-white'
+                      }`}>
+                        {selectedProvider === 'airtel' && (
+                          <div className="w-4 h-4 bg-red-600 rounded-full" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Phone Number */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {selectedProvider === 'mtn' ? 'MTN' : 'Airtel'} Phone Number
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-16 h-16 text-gray-400" />
+                <input
+                  type="tel"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                  placeholder="e.g. 0777123456"
+                  maxLength={10}
+                  className="w-full pl-24 pr-4 py-3 bg-gray-50 border-2 border-gray-300 rounded-xl text-gray-900 placeholder-gray-400 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-200 transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* Purchase Button */}
+            <button
+              onClick={handleProceedToPayment}
+              disabled={!phoneNumber || calculatedTokens < 15000}
+              className="w-full py-4 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500 hover:from-orange-600 hover:via-pink-600 hover:to-purple-600 text-white font-bold rounded-xl shadow-xl hover:shadow-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <CreditCard className="w-16 h-16" />
+              Purchase Tokens
+            </button>
+
+            {/* Security Footer */}
+            <p className="text-center text-xs text-gray-500 mt-4 flex items-center justify-center gap-1">
+              <Shield className="w-10 h-10 text-green-600" />
+              Your payment is secure and encrypted
+            </p>
+          </motion.div>
+
+          {/* Purchase Summary */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-gradient-to-br from-orange-50 via-pink-50 to-purple-50 border-2 border-orange-200 rounded-2xl p-6 relative overflow-hidden shadow-lg"
+          >
+            {/* Decorative coins illustration */}
+            <div className="absolute top-4 right-4 opacity-20">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 absolute -top-2 -right-2" />
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500" />
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-400 to-orange-500 absolute top-6 left-8" />
+              </div>
+            </div>
+
+            <div className="relative z-10">
+              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">You Will Receive</p>
+              <div className="mb-6">
+                <div className="text-4xl font-black text-orange-600">
+                  {calculatedTokens.toLocaleString()}
+                </div>
+                <div className="text-sm text-gray-600 mt-1">Tokens</div>
+              </div>
+
+              <div className="h-px bg-gradient-to-r from-transparent via-orange-300 to-transparent mb-6" />
+
+              <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">Amount to Pay</p>
+              <div>
+                <div className="text-3xl font-black bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                  {parseInt(amountUGX || '0').toLocaleString()}
+                </div>
+                <div className="text-sm text-gray-600 mt-1">UGX</div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>
   );
 }
 
-// Payment Instructions Component
+// Payment Instructions Component (keeping same as before with dark theme)
 function PaymentInstructions({ referenceCode, amount, tokens, provider, copiedCode, onCopyCode, onNext, onBack }: any) {
   return (
-    <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-orange-200">
-      <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6">
-        <div className="flex items-center gap-3 text-white">
-          <Smartphone className="w-8 h-8" />
-          <h2 className="text-2xl font-bold">Payment Instructions</h2>
-        </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-[#151B2E] border border-gray-800 rounded-3xl overflow-hidden"
+    >
+      <div className="bg-gradient-to-r from-gray-900 to-gray-800 px-8 py-6">
+        <h2 className="text-2xl font-bold text-white">Payment Instructions</h2>
       </div>
 
       <div className="p-8">
-        <div className="bg-yellow-50 border-2 border-yellow-300 rounded-lg p-6 mb-6">
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-6 mb-6">
           <div className="flex items-start gap-3">
-            <AlertCircle className="w-6 h-6 text-yellow-600 flex-shrink-0 mt-1" />
+            <AlertCircle className="w-12 h-12 text-yellow-400 flex-shrink-0 mt-1" />
             <div>
-              <h4 className="font-bold text-yellow-900 mb-2">Important: Follow These Steps Carefully</h4>
-              <p className="text-yellow-800 text-sm">
-                Use the reference code below as your sending reason. This helps us verify your payment automatically.
+              <h4 className="font-bold text-yellow-300 mb-1">Important: Use Reference Code</h4>
+              <p className="text-yellow-200/80 text-sm">
+                Include the reference code below as your payment reason for automatic verification.
               </p>
             </div>
           </div>
         </div>
 
         {/* Reference Code */}
-        <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-6 mb-6 border-2 border-orange-300">
-          <p className="text-sm font-semibold text-gray-700 mb-2 text-center">Your Payment Reference Code</p>
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <span className="text-5xl font-bold text-orange-600 tracking-wider">{referenceCode}</span>
+        <div className="bg-gradient-to-br from-orange-500/10 to-pink-500/10 border border-orange-500/30 rounded-xl p-6 mb-6">
+          <p className="text-sm font-semibold text-gray-400 mb-2 text-center">Your Payment Reference Code</p>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <span className="text-4xl font-black text-orange-400 tracking-widest">{referenceCode}</span>
             <button
               onClick={() => onCopyCode(referenceCode)}
-              className="p-2 hover:bg-orange-100 rounded-lg transition-colors"
-              title="Copy code"
+              className="p-2 hover:bg-orange-500/10 rounded-lg transition-colors"
             >
-              <Copy className="w-6 h-6 text-orange-600" />
+              <Copy className="w-12 h-12 text-orange-400" />
             </button>
           </div>
           {copiedCode && (
-            <p className="text-sm text-green-600 text-center font-semibold">✓ Copied to clipboard!</p>
+            <p className="text-sm text-green-400 text-center font-semibold">✓ Copied!</p>
           )}
         </div>
 
-        {/* Step-by-step Instructions */}
+        {/* Steps */}
         <div className="space-y-4 mb-6">
-          <div className="flex gap-4">
-            <div className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold">
-              1
-            </div>
+          <div className="flex gap-3">
+            <div className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0 text-sm">1</div>
             <div>
-              <h4 className="font-bold text-gray-900 mb-1">Open {provider === 'mtn' ? 'MTN Mobile Money' : 'Airtel Money'} App</h4>
-              <p className="text-gray-600 text-sm">Dial *165# (MTN) or *185# (Airtel) to access mobile money</p>
+              <h4 className="font-bold text-white">Open {provider === 'mtn' ? 'MTN Mobile Money' : 'Airtel Money'}</h4>
+              <p className="text-sm text-gray-400">Dial *165# (MTN) or *185# (Airtel)</p>
             </div>
           </div>
 
-          <div className="flex gap-4">
-            <div className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold">
-              2
-            </div>
+          <div className="flex gap-3">
+            <div className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0 text-sm">2</div>
             <div>
-              <h4 className="font-bold text-gray-900 mb-1">Select "Send Money"</h4>
-              <p className="text-gray-600 text-sm">Choose the option to send money to another number</p>
+              <h4 className="font-bold text-white">Select "Send Money"</h4>
+              <p className="text-sm text-gray-400">Choose option to send to another number</p>
             </div>
           </div>
 
-          <div className="flex gap-4">
-            <div className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold">
-              3
-            </div>
+          <div className="flex gap-3">
+            <div className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0 text-sm">3</div>
             <div>
-              <h4 className="font-bold text-gray-900 mb-1">Enter Recipient Details</h4>
-              <div className="bg-gray-50 rounded-lg p-3 mt-2 space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-gray-600 text-sm">Phone Number:</span>
-                  <span className="font-bold text-gray-900">+256761819885</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 text-sm">Name:</span>
-                  <span className="font-bold text-gray-900">Biira Keziah</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600 text-sm">Amount:</span>
-                  <span className="font-bold text-gray-900">{parseInt(amount).toLocaleString()} UGX</span>
-                </div>
+              <h4 className="font-bold text-white">Enter Recipient Details</h4>
+              <div className="bg-[#0A0F1E] border border-gray-800 rounded-lg p-3 mt-2 text-sm space-y-1">
+                <p className="text-gray-400"><span className="text-gray-500">Phone:</span> <span className="font-bold text-white">+256761819885</span></p>
+                <p className="text-gray-400"><span className="text-gray-500">Name:</span> <span className="font-bold text-white">Biira Keziah</span></p>
+                <p className="text-gray-400"><span className="text-gray-500">Amount:</span> <span className="font-bold text-orange-400">{parseInt(amount).toLocaleString()} UGX</span></p>
               </div>
             </div>
           </div>
 
-          <div className="flex gap-4">
-            <div className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold">
-              4
-            </div>
+          <div className="flex gap-3">
+            <div className="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0 text-sm">4</div>
             <div>
-              <h4 className="font-bold text-gray-900 mb-1">Enter Reference Code as Sending Reason</h4>
-              <div className="bg-orange-50 border-2 border-orange-300 rounded-lg p-3 mt-2">
-                <p className="text-sm text-gray-700 mb-2">When asked for "Reason" or "Comment", enter:</p>
-                <p className="text-2xl font-bold text-orange-600 text-center tracking-wider">{referenceCode}</p>
+              <h4 className="font-bold text-white">Enter Reference Code as Reason</h4>
+              <div className="bg-orange-500/10 border border-orange-500/30 rounded-lg p-3 mt-2">
+                <p className="text-sm text-gray-400 mb-1">When asked for "Reason", enter:</p>
+                <p className="text-2xl font-bold text-orange-400 text-center">{referenceCode}</p>
               </div>
             </div>
           </div>
 
-          <div className="flex gap-4">
-            <div className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-bold">
-              5
+          <div className="flex gap-3">
+            <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center flex-shrink-0">
+              <CheckCircle className="w-10 h-10" />
             </div>
             <div>
-              <h4 className="font-bold text-gray-900 mb-1">Confirm and Send</h4>
-              <p className="text-gray-600 text-sm">Enter your PIN to complete the transaction</p>
-            </div>
-          </div>
-
-          <div className="flex gap-4">
-            <div className="flex-shrink-0 w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold">
-              6
-            </div>
-            <div>
-              <h4 className="font-bold text-gray-900 mb-1">Take Screenshot of Confirmation</h4>
-              <p className="text-gray-600 text-sm">Capture the success message showing the transaction details</p>
+              <h4 className="font-bold text-white">Take Screenshot</h4>
+              <p className="text-sm text-gray-400">Capture the success message</p>
             </div>
           </div>
         </div>
 
-        {/* Summary Box */}
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 mb-6">
-          <h4 className="font-bold text-gray-900 mb-2">Payment Summary</h4>
+        {/* Summary */}
+        <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
+          <h4 className="font-bold text-white mb-2 text-sm">Payment Summary</h4>
           <div className="space-y-1 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Amount to Send:</span>
-              <span className="font-bold text-gray-900">{parseInt(amount).toLocaleString()} UGX</span>
+            <div className="flex justify-between text-gray-400">
+              <span>Amount:</span>
+              <span className="font-bold text-white">{parseInt(amount).toLocaleString()} UGX</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Tokens You'll Receive:</span>
-              <span className="font-bold text-orange-600">{tokens.toLocaleString()} tokens</span>
+            <div className="flex justify-between text-gray-400">
+              <span>Tokens:</span>
+              <span className="font-bold text-orange-400">{tokens.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Reference Code:</span>
-              <span className="font-bold text-orange-600">{referenceCode}</span>
+            <div className="flex justify-between text-gray-400">
+              <span>Reference:</span>
+              <span className="font-bold text-orange-400">{referenceCode}</span>
             </div>
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Actions */}
         <div className="flex gap-4">
           <button
             onClick={onBack}
-            className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition-all"
+            className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold rounded-xl transition-all"
           >
             Back
           </button>
           <button
             onClick={onNext}
-            className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold rounded-lg shadow-lg transition-all"
+            className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-pink-500 hover:from-orange-600 hover:to-pink-600 text-white font-semibold rounded-xl shadow-lg transition-all"
           >
             I've Sent the Money
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
-// Screenshot Upload Component
+// Screenshot Upload Component (keeping same as before with dark theme)
 function ScreenshotUpload({ screenshotPreview, verificationError, loading, onFileChange, onSubmit, onBack }: any) {
   return (
-    <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border-2 border-orange-200">
-      <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6">
-        <div className="flex items-center gap-3 text-white">
-          <Upload className="w-8 h-8" />
-          <h2 className="text-2xl font-bold">Upload Payment Screenshot</h2>
-        </div>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-[#151B2E] border border-gray-800 rounded-3xl overflow-hidden"
+    >
+      <div className="bg-gradient-to-r from-gray-900 to-gray-800 px-8 py-6">
+        <h2 className="text-2xl font-bold text-white">Upload Payment Proof</h2>
       </div>
 
       <div className="p-8">
-        <p className="text-gray-600 mb-6">
-          Upload a screenshot of your payment confirmation message. Our AI will automatically verify the payment details.
-        </p>
-
         {verificationError && (
-          <div className="bg-red-50 border-2 border-red-300 rounded-lg p-4 mb-6">
+          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
             <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <AlertCircle className="w-10 h-10 text-red-400 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-bold text-red-900 mb-1">Verification Failed</h4>
-                <p className="text-red-700 text-sm">{verificationError}</p>
+                <h4 className="font-bold text-red-300 text-sm">Verification Failed</h4>
+                <p className="text-red-200/80 text-sm">{verificationError}</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* File Upload Area */}
-        <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 mb-6 text-center hover:border-orange-400 transition-colors">
+        <div className="border-2 border-dashed border-gray-700 rounded-2xl p-8 mb-6 text-center hover:border-orange-500/50 transition-colors bg-[#0A0F1E]">
           <input
             type="file"
             accept="image/*"
@@ -707,59 +809,42 @@ function ScreenshotUpload({ screenshotPreview, verificationError, loading, onFil
             className="hidden"
             id="screenshot-upload"
           />
-          <label htmlFor="screenshot-upload" className="cursor-pointer">
+          <label htmlFor="screenshot-upload" className="cursor-pointer block">
             {screenshotPreview ? (
               <div>
                 <img 
                   src={screenshotPreview} 
                   alt="Payment screenshot" 
-                  className="max-h-96 mx-auto rounded-lg shadow-lg mb-4"
+                  className="max-h-80 mx-auto rounded-lg shadow-lg mb-4"
                 />
-                <p className="text-sm text-gray-600">Click to change screenshot</p>
+                <p className="text-sm text-gray-400">Click to change</p>
               </div>
             ) : (
               <div>
-                <Upload className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-lg font-semibold text-gray-700 mb-2">
-                  Click to upload screenshot
-                </p>
-                <p className="text-sm text-gray-500">
-                  Supports JPG, PNG (Max 5MB)
-                </p>
+                <Upload className="w-32 h-32 text-gray-600 mx-auto mb-4" />
+                <p className="font-semibold text-white mb-2">Click to Upload Screenshot</p>
+                <p className="text-sm text-gray-500">PNG, JPG (Max 5MB)</p>
               </div>
             )}
           </label>
         </div>
 
-        {/* Tips */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <h4 className="font-bold text-blue-900 mb-2">Screenshot Tips:</h4>
-          <ul className="text-sm text-blue-800 space-y-1">
-            <li>• Make sure the screenshot is clear and readable</li>
-            <li>• Include the transaction reference code ({screenshotPreview ? 'visible' : 'shown in your message'})</li>
-            <li>• Show the amount sent and recipient name (Biira Keziah)</li>
-            <li>• Ensure the success confirmation is visible</li>
-          </ul>
-        </div>
-
-        {/* Action Buttons */}
         <div className="flex gap-4">
           <button
             onClick={onBack}
-            disabled={loading}
-            className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-lg transition-all disabled:opacity-50"
+            className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold rounded-xl transition-all"
           >
             Back
           </button>
           <button
             onClick={onSubmit}
             disabled={!screenshotPreview || loading}
-            className="flex-1 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold rounded-xl shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? 'Verifying...' : 'Verify Payment'}
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

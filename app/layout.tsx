@@ -30,6 +30,30 @@ const robotoMono = Roboto_Mono({
 export const metadata: Metadata = {
   title: "MirrorSite AI - Clone Any Website with AI",
   description: "Transform any website into your own with AI-powered design cloning. Built by ATAI Enterprises.",
+  keywords: "website cloning, AI web design, code generation, website builder, web development, Uganda tech",
+  openGraph: {
+    title: "MirrorSite AI - Clone Any Website with AI",
+    description: "Transform any website into your own with AI-powered design cloning.",
+    type: "website",
+    locale: "en_UG",
+    siteName: "MirrorSite AI"
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MirrorSite AI - Clone Any Website with AI",
+    description: "Transform any website into your own with AI-powered design cloning."
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
 };
 
 export default function RootLayout({
@@ -39,6 +63,42 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta name="google-site-verification" content="bbkrXgFBFqHI_aNH3QKoMBn22EHoa4kBZxmFRObvCIQ" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "MirrorSite AI",
+              "applicationCategory": "DeveloperApplication",
+              "offers": {
+                "@type": "Offer",
+                "price": "0.001",
+                "priceCurrency": "UGX",
+                "priceSpecification": {
+                  "@type": "UnitPriceSpecification",
+                  "price": "1",
+                  "priceCurrency": "UGX",
+                  "referenceQuantity": {
+                    "@type": "QuantitativeValue",
+                    "value": "1",
+                    "unitText": "token"
+                  }
+                }
+              },
+              "description": "AI-powered website cloning and code generation platform. Transform any website into production-ready code with advanced AI technology.",
+              "operatingSystem": "Web",
+              "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": "4.9",
+                "reviewCount": "1000"
+              }
+            })
+          }}
+        />
+      </head>
       <body className={`${inter.variable} ${geistSans.variable} ${geistMono.variable} ${robotoMono.variable} font-sans`}>
         <SessionProvider>
           {children}

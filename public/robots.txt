@@ -1,0 +1,24 @@
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://open-chat.dev/sitemap.xml
+
+# Crawl-delay for better server performance
+Crawl-delay: 1
+
+# Disallow admin and API routes
+User-agent: *
+Disallow: /api/
+
+# Allow important pages for indexing
+Allow: /
+Allow: /pricing
+Allow: /tokens
+Allow: /about
+Allow: /login
+Allow: /signup
+Allow: /generation
+Allow: /builder
+Allow: /models
