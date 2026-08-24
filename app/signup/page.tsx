@@ -245,7 +245,7 @@ export default function SignUpPage() {
                     type="checkbox"
                     checked={agreedToTerms}
                     onChange={(e) => setAgreedToTerms(e.target.checked)}
-                    className="w-34 h-34 text-orange-500 border-gray-300 rounded focus:ring-orange-500 mt-1"
+                    className="w-18 h-18 text-orange-500 border-gray-300 rounded focus:ring-orange-500 mt-1"
                   />
                   <label className="ml-2 text-sm text-gray-600">
                     I agree to the{" "}
