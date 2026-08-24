@@ -103,7 +103,4 @@ const authOptions: NextAuthOptions = {
 
 const handler = NextAuth(authOptions);
 
-// Export auth function for middleware
-export const auth = handler;
-
-export { handler as GET, handler as POST, authOptions };
+export { handler as GET, handler as POST };
