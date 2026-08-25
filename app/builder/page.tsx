@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { appConfig } from '@/config/app.config';
@@ -10,18 +10,16 @@ import { toast } from "sonner";
 
 // Import shared components
 import { Connector } from "@/components/shared/layout/curvy-rect";
-import HeroFlame from "@/components/shared/effects/flame/hero-flame";
-import AsciiExplosion from "@/components/shared/effects/flame/ascii-explosion";
 import { HeaderProvider } from "@/components/shared/header/HeaderContext";
 
-// Import hero section components
-import HomeHeroBackground from "@/components/app/(home)/sections/hero/Background/Background";
-import { BackgroundOuterPiece } from "@/components/app/(home)/sections/hero/Background/BackgroundOuterPiece";
-import HomeHeroBadge from "@/components/app/(home)/sections/hero/Badge/Badge";
-import HomeHeroPixi from "@/components/app/(home)/sections/hero/Pixi/Pixi";
-import HomeHeroTitle from "@/components/app/(home)/sections/hero/Title/Title";
-import HeroInputSubmitButton from "@/components/app/(home)/sections/hero-input/Button/Button";
-// import Globe from "@/components/app/(home)/sections/hero-input/_svg/Globe";
+// Lazy load heavy animation components
+const HeroFlame = lazy(() => import("@/components/shared/effects/flame/hero-flame"));
+const AsciiExplosion = lazy(() => import("@/components/shared/effects/flame/ascii-explosion"));
+const HomeHeroBackground = lazy(() => import("@/components/app/(home)/sections/hero/Background/Background"));
+const BackgroundOuterPiece = lazy(() => import("@/components/app/(home)/sections/hero/Background/BackgroundOuterPiece").then(mod => ({ default: mod.BackgroundOuterPiece })));
+const HomeHeroBadge = lazy(() => import("@/components/app/(home)/sections/hero/Badge/Badge"));
+const HomeHeroPixi = lazy(() => import("@/components/app/(home)/sections/hero/Pixi/Pixi"));
+const HomeHeroTitle = lazy(() => import("@/components/app/(home)/sections/hero/Title/Title"));
 
 // Import header components
 import HeaderBrandKit from "@/components/shared/header/BrandKit/BrandKit";
@@ -29,6 +27,7 @@ import HeaderWrapper from "@/components/shared/header/Wrapper/Wrapper";
 import HeaderDropdownWrapper from "@/components/shared/header/Dropdown/Wrapper/Wrapper";
 import GithubIcon from "@/components/shared/header/Github/_svg/GithubIcon";
 import ButtonUI from "@/components/ui/shadcn/button"
+import HeroInputSubmitButton from "@/components/app/(home)/sections/hero-input/Button/Button";
 
 interface SearchResult {
   url: string;
@@ -277,14 +276,18 @@ export default function HomePage() {
         {/* Hero Section */}
         <section className="overflow-x-clip" id="home-hero">
           <div className="pt-28 lg:pt-254 lg:-mt-100 pb-115 relative" id="hero-content">
-            <HomeHeroPixi />
-            <HeroFlame />
-            <BackgroundOuterPiece />
-            <HomeHeroBackground />
+            <Suspense fallback={<div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-white" />}>
+              <HomeHeroPixi />
+              <HeroFlame />
+              <BackgroundOuterPiece />
+              <HomeHeroBackground />
+            </Suspense>
 
             <div className="relative container px-16">
-              <HomeHeroBadge />
-              <HomeHeroTitle />
+              <Suspense fallback={<div className="h-12 bg-gray-200 animate-pulse rounded" />}>
+                <HomeHeroBadge />
+                <HomeHeroTitle />
+              </Suspense>
               <p className="text-center text-body-large">
                 Clone brand format or re-imagine any website, in seconds.
               </p>
@@ -593,7 +596,9 @@ export default function HomePage() {
                 </div>
 
                 <div className="h-248 top-84 cw-768 pointer-events-none absolute overflow-clip -z-10">
-                  <AsciiExplosion className="-top-200" />
+                  <Suspense fallback={null}>
+                    <AsciiExplosion className="-top-200" />
+                  </Suspense>
                 </div>
               </div>
             </div>
