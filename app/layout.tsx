@@ -3,6 +3,8 @@ import { Inter, Roboto_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import SessionProvider from "@/components/providers/SessionProvider";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const inter = Inter({ 
@@ -164,6 +166,8 @@ export default function RootLayout({
             }}
           />
         </SessionProvider>
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
