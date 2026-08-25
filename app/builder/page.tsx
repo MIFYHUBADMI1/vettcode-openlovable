@@ -12,13 +12,8 @@ import { toast } from "sonner";
 import { Connector } from "@/components/shared/layout/curvy-rect";
 import { HeaderProvider } from "@/components/shared/header/HeaderContext";
 
-// Lazy load heavy animation components
-const HeroFlame = lazy(() => import("@/components/shared/effects/flame/hero-flame"));
-const AsciiExplosion = lazy(() => import("@/components/shared/effects/flame/ascii-explosion"));
-const HomeHeroBackground = lazy(() => import("@/components/app/(home)/sections/hero/Background/Background"));
-const BackgroundOuterPiece = lazy(() => import("@/components/app/(home)/sections/hero/Background/BackgroundOuterPiece").then(mod => ({ default: mod.BackgroundOuterPiece })));
+// Lazy load only the lightweight components we're actually using
 const HomeHeroBadge = lazy(() => import("@/components/app/(home)/sections/hero/Badge/Badge"));
-const HomeHeroPixi = lazy(() => import("@/components/app/(home)/sections/hero/Pixi/Pixi"));
 const HomeHeroTitle = lazy(() => import("@/components/app/(home)/sections/hero/Title/Title"));
 
 // Import header components
@@ -276,12 +271,8 @@ export default function HomePage() {
         {/* Hero Section */}
         <section className="overflow-x-clip" id="home-hero">
           <div className="pt-28 lg:pt-254 lg:-mt-100 pb-115 relative" id="hero-content">
-            <Suspense fallback={<div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-white" />}>
-              <HomeHeroPixi />
-              <HeroFlame />
-              <BackgroundOuterPiece />
-              <HomeHeroBackground />
-            </Suspense>
+            {/* Removed heavy animations for performance - keeping simple gradient background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-white to-red-50" />
 
             <div className="relative container px-16">
               <Suspense fallback={<div className="h-12 bg-gray-200 animate-pulse rounded" />}>
@@ -595,11 +586,7 @@ export default function HomePage() {
 
                 </div>
 
-                <div className="h-248 top-84 cw-768 pointer-events-none absolute overflow-clip -z-10">
-                  <Suspense fallback={null}>
-                    <AsciiExplosion className="-top-200" />
-                  </Suspense>
-                </div>
+                {/* Removed AsciiExplosion for performance */}
               </div>
             </div>
           </div>
