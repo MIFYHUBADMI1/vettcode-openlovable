@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createGroq } from '@ai-sdk/groq';
 import { createOpenAI } from '@ai-sdk/openai';
 import { streamText } from 'ai';
+import { appConfig } from '@/config/app.config';
 import { SystemPromptBuilder } from '@/lib/pipeline/system-prompt-builder';
 import { PrettyPrinter } from '@/lib/pipeline/pretty-printer';
 import {
@@ -46,8 +47,7 @@ const openrouter = createOpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
 });
 
-// Default to the requested free OpenRouter NVIDIA model for every phase.
-const DEFAULT_MODEL = 'openrouter/nvidia/nemotron-3-ultra-550b-a55b:free';
+const DEFAULT_MODEL = appConfig.ai.defaultModel;
 
 /** Per-phase output ceiling — scoped prompts need far fewer tokens (Req 7.7). */
 const MAX_TOKENS_BY_PHASE: Record<import('@/lib/pipeline/phase-request-validation').GenerationPhase, number> = {
@@ -192,11 +192,20 @@ export async function POST(request: NextRequest): Promise<Response> {
       });
 
       const requestedModel = body.model ?? DEFAULT_MODEL;
-      const isOpenRouter = requestedModel.startsWith('openrouter/');
+      const modelConfig =
+        appConfig.ai.modelApiConfig[
+          requestedModel as keyof typeof appConfig.ai.modelApiConfig
+        ];
+      const isOpenRouter =
+        modelConfig?.provider === 'openrouter' ||
+        requestedModel.startsWith('openrouter/');
       const modelProvider = isOpenRouter ? openrouter : groq;
-      const actualModel = isOpenRouter
-        ? requestedModel.replace('openrouter/', '')
-        : requestedModel;
+      const actualModel =
+        requestedModel === 'openrouter/free'
+          ? requestedModel
+          : isOpenRouter
+            ? requestedModel.replace(/^openrouter\//, '')
+            : modelConfig?.model ?? requestedModel;
 
       const result = await streamText({
         model: modelProvider(actualModel),

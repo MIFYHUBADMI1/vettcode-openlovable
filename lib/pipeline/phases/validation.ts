@@ -3,7 +3,11 @@
 // to apply targeted per-file fixes (Req 4.1 – 4.12).
 
 import { SandboxProvider } from '../../sandbox/types';
-import { phaseEndpointUrl } from '../phase-endpoint';
+import {
+  internalApiJsonHeaders,
+  phaseEndpointUrl,
+  type InternalApiOptions,
+} from '../phase-endpoint';
 import { collectPhaseStream } from '../sse-collect';
 
 export interface ValidationError {
@@ -28,6 +32,8 @@ export interface ValidationResult {
 }
 
 export class ValidationPhaseHandler {
+  constructor(private readonly apiOptions: InternalApiOptions = {}) {}
+
   /**
    * Execute Phase 4: Build Validation.
    *
@@ -301,9 +307,9 @@ export class ValidationPhaseHandler {
     fileContent: string,
     errorMessage: string,
   ): Promise<{ text: string; tokenUsage: number }> {
-    const response = await fetch(phaseEndpointUrl(), {
+    const response = await fetch(phaseEndpointUrl(this.apiOptions.baseUrl), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: internalApiJsonHeaders(this.apiOptions),
       body: JSON.stringify({
         // `analyze` is the only phase that does not require a blueprint; the
         // `fixRequest` field overrides prompt selection on the server.

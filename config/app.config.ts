@@ -51,7 +51,7 @@ export const appConfig = {
   // AI Model Configuration
   ai: {
     // Default AI model
-    defaultModel: 'openrouter/free',
+    defaultModel: 'groq/compound',
     
     // Available models (default to free models - max 3 shown in builder)
     availableModels: [

@@ -5,7 +5,11 @@
 import { SandboxProvider } from '../../sandbox/types';
 import type { SiteBlueprint } from '../types/blueprint';
 import type { PipelineInputs } from '../types/pipeline';
-import { phaseEndpointUrl } from '../phase-endpoint';
+import {
+  internalApiJsonHeaders,
+  phaseEndpointUrl,
+  type InternalApiOptions,
+} from '../phase-endpoint';
 import { collectPhaseStream } from '../sse-collect';
 import { parseAIResponse } from '../../file-parser';
 
@@ -28,6 +32,8 @@ export interface PolishResult {
 }
 
 export class PolishPhaseHandler {
+  constructor(private readonly apiOptions: InternalApiOptions = {}) {}
+
   /**
    * Execute Phase 5: Polish.
    *
@@ -173,9 +179,9 @@ export class PolishPhaseHandler {
     files: import('../../file-parser').ParsedFile[];
     tokenUsage: number;
   }> {
-    const response = await fetch(phaseEndpointUrl(), {
+    const response = await fetch(phaseEndpointUrl(this.apiOptions.baseUrl), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: internalApiJsonHeaders(this.apiOptions),
       body: JSON.stringify({
         phase: 'polish',
         blueprint,

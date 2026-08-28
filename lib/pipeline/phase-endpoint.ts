@@ -6,6 +6,11 @@
 // returns an absolute URL on the server and leaves the relative path untouched
 // in the browser.
 
+export interface InternalApiOptions {
+  baseUrl?: string;
+  headers?: Readonly<Record<string, string>>;
+}
+
 /** Absolute base URL of this deployment, or '' when running in the browser. */
 export function apiBaseUrl(): string {
   // Browser — relative paths resolve against the current origin.
@@ -26,12 +31,22 @@ export function apiBaseUrl(): string {
  * Resolve an API path (e.g. `/api/generate-ai-phase`) to a URL usable by
  * `fetch()` from either the server or the browser.
  */
-export function resolveApiUrl(path: string): string {
+export function resolveApiUrl(path: string, baseUrl?: string): string {
   const normalized = path.startsWith('/') ? path : `/${path}`;
-  return `${apiBaseUrl()}${normalized}`;
+  const resolvedBaseUrl = baseUrl?.replace(/\/+$/, '') ?? apiBaseUrl();
+  return `${resolvedBaseUrl}${normalized}`;
 }
 
 /** Convenience constant-style accessor for the phase generation endpoint. */
-export function phaseEndpointUrl(): string {
-  return resolveApiUrl('/api/generate-ai-phase');
+export function phaseEndpointUrl(baseUrl?: string): string {
+  return resolveApiUrl('/api/generate-ai-phase', baseUrl);
+}
+
+export function internalApiJsonHeaders(
+  options?: InternalApiOptions,
+): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    ...options?.headers,
+  };
 }

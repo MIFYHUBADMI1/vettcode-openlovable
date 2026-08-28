@@ -7,11 +7,17 @@ import { SandboxProvider } from '../../sandbox/types';
 import type { SiteBlueprint } from '../types/blueprint';
 import type { PipelineInputs } from '../types/pipeline';
 import { ProgressiveFileApplicationService } from '../progressive-file-application';
-import { phaseEndpointUrl } from '../phase-endpoint';
+import {
+  internalApiJsonHeaders,
+  phaseEndpointUrl,
+  type InternalApiOptions,
+} from '../phase-endpoint';
 import { collectPhaseStream } from '../sse-collect';
 import { parseAIResponse } from '../../file-parser';
 
 export class InstantPreviewPhaseHandler {
+  constructor(private readonly apiOptions: InternalApiOptions = {}) {}
+
   /**
    * Execute Phase 2: Instant Preview Generation.
    *
@@ -96,9 +102,9 @@ export class InstantPreviewPhaseHandler {
     files: import('../../file-parser').ParsedFile[];
     tokenUsage: number;
   }> {
-    const response = await fetch(phaseEndpointUrl(), {
+    const response = await fetch(phaseEndpointUrl(this.apiOptions.baseUrl), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: internalApiJsonHeaders(this.apiOptions),
       body: JSON.stringify({
         phase: 'instant_preview',
         blueprint,

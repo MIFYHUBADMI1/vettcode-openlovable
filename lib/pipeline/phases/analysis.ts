@@ -2,7 +2,11 @@
 // Phase 1: Site Analysis — calls AI to extract a SiteBlueprint from scraped content.
 
 import { BlueprintParser } from '../blueprint-parser';
-import { phaseEndpointUrl } from '../phase-endpoint';
+import {
+  internalApiJsonHeaders,
+  phaseEndpointUrl,
+  type InternalApiOptions,
+} from '../phase-endpoint';
 import { collectPhaseStream } from '../sse-collect';
 import type { SiteBlueprint } from '../types/blueprint';
 import type { PipelineInputs } from '../types/pipeline';
@@ -20,6 +24,8 @@ export interface AnalysisOutput {
 }
 
 export class AnalysisPhaseHandler {
+  constructor(private readonly apiOptions: InternalApiOptions = {}) {}
+
   /**
    * Execute Phase 1: Site Analysis.
    *
@@ -54,9 +60,9 @@ export class AnalysisPhaseHandler {
     const phaseStart = Date.now();
 
     try {
-      const response = await fetch(phaseEndpointUrl(), {
+      const response = await fetch(phaseEndpointUrl(this.apiOptions.baseUrl), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: internalApiJsonHeaders(this.apiOptions),
         body: JSON.stringify({
           phase: 'analyze',
           scrapedContent: input.scrapedContent,

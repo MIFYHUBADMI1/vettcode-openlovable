@@ -20,7 +20,11 @@ import {
   setInitialGenerationActive,
   isInitialGenerationActiveFlag,
 } from '../generate-ai-code-stream/route';
-import { resolveApiUrl } from '../../../lib/pipeline/phase-endpoint';
+import {
+  internalApiJsonHeaders,
+  resolveApiUrl,
+  type InternalApiOptions,
+} from '../../../lib/pipeline/phase-endpoint';
 import type {
   PhaseState,
   ProgressEvent,
@@ -44,6 +48,10 @@ interface GenerationPipelineRequest {
   inputs?: PipelineInputs;
 }
 
+interface PipelineRunOptions extends GenerationPipelineRequest {
+  internalApi: InternalApiOptions;
+}
+
 /** Ordering of phases for resume skip logic (Req 6.4). */
 const PHASE_RANKS: Record<PhaseState, number> = {
   idle: -1,
@@ -65,6 +73,25 @@ function sseEncode(
   data: Record<string, unknown>,
 ): Uint8Array {
   return encoder.encode(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+function requestOrigin(request: NextRequest): string {
+  return request.nextUrl.origin;
+}
+
+function forwardedInternalApiHeaders(
+  request: NextRequest,
+): Record<string, string> {
+  const headers: Record<string, string> = {};
+  for (const name of [
+    'authorization',
+    'cookie',
+    'x-vercel-protection-bypass',
+  ]) {
+    const value = request.headers.get(name);
+    if (value) headers[name] = value;
+  }
+  return headers;
 }
 
 // ---------------------------------------------------------------------------
@@ -141,7 +168,17 @@ export async function POST(request: NextRequest): Promise<Response> {
   });
 
   void runPipeline(
-    { url, sessionId, sandboxId, resume, inputs: body.inputs },
+    {
+      url,
+      sessionId,
+      sandboxId,
+      resume,
+      inputs: body.inputs,
+      internalApi: {
+        baseUrl: requestOrigin(request),
+        headers: forwardedInternalApiHeaders(request),
+      },
+    },
     emit,
     writer,
     pipelineAbort.signal,
@@ -155,7 +192,7 @@ export async function POST(request: NextRequest): Promise<Response> {
 // ---------------------------------------------------------------------------
 
 async function runPipeline(
-  opts: GenerationPipelineRequest,
+  opts: PipelineRunOptions,
   emit: (event: Record<string, unknown>) => Promise<void>,
   writer: WritableStreamDefaultWriter<Uint8Array>,
   abortSignal?: AbortSignal,
@@ -306,11 +343,11 @@ async function runPipeline(
   // Phase handlers
   // ---------------------------------------------------------------------------
 
-  const analysisHandler = new AnalysisPhaseHandler();
-  const instantPreviewHandler = new InstantPreviewPhaseHandler();
-  const progressiveCloningHandler = new ProgressiveCloningPhaseHandler();
-  const validationHandler = new ValidationPhaseHandler();
-  const polishHandler = new PolishPhaseHandler();
+  const analysisHandler = new AnalysisPhaseHandler(opts.internalApi);
+  const instantPreviewHandler = new InstantPreviewPhaseHandler(opts.internalApi);
+  const progressiveCloningHandler = new ProgressiveCloningPhaseHandler(opts.internalApi);
+  const validationHandler = new ValidationPhaseHandler(opts.internalApi);
+  const polishHandler = new PolishPhaseHandler(opts.internalApi);
 
   let totalTokenUsage = 0;
 
@@ -365,10 +402,10 @@ async function runPipeline(
         );
 
         const extractResponse = await fetch(
-          resolveApiUrl('/api/extract-brand-styles'),
+          resolveApiUrl('/api/extract-brand-styles', opts.internalApi.baseUrl),
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: internalApiJsonHeaders(opts.internalApi),
             body: JSON.stringify({ url, prompt: inputs.brandPrompt ?? '' }),
           },
         );
@@ -415,10 +452,10 @@ async function runPipeline(
           const scrapeStart = Date.now();
           try {
             const scrapeResponse = await fetch(
-              resolveApiUrl('/api/scrape-website'),
+              resolveApiUrl('/api/scrape-website', opts.internalApi.baseUrl),
               {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: internalApiJsonHeaders(opts.internalApi),
                 body: JSON.stringify({ url }),
               },
             );
@@ -739,7 +776,7 @@ async function runPipeline(
 
     if (totalTokenUsage > 0) {
       try {
-        await deductTokens(totalTokenUsage, sessionId);
+        await deductTokens(totalTokenUsage, sessionId, opts.internalApi);
       } catch (deductErr) {
         console.warn(
           '[GenerationPipeline] Token deduction failed:',
@@ -763,7 +800,7 @@ async function runPipeline(
       });
 
       for (const edit of queuedEdits) {
-        await processQueuedEdit(edit, resolvedSandboxId, emit);
+        await processQueuedEdit(edit, resolvedSandboxId, emit, opts.internalApi);
       }
     }
 
@@ -842,18 +879,25 @@ async function runPipeline(
  * Deduct `amount` tokens from the authenticated user's balance via the existing
  * tokens endpoint. Runs best-effort: failures are logged, never fatal.
  */
-async function deductTokens(amount: number, sessionId: string): Promise<void> {
-  const response = await fetch(resolveApiUrl('/api/tokens/deduct'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      amount,
-      metadata: {
-        reason: 'AI generation pipeline',
-        sessionId,
-      },
-    }),
-  });
+async function deductTokens(
+  amount: number,
+  sessionId: string,
+  internalApi: InternalApiOptions,
+): Promise<void> {
+  const response = await fetch(
+    resolveApiUrl('/api/tokens/deduct', internalApi.baseUrl),
+    {
+      method: 'POST',
+      headers: internalApiJsonHeaders(internalApi),
+      body: JSON.stringify({
+        amount,
+        metadata: {
+          reason: 'AI generation pipeline',
+          sessionId,
+        },
+      }),
+    },
+  );
 
   if (!response.ok) {
     const text = await response.text();
@@ -876,6 +920,7 @@ async function processQueuedEdit(
   edit: QueuedEdit,
   sandboxId: string | null,
   emit: (event: Record<string, unknown>) => Promise<void>,
+  internalApi: InternalApiOptions,
 ): Promise<void> {
   await emit({
     type: 'phase_transition',
@@ -886,9 +931,9 @@ async function processQueuedEdit(
   console.log(`[Edit] Processing queued edit ${edit.id}: "${edit.prompt.slice(0, 80)}"`);
 
   try {
-    await fetch(resolveApiUrl('/api/generate-ai-code-stream'), {
+    await fetch(resolveApiUrl('/api/generate-ai-code-stream', internalApi.baseUrl), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: internalApiJsonHeaders(internalApi),
       body: JSON.stringify({
         prompt: edit.prompt,
         isEdit: true,

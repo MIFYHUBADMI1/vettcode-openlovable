@@ -7,7 +7,11 @@ import { SandboxProvider } from '../../sandbox/types';
 import type { SiteBlueprint, BlueprintSection } from '../types/blueprint';
 import type { SectionPriority, SectionResult, ProgressEvent, PipelineInputs } from '../types/pipeline';
 import { ProgressiveFileApplicationService } from '../progressive-file-application';
-import { phaseEndpointUrl } from '../phase-endpoint';
+import {
+  internalApiJsonHeaders,
+  phaseEndpointUrl,
+  type InternalApiOptions,
+} from '../phase-endpoint';
 import { collectPhaseStream } from '../sse-collect';
 import { parseAIResponse } from '../../file-parser';
 
@@ -20,6 +24,8 @@ const TIER_ORDER: Record<SectionPriority, number> = {
 };
 
 export class ProgressiveCloningPhaseHandler {
+  constructor(private readonly apiOptions: InternalApiOptions = {}) {}
+
   /**
    * Map a section `type` string to a `SectionPriority` tier (Req 3.1).
    */
@@ -238,9 +244,9 @@ export class ProgressiveCloningPhaseHandler {
       : controller.signal;
 
     try {
-      const response = await fetch(phaseEndpointUrl(), {
+      const response = await fetch(phaseEndpointUrl(this.apiOptions.baseUrl), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: internalApiJsonHeaders(this.apiOptions),
         body: JSON.stringify({
           phase: 'progressive_clone',
           blueprint,
