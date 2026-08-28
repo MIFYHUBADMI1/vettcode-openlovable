@@ -227,6 +227,9 @@ export const appConfig = {
     // Animation durations (milliseconds)
     animationDuration: 200,
     
+    // Show opinionated commentary after scraping (one line per clone)
+    enablePersonalityCommentary: true,
+
     // Toast notification duration (milliseconds)
     toastDuration: 3000,
     

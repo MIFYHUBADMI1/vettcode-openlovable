@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { Connector } from "@/components/shared/layout/curvy-rect";
 import { HeaderProvider } from "@/components/shared/header/HeaderContext";
 
-// Lazy load only the lightweight components we're actually using
+// Conditionally import animations based on device performance
 const HomeHeroBadge = lazy(() => import("@/components/app/(home)/sections/hero/Badge/Badge"));
 const HomeHeroTitle = lazy(() => import("@/components/app/(home)/sections/hero/Title/Title"));
 
@@ -23,6 +23,26 @@ import HeaderDropdownWrapper from "@/components/shared/header/Dropdown/Wrapper/W
 import GithubIcon from "@/components/shared/header/Github/_svg/GithubIcon";
 import ButtonUI from "@/components/ui/shadcn/button"
 import HeroInputSubmitButton from "@/components/app/(home)/sections/hero-input/Button/Button";
+
+// Detect if device can handle animations
+const canHandleAnimations = () => {
+  if (typeof window === 'undefined') return false;
+  
+  // Check for reduced motion preference
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return false;
+  }
+  
+  // Check hardware concurrency (CPU cores)
+  const cores = navigator.hardwareConcurrency || 0;
+  if (cores < 4) return false;
+  
+  // Check device memory if available
+  const memory = (navigator as any).deviceMemory || 4;
+  if (memory < 4) return false;
+  
+  return true;
+};
 
 interface SearchResult {
   url: string;
@@ -51,8 +71,16 @@ export default function HomePage() {
   const [showInstructionsForIndex, setShowInstructionsForIndex] = useState<number | null>(null);
   const [additionalInstructions, setAdditionalInstructions] = useState<string>('');
   const [extendBrandStyles, setExtendBrandStyles] = useState<boolean>(false);
+  const [enableAnimations, setEnableAnimations] = useState<boolean>(false);
   
-  // Protect the route - redirect to login if not authenticated
+  // Check device performance on mount
+  useEffect(() => {
+    setEnableAnimations(canHandleAnimations());
+  }, []);
+  
+  // Protect the route — only redirect once auth status has settled.
+  // useSession can briefly report 'unauthenticated' during initial sync
+  // before the JWT cookie is read, causing a premature redirect.
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
@@ -79,13 +107,14 @@ export default function HomePage() {
     }
   }, [selectedModel]);
   
-  // Show loading while checking authentication
-  if (status === 'loading') {
+  // Show loading while checking authentication, OR while session hasn't
+  // populated yet after status resolved (prevents blank-screen flash).
+  if (status === 'loading' || (status === 'authenticated' && !session)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-red-50">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">                        Waking up the sandbox...</p>
         </div>
       </div>
     );
@@ -130,13 +159,13 @@ export default function HomePage() {
     const inputValue = url.trim();
 
     if (!inputValue) {
-      toast.error("Please enter a URL or search term");
+      toast.error("Paste a URL or type a search term");
       return;
     }
 
     // Validate brand extension mode requirements
     if (extendBrandStyles && isURL(inputValue) && !additionalInstructions.trim()) {
-      toast.error("Please describe what you want to build with this brand's styles");
+      toast.error("Describe what you want to build with this brand's styles.");
       return;
     }
     
@@ -178,7 +207,7 @@ export default function HomePage() {
       }
     } else {
       // It's a search term - redirect to dedicated search page
-      const loadingToast = toast.loading("Redirecting to search...");
+      const loadingToast = toast.loading("Finding sites...");
       setTimeout(() => {
         toast.dismiss(loadingToast);
         router.push(`/search?q=${encodeURIComponent(inputValue)}`);
@@ -250,6 +279,12 @@ export default function HomePage() {
                   Pricing
                 </Link>
                 <Link 
+                  href="/hall-of-fame" 
+                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-all duration-200"
+                >
+                  Hall of Fame
+                </Link>
+                <Link 
                   href="/login" 
                   className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-all duration-200"
                 >
@@ -271,8 +306,15 @@ export default function HomePage() {
         {/* Hero Section */}
         <section className="overflow-x-clip" id="home-hero">
           <div className="pt-28 lg:pt-254 lg:-mt-100 pb-115 relative" id="hero-content">
-            {/* Removed heavy animations for performance - keeping simple gradient background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-white to-red-50" />
+            {/* Simple gradient background - always visible, no performance impact */}
+            <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-white to-red-50 -z-10" />
+            
+            {/* Simplified animated background - CSS only, no JS */}
+            <div className="absolute inset-0 -z-5 opacity-30">
+              <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-200 rounded-full mix-blend-multiply filter blur-3xl animate-blob" />
+              <div className="absolute top-0 right-1/4 w-96 h-96 bg-red-200 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000" />
+              <div className="absolute bottom-0 left-1/3 w-96 h-96 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000" />
+            </div>
 
             <div className="relative container px-16">
               <Suspense fallback={<div className="h-12 bg-gray-200 animate-pulse rounded" />}>
@@ -280,7 +322,7 @@ export default function HomePage() {
                 <HomeHeroTitle />
               </Suspense>
               <p className="text-center text-body-large">
-                Clone brand format or re-imagine any website, in seconds.
+                Clone public sites into live, editable React + Tailwind code.
               </p>
               <Link
                 className="bg-black-alpha-4 hover:bg-black-alpha-6 rounded-6 px-8 lg:px-6 text-label-large h-30 lg:h-24 block mt-8 mx-auto w-max gap-4 transition-all"

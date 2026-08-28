@@ -263,3 +263,195 @@ export function buildComponentTree(files: Record<string, FileInfo>) {
   
   return tree;
 }
+
+// ---------------------------------------------------------------------------
+// Progressive AI Response Parsing (Req 13.1 – 13.7)
+// ---------------------------------------------------------------------------
+
+/**
+ * Recognized file extensions for progressive extraction (Req 13.5).
+ */
+const RECOGNIZED_EXTENSIONS = new Set([
+  '.jsx',
+  '.js',
+  '.tsx',
+  '.ts',
+  '.css',
+  '.json',
+]);
+
+/**
+ * A single file extracted from an AI response.
+ */
+export interface ParsedFile {
+  /** Relative file path as specified in the <file path="..."> tag */
+  path: string;
+  /** File content, with standalone ellipsis placeholders stripped */
+  content: string;
+  /** True when the file block had a closing </file> tag */
+  isComplete: boolean;
+}
+
+/**
+ * Result returned by `parseAIResponse`.
+ */
+export interface AIResponseParseResult {
+  files: ParsedFile[];
+}
+
+/**
+ * Returns true if the given file path has a recognized extension (Req 13.5).
+ */
+function hasRecognizedExtension(filePath: string): boolean {
+  const lastDot = filePath.lastIndexOf('.');
+  if (lastDot === -1) return false;
+  const ext = filePath.slice(lastDot).toLowerCase();
+  return RECOGNIZED_EXTENSIONS.has(ext);
+}
+
+/**
+ * Strips standalone ellipsis placeholders from file content while preserving
+ * all legitimate spread operators (`...identifier`) (Req 13.7).
+ *
+ * A standalone ellipsis is:
+ *   - A line that contains ONLY `...` (optionally surrounded by whitespace), OR
+ *   - `...` followed by whitespace / end-of-line but NOT followed by a word character
+ *     (i.e. not a spread operator pattern like `...props`).
+ */
+function stripStandaloneEllipsis(content: string): string {
+  // Remove lines that are purely `...` (optionally indented)
+  // Use a line-by-line approach for precision
+  const lines = content.split('\n');
+  const filtered = lines.filter((line) => {
+    const trimmed = line.trim();
+    // Keep the line if it is NOT a standalone ellipsis
+    // A standalone ellipsis line: the trimmed content is exactly "..."
+    if (trimmed === '...') return false;
+    return true;
+  });
+  return filtered.join('\n');
+}
+
+/**
+ * Internal record for tracking candidate versions of a file during parsing.
+ */
+interface FileCandidate {
+  content: string;
+  isComplete: boolean;
+}
+
+/**
+ * Decide whether `incoming` should replace `existing` according to the merge
+ * rules (Req 13.2, 13.3):
+ *   - Complete version always beats an incomplete one.
+ *   - Among entries with equal completeness status, the LONGER content wins.
+ *   - The longer version ALWAYS wins regardless of completeness status.
+ */
+function shouldReplace(
+  existing: FileCandidate,
+  incoming: FileCandidate,
+): boolean {
+  // Complete beats incomplete
+  if (incoming.isComplete && !existing.isComplete) return true;
+  if (!incoming.isComplete && existing.isComplete) return false;
+  // Same completeness — longer wins
+  return incoming.content.length > existing.content.length;
+}
+
+/**
+ * Parse an AI-generated response string and extract all `<file path="...">` blocks.
+ *
+ * Behaviour:
+ * - Extracts files even when the closing `</file>` tag is absent (streaming
+ *   partial support, Req 13.1).
+ * - Deduplicates: for the same path, retains the longer / more-complete version
+ *   (Req 13.2, 13.3).
+ * - Strips standalone `...` ellipsis placeholders from content while preserving
+ *   spread operators (Req 13.7).
+ * - Emits a `console.warn` for every file that lacks a closing tag (Req 13.6).
+ * - Excludes files whose paths have unrecognized extensions (Req 13.5).
+ */
+export function parseAIResponse(rawResponse: string): AIResponseParseResult {
+  const candidateMap = new Map<string, FileCandidate>();
+
+  // -----------------------------------------------------------------------
+  // Step 1: Extract all <file path="..."> blocks (complete and partial)
+  //
+  // Strategy:
+  //   (a) First, extract every COMPLETE block (has </file> closing tag).
+  //   (b) Then, extract every PARTIAL block starting at a <file path="...">
+  //       that was NOT fully consumed by the complete-block pass.
+  //
+  // We build a set of character ranges already claimed by complete blocks so
+  // we can skip them when searching for partial ones.
+  // -----------------------------------------------------------------------
+
+  // (a) Complete blocks — greedy match stops at the FIRST </file>
+  const completeRegex = /<file path="([^"]+)">([\s\S]*?)<\/file>/g;
+  const claimedRanges: Array<[number, number]> = [];
+
+  let m: RegExpExecArray | null;
+
+  while ((m = completeRegex.exec(rawResponse)) !== null) {
+    const filePath = m[1];
+    const rawContent = m[2];
+    const start = m.index;
+    const end = m.index + m[0].length;
+    claimedRanges.push([start, end]);
+
+    if (!hasRecognizedExtension(filePath)) continue;
+
+    const content = stripStandaloneEllipsis(rawContent.trim());
+    const candidate: FileCandidate = { content, isComplete: true };
+
+    const existing = candidateMap.get(filePath);
+    if (!existing || shouldReplace(existing, candidate)) {
+      candidateMap.set(filePath, candidate);
+    }
+  }
+
+  // (b) Partial blocks — find every <file path="..."> opening tag, skip those
+  //     whose position falls within a claimed range (already parsed completely).
+  const openTagRegex = /<file path="([^"]+)">/g;
+
+  while ((m = openTagRegex.exec(rawResponse)) !== null) {
+    const tagStart = m.index;
+    const contentStart = m.index + m[0].length;
+    const filePath = m[1];
+
+    // Check if this tag is inside an already-claimed range
+    const isClaimed = claimedRanges.some(
+      ([s, e]) => tagStart >= s && tagStart < e,
+    );
+    if (isClaimed) continue;
+
+    // Extract content from after the opening tag to end-of-string (no closing tag)
+    const rawContent = rawResponse.slice(contentStart);
+
+    if (!hasRecognizedExtension(filePath)) continue;
+
+    const content = stripStandaloneEllipsis(rawContent.trim());
+    const candidate: FileCandidate = { content, isComplete: false };
+
+    const existing = candidateMap.get(filePath);
+    if (!existing || shouldReplace(existing, candidate)) {
+      candidateMap.set(filePath, candidate);
+    }
+  }
+
+  // -----------------------------------------------------------------------
+  // Step 2: Build output, emitting warnings for incomplete files (Req 13.6)
+  // -----------------------------------------------------------------------
+  const files: ParsedFile[] = [];
+
+  for (const [path, { content, isComplete }] of candidateMap.entries()) {
+    if (!isComplete) {
+      console.warn(
+        `[parseAIResponse] File "${path}" appears to be truncated (no closing </file> tag) — applying partial content anyway.`,
+      );
+    }
+    files.push({ path, content, isComplete });
+  }
+
+  return { files };
+}

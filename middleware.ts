@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  // Middleware disabled - using page-level authentication instead
-  // This prevents cookie issues with NextAuth on localhost
+  // Page-level authentication is used instead of middleware-based guards.
+  // The NEXTAUTH_URL is now environment-aware, so the cookie issues that
+  // originally prompted disabling this middleware have been resolved.
   return NextResponse.next();
 }
 

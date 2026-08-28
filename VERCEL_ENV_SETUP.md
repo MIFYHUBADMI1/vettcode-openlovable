@@ -7,9 +7,15 @@ After updating your code, you need to set these environment variables in Vercel 
 ### 1. Authentication Variables
 
 ```bash
-NEXTAUTH_URL=https://mirrorsiteai.vercel.app
 NEXTAUTH_SECRET=your_nextauth_secret_here
 ```
+
+> **NEXTAUTH_URL note:** The app now resolves this automatically — in production
+> it falls back to `VERCEL_URL`, and in development it defaults to
+> `http://localhost:3000`. You no longer need to hardcode a production
+> `NEXTAUTH_URL` in `.env.local`, and doing so is discouraged because it
+> breaks local cookie persistence. Only set `NEXTAUTH_URL` if you need a
+> non-default production origin.
 
 ### 2. Google OAuth
 

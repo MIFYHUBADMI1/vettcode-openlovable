@@ -3,24 +3,87 @@ import { SandboxProvider, SandboxInfo, CommandResult } from '../types';
 // SandboxProviderConfig available through parent class
 import { appConfig } from '@/config/app.config';
 
+/**
+ * E2B sandbox lifecycle status.
+ * - 'running'  — sandbox is alive and serving traffic.
+ * - 'paused'   — sandbox was paused (auto or manual); full state preserved.
+ * - 'killed'   — sandbox was permanently deleted.
+ */
+export type E2BSandboxStatus = 'running' | 'paused' | 'killed' | 'unknown';
+
 export class E2BProvider extends SandboxProvider {
   private existingFiles: Set<string> = new Set();
 
   /**
-   * Attempt to reconnect to an existing E2B sandbox
+   * Attempt to resume a paused (or still-running) E2B sandbox.
+   *
+   * Uses `Sandbox.connect(sandboxId)` which automatically resumes a paused
+   * sandbox.  After connect, the timeout is extended so the sandbox stays
+   * alive for the configured window.
    */
   async reconnect(sandboxId: string): Promise<boolean> {
     try {
-      
-      // Try to connect to existing sandbox
-      // Note: E2B SDK doesn't directly support reconnection, but we can try to recreate
-      // For now, return false to indicate reconnection isn't supported
-      // In the future, E2B may add this capability
-      
-      return false;
+      const apiKey = this.config.e2b?.apiKey || process.env.E2B_API_KEY;
+      const timeoutMs = this.config.e2b?.timeoutMs || appConfig.e2b.timeoutMs;
+
+      this.sandbox = await Sandbox.connect(sandboxId, {
+        apiKey,
+        timeoutMs,
+      });
+
+      const host = (this.sandbox as any).getHost(appConfig.e2b.vitePort);
+      this.sandboxInfo = {
+        sandboxId,
+        url: `https://${host}`,
+        provider: 'e2b',
+        createdAt: new Date(),
+      };
+
+      return true;
     } catch (error) {
       console.error(`[E2BProvider] Failed to reconnect to sandbox ${sandboxId}:`, error);
       return false;
+    }
+  }
+
+  /**
+   * Pause the sandbox — preserves full state (filesystem + memory).
+   * Paused sandboxes are retained indefinitely by E2B and can be resumed at
+   * any time with `reconnect()`.
+   */
+  async pauseSandbox(): Promise<boolean> {
+    if (!this.sandbox) {
+      return false;
+    }
+    try {
+      await (this.sandbox as any).pause();
+      return true;
+    } catch (error) {
+      console.error('[E2BProvider] Failed to pause sandbox:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get the current status of the sandbox.
+   * Uses E2B's getInfo() to determine if the sandbox is still alive.
+   */
+  async getStatus(): Promise<E2BSandboxStatus> {
+    if (!this.sandbox) {
+      return 'unknown';
+    }
+    try {
+      const info = await (this.sandbox as any).getInfo?.();
+      if (!info) {
+        return 'unknown';
+      }
+      const endAt = info.endAt ? new Date(info.endAt).getTime() : 0;
+      if (endAt > 0 && endAt < Date.now()) {
+        return 'paused';
+      }
+      return 'running';
+    } catch {
+      return 'killed';
     }
   }
 
@@ -40,11 +103,16 @@ export class E2BProvider extends SandboxProvider {
       // Clear existing files tracking
       this.existingFiles.clear();
 
-      // Create base sandbox
+      // Create sandbox with auto-pause on timeout (instead of auto-kill).
+      // This means when the sandbox times out it will be paused rather than
+      // permanently destroyed, allowing it to be resumed later.
       this.sandbox = await Sandbox.create({ 
         apiKey: this.config.e2b?.apiKey || process.env.E2B_API_KEY,
-        timeoutMs: this.config.e2b?.timeoutMs || appConfig.e2b.timeoutMs
-      });
+        timeoutMs: this.config.e2b?.timeoutMs || appConfig.e2b.timeoutMs,
+        lifecycle: {
+          onTimeout: 'pause',
+        },
+      } as any);
       
       const sandboxId = (this.sandbox as any).sandboxId || Date.now().toString();
       const host = (this.sandbox as any).getHost(appConfig.e2b.vitePort);

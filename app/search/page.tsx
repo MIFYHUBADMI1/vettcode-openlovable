@@ -91,7 +91,7 @@ function SearchPageContent() {
 
   const performSearch = useCallback(async (query: string) => {
     if (!query.trim()) {
-      toast.error("Please enter a search term");
+      toast.error("Type something to search");
       return;
     }
 
@@ -104,16 +104,15 @@ function SearchPageContent() {
     if (cachedResults && cachedResults.length > 0) {
       setSearchResults(cachedResults);
       setIsSearching(false);
-      toast.success(`Loaded ${cachedResults.length} cached results`, {
-        description: "Results from previous search",
+      toast.success(`Found ${cachedResults.length} cached results`, {
+        description: "From a previous search",
         icon: <Clock className="w-4 h-4" />,
       });
       return;
     }
 
     // Show searching toast
-    const searchToast = toast.loading(`Searching for "${query}"...`, {
-      description: "Finding the best websites for you",
+    const searchToast = toast.loading(`Searching for "${query}"...`, {        description: "Looking for the best matches",
     });
 
     try {
@@ -134,21 +133,21 @@ function SearchPageContent() {
         }
         
         // Success toast
-        toast.success(`Found ${results.length} results`, {
+        toast.success(`Found ${results.length} sites`, {
           id: searchToast,
-          description: "Click on any website to clone it",
+          description: "Click any site to clone it",
         });
       } else {
-        toast.error("Search failed", {
+        toast.error("Search hit a snag", {
           id: searchToast,
-          description: "Please try again",
+          description: "Try again",
         });
       }
     } catch (error) {
       console.error('Search error:', error);
-      toast.error("Search failed", {
+      toast.error("Search hit a snag", {
         id: searchToast,
-        description: "Please check your connection and try again",
+        description: "Check your connection and try again",
       });
     } finally {
       setIsSearching(false);
@@ -172,10 +171,8 @@ function SearchPageContent() {
   };
 
   const handleResultClick = (result: SearchResult) => {
-    console.log('Clicked result:', result);
-    
-    toast.success("Preparing to clone...", {
-      description: `${result.title}`,
+    console.log('Clicked result:', result);      toast.success("Cloning...", {
+        description: `${result.title}`,
     });
 
     try {
@@ -197,8 +194,8 @@ function SearchPageContent() {
       }, 500);
     } catch (error) {
       console.error('Error in handleResultClick:', error);
-      toast.error("Failed to start cloning", {
-        description: "Please try again",
+      toast.error("That didn't work", {
+        description: "Try again",
       });
     }
   };
@@ -269,7 +266,7 @@ function SearchPageContent() {
           >
             <h1 className="text-4xl font-bold text-center mb-8">
               <span className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 bg-clip-text text-transparent">
-                Search Websites
+                Find a site to clone
               </span>
             </h1>
 
@@ -374,7 +371,7 @@ function SearchPageContent() {
                   Searching the web...
                 </h3>
                 <p className="text-gray-500">
-                  Finding the best websites for "{searchQuery}"
+                  Looking for sites matching "{searchQuery}"
                 </p>
               </motion.div>
             )}
@@ -395,7 +392,7 @@ function SearchPageContent() {
                       animate={{ opacity: 1, y: 0 }}
                       className="text-gray-600 mb-8 text-center"
                     >
-                      Found <strong>{searchResults.length}</strong> results for "{searchQuery}"
+                      Found <strong>{searchResults.length}</strong> sites matching "{searchQuery}"
                     </motion.p>
 
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -454,10 +451,10 @@ function SearchPageContent() {
                   >
                     <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-2xl font-semibold text-gray-700 mb-2">
-                      No results found
+                      Nothing matched "{searchQuery}"
                     </h3>
                     <p className="text-gray-500 mb-8">
-                      Try searching with different keywords
+                      Try different keywords, or paste a URL directly
                     </p>
                     <Link href="/builder">
                       <ButtonUI className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-8 py-3 rounded-lg">
@@ -480,10 +477,10 @@ function SearchPageContent() {
             >
               <Sparkles className="w-16 h-16 text-orange-500 mx-auto mb-4" />
               <h3 className="text-2xl font-semibold text-gray-700 mb-2">
-                Start Your Search
+                Find a site to clone
               </h3>
               <p className="text-gray-500 max-w-md mx-auto">
-                Search for any type of website you want to clone. We'll find the best matches for you!
+                Describe the kind of site you want, or paste a URL to clone it directly.
               </p>
             </motion.div>
           )}
@@ -500,7 +497,7 @@ export default function SearchPage() {
       <div className="min-h-screen bg-background-base flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-16 h-16 text-orange-500 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading search...</p>
+          <p className="text-gray-600">Finding sites...</p>
         </div>
       </div>
     }>

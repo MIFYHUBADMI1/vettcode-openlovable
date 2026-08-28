@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { Sandbox } from '@vercel/sandbox';
 import type { SandboxState } from '@/types/sandbox';
 import { appConfig } from '@/config/app.config';
+import { sessionMutex } from '@/lib/session-mutex';
 
 // Store active sandbox globally
 declare global {
@@ -9,25 +10,10 @@ declare global {
   var sandboxData: any;
   var existingFiles: Set<string>;
   var sandboxState: SandboxState;
-  var sandboxCreationInProgress: boolean;
-  var sandboxCreationPromise: Promise<any> | null;
 }
 
 export async function POST() {
-  // Check if sandbox creation is already in progress
-  if (global.sandboxCreationInProgress && global.sandboxCreationPromise) {
-    console.log('[create-ai-sandbox] Sandbox creation already in progress, waiting for existing creation...');
-    try {
-      const existingResult = await global.sandboxCreationPromise;
-      console.log('[create-ai-sandbox] Returning existing sandbox creation result');
-      return NextResponse.json(existingResult);
-    } catch (error) {
-      console.error('[create-ai-sandbox] Existing sandbox creation failed:', error);
-      // Continue with new creation if the existing one failed
-    }
-  }
-
-  // Check if we already have an active sandbox
+  // Check if we already have an active sandbox — fast path, no lock needed.
   if (global.activeSandbox && global.sandboxData) {
     console.log('[create-ai-sandbox] Returning existing active sandbox');
     return NextResponse.json({
@@ -37,28 +23,23 @@ export async function POST() {
     });
   }
 
-  // Set the creation flag
-  global.sandboxCreationInProgress = true;
-  
-  // Create the promise that other requests can await
-  global.sandboxCreationPromise = createSandboxInternal();
-  
-  try {
-    const result = await global.sandboxCreationPromise;
-    return NextResponse.json(result);
-  } catch (error) {
-    console.error('[create-ai-sandbox] Sandbox creation failed:', error);
-    return NextResponse.json(
-      { 
-        error: error instanceof Error ? error.message : 'Failed to create sandbox',
-        details: error instanceof Error ? error.stack : undefined
-      },
-      { status: 500 }
-    );
-  } finally {
-    global.sandboxCreationInProgress = false;
-    global.sandboxCreationPromise = null;
-  }
+  // Use the shared per-session mutex so concurrent requests don't create
+  // duplicate sandboxes. All callers for this key share one result.
+  return sessionMutex.run('create-sandbox', async () => {
+    try {
+      const result = await createSandboxInternal();
+      return NextResponse.json(result);
+    } catch (error) {
+      console.error('[create-ai-sandbox] Sandbox creation failed:', error);
+      return NextResponse.json(
+        { 
+          error: error instanceof Error ? error.message : 'Failed to create sandbox',
+          details: error instanceof Error ? error.stack : undefined
+        },
+        { status: 500 }
+      );
+    }
+  });
 }
 
 async function createSandboxInternal() {

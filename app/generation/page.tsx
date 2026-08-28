@@ -6,8 +6,11 @@ import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { appConfig } from '@/config/app.config';
+import { getCommentary } from '@/lib/commentary';
 import HeroInput from '@/components/HeroInput';
 import SidebarInput from '@/components/app/generation/SidebarInput';
+import ProgressUI from '@/components/app/ProgressUI';
+import type { PhaseState, PhaseExecutionLog, SectionStatus } from '@/lib/pipeline/types';
 import HeaderBrandKit from '@/components/shared/header/BrandKit/BrandKit';
 import { HeaderProvider } from '@/components/shared/header/HeaderContext';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -128,6 +131,7 @@ function AISandboxPage() {
   const [sandboxFiles, setSandboxFiles] = useState<Record<string, string>>({});
   const [hasInitialSubmission, setHasInitialSubmission] = useState<boolean>(false);
   const [fileStructure, setFileStructure] = useState<string>('');
+  const [iframeRevealed, setIframeRevealed] = useState<boolean>(false);
   
   // Refs - must be declared at the top with all hooks
   const sandboxCreationRef = useRef<boolean>(false);
@@ -190,6 +194,288 @@ function AISandboxPage() {
   
   // Store flag to trigger generation after component mounts
   const [shouldAutoGenerate, setShouldAutoGenerate] = useState(false);
+
+  // -------------------------------------------------------------------------
+  // Progressive pipeline state (Req 18.3) — fed by /api/generation-pipeline SSE
+  // -------------------------------------------------------------------------
+  const [pipeline, setPipeline] = useState<{
+    active: boolean;
+    currentPhase: PhaseState;
+    sectionStatuses: Record<string, SectionStatus>;
+    overallPercent: number;
+    executionLog: PhaseExecutionLog[];
+    tokenUsageByPhase: Record<string, number>;
+    errors: Array<{ sectionName: string; errorType: string }>;
+    startedAt?: number;
+  }>({
+    active: false,
+    currentPhase: 'idle',
+    sectionStatuses: {},
+    overallPercent: 0,
+    executionLog: [],
+    tokenUsageByPhase: {},
+    errors: [],
+  });
+
+  /** Non-null when a persisted run with a lastSuccessfulPhase is detected. */
+  const [resumePrompt, setResumePrompt] = useState<{
+    lastSuccessfulPhase: PhaseState | null;
+    sandboxId: string | null;
+    sandboxUrl: string | null;
+  } | null>(null);
+
+  /** Stable per-browser session id used to persist/resume pipeline context. */
+  const sessionIdRef = useRef<string>('');
+
+  // Establish a stable session id on mount.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const existing =
+      sessionStorage.getItem('generationSessionId') ||
+      localStorage.getItem('generationSessionId');
+    if (existing) {
+      sessionIdRef.current = existing;
+    } else {
+      const sid = `gen-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      sessionStorage.setItem('generationSessionId', sid);
+      localStorage.setItem('generationSessionId', sid);
+      sessionIdRef.current = sid;
+    }
+  }, []);
+
+  // On page load, detect a persisted pipeline context and show the
+  // resume/restart prompt — no state-machine transition happens until the user
+  // chooses (Req 6.4, 18.3).
+  useEffect(() => {
+    if (authStatus !== 'authenticated' || !session) return;
+    if (!sessionIdRef.current) return;
+
+    fetch(
+      `/api/generation-pipeline/status?sessionId=${encodeURIComponent(sessionIdRef.current)}`,
+    )
+      .then((r) => r.json())
+      .then((data: {
+        resumable?: boolean;
+        lastSuccessfulPhase?: PhaseState | null;
+        sandboxId?: string | null;
+        sandboxUrl?: string | null;
+      }) => {
+        if (data.resumable) {
+          setResumePrompt({
+            lastSuccessfulPhase: data.lastSuccessfulPhase ?? null,
+            sandboxId: data.sandboxId ?? null,
+            sandboxUrl: data.sandboxUrl ?? null,
+          });
+        }
+      })
+      .catch((err) =>
+        console.warn('[generation] Resumability check failed:', err),
+      );
+  }, [authStatus, session]);
+
+  // -------------------------------------------------------------------------
+  // Pipeline SSE runner (Req 18.3)
+  // -------------------------------------------------------------------------
+  function runGenerationPipeline(
+    targetUrl: string,
+    opts: { resume?: boolean } = {},
+  ): void {
+    if (!sessionIdRef.current) return;
+
+    const sid = sessionIdRef.current;
+    const resume = opts.resume ?? false;
+
+    setPipeline({
+      active: true,
+      currentPhase: resume ? (resumePrompt?.lastSuccessfulPhase ?? 'analyzing') : 'analyzing',
+      sectionStatuses: {},
+      overallPercent: 0,
+      executionLog: [],
+      tokenUsageByPhase: {},
+      errors: [],
+      startedAt: Date.now(),
+    });
+
+    // Hide the resume prompt while the pipeline runs.
+    setResumePrompt(null);
+
+    (async () => {
+      try {
+        const response = await fetch('/api/generation-pipeline', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            url: targetUrl,
+            sessionId: sid,
+            sandboxId: resumePrompt?.sandboxId ?? undefined,
+            resume,
+          }),
+        });
+
+        if (!response.ok || !response.body) {
+          throw new Error(
+            `Pipeline request failed: ${response.status} ${response.statusText}`,
+          );
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        const readLoop = async (): Promise<void> => {
+          for (;;) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            const lines = buffer.split('\n');
+            buffer = lines.pop() ?? '';
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed.startsWith('data:')) continue;
+              const dataStr = trimmed.slice(5).trim();
+              if (!dataStr || dataStr === '[DONE]') continue;
+              try {
+                handlePipelineEvent(JSON.parse(dataStr));
+              } catch {
+                // Ignore malformed events
+              }
+            }
+          }
+        };
+
+        await readLoop();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error('[generation] Pipeline failed:', err);
+        setPipeline((prev) => ({ ...prev, active: false }));
+        addChatMessage(`Something went wrong: ${message}`, 'error');
+      }
+    })();
+  }
+
+  /** Dispatch a single PipelineEvent into UI state (Req 18.3). */
+  function handlePipelineEvent(event: Record<string, unknown>): void {
+    const type = event['type'] as string;
+    const phase = (event['phase'] ?? event['to'] ?? 'idle') as PhaseState;
+
+    switch (type) {
+      case 'phase_transition': {
+        const to = (event['to'] as PhaseState) ?? phase;
+        setPipeline((prev) => ({ ...prev, currentPhase: to }));
+
+        // Wire the preview iframe to the sandbox URL from Instant Preview
+        // (Req 18.3).
+        const payload = (event['payload'] ?? {}) as Record<string, unknown>;
+        if (typeof payload['sandboxUrl'] === 'string') {
+          setSandboxData((prev) =>
+            prev
+              ? { ...prev, url: payload['sandboxUrl'] as string }
+              : { url: payload['sandboxUrl'] as string, sandboxId: (payload['sandboxId'] as string) ?? 'resume-sandbox', createdAt: new Date(), files: {} },
+          );
+          if (iframeRef.current) {
+            iframeRef.current.src = payload['sandboxUrl'] as string;
+          }
+        }
+        break;
+      }
+      case 'section_status': {
+        const sectionName = event['sectionName'] as string | undefined;
+        const status = event['status'] as SectionStatus | undefined;
+        const overallPercent = Number(event['overallPercent'] ?? 0);
+        if (sectionName && status) {
+          setPipeline((prev) => ({
+            ...prev,
+            currentPhase: 'progressive_cloning',
+            sectionStatuses: { ...prev.sectionStatuses, [sectionName]: status },
+            overallPercent,
+          }));
+        }
+        break;
+      }
+      case 'token_usage': {
+        const tokens = Number(event['tokens'] ?? 0);
+        setPipeline((prev) => ({
+          ...prev,
+          tokenUsageByPhase: {
+            ...prev.tokenUsageByPhase,
+            [phase]: (prev.tokenUsageByPhase[phase] ?? 0) + tokens,
+          },
+        }));
+        break;
+      }
+      case 'build_error': {
+        const payload = (event['payload'] ?? {}) as Record<string, unknown>;
+        const files = (payload['permanentlyFailedFiles'] ?? []) as Array<{
+          filePath?: string;
+          finalError?: string;
+        }>;
+        if (files.length > 0) {
+          setPipeline((prev) => ({
+            ...prev,
+            errors: [
+              ...prev.errors,
+              ...files.map((f) => ({
+                sectionName: f.filePath ?? 'unknown',
+                errorType: f.finalError ?? 'Build error',
+              })),
+            ],
+          }));
+          // Build specific, actionable message based on what failed
+          const failedNames = files
+            .map((f) => f.filePath?.split('/').pop() ?? 'unknown')
+            .slice(0, 3)
+            .join(', ');
+          const truncated = files.length > 3 ? ` (and ${files.length - 3} more)` : '';
+          const isMissingPkg = files.some((f) =>
+            (f.finalError ?? '').toLowerCase().includes('failed to resolve import') ||
+            (f.finalError ?? '').toLowerCase().includes('cannot find module')
+          );
+          if (isMissingPkg) {
+            addChatMessage(
+              `Missing a package — type "install <package-name>" and I'll add it.`,
+              'error',
+            );
+          } else {
+            addChatMessage(
+              `${files.length} file(s) couldn't be compiled: ${failedNames}${truncated}. The AI tried fixing them but hit a wall. Ask me to try again, or check the code in the file tree.`,
+              'error',
+            );
+          }
+        }
+        break;
+      }
+      case 'complete': {
+        const payload = (event['payload'] ?? {}) as Record<string, unknown>;
+        setPipeline((prev) => ({
+          ...prev,
+          active: false,
+          currentPhase: 'complete',
+          overallPercent: 100,
+        }));
+        if (typeof payload['sandboxUrl'] === 'string') {
+          setSandboxData((prev) =>
+            prev
+              ? { ...prev, url: payload['sandboxUrl'] as string }
+              : { url: payload['sandboxUrl'] as string, sandboxId: (payload['sandboxId'] as string) ?? 'resume-sandbox', createdAt: new Date(), files: {} },
+          );
+          if (iframeRef.current) {
+            iframeRef.current.src = payload['sandboxUrl'] as string;
+          }
+        }
+        addChatMessage('Shipped.', 'system');
+        break;
+      }
+      case 'error': {
+        const message = (event['message'] as string) ?? 'Pipeline error';
+        setPipeline((prev) => ({ ...prev, active: false }));
+        addChatMessage(`Something went wrong: ${message}`, 'error');
+        break;
+      }
+      default:
+        break;
+    }
+  }
   
   // Protect the route - redirect to login if not authenticated
   useEffect(() => {
@@ -309,7 +595,7 @@ function AISandboxPage() {
       } catch (error) {
         console.error('[ai-sandbox] Failed to clear old conversation:', error);
         if (isMounted) {
-          addChatMessage('Failed to clear old conversation data.', 'error');
+          addChatMessage("Couldn't clear old data — continuing anyway.", 'error');
         }
       }
       
@@ -317,13 +603,20 @@ function AISandboxPage() {
 
       // Check if sandbox ID is in URL
       const sandboxIdParam = searchParams.get('sandbox');
+      const resumeFromProject = searchParams.get('resume') === 'project';
       
       setLoading(true);
       try {
-        if (sandboxIdParam) {
+        if (sandboxIdParam && resumeFromProject) {
+          // Resume a saved project from the dashboard.
+          // Find the project by sandboxId, call the resume API, and load
+          // the sandbox URL directly — no new sandbox is created.
+          console.log('[home] Resuming saved project sandbox:', sandboxIdParam);
+          sandboxCreated = true;
+          await resumeProjectSandbox(sandboxIdParam);
+        } else if (sandboxIdParam) {
+          // Old-style sandbox restore — try to reconnect directly.
           console.log('[home] Attempting to restore sandbox:', sandboxIdParam);
-          // For now, just create a new sandbox - you could enhance this to actually restore
-          // the specific sandbox if your backend supports it
           sandboxCreated = true;
           await createSandbox(true);
         } else {
@@ -341,7 +634,7 @@ function AISandboxPage() {
       } catch (error) {
         console.error('[ai-sandbox] Failed to create or restore sandbox:', error);
         if (isMounted) {
-          addChatMessage('Failed to create or restore sandbox.', 'error');
+          addChatMessage('Sandbox could not be started. Retrying...', 'error');
         }
       } finally {
         if (isMounted) {
@@ -399,6 +692,44 @@ function AISandboxPage() {
   }, [showHomeScreen, homeUrlInput]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
+  const checkSandboxStatus = async () => {
+    try {
+      const response = await fetch('/api/sandbox-status');
+      const data = await response.json();
+      
+      if (data.active && data.healthy && data.sandboxData) {
+        console.log('[checkSandboxStatus] Setting sandboxData from API:', data.sandboxData);
+        setSandboxData(data.sandboxData);
+        updateStatus('Sandbox active', true);
+      } else if (data.active && !data.healthy) {
+        // Sandbox exists but not responding
+        updateStatus('Sandbox not responding', false);
+        // Keep existing sandboxData if we have it - don't clear it
+      } else {
+        // Only clear sandboxData if we don't already have it or if we're explicitly checking from a fresh state
+        // This prevents clearing sandboxData during normal operation when it should persist
+        if (!sandboxData) {
+          console.log('[checkSandboxStatus] No existing sandboxData, clearing state');
+          setSandboxData(null);
+          updateStatus('No sandbox', false);
+        } else {
+          // Keep existing sandboxData and just update status
+          console.log('[checkSandboxStatus] Keeping existing sandboxData, sandbox inactive but data preserved');
+          updateStatus('Sandbox status unknown', false);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to check sandbox status:', error);
+      // Only clear on error if we don't have existing sandboxData
+      if (!sandboxData) {
+        setSandboxData(null);
+        updateStatus('Error', false);
+      } else {
+        updateStatus('Status check failed', false);
+      }
+    }
+  };
+
   useEffect(() => {
     // Only check sandbox status on mount if we don't already have sandboxData
     // AND we're not auto-starting a new generation (which would create a new sandbox)
@@ -413,6 +744,11 @@ function AISandboxPage() {
       chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
     }
   }, [chatMessages]);
+
+  // Reset iframe reveal state when sandbox URL changes (new clone)
+  useEffect(() => {
+    setIframeRevealed(false);
+  }, [sandboxData?.url]);
 
   // Auto-trigger generation when flag is set (from home page navigation)
   useEffect(() => {
@@ -431,22 +767,39 @@ function AISandboxPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldAutoGenerate, homeUrlInput, showHomeScreen]);
 
-  // Auto-scroll code display to bottom when streaming
+  // Enhanced auto-scroll: More aggressive scrolling during streaming
   useEffect(() => {
     if (codeDisplayRef.current && generationProgress.isStreaming) {
-      codeDisplayRef.current.scrollTop = codeDisplayRef.current.scrollHeight;
+      // Smooth scroll to bottom with animation
+      codeDisplayRef.current.scrollTo({
+        top: codeDisplayRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
     }
   }, [generationProgress.streamedCode, generationProgress.isStreaming]);
+  
+  // Additional effect to force scroll on every streamedCode change
+  useEffect(() => {
+    if (generationProgress.isStreaming && codeDisplayRef.current) {
+      // Use requestAnimationFrame to ensure smooth scrolling every frame
+      requestAnimationFrame(() => {
+        if (codeDisplayRef.current) {
+          codeDisplayRef.current.scrollTop = codeDisplayRef.current.scrollHeight;
+        }
+      });
+    }
+  }, [generationProgress.streamedCode]);
 
   // ALL HOOKS DECLARED - NOW WE CAN HAVE CONDITIONAL RETURNS
   
-  // Show loading while checking authentication
-  if (authStatus === 'loading') {
+  // Show loading while checking authentication, OR while session hasn't
+  // populated yet after status resolved (prevents blank-screen flash).
+  if (authStatus === 'loading' || (authStatus === 'authenticated' && !session)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-red-50">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">Waking up the sandbox...</p>
         </div>
       </div>
     );
@@ -487,7 +840,7 @@ function AISandboxPage() {
     }
     
     // Vite error checking removed - handled by template setup
-    addChatMessage('Checking packages... Sandbox is ready with Vite configuration.', 'system');
+    addChatMessage('Sandbox is ready. Packages are good to go.', 'system');
   };
   
   const handleSurfaceError = (_errors: any[]) => {
@@ -502,7 +855,7 @@ function AISandboxPage() {
   
   const installPackages = async (packages: string[]) => {
     if (!sandboxData) {
-      addChatMessage('No active sandbox. Create a sandbox first!', 'system');
+      addChatMessage('No sandbox yet — start a generation first.', 'system');
       return;
     }
     
@@ -564,48 +917,10 @@ function AISandboxPage() {
         }
       }
     } catch (error: any) {
-      addChatMessage(`Failed to install packages: ${error.message}`, 'system');
+      addChatMessage(`Package install failed: ${error.message}. Try again.`, 'system');
     }
   };
 
-  const checkSandboxStatus = async () => {
-    try {
-      const response = await fetch('/api/sandbox-status');
-      const data = await response.json();
-      
-      if (data.active && data.healthy && data.sandboxData) {
-        console.log('[checkSandboxStatus] Setting sandboxData from API:', data.sandboxData);
-        setSandboxData(data.sandboxData);
-        updateStatus('Sandbox active', true);
-      } else if (data.active && !data.healthy) {
-        // Sandbox exists but not responding
-        updateStatus('Sandbox not responding', false);
-        // Keep existing sandboxData if we have it - don't clear it
-      } else {
-        // Only clear sandboxData if we don't already have it or if we're explicitly checking from a fresh state
-        // This prevents clearing sandboxData during normal operation when it should persist
-        if (!sandboxData) {
-          console.log('[checkSandboxStatus] No existing sandboxData, clearing state');
-          setSandboxData(null);
-          updateStatus('No sandbox', false);
-        } else {
-          // Keep existing sandboxData and just update status
-          console.log('[checkSandboxStatus] Keeping existing sandboxData, sandbox inactive but data preserved');
-          updateStatus('Sandbox status unknown', false);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to check sandbox status:', error);
-      // Only clear on error if we don't have existing sandboxData
-      if (!sandboxData) {
-        setSandboxData(null);
-        updateStatus('Error', false);
-      } else {
-        updateStatus('Status check failed', false);
-      }
-    }
-  };
-  
   const createSandbox = async (fromHomeScreen = false) => {
     // Prevent duplicate sandbox creation
     if (sandboxCreationRef.current) {
@@ -647,13 +962,26 @@ function AISandboxPage() {
     setScreenshotError(null);
     
     try {
+      // Determine the source URL (the website being cloned, if any).
+      // This gets saved with the project so the dashboard can show what
+      // each project was cloned from.
+      const sourceUrl = homeUrlInput || targetUrl || '';
+
       const response = await fetch('/api/create-ai-sandbox-v2', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
+        body: JSON.stringify({ sourceUrl })
       });
       
-      const data = await response.json();
+      // Safely parse the JSON response — the server may return a non-JSON
+      // error body (e.g. 500 with an HTML error page or empty body).
+      let data: any;
+      try {
+        const text = await response.text();
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        throw new Error(`Sandbox server returned an invalid response (HTTP ${response.status}). This is usually temporary — try again.`);
+      }
       console.log('[createSandbox] Response data:', data);
       
       if (data.success) {
@@ -690,9 +1018,7 @@ function AISandboxPage() {
         
         // Only add welcome message if not coming from home screen
         if (!fromHomeScreen) {
-          addChatMessage(`Sandbox created! ID: ${data.sandboxId}. I now have context of your sandbox and can help you build your app. Just ask me to create components and I'll automatically apply them!
-
-Tip: I automatically detect and install npm packages from your code imports (like react-router-dom, axios, etc.)`, 'system');
+          addChatMessage(`Sandbox is live. I've got the full file context — tell me what to build and I'll apply it directly.`, 'system');
         }
         
         setTimeout(() => {
@@ -710,7 +1036,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
       console.error('[createSandbox] Error:', error);
       updateStatus('Error', false);
       log(`Failed to create sandbox: ${error.message}`, 'error');
-      addChatMessage(`Failed to create sandbox: ${error.message}`, 'system');
+      addChatMessage('Sandbox could not start — this is usually temporary. Try again in a moment.', 'error');
       throw error;
     } finally {
       setLoading(false);
@@ -723,6 +1049,75 @@ Tip: I automatically detect and install npm packages from your code imports (lik
       setStructureContent(JSON.stringify(structure, null, 2));
     } else {
       setStructureContent(structure || 'No structure available');
+    }
+  };
+
+  /**
+   * Resume a saved project from the dashboard. Instead of creating a new
+   * sandbox, this calls the /api/projects/[id]/resume endpoint which uses
+   * E2B's Sandbox.connect() to resume the paused sandbox.
+   */
+  const resumeProjectSandbox = async (sandboxId: string) => {
+    try {
+      updateStatus('Resuming sandbox...', false);
+      log(`Resuming sandbox: ${sandboxId}`);
+
+      // Fetch the user's projects to find the one matching this sandboxId.
+      const projectsRes = await fetch('/api/projects');
+      if (!projectsRes.ok) {
+        throw new Error('Failed to fetch projects');
+      }
+      const projectsData = await projectsRes.json();
+      const project = (projectsData.projects || []).find(
+        (p: any) => p.sandboxId === sandboxId,
+      );
+
+      if (!project) {
+        throw new Error('Project not found — it may have been deleted.');
+      }
+
+      // Call the resume endpoint to reconnect the paused E2B sandbox.
+      const resumeRes = await fetch(`/api/projects/${project._id}/resume`, {
+        method: 'POST',
+      });
+      const resumeData = await resumeRes.json();
+
+      if (!resumeData.success) {
+        throw new Error(resumeData.error || 'Failed to resume sandbox');
+      }
+
+      console.log('[resumeProjectSandbox] Resumed:', resumeData);
+      setSandboxData({
+        sandboxId: resumeData.sandboxId,
+        url: resumeData.url,
+      });
+      updateStatus('Sandbox active', true);
+      log('Sandbox resumed successfully!');
+      log(`URL: ${resumeData.url}`);
+
+      // Load the preview in the iframe.
+      setTimeout(() => {
+        if (iframeRef.current) {
+          iframeRef.current.src = resumeData.url;
+        }
+      }, 100);
+
+      // Fetch sandbox files after resume.
+      setTimeout(fetchSandboxFiles, 1000);
+
+      addChatMessage('Welcome back! Your sandbox has been resumed. All your files and state are preserved.', 'system');
+
+      setTimeout(() => {
+        setShowLoadingBackground(false);
+      }, 2000);
+    } catch (error: any) {
+      console.error('[resumeProjectSandbox] Error:', error);
+      updateStatus('Error', false);
+      log(`Failed to resume sandbox: ${error.message}`, 'error');
+      addChatMessage('Could not resume the sandbox. It may have expired. Try creating a new one from the builder.', 'error');
+      throw error;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -843,9 +1238,9 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                   
                 case 'command-complete':
                   if (data.success) {
-                    addChatMessage(`Command completed successfully`, 'system');
+                    addChatMessage(`Done.`, 'system');
                   } else {
-                    addChatMessage(`Command failed with exit code ${data.exitCode}`, 'system');
+                    addChatMessage(`Command failed (exit code ${data.exitCode}). Check the output above.`, 'system');
                   }
                   break;
                   
@@ -861,7 +1256,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                   break;
                   
                 case 'error':
-                  addChatMessage(`Error: ${data.message || data.error || 'Unknown error'}`, 'system');
+                  addChatMessage(`Error: ${data.message || data.error || 'Something unexpected happened'}`, 'system');
                   // Reset loading state on error
                   setLoading(false);
                   break;
@@ -979,7 +1374,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
           if (data.missingImports && data.missingImports.length > 0) {
             const missingList = data.missingImports.join(', ');
             addChatMessage(
-              `Ask me to "create the missing components: ${missingList}" to fix these import errors.`,
+              `Type "create the missing components: ${missingList}" to fix this.`,
               'system'
             );
           }
@@ -1007,7 +1402,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
           // Update the chat message to show success
           // Only show file list if not in edit mode
           if (isEdit) {
-            addChatMessage(`Edit applied successfully!`, 'system');
+            addChatMessage(`Done. Take a look.`, 'system');
           } else {
             // Check if this is part of a generation flow (has recent AI recreation message)
             const recentMessages = chatMessages.slice(-5);
@@ -1018,7 +1413,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
             
             // Don't show files if part of generation flow to avoid duplication
             if (isPartOfGeneration) {
-              addChatMessage(`Applied ${results.filesCreated.length} files successfully!`, 'system');
+              addChatMessage(`Applied ${results.filesCreated.length} files. Live — go take a look.`, 'system');
             } else {
               addChatMessage(`Applied ${results.filesCreated.length} files successfully!`, 'system', {
                 appliedFiles: results.filesCreated
@@ -1028,7 +1423,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
           
           // If there are failed packages, add a message about checking for errors
           if (results.packagesFailed?.length > 0) {
-            addChatMessage(`⚠️ Some packages failed to install. Check the error banner above for details.`, 'system');
+            addChatMessage(`⚠️ Some packages didn't install. Check the error banner above.`, 'system');
           }
           
           // Fetch updated file structure
@@ -1455,19 +1850,26 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                             <div className="absolute inset-0 border-8 border-green-500 rounded-full animate-spin border-t-transparent"></div>
                           </div>
                         </div>
-                        <h3 className="text-xl font-medium text-white mb-2">AI is analyzing your request</h3>
-                        <p className="text-gray-400 text-sm">{generationProgress.status || 'Preparing to generate code...'}</p>
+                        <h3 className="text-xl font-medium text-white mb-2">Reading your request...</h3>
+                        <p className="text-gray-400 text-sm">{generationProgress.status || 'Planning the clone...'}</p>
                       </div>
                     </div>
                   ) : (
                     <div className="bg-black border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="px-4 py-2 bg-gray-100 text-gray-900 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 h-16 border-2 border-orange-500 border-t-transparent rounded-full animate-spin" />
-                          <span className="font-mono text-sm">Streaming code...</span>
+                      <div className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="relative">
+                            <div className="w-4 h-4 bg-white rounded-full animate-ping absolute" />
+                            <div className="w-4 h-4 bg-white rounded-full relative" />
+                          </div>
+                          <span className="font-mono text-sm font-semibold">⚡ AI Streaming Live...</span>
+                          <span className="text-xs opacity-80">{generationProgress.streamedCode.length} characters</span>
                         </div>
                       </div>
-                      <div className="p-4 bg-gray-900 rounded">
+                      <div className="p-4 bg-gray-900 rounded relative">
+                        <div className="absolute top-2 right-2 flex items-center gap-2 bg-black/50 px-3 py-1 rounded-full backdrop-blur-sm">
+                          <span className="text-green-400 text-xs font-mono">● LIVE</span>
+                        </div>
                         <SyntaxHighlighter
                           language="jsx"
                           style={vscDarkPlus}
@@ -1481,7 +1883,10 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                         >
                           {generationProgress.streamedCode || 'Starting code generation...'}
                         </SyntaxHighlighter>
-                        <span className="inline-block w-3 h-5 bg-orange-400 ml-1 animate-pulse" />
+                        <div className="flex items-center gap-1 mt-2">
+                          <span className="inline-block w-2 h-4 bg-orange-500 animate-pulse" />
+                          <span className="text-gray-400 text-xs font-mono">Streaming...</span>
+                        </div>
                       </div>
                     </div>
                   )
@@ -1602,7 +2007,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
 
                               // If only whitespace or nothing left, show loading message
                               // Use "Loading sandbox..." instead of "Waiting for next file..." for better UX
-                              return remainingContent || 'Loading sandbox...';
+                              return remainingContent || 'Building preview...';
                             })()}
                           </SyntaxHighlighter>
                         </div>
@@ -1672,18 +2077,18 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                   
                   {/* Status text */}
                   <p className="text-white text-lg font-medium">
-                    {isCapturingScreenshot ? 'Analyzing website...' :
-                     isPreparingDesign ? 'Preparing design...' :
+                    {isCapturingScreenshot ? 'Reading the site...' :
+                     isPreparingDesign ? 'Planning your clone...' :
                      generationProgress.isGenerating ? 'Generating code...' :
-                     'Loading...'}
+                     'Almost there...'}
                   </p>
                   
                   {/* Subtle progress hint */}
                   <p className="text-white/60 text-sm mt-2">
-                    {isCapturingScreenshot ? 'Taking a screenshot of the site' :
-                     isPreparingDesign ? 'Understanding the layout and structure' :
+                    {isCapturingScreenshot ? 'Capturing what the site looks like' :
+                     isPreparingDesign ? 'Figuring out the layout and structure' :
                      generationProgress.isGenerating ? 'Writing React components' :
-                     'Please wait...'}
+                     'Setting things up...'}
                   </p>
                 </div>
               </div>
@@ -1696,13 +2101,32 @@ Tip: I automatically detect and install npm packages from your code imports (lik
       if (sandboxData?.url) {
         return (
           <div className="relative w-full h-full">
-            <iframe
+            {/* Loading skeleton — fades out as the iframe fades in */}
+            <motion.div
+              className="absolute inset-0 bg-gray-50 flex items-center justify-center z-[1]"
+              initial={{ opacity: 1 }}
+              animate={{ opacity: iframeRevealed ? 0 : 1 }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+              style={{ pointerEvents: iframeRevealed ? 'none' : 'auto' }}
+            >
+              <div className="text-center">
+                <div className="w-12 h-12 border-3 border-gray-200 border-t-orange-500 rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-sm text-gray-400">Loading preview…</p>
+              </div>
+            </motion.div>
+
+            {/* Iframe — loads immediately, fades in over 1s once loaded */}
+            <motion.iframe
               ref={iframeRef}
               src={sandboxData.url}
               className="w-full h-full border-none"
               title="MirrorSite AI Sandbox"
               allow="clipboard-write"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: iframeRevealed ? 1 : 0 }}
+              transition={{ duration: 1, ease: 'easeOut' }}
+              onLoad={() => setIframeRevealed(true)}
             />
             
             {/* Package installation overlay - shows when installing packages or applying code */}
@@ -1722,7 +2146,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                   </div>
                   
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                    {codeApplicationState.stage === 'analyzing' && 'Analyzing code...'}
+                    {codeApplicationState.stage === 'analyzing' && 'Reading your code...'}
                     {codeApplicationState.stage === 'installing' && 'Installing packages...'}
                     {codeApplicationState.stage === 'applying' && 'Applying changes...'}
                   </h3>
@@ -1758,9 +2182,9 @@ Tip: I automatically detect and install npm packages from your code imports (lik
                   )}
                   
                   <p className="text-sm text-gray-500 mt-2">
-                    {codeApplicationState.stage === 'analyzing' && 'Parsing generated code and detecting dependencies...'}
-                    {codeApplicationState.stage === 'installing' && 'This may take a moment while npm installs the required packages...'}
-                    {codeApplicationState.stage === 'applying' && 'Writing files to your sandbox environment...'}
+                    {codeApplicationState.stage === 'analyzing' && 'Reading generated code...'}
+                    {codeApplicationState.stage === 'installing' && 'Installing dependencies — this takes a moment...'}
+                    {codeApplicationState.stage === 'applying' && 'Writing files to your sandbox...'}
                   </p>
                 </div>
               </div>
@@ -1799,17 +2223,17 @@ Tip: I automatically detect and install npm packages from your code imports (lik
         <div className="flex items-center justify-center h-full bg-gray-50 text-gray-600 text-lg">
           {screenshotError ? (
             <div className="text-center">
-              <p className="mb-2">Failed to capture screenshot</p>
-              <p className="text-sm text-gray-500">{screenshotError}</p>
+              <p className="mb-2">Couldn't capture a screenshot of that site.</p>
+              <p className="text-sm text-gray-500">The clone can still proceed — or try a different URL.</p>
             </div>
           ) : sandboxData ? (
             <div className="text-gray-500">
               <div className="w-16 h-16 border-2 border-gray-300 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
-              <p className="text-sm">Loading preview...</p>
+              <p className="text-sm">Spinning up preview...</p>
             </div>
           ) : (
             <div className="text-gray-500 text-center">
-              <p className="text-sm">Start chatting to create your first app</p>
+              <p className="text-sm">Your first clone starts with a URL</p>
             </div>
           )}
         </div>
@@ -1850,7 +2274,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
       sandboxCreating = true;
       addChatMessage('Creating sandbox while I plan your app...', 'system');
       sandboxPromise = createSandbox(true).catch((error: any) => {
-        addChatMessage(`Failed to create sandbox: ${error.message}`, 'system');
+        addChatMessage('Sandbox could not start — this is usually temporary. Try again in a moment.', 'error');
         throw error;
       });
     }
@@ -2193,7 +2617,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
             // Remove the waiting message
             setChatMessages(prev => prev.filter(msg => msg.content !== 'Waiting for sandbox to be ready...'));
           } catch {
-            addChatMessage('Sandbox creation failed. Cannot apply code.', 'system');
+            addChatMessage('Sandbox could not start — cannot apply code. Try again in a moment.', 'error');
             return;
           }
         }
@@ -2617,7 +3041,7 @@ Tip: I automatically detect and install npm packages from your code imports (lik
 //             // Remove the waiting message
 //             setChatMessages(prev => prev.filter(msg => msg.content !== 'Waiting for sandbox to be ready...'));
 //           } catch (error: any) {
-//             addChatMessage('Sandbox creation failed. Cannot apply code.', 'system');
+//             addChatMessage('Sandbox could not start — cannot apply code. Try again in a moment.', 'error');
 //             throw error;
 //           }
 //         }
@@ -2875,6 +3299,14 @@ Tip: I automatically detect and install npm packages from your code imports (lik
         }
 
         setUrlStatus(brandExtensionMode ? ['Brand styles extracted!', 'Building your component...'] : ['Website scraped successfully!', 'Generating React app...']);
+
+        // Show a witty observation about the site being cloned (Part A — personality commentary)
+        if (!brandExtensionMode && appConfig.ui.enablePersonalityCommentary && scrapeData?.content) {
+          const commentary = getCommentary(scrapeData.content);
+          if (commentary) {
+            addChatMessage(commentary, 'system');
+          }
+        }
 
         // Clear preparing design state and switch to generation tab
         setIsPreparingDesign(false);
@@ -3458,18 +3890,34 @@ Focus on the key sections and content, making it clean and modern.`;
           setActiveTab('preview');
         }, 1000); // Show completion briefly then switch
       } catch (error: any) {
-        addChatMessage(`Failed to clone website: ${error.message}`, 'system');
+        // Provide context-aware error messaging instead of raw error text
+        const msg = (error?.message ?? '').toLowerCase();
+        let userMessage: string;
+
+        if (msg.includes('scrape') || msg.includes('firecrawl') || msg.includes('fetch')) {
+          userMessage =
+            "Couldn't read that site — it might be blocking scrapers or require login. Try a different URL, or paste the page content directly.";
+        } else if (msg.includes('generate') || msg.includes('ai') || msg.includes('model')) {
+          userMessage =
+            'The AI hit a wall generating that clone. This sometimes happens with very complex layouts. Try again, or describe a simpler version in the chat.';
+        } else if (msg.includes('sandbox') || msg.includes('e2b') || msg.includes('vercel')) {
+          userMessage =
+            'Sandbox could not start — this is usually temporary. Try again in a moment.';
+        } else {
+          userMessage =
+            'Something went wrong during generation. Try again, or paste a simpler URL to start with.';
+        }
+
+        addChatMessage(userMessage, 'error');
         setUrlStatus([]);
         setIsPreparingDesign(false);
-        setIsStartingNewGeneration(false); // Clear new generation flag on error
+        setIsStartingNewGeneration(false);
         setLoadingStage(null);
-        // Also clear generation progress on error
         setGenerationProgress(prev => ({
           ...prev,
           isGenerating: false,
           isStreaming: false,
           status: '',
-          // Keep files to display in sidebar
           files: prev.files
         }));
       }
@@ -3478,6 +3926,56 @@ Focus on the key sections and content, making it clean and modern.`;
 
   return (
     <HeaderProvider>
+      {/* Resume / Restart prompt (Req 6.4, 18.3) */}
+      {resumePrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" data-resume-prompt>
+          <div className="mx-4 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Resume previous generation?
+            </h3>
+            <p className="mt-2 text-sm text-gray-600">
+              A previous generation was interrupted during the{' '}
+              <span className="font-medium text-gray-900">
+                {resumePrompt.lastSuccessfulPhase ?? 'unknown'}
+              </span>{' '}
+              phase. Resume to continue from where it left off, or restart from
+              scratch.
+            </p>
+
+            <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  if (resumePrompt.sandboxUrl) {
+                    setSandboxData((prev) =>
+                      prev
+                        ? { ...prev, url: resumePrompt.sandboxUrl as string }
+                        : { url: resumePrompt.sandboxUrl as string, sandboxId: resumePrompt.sandboxId ?? 'resume-sandbox', createdAt: new Date(), files: {} },
+                    );
+                  }
+                  if (resumePrompt.sandboxId) {
+                    setPipeline((prev) => ({ ...prev, active: true }));
+                  }
+                  runGenerationPipeline(homeUrlInput || sessionStorage.getItem('targetUrl') || '', {
+                    resume: true,
+                  });
+                }}
+                className="rounded-lg bg-sky-600 px-4 py-2 text-sm font-medium text-white hover:bg-sky-700"
+              >
+                Resume
+              </button>
+              <button
+                type="button"
+                onClick={() => setResumePrompt(null)}
+                className="rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
+              >
+                Restart
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Low Balance Modal */}
       <LowBalanceModal
         isOpen={showLowBalanceModal}
@@ -3581,12 +4079,29 @@ Focus on the key sections and content, making it clean and modern.`;
                   // Start generation using the existing logic
                   setHomeUrlInput(url);
                   setHomeContextInput(instructions || '');
-                  startGeneration();
+                  // Use the progressive pipeline for the initial generation
+                  // (Req 18.3) — falls back to the legacy flow on error.
+                  runGenerationPipeline(url);
                 }}
                 disabled={loading || generationProgress.isGenerating}
               />
             </div>
           ) : null}
+
+          {/* Progressive pipeline progress panel (Req 18.3) */}
+          {pipeline.active && (
+            <div className="p-4 border-b border-border">
+              <ProgressUI
+                currentPhase={pipeline.currentPhase}
+                sectionStatuses={pipeline.sectionStatuses}
+                overallPercent={pipeline.overallPercent}
+                executionLog={pipeline.executionLog}
+                tokenUsageByPhase={pipeline.tokenUsageByPhase}
+                errors={pipeline.errors}
+                startedAt={pipeline.startedAt}
+              />
+            </div>
+          )}
 
           {conversationContext.scrapedWebsites.length > 0 && (
             <div className="p-4 bg-card border-b border-gray-200">

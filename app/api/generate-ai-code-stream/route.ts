@@ -8,9 +8,31 @@ import { executeSearchPlan, formatSearchResultsForAI, selectTargetFile } from '@
 import { FileManifest } from '@/types/file-manifest';
 import type { ConversationState, ConversationMessage, ConversationEdit } from '@/types/conversation';
 import { appConfig } from '@/config/app.config';
+import { streamingConfig } from '@/config/streaming.config';
 
 // Force dynamic route to enable streaming
 export const dynamic = 'force-dynamic';
+
+// ---------------------------------------------------------------------------
+// Module-level edit queue for inter-route communication (Req 11.2, 9.6)
+// ---------------------------------------------------------------------------
+
+import { globalEditQueue } from '@/lib/pipeline/edit-queue-instance';
+
+/** Edits received while initial generation is in progress are held here. */
+export const pendingEditQueue: Array<{ prompt: string; timestamp: number }> = [];
+
+let _isInitialGenerationActive = false;
+
+/** Set to true when the progressive pipeline starts; false when it completes. */
+export function setInitialGenerationActive(active: boolean): void {
+  _isInitialGenerationActive = active;
+}
+
+/** Returns true while the initial 5-phase pipeline is running. */
+export function isInitialGenerationActiveFlag(): boolean {
+  return _isInitialGenerationActive;
+}
 
 // Check if we're using Vercel AI Gateway
 const isUsingAIGateway = !!process.env.AI_GATEWAY_API_KEY;
@@ -78,6 +100,33 @@ declare global {
 
 export async function POST(request: NextRequest) {
   try {
+    // ---------------------------------------------------------------------------
+    // Edit-queue guard (Req 11.2): if the initial generation pipeline is active,
+    // queue the edit rather than processing it immediately.
+    // ---------------------------------------------------------------------------
+    const isPipelineGenerating =
+      isInitialGenerationActiveFlag() ||
+      request.headers.get('x-pipeline-generating') === 'true';
+
+    if (isPipelineGenerating) {
+      const body = await request.json();
+      const prompt = body.prompt ?? '';
+      // Enqueue through the shared EditQueue so the pipeline drains these edits
+      // on completion (Req 11.2). Mirror into pendingEditQueue for
+      // backwards-compatible module-level visibility.
+      globalEditQueue.enqueue({
+        id: `edit-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        prompt,
+        timestamp: Date.now(),
+      });
+      pendingEditQueue.push({ prompt, timestamp: Date.now() });
+      return NextResponse.json(
+        { queued: true, message: 'Edit queued — initial generation in progress' },
+        { status: 202 }
+      );
+    }
+    // ---------------------------------------------------------------------------
+
     const { prompt, model = 'openai/gpt-oss-20b', context, isEdit = false } = await request.json();
     
     console.log('[generate-ai-code-stream] Received request:');
@@ -1373,11 +1422,20 @@ It's better to have 3 complete files than 10 incomplete files.`
         // Buffer for incomplete tags
         let tagBuffer = '';
         
-        // Stream the response and parse for packages in real-time
+        // ENHANCED STREAMING: Process tokens with configurable chunk size for smooth real-time feel
+        let tokenBuffer = ''; // Buffer to accumulate small tokens
+        const CHUNK_SIZE = streamingConfig.CHUNK_SIZE; // Characters per chunk (configurable)
+        const FLUSH_ON_BOUNDARIES = streamingConfig.FLUSH_ON_BOUNDARIES; // Flush on natural boundaries
+        let charsSinceLastSend = 0;
+        
+        console.log(`[generate-ai-code-stream] Streaming config: CHUNK_SIZE=${CHUNK_SIZE}, FLUSH_ON_BOUNDARIES=${FLUSH_ON_BOUNDARIES}`);
+        
         for await (const textPart of result?.textStream || []) {
           const text = textPart || '';
           generatedCode += text;
           currentFile += text;
+          tokenBuffer += text;
+          charsSinceLastSend += text.length;
           
           // Combine with buffer for tag detection
           const searchText = tagBuffer + text;
@@ -1410,16 +1468,32 @@ It's better to have 3 complete files than 10 incomplete files.`
             conversationalBuffer += text;
           }
           
-          // Stream the raw text for live preview
-          await sendProgress({ 
-            type: 'stream', 
-            text: text,
-            raw: true 
-          });
+          // ENHANCED: Send chunks more frequently for smoother streaming
+          // Send immediately if:
+          // 1. We've accumulated enough characters (CHUNK_SIZE)
+          // 2. FLUSH_ON_BOUNDARIES is enabled AND we hit a natural break point
+          const shouldFlush = charsSinceLastSend >= CHUNK_SIZE || 
+                             (FLUSH_ON_BOUNDARIES && (
+                               text.includes('\n') || 
+                               text.endsWith(' ') ||
+                               text.endsWith(';') ||
+                               text.endsWith('}') ||
+                               text.endsWith('>')
+                             ));
           
-          // Debug: Log every 100 characters streamed
-          if (generatedCode.length % 100 < text.length) {
-            console.log(`[generate-ai-code-stream] Streamed ${generatedCode.length} chars`);
+          if (shouldFlush && tokenBuffer.length > 0) {
+            // Stream the accumulated text for live preview
+            await sendProgress({ 
+              type: 'stream', 
+              text: tokenBuffer,
+              raw: true 
+            });
+            
+            tokenBuffer = ''; // Clear buffer after sending
+            charsSinceLastSend = 0;
+            
+            // Debug: Log every chunk sent
+            console.log(`[generate-ai-code-stream] Streamed chunk (${generatedCode.length} total chars)`);
           }
           
           // Check for package tags in buffered text (ONLY for edits, not initial generation)

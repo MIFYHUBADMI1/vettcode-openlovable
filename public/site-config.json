@@ -1,0 +1,54 @@
+{
+  "siteName": "MirrorSite AI",
+  "tagline": "Turn website inspiration into a project",
+
+  "youtubeVideo": {
+    "url": "https://www.youtube.com/embed/YOUR_VIDEO_ID_HERE",
+    "videoId": "YOUR_VIDEO_ID_HERE",
+    "title": "MirrorSite AI - Product Demo"
+  },
+
+  "heroImages": {
+    "note": "Place your 6 hero images in the /public/hero-images/ directory. Use descriptive filenames like saas-landing.png, portfolio.png, etc.",
+    "images": [
+      {
+        "src": "/hero-images/image-1.png",
+        "alt": "MirrorSite AI - Example website analysis"
+      },
+      {
+        "src": "/hero-images/image-2.png",
+        "alt": "MirrorSite AI - Editable project output"
+      },
+      {
+        "src": "/hero-images/image-3.png",
+        "alt": "MirrorSite AI - Customization interface"
+      },
+      {
+        "src": "/hero-images/image-4.png",
+        "alt": "MirrorSite AI - Code generation"
+      },
+      {
+        "src": "/hero-images/image-5.png",
+        "alt": "MirrorSite AI - Live preview"
+      },
+      {
+        "src": "/hero-images/image-6.png",
+        "alt": "MirrorSite AI - Deployment ready"
+      }
+    ]
+  },
+
+  "links": {
+    "signup": "/signup",
+    "builder": "/builder",
+    "pricing": "/pricing",
+    "about": "/about"
+  },
+
+  "branding": {
+    "logoSrc": "/logo.png",
+    "faviconSrc": "/favicon.ico",
+    "primaryGradient": "from-orange-500 via-red-500 to-pink-500",
+    "secondaryGradient": "from-orange-400 to-red-400"
+  }
+}

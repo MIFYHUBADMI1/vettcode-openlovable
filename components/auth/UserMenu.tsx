@@ -2,7 +2,7 @@
 
 import { useSession, signOut } from "next-auth/react";
 import Link from "next/link";
-import { User, LogOut, Settings, Search as SearchIcon, Coins } from "lucide-react";
+import { User, LogOut, Settings, Search as SearchIcon, Coins, FolderKanban } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
 
@@ -12,12 +12,14 @@ export default function UserMenu() {
   const [tokenBalance, setTokenBalance] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  // Fetch token balance when session is available
+  // Fetch token balance only when the session is fully authenticated.
+  // Guarding on `status` prevents a fetch during the transient loading
+  // → authenticated window where `session` may briefly be undefined.
   useEffect(() => {
-    if (session?.user?.id) {
+    if (status === 'authenticated' && session?.user?.id) {
       fetchTokenBalance();
     }
-  }, [session]);
+  }, [status, session]);
 
   const fetchTokenBalance = async () => {
     try {
@@ -181,6 +183,15 @@ export default function UserMenu() {
               >
                 <User className="w-5 h-5 text-gray-500" />
                 <span className="text-sm font-medium text-gray-700">Builder</span>
+              </Link>
+
+              <Link
+                href="/dashboard"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-4 px-6 py-3 hover:bg-orange-50 transition-colors"
+              >
+                <FolderKanban className="w-5 h-5 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700">My Projects</span>
               </Link>
 
               <Link

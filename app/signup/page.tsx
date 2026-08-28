@@ -59,7 +59,7 @@ export default function SignUpPage() {
 
       if (!response.ok) {
         toast.error("Signup Failed", {
-          description: data.error || "Failed to create account",
+          description: data.error || "Couldn't create your account",
         });
         return;
       }

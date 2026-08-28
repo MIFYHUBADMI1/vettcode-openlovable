@@ -47,7 +47,7 @@ export default function SandboxPreview({
               {previewUrl}
             </code>
           ) : (
-            <span className="text-xs text-gray-500">Waiting for sandbox URL...</span>
+            <span className="text-xs text-gray-500">Waiting for sandbox...</span>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -87,10 +87,8 @@ export default function SandboxPreview({
               <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
               <p className="text-sm text-gray-400">
                 {!previewUrl 
-                  ? 'Setting up sandbox environment...' 
-                  : type === 'vite' 
-                    ? 'Starting Vite dev server...' 
-                    : 'Starting Next.js dev server...'
+                  ? 'Spinning up your sandbox...' 
+                  : 'Starting dev server...'
                 }
               </p>
             </div>

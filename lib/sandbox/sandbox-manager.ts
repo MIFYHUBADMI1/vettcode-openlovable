@@ -107,6 +107,37 @@ class SandboxManager {
   }
 
   /**
+   * Pause a sandbox — preserves full state for later resumption.
+   */
+  async pauseSandbox(sandboxId: string): Promise<boolean> {
+    const sandbox = this.sandboxes.get(sandboxId);
+    if (!sandbox) {
+      return false;
+    }
+    try {
+      return await sandbox.provider.pauseSandbox();
+    } catch (error) {
+      console.error(`[SandboxManager] Error pausing sandbox ${sandboxId}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Get the lifecycle status of a sandbox.
+   */
+  async getSandboxStatus(sandboxId: string): Promise<string> {
+    const sandbox = this.sandboxes.get(sandboxId);
+    if (!sandbox) {
+      return 'unknown';
+    }
+    try {
+      return await sandbox.provider.getStatus();
+    } catch {
+      return 'unknown';
+    }
+  }
+
+  /**
    * Terminate a sandbox
    */
   async terminateSandbox(sandboxId: string): Promise<void> {

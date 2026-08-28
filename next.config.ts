@@ -17,11 +17,7 @@ const nextConfig: NextConfig = {
     // Don't fail build on ESLint warnings
     ignoreDuringBuilds: false,
   },
-  experimental: {
-    turbo: {
-      root: process.cwd(),
-    },
-  },
+  turbopack: {},
 };
 
 export default nextConfig;

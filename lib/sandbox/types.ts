@@ -42,6 +42,12 @@ export abstract class SandboxProvider {
   }
 
   abstract createSandbox(): Promise<SandboxInfo>;
+
+  /** Attempt to reconnect/resume an existing sandbox by ID. */
+  async reconnect(_sandboxId: string): Promise<boolean> {
+    return false; // Not all providers support reconnection
+  }
+
   abstract runCommand(command: string): Promise<CommandResult>;
   abstract writeFile(path: string, content: string): Promise<void>;
   abstract readFile(path: string): Promise<string>;
@@ -51,15 +57,25 @@ export abstract class SandboxProvider {
   abstract getSandboxInfo(): SandboxInfo | null;
   abstract terminate(): Promise<void>;
   abstract isAlive(): boolean;
-  
+
   // Optional methods that providers can override
   async setupViteApp(): Promise<void> {
     // Default implementation for setting up a Vite React app
     throw new Error('setupViteApp not implemented for this provider');
   }
-  
+
   async restartViteServer(): Promise<void> {
     // Default implementation for restarting Vite
     throw new Error('restartViteServer not implemented for this provider');
+  }
+
+  /** Pause the sandbox, preserving full state for later resumption. */
+  async pauseSandbox(): Promise<boolean> {
+    return false; // Not all providers support pausing
+  }
+
+  /** Get the current lifecycle status of the sandbox. */
+  async getStatus(): Promise<'running' | 'paused' | 'killed' | 'unknown'> {
+    return 'unknown';
   }
 }

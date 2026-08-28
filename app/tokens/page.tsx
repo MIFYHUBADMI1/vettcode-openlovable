@@ -60,13 +60,20 @@ export default function TokensPage() {
     document.title = 'Buy Tokens - Secure Payment | MirrorSite AI';
   }, []);
 
+  // Redirect-only effect — separate from data fetching so a transient
+  // status change doesn't both redirect and trigger a fetch.
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
-    } else if (session?.user?.id) {
+    }
+  }, [status, router]);
+
+  // Fetch token balance only when authenticated with a stable session.
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user?.id) {
       fetchTokenBalance();
     }
-  }, [status, session, router]);
+  }, [status, session]);
 
   useEffect(() => {
     const amount = parseFloat(amountUGX) || 0;
@@ -189,6 +196,24 @@ export default function TokensPage() {
     setAmountUGX('15000');
     setPhoneNumber('');
   };
+
+  // Show loading while checking authentication, OR while session hasn't
+  // populated yet after status resolved (prevents blank-screen flash).
+  if (status === 'loading' || (status === 'authenticated' && !session)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-50 via-white to-orange-50/30">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (redirect handled by effect above)
+  if (!session) {
+    return null;
+  }
 
   if (paymentStep !== 'calculator') {
     return (

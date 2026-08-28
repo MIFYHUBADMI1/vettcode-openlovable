@@ -1,0 +1,526 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Scaffold pipeline directory structure and shared types": [
+      {
+        "executionId": "c711039f-aa12-4404-aec8-17c8706d3670",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787793630176
+      },
+      {
+        "executionId": "c711039f-aa12-4404-aec8-17c8706d3670",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787793946153
+      }
+    ],
+    "2.1 Implement `lib/pipeline/blueprint-parser.ts` with `BlueprintParser.parse()`, `validate()`, and `normalize()` static methods": [
+      {
+        "executionId": "57c95514-84ff-4045-b237-a9c4d8acad51",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787793982117
+      },
+      {
+        "executionId": "57c95514-84ff-4045-b237-a9c4d8acad51",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794722922
+      }
+    ],
+    "3.1 Implement `lib/pipeline/pretty-printer.ts` with `PrettyPrinter.format(blueprint: SiteBlueprint): string`": [
+      {
+        "executionId": "57c95514-84ff-4045-b237-a9c4d8acad51",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787793990038
+      },
+      {
+        "executionId": "57c95514-84ff-4045-b237-a9c4d8acad51",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794732054
+      }
+    ],
+    "4.1 Extend `lib/file-parser.ts` with `parseAIResponse(rawResponse: string)` additions for progressive mode": [
+      {
+        "executionId": "57c95514-84ff-4045-b237-a9c4d8acad51",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794002490
+      },
+      {
+        "executionId": "57c95514-84ff-4045-b237-a9c4d8acad51",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794742949
+      }
+    ],
+    "6.1 Implement `lib/pipeline/phase-state-machine.ts` — `PhaseStateMachine` class extending `EventEmitter`": [
+      {
+        "executionId": "57c95514-84ff-4045-b237-a9c4d8acad51",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794011728
+      },
+      {
+        "executionId": "57c95514-84ff-4045-b237-a9c4d8acad51",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794754067
+      }
+    ],
+    "7.1 Implement `lib/pipeline/edit-queue.ts` — `EditQueue` class": [
+      {
+        "executionId": "57c95514-84ff-4045-b237-a9c4d8acad51",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794021269
+      },
+      {
+        "executionId": "57c95514-84ff-4045-b237-a9c4d8acad51",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794764036
+      }
+    ],
+    "2. Implement BlueprintParser": [
+      {
+        "executionId": "57c95514-84ff-4045-b237-a9c4d8acad51",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794724352
+      }
+    ],
+    "3. Implement PrettyPrinter": [
+      {
+        "executionId": "57c95514-84ff-4045-b237-a9c4d8acad51",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794733363
+      }
+    ],
+    "4. Extend FileParser for progressive extraction": [
+      {
+        "executionId": "57c95514-84ff-4045-b237-a9c4d8acad51",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794744504
+      }
+    ],
+    "6. Implement PhaseStateMachine": [
+      {
+        "executionId": "57c95514-84ff-4045-b237-a9c4d8acad51",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794755127
+      }
+    ],
+    "7. Implement EditQueue": [
+      {
+        "executionId": "57c95514-84ff-4045-b237-a9c4d8acad51",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794765670
+      }
+    ],
+    "5. Checkpoint — Ensure all foundational type and parser tests pass": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794832735
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794923936
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794997394
+      }
+    ],
+    "8.1 Create `app/api/generate-ai-phase/route.ts` — streaming SSE route accepting `PhaseGenerationRequest`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794835067
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787795027325
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797008227
+      }
+    ],
+    "8.2 Create `lib/pipeline/system-prompt-builder.ts` — `SystemPromptBuilder.build(phase, targetSection?)`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794837892
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787795037205
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797017194
+      }
+    ],
+    "8.3 Create prompt template files in `lib/pipeline/prompts/`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794840798
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787795047020
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797025943
+      }
+    ],
+    "9.1 Implement `lib/pipeline/progressive-file-application.ts` — `ProgressiveFileApplicationService`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794842511
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787795056887
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797038785
+      }
+    ],
+    "10. Checkpoint — Ensure all infrastructure layer tests pass": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794844417
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797061245
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797136467
+      }
+    ],
+    "11.1 Implement `lib/pipeline/phases/analysis.ts` — `AnalysisPhaseHandler`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794845781
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797146488
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797561762
+      }
+    ],
+    "12.1 Implement `lib/pipeline/phases/instant-preview.ts` — `InstantPreviewPhaseHandler`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794847000
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797155399
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797572743
+      }
+    ],
+    "13.1 Implement `lib/pipeline/phases/progressive-cloning.ts` — `ProgressiveCloningPhaseHandler`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794848268
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797164086
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797586871
+      }
+    ],
+    "14.1 Implement `lib/pipeline/phases/validation.ts` — `ValidationPhaseHandler`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794849992
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797173114
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797598176
+      }
+    ],
+    "15.1 Implement `lib/pipeline/phases/polish.ts` — `PolishPhaseHandler`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794851485
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797181520
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797610986
+      }
+    ],
+    "16. Checkpoint — Ensure all phase handler tests pass": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794852718
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797623928
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797690796
+      }
+    ],
+    "17.1 Create `app/api/generation-pipeline/route.ts` — SSE orchestration endpoint": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794854066
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797703163
+      }
+    ],
+    "17.2 Add pipeline context persistence to MongoDB": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794855717
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797714014
+      }
+    ],
+    "17.3 Extend the existing `generate-ai-code-stream` endpoint to check `context.isInitialGeneration`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794857512
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797726209
+      }
+    ],
+    "18.1 Create `components/app/ProgressUI.tsx` — progress panel component": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794858838
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797735694
+      }
+    ],
+    "18.2 Implement expandable phase detail panel in `ProgressUI`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794860156
+      }
+    ],
+    "18.3 Update `app/generation/page.tsx` to integrate pipeline orchestration": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794862756
+      }
+    ],
+    "19. Checkpoint — Ensure all UI and orchestration tests pass": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794865098
+      }
+    ],
+    "20.1 Add `fast-check` and a test runner (`vitest`) as dev dependencies in `package.json`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794866657
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787795067091
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797051038
+      }
+    ],
+    "20.2 Create fast-check arbitraries in `lib/pipeline/__tests__/arbitraries.ts`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794868095
+      },
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797745813
+      }
+    ],
+    "21.1 Create `lib/pipeline/__tests__/blueprint-parser.property.test.ts`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794869973
+      }
+    ],
+    "21.2 Create `lib/pipeline/__tests__/pretty-printer.property.test.ts`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794871293
+      }
+    ],
+    "21.3 Create `lib/pipeline/__tests__/file-parser.property.test.ts`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794872975
+      }
+    ],
+    "21.4 Create `lib/pipeline/__tests__/phase-state-machine.property.test.ts`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794874422
+      }
+    ],
+    "21.5 Create `lib/pipeline/__tests__/progressive-cloning.property.test.ts`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794876155
+      }
+    ],
+    "21.6 Create `lib/pipeline/__tests__/validation.property.test.ts`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794877460
+      }
+    ],
+    "21.7 Create `lib/pipeline/__tests__/system-prompt-builder.property.test.ts`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794878641
+      }
+    ],
+    "22.1 Add Playwright as a dev dependency and create `playwright.config.ts`": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794879972
+      }
+    ],
+    "23. Final checkpoint — All tests green, integration verified": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787794881427
+      }
+    ],
+    "8. Implement AI generation endpoint (generate-ai-phase)": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797029177
+      }
+    ],
+    "9. Implement ProgressiveFileApplicationService": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797040588
+      }
+    ],
+    "11. Implement Phase 1 — AnalysisPhaseHandler": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797563677
+      }
+    ],
+    "12. Implement Phase 2 — InstantPreviewPhaseHandler": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797574755
+      }
+    ],
+    "13. Implement Phase 3 — ProgressiveCloningPhaseHandler": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797589463
+      }
+    ],
+    "14. Implement Phase 4 — ValidationPhaseHandler": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797600947
+      }
+    ],
+    "15. Implement Phase 5 — PolishPhaseHandler": [
+      {
+        "executionId": "5f385e18-bc7e-490c-b2d8-d08798dfe760",
+        "chatSessionId": "sess_c168e85d-e21d-4730-be71-f644264cdc4a",
+        "timestamp": 1787797613619
+      }
+    ]
+  }
+}

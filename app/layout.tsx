@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Inter, Roboto_Mono } from "next/font/google";
 import localFont from "next/font/local";
 import SessionProvider from "@/components/providers/SessionProvider";
 import { Toaster } from "sonner";
@@ -7,9 +6,12 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
-const inter = Inter({ 
-  subsets: ["latin"],
-  variable: "--font-inter"
+const inter = localFont({
+  src: [
+    { path: "./fonts/Inter-Latin.woff2", style: "normal", weight: "100 900" },
+    { path: "./fonts/Inter-LatinExt.woff2", style: "normal", weight: "100 900" },
+  ],
+  variable: "--font-inter",
 });
 
 const geistSans = localFont({
@@ -24,8 +26,11 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-const robotoMono = Roboto_Mono({
-  subsets: ["latin"],
+const robotoMono = localFont({
+  src: [
+    { path: "./fonts/RobotoMono-Latin.woff2", style: "normal", weight: "100 900" },
+    { path: "./fonts/RobotoMono-LatinExt.woff2", style: "normal", weight: "100 900" },
+  ],
   variable: "--font-roboto-mono",
 });
 

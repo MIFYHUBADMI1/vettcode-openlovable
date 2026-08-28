@@ -12,7 +12,7 @@ interface LoadingStateProps {
 }
 
 export function LoadingState({
-  message = "Loading...",
+  message = "Working on it...",
   showFlame = true,
   size = "md",
   className,

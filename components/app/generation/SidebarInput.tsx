@@ -58,7 +58,7 @@ export default function SidebarInput({ onSubmit, disabled = false }: SidebarInpu
          {/* link to home page with button */}
          <Link href="/">
           <button className="w-full px-3 py-2 text-xs font-medium text-gray-700 bg-white rounded border border-gray-200 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500">
-            Generate a new website
+            Start a new clone
           </button>
          </Link>
         </div>

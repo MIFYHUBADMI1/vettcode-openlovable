@@ -126,8 +126,7 @@ export default function NotFound() {
                 Page Not Found
               </h2>
               <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                Oops! The page you're looking for seems to have vanished into the digital void. 
-                It might have been moved, deleted, or perhaps it never existed.
+                That page doesn't exist — or it moved and didn't leave a forwarding address.
               </p>
             </motion.div>
 
@@ -151,7 +150,7 @@ export default function NotFound() {
                   className="bg-white border-2 border-gray-300 hover:border-orange-500 text-gray-700 hover:text-orange-500 px-8 py-4 rounded-xl text-lg font-semibold shadow-md hover:shadow-lg transition-all duration-300 flex items-center gap-3"
                 >
                   <Search className="w-5 h-5" />
-                  Start Building
+                  Clone a site
                 </ButtonUI>
               </Link>
             </motion.div>
@@ -214,7 +213,7 @@ export default function NotFound() {
                 className="text-gray-600 hover:text-orange-500 transition-colors duration-200 flex items-center gap-2 mx-auto group"
               >
                 <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-                <span className="font-medium">Go back to previous page</span>
+                <span className="font-medium">← Go back</span>
               </button>
             </motion.div>
           </motion.div>
