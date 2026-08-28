@@ -46,7 +46,10 @@ const openrouter = createOpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
 });
 
-const DEFAULT_MODEL = 'openai/gpt-oss-20b';
+// This model is exposed by Groq in the app model registry. The previous
+// gpt-oss-20b default is not a valid Groq model and caused the pipeline to
+// stop immediately after analysis/preview when no model was supplied.
+const DEFAULT_MODEL = 'openai/gpt-oss-120b';
 
 /** Per-phase output ceiling — scoped prompts need far fewer tokens (Req 7.7). */
 const MAX_TOKENS_BY_PHASE: Record<import('@/lib/pipeline/phase-request-validation').GenerationPhase, number> = {
