@@ -150,6 +150,7 @@ function AISandboxPage() {
   // Refs - must be declared at the top with all hooks
   const sandboxCreationRef = useRef<boolean>(false);
   const pipelineStartedRef = useRef(false);
+  const pipelineInitializationRef = useRef(false);
   const pipelineInputsRef = useRef<PipelineInputs>({});
   
   // Low balance modal state
@@ -548,11 +549,13 @@ function AISandboxPage() {
     if (authStatus !== 'authenticated' || !session) return; // Don't run if not authenticated
     
     let isMounted = true;
-    let sandboxCreated = false; // Track if sandbox was created in this effect
 
     const initializePage = async () => {
-      // Prevent double execution in React StrictMode
-      if (sandboxCreated) return;
+      // Auth starts as loading on the first render. The old empty dependency
+      // array caused this effect to return once and never initialize the URL,
+      // session state, or auto-start flag after authentication resolved.
+      if (pipelineInitializationRef.current) return;
+      pipelineInitializationRef.current = true;
       
       // First check URL parameters (from home page navigation)
       const urlParam = searchParams.get('url');
@@ -662,12 +665,10 @@ function AISandboxPage() {
           // Find the project by sandboxId, call the resume API, and load
           // the sandbox URL directly — no new sandbox is created.
           console.log('[home] Resuming saved project sandbox:', sandboxIdParam);
-          sandboxCreated = true;
           await resumeProjectSandbox(sandboxIdParam);
         } else if (sandboxIdParam) {
           // Old-style sandbox restore — try to reconnect directly.
           console.log('[home] Attempting to restore sandbox:', sandboxIdParam);
-          sandboxCreated = true;
           await createSandbox(true);
         } else {
           // Fresh clone: the five-phase pipeline creates its own sandbox in the
@@ -699,8 +700,9 @@ function AISandboxPage() {
     return () => {
       isMounted = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run only on mount
+    // Initialization is gated by the ref so it runs once after auth resolves,
+    // while still allowing the initial loading render to be skipped safely.
+  }, [authStatus, session]);
   
   useEffect(() => {
     // Handle Escape key for home screen
