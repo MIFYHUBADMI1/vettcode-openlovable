@@ -1276,8 +1276,10 @@ MORPH FAST APPLY MODE (EDIT-ONLY):
         // If model starts with 'openrouter/', use OpenRouter provider
         if (model.startsWith('openrouter/')) {
           actualProvider = 'openrouter';
-          // Remove 'openrouter/' prefix for the actual API call
-          actualModel = model.replace('openrouter/', '');
+          actualModel =
+            model === OPENROUTER_FREE_ROUTER
+              ? model
+              : model.replace(/^openrouter\//, '');
 
           if (UNAVAILABLE_OPENROUTER_MODELS.has(actualModel)) {
             console.warn(`[generate-ai-code-stream] Model ${actualModel} is unavailable; using ${OPENROUTER_FREE_ROUTER}`);
