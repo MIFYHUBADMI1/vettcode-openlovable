@@ -81,8 +81,8 @@ export class ProgressiveFileApplicationService {
     const { isProgressive, sectionName, onFileWritten } = options;
 
     const tag = sectionName
-      ? `[ProgressiveFileApplication:${sectionName}]`
-      : '[ProgressiveFileApplication]';
+      ? `[Phase: progressive_cloning:${sectionName}]`
+      : '[Phase: progressive_cloning]';
 
     for (const file of files) {
       // Guard: only apply files that parsed successfully (have a path and
@@ -191,26 +191,26 @@ export class ProgressiveFileApplicationService {
     try {
       // First attempt
       await attemptHmr();
-      console.log('[ProgressiveFileApplication] Hot reload triggered successfully.');
+      console.log('[Phase: progressive_cloning] Hot reload triggered successfully.');
     } catch (firstErr) {
       console.warn(
-        '[ProgressiveFileApplication] First HMR attempt failed, retrying:',
+        '[Phase: progressive_cloning] First HMR attempt failed, retrying:',
         firstErr,
       );
 
       try {
         // Single retry (Req 3.7)
         await attemptHmr();
-        console.log('[ProgressiveFileApplication] Hot reload retry succeeded.');
+        console.log('[Phase: progressive_cloning] Hot reload retry succeeded.');
       } catch (retryErr) {
         console.warn(
-          '[ProgressiveFileApplication] HMR retry failed, falling back to full server restart (Req 3.8):',
+          '[Phase: progressive_cloning] HMR retry failed, falling back to full server restart (Req 3.8):',
           retryErr,
         );
         // Full restart fallback (Req 3.8)
         await provider.restartViteServer();
         console.log(
-          '[ProgressiveFileApplication] Vite server restarted successfully.',
+          '[Phase: progressive_cloning] Vite server restarted successfully.',
         );
       }
     }

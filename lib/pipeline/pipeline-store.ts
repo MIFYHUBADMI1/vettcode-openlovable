@@ -13,6 +13,7 @@ import { getDatabase } from '../mongodb';
 import type {
   PhaseExecutionLog,
   PhaseState,
+  PipelineInputs,
   SectionResult,
 } from './types/pipeline';
 import type { SiteBlueprint } from './types/blueprint';
@@ -29,6 +30,8 @@ export interface PersistedPipelineContext {
   lastSuccessfulPhase: PhaseState | null;
   /** Sandbox preview URL, captured after the Instant Preview phase. */
   sandboxUrl: string | null;
+  /** User-provided generation inputs (style/model/instructions/brand mode). */
+  inputs?: PipelineInputs;
   updatedAt: number;
 }
 
@@ -65,6 +68,7 @@ export class PipelineStore {
       sectionResults: snapshot.sectionResults ?? [],
       lastSuccessfulPhase: snapshot.lastSuccessfulPhase ?? null,
       sandboxUrl: snapshot.sandboxUrl ?? null,
+      ...(snapshot.inputs ? { inputs: snapshot.inputs } : {}),
       updatedAt: Date.now(),
     };
 

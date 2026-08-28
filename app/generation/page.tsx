@@ -10,9 +10,10 @@ import { getCommentary } from '@/lib/commentary';
 import HeroInput from '@/components/HeroInput';
 import SidebarInput from '@/components/app/generation/SidebarInput';
 import ProgressUI from '@/components/app/ProgressUI';
-import type { PhaseState, PhaseExecutionLog, SectionStatus } from '@/lib/pipeline/types';
+import type { PhaseState, PhaseExecutionLog, SectionStatus, PipelineInputs } from '@/lib/pipeline/types';
 import HeaderBrandKit from '@/components/shared/header/BrandKit/BrandKit';
 import { HeaderProvider } from '@/components/shared/header/HeaderContext';
+import UserMenu from '@/components/auth/UserMenu';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 // Import icons from centralized module to avoid Turbopack chunk issues
@@ -88,21 +89,34 @@ function AISandboxPage() {
   const [aiChatInput, setAiChatInput] = useState('');
   const [aiEnabled] = useState(true);
   
-  const [aiModel, setAiModel] = useState(() => {
+  const [aiModel, setAiModel] = useState(appConfig.ai.defaultModel);
+
+  const isUnavailableModel = (model: string) => {
+    return [
+      'openrouter/nvidia/nemotron-3.5-lightning:free',
+      'openrouter/nvidia/nemotron-3-ultra-550b-a55b:free',
+    ].includes(model);
+  };
+
+  // Resolve the initial model after hydration. This must run in an effect —
+  // reading localStorage during render creates a server/client branch and a
+  // hydration mismatch (server renders the default, client renders the saved one).
+  useEffect(() => {
     const modelParam = searchParams.get('model');
-    // Try to load from localStorage first
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('selectedModels');
-      if (saved) {
-        const userModels = JSON.parse(saved);
-        if (modelParam && userModels.includes(modelParam)) {
-          return modelParam;
-        }
-        return userModels[0] || appConfig.ai.defaultModel;
-      }
+    const saved = localStorage.getItem('selectedModels');
+    const userModels = saved ? JSON.parse(saved) : (appConfig.ai.defaultBuilderModels || appConfig.ai.availableModels.slice(0, 3));
+    const validModels = userModels.filter((model: string) => !isUnavailableModel(model));
+
+    if (saved && validModels.length !== userModels.length) {
+      localStorage.setItem('selectedModels', JSON.stringify(validModels));
     }
-    return appConfig.ai.availableModels.includes(modelParam || '') ? modelParam! : appConfig.ai.defaultModel;
-  });
+
+    if (modelParam && !isUnavailableModel(modelParam)) {
+      setAiModel(modelParam);
+    } else {
+      setAiModel(validModels[0] || appConfig.ai.defaultModel);
+    }
+  }, [searchParams]);
   
   const [userModels, setUserModels] = useState<string[]>([]);
   const [urlOverlayVisible, setUrlOverlayVisible] = useState(false);
@@ -135,6 +149,8 @@ function AISandboxPage() {
   
   // Refs - must be declared at the top with all hooks
   const sandboxCreationRef = useRef<boolean>(false);
+  const pipelineStartedRef = useRef(false);
+  const pipelineInputsRef = useRef<PipelineInputs>({});
   
   // Low balance modal state
   const [showLowBalanceModal, setShowLowBalanceModal] = useState(false);
@@ -278,12 +294,23 @@ function AISandboxPage() {
   // -------------------------------------------------------------------------
   function runGenerationPipeline(
     targetUrl: string,
-    opts: { resume?: boolean } = {},
+    opts: { resume?: boolean; inputs?: PipelineInputs; sandboxId?: string } = {},
   ): void {
-    if (!sessionIdRef.current) return;
+    if (!sessionIdRef.current || pipelineStartedRef.current) {
+      console.log('[Phase: pipeline] Skipping duplicate or uninitialized start', {
+        hasSessionId: Boolean(sessionIdRef.current),
+        alreadyStarted: pipelineStartedRef.current,
+      });
+      return;
+    }
 
     const sid = sessionIdRef.current;
     const resume = opts.resume ?? false;
+    const inputs = opts.inputs ?? pipelineInputsRef.current;
+    const requestedSandboxId = opts.sandboxId ?? (resume ? (resumePrompt?.sandboxId ?? sandboxData?.sandboxId) : sandboxData?.sandboxId);
+    pipelineStartedRef.current = true;
+
+    console.log(`[Phase: pipeline] Starting five-phase pipeline — resume=${resume}`);
 
     setPipeline({
       active: true,
@@ -307,8 +334,9 @@ function AISandboxPage() {
           body: JSON.stringify({
             url: targetUrl,
             sessionId: sid,
-            sandboxId: resumePrompt?.sandboxId ?? undefined,
+            sandboxId: requestedSandboxId,
             resume,
+            inputs,
           }),
         });
 
@@ -349,6 +377,7 @@ function AISandboxPage() {
         const message = err instanceof Error ? err.message : String(err);
         console.error('[generation] Pipeline failed:', err);
         setPipeline((prev) => ({ ...prev, active: false }));
+        pipelineStartedRef.current = false;
         addChatMessage(`Something went wrong: ${message}`, 'error');
       }
     })();
@@ -358,6 +387,11 @@ function AISandboxPage() {
   function handlePipelineEvent(event: Record<string, unknown>): void {
     const type = event['type'] as string;
     const phase = (event['phase'] ?? event['to'] ?? 'idle') as PhaseState;
+    console.log(`[Phase: pipeline] SSE event — type=${type}, phase=${phase}`, {
+      sectionName: event['sectionName'],
+      status: event['status'],
+      overallPercent: event['overallPercent'],
+    });
 
     switch (type) {
       case 'phase_transition': {
@@ -447,12 +481,23 @@ function AISandboxPage() {
       }
       case 'complete': {
         const payload = (event['payload'] ?? {}) as Record<string, unknown>;
+        const completedFiles = (payload['files'] ?? {}) as Record<string, string>;
+        if (Object.keys(completedFiles).length > 0) {
+          setSandboxFiles(completedFiles);
+          setFileStructure(JSON.stringify(Object.keys(completedFiles), null, 2));
+        } else {
+          void fetchSandboxFiles();
+        }
         setPipeline((prev) => ({
           ...prev,
           active: false,
           currentPhase: 'complete',
           overallPercent: 100,
         }));
+        pipelineStartedRef.current = false;
+        if (typeof payload['sandboxId'] === 'string') {
+          setSandboxData((prev) => prev ? { ...prev, sandboxId: payload['sandboxId'] as string } : prev);
+        }
         if (typeof payload['sandboxUrl'] === 'string') {
           setSandboxData((prev) =>
             prev
@@ -469,6 +514,7 @@ function AISandboxPage() {
       case 'error': {
         const message = (event['message'] as string) ?? 'Pipeline error';
         setPipeline((prev) => ({ ...prev, active: false }));
+        pipelineStartedRef.current = false;
         addChatMessage(`Something went wrong: ${message}`, 'error');
         break;
       }
@@ -518,7 +564,11 @@ function AISandboxPage() {
       const storedStyle = templateParam || sessionStorage.getItem('selectedStyle');
       const storedModel = sessionStorage.getItem('selectedModel');
       const storedInstructions = sessionStorage.getItem('additionalInstructions');
-      
+      const storedMarkdown = sessionStorage.getItem('siteMarkdown');
+      const isBrandExtension = sessionStorage.getItem('brandExtensionMode') === 'true';
+      const brandPrompt = sessionStorage.getItem('brandExtensionPrompt') || '';
+      const pipelineInstructions = detailsParam || storedInstructions || '';
+
       if (storedUrl) {
         // Mark that we have an initial submission since we're loading with a URL
         setHasInitialSubmission(true);
@@ -569,7 +619,7 @@ function AISandboxPage() {
           setHomeContextInput(storedInstructions);
         }
         
-        if (storedModel) {
+        if (storedModel && !isUnavailableModel(storedModel)) {
           setAiModel(storedModel);
         }
         
@@ -620,9 +670,10 @@ function AISandboxPage() {
           sandboxCreated = true;
           await createSandbox(true);
         } else {
-          console.log('[home] No sandbox in URL, creating new sandbox automatically...');
-          sandboxCreated = true;
-          await createSandbox(true);
+          // Fresh clone: the five-phase pipeline creates its own sandbox in the
+          // Instant Preview phase. Pre-creating one here would duplicate work
+          // and split ownership of the sandbox lifecycle.
+          console.log('[home] Fresh clone: sandbox will be created by the generation pipeline (Instant Preview phase).');
         }
         
         // If we have a URL from the home page, mark for automatic start
@@ -678,7 +729,7 @@ function AISandboxPage() {
     }
   }, [showHomeScreen, homeUrlInput]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Auto-start generation if flagged
+  // Auto-start generation if flagged (from builder/home navigation)
   useEffect(() => {
     const autoStart = sessionStorage.getItem('autoStart');
     if (autoStart === 'true' && !showHomeScreen && homeUrlInput) {
@@ -686,10 +737,10 @@ function AISandboxPage() {
       // Small delay to ensure everything is ready
       setTimeout(() => {
         console.log('[generation] Auto-starting generation for URL:', homeUrlInput);
-        startGeneration();
+        setShouldAutoGenerate(true);
       }, 1000);
     }
-  }, [showHomeScreen, homeUrlInput]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [showHomeScreen, homeUrlInput]);
 
 
   const checkSandboxStatus = async () => {
@@ -928,6 +979,8 @@ function AISandboxPage() {
       return null;
     }
     
+    sandboxCreationRef.current = true;
+
     // Note: Token validation is now done at generation time based on actual content size
     // Minimum balance check only
     try {
@@ -946,6 +999,7 @@ function AISandboxPage() {
             targetUrl: homeUrlInput || targetUrl || 'websites'
           });
           setShowLowBalanceModal(true);
+          sandboxCreationRef.current = false;
           return null;
         }
       }
@@ -953,7 +1007,6 @@ function AISandboxPage() {
       console.error('Error checking token balance:', error);
     }
     
-    sandboxCreationRef.current = true;
     console.log('[createSandbox] Starting sandbox creation...');
     setLoading(true);
     setShowLoadingBackground(true);
@@ -2562,9 +2615,12 @@ function AISandboxPage() {
                     files: prev.files.length > 0 ? prev.files : parsedFiles
                   }));
                 } else if (data.type === 'error') {
-                  throw new Error(data.error);
+                  throw new Error(data.error || data.message || 'AI generation failed');
                 }
               } catch (e) {
+                if (e instanceof Error && e.message !== 'Unexpected end of JSON input') {
+                  throw e;
+                }
                 console.error('Failed to parse SSE data:', e);
               }
             }
@@ -3151,779 +3207,52 @@ function AISandboxPage() {
   };
 
   const startGeneration = async () => {
-    if (!homeUrlInput.trim()) return;
-    
+    const target = homeUrlInput.trim();
+    if (!target || pipelineStartedRef.current) return;
+
+    const storedMode = sessionStorage.getItem('brandExtensionMode') === 'true' ? 'brand' : 'clone';
+    const inputs: PipelineInputs = {
+      ...pipelineInputsRef.current,
+      style: pipelineInputsRef.current.style || selectedStyle || undefined,
+      model: pipelineInputsRef.current.model || aiModel || undefined,
+      instructions: pipelineInputsRef.current.instructions || homeContextInput || undefined,
+      mode: pipelineInputsRef.current.mode || storedMode,
+      brandPrompt: pipelineInputsRef.current.brandPrompt || sessionStorage.getItem('brandExtensionPrompt') || undefined,
+    };
+    pipelineInputsRef.current = inputs;
+
     setHomeScreenFading(true);
-    
-    // Set immediate loading state for better UX
+    setShowHomeScreen(false);
+    setActiveTab('preview');
+    setLoading(true);
     setIsStartingNewGeneration(true);
     setLoadingStage('gathering');
-    
-    // Immediately switch to preview tab to show loading
-    setActiveTab('preview');
-    
-    // Set loading background to ensure proper visual feedback
     setShowLoadingBackground(true);
-    
-    // Clear messages and immediately show the initial message
+    setUrlInput(target);
+    setUrlOverlayVisible(false);
     setChatMessages([]);
-    let displayUrl = homeUrlInput.trim();
-    if (!displayUrl.match(/^https?:\/\//i)) {
-      displayUrl = 'https://' + displayUrl;
-    }
-    // Remove protocol for cleaner display
-    const cleanUrl = displayUrl.replace(/^https?:\/\//i, '');
-
-    // Check if we're in brand extension mode
-    const brandExtensionMode = sessionStorage.getItem('brandExtensionMode') === 'true';
-
     addChatMessage(
-      brandExtensionMode
-        ? `Analyzing brand from ${cleanUrl}...`
-        : `Starting to clone ${cleanUrl}...`,
-      'system'
+      inputs.mode === 'brand' ? 'Analyzing brand guidelines...' : `Starting five-phase clone pipeline for ${target}...`,
+      'system',
     );
-    
-    // Start creating sandbox and capturing screenshot immediately in parallel
-    const sandboxPromise = !sandboxData ? createSandbox(true) : Promise.resolve(null);
-    
-    // Set loading stage immediately before hiding home screen
-    setLoadingStage('gathering');
-    // Also ensure we're on preview tab to show the loading overlay
-    setActiveTab('preview');
-    
-    // Always capture screenshot for new URLs, even if sandbox exists
-    // This ensures the loading screen shows properly
-    captureUrlScreenshot(displayUrl);
-    
-    setTimeout(async () => {
-      setShowHomeScreen(false);
-      setHomeScreenFading(false);
-      
-      // Clear the starting flag after transition
-      setTimeout(() => {
-        setIsStartingNewGeneration(false);
-      }, 1000);
-      
-      // Wait for sandbox to be ready (if it's still creating)
-      const createdSandbox = await sandboxPromise;
-      
-      // Now start the clone process which will stream the generation
-      setUrlInput(homeUrlInput);
-      setUrlOverlayVisible(false); // Make sure overlay is closed
-      setUrlStatus(['Scraping website content...']);
-      
-      try {
-        // Scrape the website
-        let url = homeUrlInput.trim();
-        if (!url.match(/^https?:\/\//i)) {
-          url = 'https://' + url;
-        }
+    console.log('[Phase: pipeline] Fresh clone requested from main generation entry', {
+      targetUrl: target,
+      mode: inputs.mode,
+      model: inputs.model || 'default',
+    });
 
-        // Check if we're in brand extension mode
-        const brandExtensionMode = sessionStorage.getItem('brandExtensionMode') === 'true';
-        const brandExtensionPrompt = sessionStorage.getItem('brandExtensionPrompt') || '';
+    let screenshotUrl = target;
+    if (!/^https?:\/\//i.test(screenshotUrl)) screenshotUrl = 'https://' + screenshotUrl;
+    void captureUrlScreenshot(screenshotUrl);
 
-        // Screenshot is already being captured in parallel above
+    sessionStorage.removeItem('brandExtensionMode');
+    sessionStorage.removeItem('brandExtensionPrompt');
+    sessionStorage.removeItem('siteMarkdown');
+    sessionStorage.removeItem('autoStart');
 
-        let scrapeData: ScrapeData | undefined;
-        let brandGuidelines: any;
-
-        if (brandExtensionMode) {
-          // === BRAND EXTENSION MODE ===
-          addChatMessage('Extracting brand styles from the website...', 'system');
-
-          // Call the brand extraction endpoint
-          const extractResponse = await fetch('/api/extract-brand-styles', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              url,
-              prompt: brandExtensionPrompt
-            })
-          });
-
-          if (!extractResponse.ok) {
-            throw new Error('Failed to extract brand styles');
-          }
-
-          brandGuidelines = await extractResponse.json();
-
-          if (!brandGuidelines.success) {
-            throw new Error(brandGuidelines.error || 'Failed to extract brand styles');
-          }
-
-          // Display branding summary with visual UI
-          addChatMessage(`Acquired branding format from ${cleanUrl}`, 'system', {
-            brandingData: brandGuidelines.guidelines,
-            sourceUrl: cleanUrl
-          });
-          addChatMessage(`Building your custom component using these brand guidelines...`, 'system');
-
-          // Clear the flags after use
-          sessionStorage.removeItem('brandExtensionMode');
-          sessionStorage.removeItem('brandExtensionPrompt');
-
-        } else {
-          // === NORMAL CLONE MODE ===
-          // Check if we have pre-scraped markdown content from search results
-          const storedMarkdown = sessionStorage.getItem('siteMarkdown');
-        if (storedMarkdown) {
-          // Use the pre-scraped content
-          scrapeData = {
-            success: true,
-            content: storedMarkdown,
-            title: new URL(url).hostname,
-            source: 'search-result'
-          };
-          sessionStorage.removeItem('siteMarkdown'); // Clear after use
-          addChatMessage('Using cached content from search results...', 'system');
-        } else {
-          // Perform fresh scraping
-          const scrapeResponse = await fetch('/api/scrape-url-enhanced', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url })
-          });
-          
-          if (!scrapeResponse.ok) {
-            throw new Error('Failed to scrape website');
-          }
-          
-          scrapeData = await scrapeResponse.json() as ScrapeData;
-          
-          if (!scrapeData.success) {
-            throw new Error(scrapeData.error || 'Failed to scrape website');
-          }
-        }
-        }
-
-        setUrlStatus(brandExtensionMode ? ['Brand styles extracted!', 'Building your component...'] : ['Website scraped successfully!', 'Generating React app...']);
-
-        // Show a witty observation about the site being cloned (Part A — personality commentary)
-        if (!brandExtensionMode && appConfig.ui.enablePersonalityCommentary && scrapeData?.content) {
-          const commentary = getCommentary(scrapeData.content);
-          if (commentary) {
-            addChatMessage(commentary, 'system');
-          }
-        }
-
-        // Clear preparing design state and switch to generation tab
-        setIsPreparingDesign(false);
-        setIsScreenshotLoaded(false); // Reset loaded state
-        setUrlScreenshot(null); // Clear screenshot when starting generation
-        setTargetUrl(''); // Clear target URL
-
-        // Update loading stage to planning
-        setLoadingStage('planning');
-
-        // Brief pause before switching to generation tab
-        setTimeout(() => {
-          setLoadingStage('generating');
-          setActiveTab('generation');
-        }, 1500);
-
-        // Build the appropriate prompt based on mode
-        let prompt;
-
-        if (brandExtensionMode && brandGuidelines) {
-          // === BRAND EXTENSION PROMPT ===
-          // Store brand guidelines in conversation context
-          setConversationContext(prev => ({
-            ...prev,
-            scrapedWebsites: [...prev.scrapedWebsites, {
-              url: url,
-              content: { brandGuidelines },
-              timestamp: new Date()
-            }],
-            currentProject: `Custom build using ${url} brand`
-          }));
-
-          // Extract comprehensive brand data
-          const branding = brandGuidelines.guidelines;
-
-          // Build detailed brand instruction string
-          const brandInstructions = `
-BRAND GUIDELINES FROM ${url}:
-
-COLOR SYSTEM:
-- Color Scheme: ${branding.colorScheme || 'light'} mode
-- Primary Color: ${branding.colors?.primary || 'not specified'}
-- Accent Color: ${branding.colors?.accent || 'not specified'}
-- Background: ${branding.colors?.background || 'not specified'}
-- Text Primary: ${branding.colors?.textPrimary || 'not specified'}
-- Link Color: ${branding.colors?.link || 'not specified'}
-
-TYPOGRAPHY:
-- Primary Font: ${branding.typography?.fontFamilies?.primary || 'system default'}
-- Heading Font: ${branding.typography?.fontFamilies?.heading || 'system default'}
-- Font Stack (Body): ${branding.typography?.fontStacks?.body?.join(', ') || 'system-ui, sans-serif'}
-- Font Stack (Heading): ${branding.typography?.fontStacks?.heading?.join(', ') || 'system-ui, sans-serif'}
-- H1 Size: ${branding.typography?.fontSizes?.h1 || '36px'}
-- H2 Size: ${branding.typography?.fontSizes?.h2 || '30px'}
-- Body Size: ${branding.typography?.fontSizes?.body || '16px'}
-
-SPACING & LAYOUT:
-- Base Spacing Unit: ${branding.spacing?.baseUnit || '4'}px
-- Border Radius: ${branding.spacing?.borderRadius || '6px'}
-
-BUTTON STYLES:
-Primary Button:
-  - Background: ${branding.components?.buttonPrimary?.background || branding.colors?.primary}
-  - Text Color: ${branding.components?.buttonPrimary?.textColor || '#FFFFFF'}
-  - Border Radius: ${branding.components?.buttonPrimary?.borderRadius || branding.spacing?.borderRadius || '8px'}
-  - Shadow: ${branding.components?.buttonPrimary?.shadow || 'none'}
-
-Secondary Button:
-  - Background: ${branding.components?.buttonSecondary?.background || '#F9F9F9'}
-  - Text Color: ${branding.components?.buttonSecondary?.textColor || branding.colors?.textPrimary}
-  - Border Radius: ${branding.components?.buttonSecondary?.borderRadius || branding.spacing?.borderRadius || '8px'}
-  - Shadow: ${branding.components?.buttonSecondary?.shadow || 'none'}
-
-INPUT FIELDS:
-- Border Color: ${branding.components?.input?.borderColor || '#CCCCCC'}
-- Border Radius: ${branding.components?.input?.borderRadius || branding.spacing?.borderRadius || '6px'}
-
-BRAND PERSONALITY:
-- Tone: ${branding.personality?.tone || 'professional'}
-- Energy: ${branding.personality?.energy || 'medium'}
-- Target Audience: ${branding.personality?.targetAudience || 'general'}
-
-DESIGN SYSTEM:
-- Framework: ${branding.designSystem?.framework || 'tailwind'}
-- Component Library: ${branding.designSystem?.componentLibrary || 'custom'}
-
-ASSETS:
-${branding.images?.logo ? `- Logo Available: Yes (use carefully if needed)` : '- Logo: Not available'}
-${branding.images?.favicon ? `- Favicon: ${branding.images.favicon}` : ''}`;
-
-          prompt = `I want you to build a NEW React component/application based on these brand guidelines and the user's requirements.
-
-<branding-format source="${url}">
-${brandInstructions}
-
-RAW BRAND DATA (for reference):
-${JSON.stringify(branding, null, 2)}
-</branding-format>
-
-USER'S REQUEST:
-${brandExtensionPrompt || 'Build a modern web component using these brand guidelines'}
-
-IMPORTANT: The content above in the <branding-format> tags contains the extracted brand guidelines from ${url}.
-Use these guidelines (colors, fonts, spacing, design patterns) to build what the user requested.
-
-CRITICAL REQUIREMENTS:
-- DO NOT recreate the original website at ${url}
-- DO create a COMPLETELY NEW component that fulfills the user's request
-- The user wants: "${brandExtensionPrompt}"
-- Build ONLY what the user requested - nothing more
-- App.jsx should render ONLY the requested component - no extra Header/Footer/Hero unless specifically requested
-- Make it a minimal, focused implementation of the user's request
-
-STYLING REQUIREMENTS:
-- Apply the EXACT colors from the brand palette (primary, accent, background, text colors)
-- Use the EXACT typography (font families, font sizes for h1, h2, body)
-- Apply the spacing system (base unit: ${branding.spacing?.baseUnit || '4'}px)
-- Use the specified border radius (${branding.spacing?.borderRadius || '6px'}) consistently
-- Implement button styles EXACTLY as specified (colors, shadows, border radius)
-- Style input fields with the exact border color and border radius
-- Match the brand's ${branding.colorScheme || 'light'} color scheme
-- Apply the brand personality: ${branding.personality?.tone || 'professional'} tone with ${branding.personality?.energy || 'medium'} energy
-- Use Tailwind CSS with inline color values matching the brand palette EXACTLY
-- If fonts need to be imported, add @import or @font-face rules to index.css
-- Create custom CSS classes in index.css for complex shadows/effects that can't be done with Tailwind
-
-FONT SETUP:
-${branding.typography?.fontFamilies?.primary ? `
-- Add font family "${branding.typography.fontFamilies.primary}" to your CSS
-- Use font stack: ${branding.typography?.fontStacks?.body?.join(', ') || 'system-ui, sans-serif'}
-- Set body font size to ${branding.typography?.fontSizes?.body || '16px'}` : '- Use system fonts'}
-
-COMPONENT STRUCTURE:
-- src/index.css - Include brand fonts, custom shadows/effects, and base styling
-- src/App.jsx - Should ONLY render the requested component (e.g., just <PricingPage /> if user wants pricing)
-- src/components/[RequestedComponent].jsx - The actual component fulfilling the user's request
-
-TECHNICAL REQUIREMENTS:
-- Create a WORKING, self-contained application
-- DO NOT import components that don't exist
-- Make sure the app renders immediately with visible content
-- All colors must match the brand palette EXACTLY
-- All spacing must use the ${branding.spacing?.baseUnit || '4'}px base unit
-- Buttons must have the exact styling specified in the guidelines
-
-Focus on building something NEW, minimal, and functional that perfectly matches the ${brandGuidelines.styleName || 'brand'} aesthetic and design system.`;
-
-        } else {
-          // === NORMAL CLONE MODE PROMPT ===
-          // Store scraped data in conversation context
-          if (!scrapeData) {
-            throw new Error('Scrape data is missing');
-          }
-          setConversationContext(prev => ({
-            ...prev,
-            scrapedWebsites: [...prev.scrapedWebsites, {
-              url: url,
-              content: scrapeData,
-              timestamp: new Date()
-            }],
-            currentProject: `${url} Clone`
-          }));
-
-          // Filter out style-related context when using screenshot/URL-based generation
-          // Only keep user's explicit instructions, not inherited styles
-          let filteredContext = homeContextInput;
-          if (homeUrlInput && homeContextInput) {
-            // Check if the context contains default style names that shouldn't be inherited
-            const stylePatterns = [
-              'Glassmorphism style design',
-              'Neumorphism style design',
-              'Brutalism style design',
-              'Minimalist style design',
-              'Dark Mode style design',
-              'Gradient Rich style design',
-              '3D Depth style design',
-              'Retro Wave style design',
-              'Modern clean and minimalist style design',
-              'Fun colorful and playful style design',
-              'Corporate professional and sleek style design',
-              'Creative artistic and unique style design'
-            ];
-
-            // If the context exactly matches or starts with a style pattern, filter it out
-            const startsWithStyle = stylePatterns.some(pattern =>
-              homeContextInput.trim().startsWith(pattern)
-            );
-
-            if (startsWithStyle) {
-              // Extract only the additional instructions part after the style
-              const additionalMatch = homeContextInput.match(/\. (.+)$/);
-              filteredContext = additionalMatch ? additionalMatch[1] : '';
-            }
-          }
-
-          prompt = `I want to recreate the ${url} website as a complete React application based on the scraped content below.
-
-${(() => {
-  // Truncate content if it's too large for the API
-  const contentStr = JSON.stringify(scrapeData, null, 2);
-  const maxLength = 5000; // Very conservative limit to avoid rate limits
-  
-  if (contentStr.length > maxLength) {
-    console.log(`[generation] Content too large (${contentStr.length} chars), truncating to ${maxLength}`);
-    // Try to parse and truncate the content field specifically
-    try {
-      const parsed = JSON.parse(contentStr);
-      if (parsed.content && parsed.content.length > maxLength) {
-        parsed.content = parsed.content.substring(0, maxLength) + '\n\n[Content truncated due to size...]';
-      }
-      return JSON.stringify(parsed, null, 2);
-    } catch {
-      return contentStr.substring(0, maxLength) + '\n\n[Content truncated due to size...]';
-    }
-  }
-  return contentStr;
-})()}
-
-${filteredContext ? `ADDITIONAL CONTEXT/REQUIREMENTS FROM USER:
-${filteredContext}
-
-Please incorporate these requirements into the design and implementation.` : ''}
-
-IMPORTANT INSTRUCTIONS:
-- Create a COMPLETE, working React application
-- Implement ALL sections and features from the original site
-- Use Tailwind CSS for all styling (no custom CSS files)
-- Make it responsive and modern
-- Ensure all text content matches the original
-- Create proper component structure
-- Make sure the app actually renders visible content
-- Create ALL components that you reference in imports
-${filteredContext ? '- Apply the user\'s context/theme requirements throughout the application' : ''}
-
-Focus on the key sections and content, making it clean and modern.`;
-        }
-
-        // ESTIMATE TOKEN USAGE BEFORE GENERATION
-        const promptTokens = prompt.length;
-        const scrapedTokens = JSON.stringify(scrapeData).length;
-        const estimatedResponseTokens = Math.ceil((promptTokens + scrapedTokens) * 1.5);
-        const totalEstimated = promptTokens + scrapedTokens + estimatedResponseTokens;
-        const requiredTokens = totalEstimated * 3; // User needs 3x tokens
-
-        // Check token balance
-        try {
-          const tokenRes = await fetch('/api/tokens/balance');
-          if (tokenRes.ok) {
-            const tokenData = await tokenRes.json();
-            
-            if (tokenData.tokens < requiredTokens) {
-              const shortfall = requiredTokens - tokenData.tokens;
-              
-              // Show the beautiful encouraging modal with real calculated values
-              setLowBalanceData({
-                currentBalance: tokenData.tokens,
-                estimatedTokens: requiredTokens,
-                targetUrl: homeUrlInput || 'this website'
-              });
-              setShowLowBalanceModal(true);
-              
-              setLoading(false);
-              setShowLoadingBackground(false);
-              return;
-            }
-            
-            // Simple token notification without technical details
-            addChatMessage(
-              `Starting generation... (Estimated cost: ${totalEstimated.toLocaleString()} tokens)`,
-              'system'
-            );
-          }
-        } catch (error) {
-          console.error('Error checking token balance:', error);
-        }
-
-        setGenerationProgress(prev => ({
-          isGenerating: true,
-          status: 'Initializing AI...',
-          components: [],
-          currentComponent: 0,
-          streamedCode: '',
-          isStreaming: true,
-          isThinking: false,
-          thinkingText: undefined,
-          thinkingDuration: undefined,
-          // Keep previous files until new ones are generated
-          files: prev.files || [],
-          currentFile: undefined,
-          lastProcessedPosition: 0
-        }));
-        
-        const aiResponse = await fetch('/api/generate-ai-code-stream', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            prompt,
-            model: aiModel,
-            context: {
-              sandboxId: sandboxData?.sandboxId,
-              structure: structureContent,
-              conversationContext: conversationContext
-            }
-          })
-        });
-        
-        if (!aiResponse.ok || !aiResponse.body) {
-          throw new Error('Failed to generate code');
-        }
-        
-        const reader = aiResponse.body.getReader();
-        const decoder = new TextDecoder();
-        let generatedCode = '';
-        let explanation = '';
-        
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n');
-          
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                
-                if (data.type === 'status') {
-                  setGenerationProgress(prev => ({ ...prev, status: data.message }));
-                } else if (data.type === 'thinking') {
-                  setGenerationProgress(prev => ({ 
-                    ...prev, 
-                    isThinking: true,
-                    thinkingText: (prev.thinkingText || '') + data.text
-                  }));
-                } else if (data.type === 'thinking_complete') {
-                  setGenerationProgress(prev => ({ 
-                    ...prev, 
-                    isThinking: false,
-                    thinkingDuration: data.duration
-                  }));
-                } else if (data.type === 'conversation') {
-                  // Add conversational text to chat only if it's not code
-                  let text = data.text || '';
-                  
-                  // Remove package tags from the text
-                  text = text.replace(/<package>[^<]*<\/package>/g, '');
-                  text = text.replace(/<packages>[^<]*<\/packages>/g, '');
-                  
-                  // Filter out any XML tags and file content that slipped through
-                  if (!text.includes('<file') && !text.includes('import React') && 
-                      !text.includes('export default') && !text.includes('className=') &&
-                      text.trim().length > 0) {
-                    addChatMessage(text.trim(), 'ai');
-                  }
-                } else if (data.type === 'stream' && data.raw) {
-                  setGenerationProgress(prev => {
-                    const newStreamedCode = prev.streamedCode + data.text;
-                    
-                    // Tab is already switched after scraping
-                    
-                    const updatedState = { 
-                      ...prev, 
-                      streamedCode: newStreamedCode,
-                      isStreaming: true,
-                      isThinking: false,
-                      status: 'Generating code...'
-                    };
-                    
-                    // Process complete files from the accumulated stream
-                    const fileRegex = /<file path="([^"]+)">([^]*?)<\/file>/g;
-                    let match;
-                    const processedFiles = new Set(prev.files.map(f => f.path));
-                    
-                    while ((match = fileRegex.exec(newStreamedCode)) !== null) {
-                      const filePath = match[1];
-                      const fileContent = match[2];
-                      
-                      // Only add if we haven't processed this file yet
-                      if (!processedFiles.has(filePath)) {
-                        const fileExt = filePath.split('.').pop() || '';
-                        const fileType = fileExt === 'jsx' || fileExt === 'js' ? 'javascript' :
-                                        fileExt === 'css' ? 'css' :
-                                        fileExt === 'json' ? 'json' :
-                                        fileExt === 'html' ? 'html' : 'text';
-                        
-                        // Check if file already exists
-                        const existingFileIndex = updatedState.files.findIndex(f => f.path === filePath);
-                        
-                        if (existingFileIndex >= 0) {
-                          // Update existing file and mark as edited
-                          updatedState.files = [
-                            ...updatedState.files.slice(0, existingFileIndex),
-                            {
-                              ...updatedState.files[existingFileIndex],
-                              content: fileContent.trim(),
-                              type: fileType,
-                              completed: true,
-                              edited: true
-                            },
-                            ...updatedState.files.slice(existingFileIndex + 1)
-                          ];
-                        } else {
-                          // Add new file
-                          updatedState.files = [...updatedState.files, {
-                            path: filePath,
-                            content: fileContent.trim(),
-                            type: fileType,
-                            completed: true,
-                            edited: false
-                          }];
-                        }
-                        
-                        // Only show file status if not in edit mode
-                        if (!prev.isEdit) {
-                          updatedState.status = `Completed ${filePath}`;
-                        }
-                        processedFiles.add(filePath);
-                      }
-                    }
-                    
-                    // Check for current file being generated (incomplete file at the end)
-                    const lastFileMatch = newStreamedCode.match(/<file path="([^"]+)">([^]*?)$/);
-                    if (lastFileMatch && !lastFileMatch[0].includes('</file>')) {
-                      const filePath = lastFileMatch[1];
-                      const partialContent = lastFileMatch[2];
-                      
-                      if (!processedFiles.has(filePath)) {
-                        const fileExt = filePath.split('.').pop() || '';
-                        const fileType = fileExt === 'jsx' || fileExt === 'js' ? 'javascript' :
-                                        fileExt === 'css' ? 'css' :
-                                        fileExt === 'json' ? 'json' :
-                                        fileExt === 'html' ? 'html' : 'text';
-                        
-                        updatedState.currentFile = { 
-                          path: filePath, 
-                          content: partialContent, 
-                          type: fileType 
-                        };
-                        // Only show file status if not in edit mode
-                        if (!prev.isEdit) {
-                          updatedState.status = `Generating ${filePath}`;
-                        }
-                      }
-                    } else {
-                      updatedState.currentFile = undefined;
-                    }
-                    
-                    return updatedState;
-                  });
-                } else if (data.type === 'complete') {
-                  generatedCode = data.generatedCode;
-                  explanation = data.explanation;
-                  
-                  // Save the last generated code
-                  setConversationContext(prev => ({
-                    ...prev,
-                    lastGeneratedCode: generatedCode
-                  }));
-                }
-              } catch (e) {
-                console.error('Failed to parse SSE data:', e);
-              }
-            }
-          }
-        }
-        
-        setGenerationProgress(prev => ({
-          ...prev,
-          isGenerating: false,
-          isStreaming: false,
-          status: 'Generation complete!'
-        }));
-        
-        if (generatedCode) {
-          // CALCULATE AND DEDUCT ACTUAL TOKENS USED
-          const actualPromptTokens = prompt.length;
-          const actualScrapedTokens = JSON.stringify(scrapeData).length;
-          const actualResponseTokens = generatedCode.length;
-          const totalTokensUsed = actualPromptTokens + actualScrapedTokens + actualResponseTokens;
-
-          // Deduct tokens from user account
-          try {
-            const deductRes = await fetch('/api/tokens/deduct', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ 
-                amount: totalTokensUsed,
-                metadata: {
-                  prompt: actualPromptTokens,
-                  scraped: actualScrapedTokens,
-                  response: actualResponseTokens,
-                  url: url
-                }
-              })
-            });
-            
-            if (deductRes.ok) {
-              const deductData = await deductRes.json();
-              addChatMessage(
-                `✅ Clone generated successfully!\n\n` +
-                `Tokens used: ${totalTokensUsed.toLocaleString()}\n` +
-                `Remaining balance: ${deductData.remainingTokens.toLocaleString()} tokens`,
-                'system'
-              );
-            } else {
-              // Deduction failed but generation succeeded
-              addChatMessage(
-                `⚠️ Warning: Token deduction failed but code was generated successfully.`,
-                'system'
-              );
-            }
-          } catch (error) {
-            console.error('Error deducting tokens:', error);
-            addChatMessage(
-              `⚠️ Warning: Could not deduct tokens. Please contact support.`,
-              'system'
-            );
-          }
-          
-          addChatMessage('AI recreation generated!', 'system');
-          
-          // Add the explanation to chat if available
-          if (explanation && explanation.trim()) {
-            addChatMessage(explanation, 'ai');
-          }
-          
-          setPromptInput(generatedCode);
-
-          // Apply the code (first time is not edit mode)
-          await applyGeneratedCode(generatedCode, false);
-
-          addChatMessage(
-            brandExtensionMode
-              ? `Successfully built your custom component using ${cleanUrl}'s brand guidelines! You can now ask me to modify it or add more features.`
-              : `Successfully recreated ${url} as a modern React app${homeContextInput ? ` with your requested context: "${homeContextInput}"` : ''}! The scraped content is now in my context, so you can ask me to modify specific sections or add features based on the original site.`,
-            'ai',
-            {
-              scrapedUrl: url,
-              scrapedContent: brandExtensionMode ? { brandGuidelines } : scrapeData,
-              generatedCode: generatedCode
-            }
-          );
-          
-          setConversationContext(prev => ({
-            ...prev,
-            generatedComponents: [],
-            appliedCode: [...prev.appliedCode, {
-              files: [],
-              timestamp: new Date()
-            }]
-          }));
-        } else {
-          throw new Error('Failed to generate recreation');
-        }
-        
-        setUrlInput('');
-        setUrlStatus([]);
-        setHomeContextInput('');
-        
-        // Clear generation progress and all screenshot/design states
-        setGenerationProgress(prev => ({
-          ...prev,
-          isGenerating: false,
-          isStreaming: false,
-          status: 'Generation complete!'
-        }));
-        
-        // Clear screenshot and preparing design states to prevent them from showing on next run
-        setIsScreenshotLoaded(false); // Reset loaded state
-        setUrlScreenshot(null);
-        setIsPreparingDesign(false);
-        setTargetUrl('');
-        setScreenshotError(null);
-        setLoadingStage(null); // Clear loading stage
-        setIsStartingNewGeneration(false); // Clear new generation flag
-        setShowLoadingBackground(false); // Clear loading background
-        
-        setTimeout(() => {
-          // Switch back to preview tab but keep files
-          setActiveTab('preview');
-        }, 1000); // Show completion briefly then switch
-      } catch (error: any) {
-        // Provide context-aware error messaging instead of raw error text
-        const msg = (error?.message ?? '').toLowerCase();
-        let userMessage: string;
-
-        if (msg.includes('scrape') || msg.includes('firecrawl') || msg.includes('fetch')) {
-          userMessage =
-            "Couldn't read that site — it might be blocking scrapers or require login. Try a different URL, or paste the page content directly.";
-        } else if (msg.includes('generate') || msg.includes('ai') || msg.includes('model')) {
-          userMessage =
-            'The AI hit a wall generating that clone. This sometimes happens with very complex layouts. Try again, or describe a simpler version in the chat.';
-        } else if (msg.includes('sandbox') || msg.includes('e2b') || msg.includes('vercel')) {
-          userMessage =
-            'Sandbox could not start — this is usually temporary. Try again in a moment.';
-        } else {
-          userMessage =
-            'Something went wrong during generation. Try again, or paste a simpler URL to start with.';
-        }
-
-        addChatMessage(userMessage, 'error');
-        setUrlStatus([]);
-        setIsPreparingDesign(false);
-        setIsStartingNewGeneration(false);
-        setLoadingStage(null);
-        setGenerationProgress(prev => ({
-          ...prev,
-          isGenerating: false,
-          isStreaming: false,
-          status: '',
-          files: prev.files
-        }));
-      }
-    }, 500);
+    window.setTimeout(() => setIsStartingNewGeneration(false), 1000);
+    runGenerationPipeline(target, { inputs });
   };
-
   return (
     <HeaderProvider>
       {/* Resume / Restart prompt (Req 6.4, 18.3) */}
@@ -4052,7 +3381,8 @@ Focus on the key sections and content, making it clean and modern.`;
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
             </svg>
           </button>
-       
+          <UserMenu />
+
         </div>
       </div>
 

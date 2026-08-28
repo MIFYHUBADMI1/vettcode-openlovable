@@ -27,7 +27,9 @@ import type {
   QueuedEdit,
   SiteBlueprint,
 } from '../../../lib/pipeline/types';
+import type { PipelineInputs } from '../../../lib/pipeline/types/pipeline';
 import type { PersistedPipelineContext } from '../../../lib/pipeline/pipeline-store';
+import type { ColorEntry } from '../../../lib/pipeline/types/blueprint';
 
 // ---------------------------------------------------------------------------
 // Request body
@@ -38,6 +40,8 @@ interface GenerationPipelineRequest {
   sessionId: string;
   sandboxId?: string;
   resume?: boolean;
+  /** User-provided generation inputs (style/model/instructions/brand mode). */
+  inputs?: PipelineInputs;
 }
 
 /** Ordering of phases for resume skip logic (Req 6.4). */
@@ -137,7 +141,7 @@ export async function POST(request: NextRequest): Promise<Response> {
   });
 
   void runPipeline(
-    { url, sessionId, sandboxId, resume },
+    { url, sessionId, sandboxId, resume, inputs: body.inputs },
     emit,
     writer,
     pipelineAbort.signal,
@@ -195,6 +199,7 @@ async function runPipeline(
             lastSuccessfulPhase: ctx.lastSuccessfulPhase,
             sandboxId: resolvedSandboxId,
             sandboxUrl: previewSandboxUrl,
+            inputs,
           });
         } catch (persistErr) {
           console.warn(
@@ -236,6 +241,22 @@ async function runPipeline(
   const resumeFromPhase = persistedContext?.lastSuccessfulPhase ?? null;
   const resumeFromRank =
     resume && resumeFromPhase ? PHASE_RANKS[resumeFromPhase] : -1;
+
+  // Effective user inputs: prefer what the client sent; on resume fall back
+  // to the inputs persisted with the previous run so style/model/instructions
+  // survive a resume (Req: no generation input lost when switching entries).
+  const inputs: PipelineInputs =
+    opts.inputs && Object.keys(opts.inputs).length > 0
+      ? opts.inputs
+      : (persistedContext?.inputs ?? {});
+
+  const pipelineStart = Date.now();
+  console.log(
+    `[Phase: analyzing] Pipeline run starting — url=${url ?? '(resume)'}, ` +
+    `sessionId=${sessionId}, resume=${resume}, mode=${inputs.mode ?? 'clone'}, ` +
+    `style=${inputs.style ?? 'none'}, model=${inputs.model ?? 'default'}, ` +
+    `instructions=${inputs.instructions ? 'yes' : 'no'}, siteMarkdown=${inputs.siteMarkdown ? 'yes' : 'no'}`,
+  );
 
   if (persistedContext && persistedContext.lastSuccessfulPhase) {
     await emit({
@@ -326,42 +347,112 @@ async function runPipeline(
     }
 
     let blueprint: SiteBlueprint;
+    let brandGuidelines: Record<string, unknown> | null = null;
 
     if (shouldRun('analyzing')) {
-      // Scrape the URL
-      await emit({
-        type: 'phase_transition',
-        phase: 'analyzing',
-        timestamp: Date.now(),
-        payload: { step: 'scraping' },
-      });
-
-      let scrapedContent: string;
-      try {
-        const scrapeResponse = await fetch(resolveApiUrl('/api/scrape-website'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url }),
+      if (inputs.mode === 'brand') {
+        // Brand-extension mode: extract brand guidelines and synthesize a
+        // single-section blueprint instead of cloning the original site.
+        const analyzeStart = Date.now();
+        await emit({
+          type: 'phase_transition',
+          phase: 'analyzing',
+          timestamp: Date.now(),
+          payload: { step: 'brand-extraction' },
         });
-        const scrapeData = (await scrapeResponse.json()) as {
+        console.log(
+          `[Phase: analyzing] Brand-extension mode — extracting brand styles for ${url}`,
+        );
+
+        const extractResponse = await fetch(
+          resolveApiUrl('/api/extract-brand-styles'),
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url, prompt: inputs.brandPrompt ?? '' }),
+          },
+        );
+        if (!extractResponse.ok) {
+          throw new Error(
+            `Brand style extraction failed (${extractResponse.status})`,
+          );
+        }
+        const extractData = (await extractResponse.json()) as {
           success: boolean;
-          data?: { markdown?: string; content?: string };
+          error?: string;
+          guidelines?: Record<string, unknown>;
         };
-        scrapedContent =
-          scrapeData?.data?.markdown ?? scrapeData?.data?.content ?? '';
-      } catch (scrapeErr) {
-        throw new Error(
-          `Failed to scrape URL: ${
-            scrapeErr instanceof Error ? scrapeErr.message : String(scrapeErr)
-          }`,
+        if (!extractData.success || !extractData.guidelines) {
+          throw new Error(
+            extractData.error ?? 'Failed to extract brand styles',
+          );
+        }
+        brandGuidelines = extractData.guidelines;
+        blueprint = buildBrandBlueprint(brandGuidelines);
+        stateMachine.recordPhaseEnd('analyzing', 'success');
+        console.log(
+          `[Phase: analyzing] Brand blueprint synthesized in ${Date.now() - analyzeStart}ms — ` +
+          `${blueprint.sections.length} section, ${blueprint.colors.length} brand colors`,
+        );
+      } else {
+        // Clone mode: scrape the URL (or use client-provided markdown from
+        // search results, which skips the scrape entirely).
+        const analyzeStart = Date.now();
+        await emit({
+          type: 'phase_transition',
+          phase: 'analyzing',
+          timestamp: Date.now(),
+          payload: { step: 'scraping' },
+        });
+
+        let scrapedContent: string;
+        if (inputs.siteMarkdown && inputs.siteMarkdown.trim().length > 0) {
+          scrapedContent = inputs.siteMarkdown;
+          console.log(
+            `[Phase: analyzing] Using client-provided markdown (${scrapedContent.length} chars) — scrape skipped`,
+          );
+        } else {
+          const scrapeStart = Date.now();
+          try {
+            const scrapeResponse = await fetch(
+              resolveApiUrl('/api/scrape-website'),
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url }),
+              },
+            );
+            const scrapeData = (await scrapeResponse.json()) as {
+              success: boolean;
+              data?: { markdown?: string; content?: string };
+            };
+            scrapedContent =
+              scrapeData?.data?.markdown ?? scrapeData?.data?.content ?? '';
+            console.log(
+              `[Phase: analyzing] Scrape completed in ${Date.now() - scrapeStart}ms (${scrapedContent.length} chars)`,
+            );
+          } catch (scrapeErr) {
+            throw new Error(
+              `Failed to scrape URL: ${
+                scrapeErr instanceof Error ? scrapeErr.message : String(scrapeErr)
+              }`,
+            );
+          }
+        }
+
+        if (abortSignal?.aborted) throw new Error('Pipeline aborted: client disconnected');
+        const analysisOutput = await analysisHandler.execute(
+          { scrapedContent, inputs },
+          abortSignal,
+        );
+        blueprint = analysisOutput.blueprint;
+        stateMachine.recordPhaseEnd('analyzing', 'success');
+        await emitTokenUsage('analyzing', analysisOutput.tokenUsage);
+        console.log(
+          `[Phase: analyzing] Analysis phase finished in ${Date.now() - analyzeStart}ms — ` +
+          `${blueprint.sections.length} sections, ${analysisOutput.tokenUsage} tokens`,
         );
       }
-
-      if (abortSignal?.aborted) throw new Error('Pipeline aborted: client disconnected');
-      const analysisOutput = await analysisHandler.execute({ scrapedContent }, abortSignal);
-      blueprint = analysisOutput.blueprint;
-      stateMachine.recordPhaseEnd('analyzing', 'success');
-      await emitTokenUsage('analyzing', analysisOutput.tokenUsage);
     } else if (resumeFromPhase && persistedContext?.blueprint) {
       // Resume: reuse the persisted blueprint instead of re-analyzing.
       blueprint = persistedContext.blueprint;
@@ -378,6 +469,12 @@ async function runPipeline(
     // -----------------------------------------------------------------------
     // Phase 2 — Instant Preview
     // -----------------------------------------------------------------------
+
+    // Inputs forwarded to every phase handler (brand guidelines are merged in
+    // when brand-extension extraction ran during analysis).
+    const phaseInputs: PipelineInputs = brandGuidelines
+      ? { ...inputs, brandGuidelines }
+      : inputs;
 
     // Create (or reuse) sandbox before the instant preview phase.
     let sandboxProvider: SandboxProvider;
@@ -416,7 +513,12 @@ async function runPipeline(
             // Re-check inside the lock — a concurrent request may have
             // already created the sandbox while we were waiting.
             if (resolvedSandboxId) {
-              return { sandboxId: resolvedSandboxId, url: null } as Awaited<ReturnType<typeof sandboxProvider.createSandbox>>;
+              return {
+                sandboxId: resolvedSandboxId,
+                url: null,
+                provider: 'e2b' as const,
+                createdAt: new Date(),
+              };
             }
             return sandboxProvider.createSandbox();
           },
@@ -429,6 +531,7 @@ async function runPipeline(
       const previewOutput = await instantPreviewHandler.execute(
         blueprint,
         sandboxProvider,
+        phaseInputs,
       );
       previewSandboxUrl = previewOutput.sandboxUrl;
 
@@ -456,6 +559,7 @@ async function runPipeline(
             lastSuccessfulPhase: stateMachine.getContext().lastSuccessfulPhase,
             sandboxId: resolvedSandboxId,
             sandboxUrl: previewSandboxUrl,
+            inputs,
           });
         } catch {
           // Non-fatal
@@ -480,6 +584,9 @@ async function runPipeline(
       stateMachine.recordPhaseStart('progressive_cloning');
 
       const onProgress = async (event: ProgressEvent): Promise<void> => {
+        console.log(
+          `[Phase: progressive_cloning] section "${event.sectionName}" → ${event.status} (${event.overallPercent}%)`,
+        );
         await emit({
           type: 'section_status',
           sectionName: event.sectionName,
@@ -496,6 +603,7 @@ async function runPipeline(
         sandboxProvider,
         onProgress,
         abortSignal,
+        phaseInputs,
       );
 
       stateMachine.recordPhaseEnd('progressive_cloning', 'success');
@@ -548,6 +656,12 @@ async function runPipeline(
           : `${validationResult.permanentlyFailedFiles.length} file(s) could not be fixed`,
       );
       await emitTokenUsage('validating', validationResult.tokenUsage);
+      console.log(
+        `[Phase: validating] Validation finished — success=${validationResult.success}, ` +
+        `errorsFound=${validationResult.errors.length}, retried=${validationResult.retriedFiles.length}, ` +
+        `permanentlyFailed=${validationResult.permanentlyFailedFiles.length}, ` +
+        `${validationResult.tokenUsage} tokens`,
+      );
     }
 
     // -----------------------------------------------------------------------
@@ -568,6 +682,7 @@ async function runPipeline(
         sandboxProvider,
         hasCriticalErrors,
         abortSignal,
+        phaseInputs,
       );
 
       stateMachine.recordPhaseEnd(
@@ -575,6 +690,11 @@ async function runPipeline(
         polishResult.completedWithWarnings ? 'failure' : 'success',
       );
       await emitTokenUsage('polishing', polishResult.tokenUsage);
+      console.log(
+        `[Phase: polishing] Polish finished — completed=[${polishResult.passesCompleted.join(', ')}], ` +
+        `failed=[${polishResult.passesFailed.join(', ')}], skipped=[${polishResult.passesSkipped.join(', ')}], ` +
+        `${polishResult.tokenUsage} tokens`,
+      );
 
       if (polishResult.warnings.length > 0) {
         await emit({
@@ -607,6 +727,11 @@ async function runPipeline(
         sectionResults,
       },
     });
+    console.log(
+      `[Phase: complete] Pipeline completed in ${Date.now() - pipelineStart}ms — ` +
+      `sandboxUrl=${previewSandboxUrl ?? 'n/a'}, sandboxId=${resolvedSandboxId ?? 'n/a'}, ` +
+      `${totalTokenUsage} total tokens, ${sectionResults.filter((r) => r.status === 'complete').length}/${sectionResults.length} sections`,
+    );
 
     // -----------------------------------------------------------------------
     // Deduct tokens from user balance after completion (Req 7.6)
@@ -629,6 +754,7 @@ async function runPipeline(
 
     const queuedEdits = editQueue.drain();
     if (queuedEdits.length > 0) {
+      console.log(`[Edit] Draining ${queuedEdits.length} queued edit(s) after pipeline completion.`);
       await emit({
         type: 'phase_transition',
         phase: 'complete',
@@ -679,6 +805,7 @@ async function runPipeline(
           lastSuccessfulPhase: ctx.lastSuccessfulPhase,
           sandboxId: resolvedSandboxId,
           sandboxUrl: previewSandboxUrl,
+          inputs,
         });
       } catch {
         // Non-fatal
@@ -756,6 +883,7 @@ async function processQueuedEdit(
     timestamp: Date.now(),
     payload: { processingQueuedEdit: edit.id, prompt: edit.prompt },
   });
+  console.log(`[Edit] Processing queued edit ${edit.id}: "${edit.prompt.slice(0, 80)}"`);
 
   try {
     await fetch(resolveApiUrl('/api/generate-ai-code-stream'), {
@@ -769,10 +897,71 @@ async function processQueuedEdit(
     });
   } catch (editErr) {
     console.warn(
-      '[GenerationPipeline] Failed to process queued edit:',
+      '[Edit] Failed to process queued edit:',
       editErr,
     );
   }
+}
+
+// ---------------------------------------------------------------------------
+// Brand-extension blueprint synthesis
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a single-section blueprint for brand-extension mode from the
+ * guidelines extracted by /api/extract-brand-styles (mirrors the legacy
+ * startGeneration brand flow, which generated one requested component).
+ */
+function buildBrandBlueprint(
+  guidelines: Record<string, unknown>,
+): SiteBlueprint {
+  const branding = guidelines as {
+    colors?: {
+      primary?: string;
+      accent?: string;
+      background?: string;
+      textPrimary?: string;
+    };
+    typography?: {
+      fontFamilies?: { primary?: string; heading?: string };
+      fontSizes?: { h1?: string; h2?: string; body?: string };
+    };
+  };
+
+  const colors: ColorEntry[] = [];
+  const pushColor = (hex: unknown, usage: string): void => {
+    if (typeof hex === 'string' && hex.trim()) {
+      colors.push({ hex: hex.trim(), usage });
+    }
+  };
+  pushColor(branding.colors?.primary, 'primary');
+  pushColor(branding.colors?.accent, 'accent');
+  pushColor(branding.colors?.background, 'background');
+  pushColor(branding.colors?.textPrimary, 'text');
+
+  const fontFamilies = [
+    branding.typography?.fontFamilies?.primary,
+    branding.typography?.fontFamilies?.heading,
+  ].filter((f): f is string => typeof f === 'string' && f.trim().length > 0);
+
+  const fontSizes = [
+    branding.typography?.fontSizes?.h1,
+    branding.typography?.fontSizes?.h2,
+    branding.typography?.fontSizes?.body,
+  ].filter((s): s is string => typeof s === 'string' && s.trim().length > 0);
+
+  return {
+    version: '1.0',
+    sections: [{ name: 'custom-component', type: 'features', order: 0 }],
+    colors,
+    typography: {
+      fontFamilies: fontFamilies.length > 0 ? fontFamilies : ['system-ui'],
+      fontWeights: [400, 500, 600, 700],
+      fontSizes:
+        fontSizes.length > 0 ? fontSizes : ['36px', '30px', '16px'],
+    },
+    images: [],
+  };
 }
 
 // ---------------------------------------------------------------------------

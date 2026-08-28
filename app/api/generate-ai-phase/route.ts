@@ -120,6 +120,26 @@ function buildUserPrompt(body: PhaseGenerationRequest): string {
     );
   }
 
+  // User-provided inputs threaded from the generation pipeline: style,
+  // additional instructions, and brand guidelines (brand-extension mode).
+  // Inserted before ORIGINAL SITE CONTENT so they always reach the model.
+  if (body.brandGuidelines) {
+    lines.push(
+      'BRAND GUIDELINES:',
+      JSON.stringify(body.brandGuidelines, null, 2).slice(0, 8000),
+      '',
+      'Build a NEW application that fulfils the user request below using these',
+      'brand guidelines. Do NOT recreate the original website.',
+      '',
+    );
+  }
+  if (body.styleName) {
+    lines.push(`DESIGN STYLE: ${body.styleName}`, '');
+  }
+  if (body.instructions) {
+    lines.push('ADDITIONAL USER REQUIREMENTS:', body.instructions, '');
+  }
+
   if (scrapedContent) {
     lines.push('', 'ORIGINAL SITE CONTENT:', scrapedContent.slice(0, 40_000));
   }

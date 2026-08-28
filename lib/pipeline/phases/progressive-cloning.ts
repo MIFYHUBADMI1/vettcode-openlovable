@@ -5,7 +5,7 @@
 
 import { SandboxProvider } from '../../sandbox/types';
 import type { SiteBlueprint, BlueprintSection } from '../types/blueprint';
-import type { SectionPriority, SectionResult, ProgressEvent } from '../types/pipeline';
+import type { SectionPriority, SectionResult, ProgressEvent, PipelineInputs } from '../types/pipeline';
 import { ProgressiveFileApplicationService } from '../progressive-file-application';
 import { phaseEndpointUrl } from '../phase-endpoint';
 import { collectPhaseStream } from '../sse-collect';
@@ -82,9 +82,11 @@ export class ProgressiveCloningPhaseHandler {
     sandboxProvider: SandboxProvider,
     onProgress: (event: ProgressEvent) => void,
     abortSignal?: AbortSignal,
+    inputs?: PipelineInputs,
   ): Promise<SectionResult[]> {
     abortSignal?.throwIfAborted();
 
+    const phaseStart = Date.now();
     const sortedSections = this.sortSectionsByPriority(blueprint.sections);
     const totalCount = sortedSections.length;
     const results: SectionResult[] = [];
@@ -92,15 +94,22 @@ export class ProgressiveCloningPhaseHandler {
 
     let consecutiveFailures = 0;
     let completedCount = 0;
+    let totalTokens = 0;
+    let totalRetries = 0;
+
+    console.log(
+      `[Phase: progressive_cloning] Starting (${totalCount} sections, model=${inputs?.model ?? 'default'})`,
+    );
 
     for (const section of sortedSections) {
       // Check for client disconnect before starting a new section.
       if (abortSignal?.aborted) {
-        console.log('[ProgressiveCloning] Pipeline aborted — stopping section generation.');
+        console.log('[Phase: progressive_cloning] Pipeline aborted — stopping section generation.');
         break;
       }
 
       const priority = this.classifySectionPriority(section.type);
+      const sectionStart = Date.now();
 
       // Emit "generating" event at the start of each section.
       onProgress({
@@ -110,6 +119,9 @@ export class ProgressiveCloningPhaseHandler {
         overallPercent: Math.round((completedCount / totalCount) * 100),
         timestamp: Date.now(),
       });
+      console.log(
+        `[Phase: progressive_cloning] Section "${section.name}" (${priority}) generating… (${completedCount}/${totalCount} done)`,
+      );
 
       let sectionStatus: 'complete' | 'failed' = 'failed';
       let retryCount = 0;
@@ -124,9 +136,11 @@ export class ProgressiveCloningPhaseHandler {
             section.name,
             attempt,
             abortSignal,
+            inputs,
           );
 
           sectionTokenUsage += tokenUsage;
+          totalTokens += tokenUsage;
 
           // Write files with hot reload (isProgressive: true triggers HMR, Req 3.4).
           await fileService.applyFiles(files, sandboxProvider, {
@@ -137,13 +151,17 @@ export class ProgressiveCloningPhaseHandler {
           sectionStatus = 'complete';
           retryCount = attempt;
           lastError = undefined;
+          console.log(
+            `[Phase: progressive_cloning] Section "${section.name}" complete on attempt ` +
+            `${attempt + 1}/3 in ${Date.now() - sectionStart}ms — ${files.length} files, ${tokenUsage} tokens`,
+          );
           break;
         } catch (err) {
           lastError =
             err instanceof Error ? err.message : String(err);
           retryCount = attempt;
           console.warn(
-            `[ProgressiveCloning] Section "${section.name}" attempt ${attempt + 1} failed:`,
+            `[Phase: progressive_cloning] Section "${section.name}" attempt ${attempt + 1}/3 failed:`,
             lastError,
           );
           // Loop continues for next retry attempt.
@@ -175,12 +193,18 @@ export class ProgressiveCloningPhaseHandler {
         ...(lastError ? { error: lastError } : {}),
         tokenUsage: sectionTokenUsage,
       });
+      totalRetries += retryCount;
 
       // Consecutive failure threshold (Req 9.8).
       if (consecutiveFailures >= 3) {
         throw new Error('CONSECUTIVE_FAILURE_THRESHOLD_REACHED');
       }
     }
+
+    console.log(
+      `[Phase: progressive_cloning] Phase complete in ${Date.now() - phaseStart}ms — ` +
+      `${completedCount}/${totalCount} sections, ${totalRetries} retries, ${totalTokens} tokens`,
+    );
 
     return results;
   }
@@ -199,6 +223,7 @@ export class ProgressiveCloningPhaseHandler {
     sectionName: string,
     attempt = 0,
     abortSignal?: AbortSignal,
+    inputs?: PipelineInputs,
   ): Promise<{
     files: import('../../file-parser').ParsedFile[];
     tokenUsage: number;
@@ -221,6 +246,10 @@ export class ProgressiveCloningPhaseHandler {
           blueprint,
           targetSection: sectionName,
           retryAttempt: attempt,
+          ...(inputs?.model ? { model: inputs.model } : {}),
+          ...(inputs?.style ? { styleName: inputs.style } : {}),
+          ...(inputs?.instructions ? { instructions: inputs.instructions } : {}),
+          ...(inputs?.brandGuidelines ? { brandGuidelines: inputs.brandGuidelines } : {}),
         }),
         signal: mergedSignal,
       });

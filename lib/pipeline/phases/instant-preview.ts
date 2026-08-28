@@ -5,6 +5,7 @@
 
 import { SandboxProvider } from '../../sandbox/types';
 import type { SiteBlueprint } from '../types/blueprint';
+import type { PipelineInputs } from '../types/pipeline';
 import { ProgressiveFileApplicationService } from '../progressive-file-application';
 import { phaseEndpointUrl } from '../phase-endpoint';
 import { collectPhaseStream } from '../sse-collect';
@@ -27,7 +28,13 @@ export class InstantPreviewPhaseHandler {
   async execute(
     blueprint: SiteBlueprint,
     sandboxProvider: SandboxProvider,
+    inputs?: PipelineInputs,
   ): Promise<{ sandboxUrl: string; tokenUsage: number }> {
+    const phaseStart = Date.now();
+    console.log(
+      `[Phase: instant_preview] Starting instant preview (${blueprint.sections.length} sections)`,
+    );
+
     // --- Step 1: Ensure sandbox exists (Req 2.1) ----------------------------
     if (!sandboxProvider.getSandboxInfo()) {
       await sandboxProvider.createSandbox();
@@ -35,7 +42,7 @@ export class InstantPreviewPhaseHandler {
 
     // --- Step 2: Call AI for minimal layout ---------------------------------
     const { files: layoutFiles, tokenUsage } =
-      await this._generateLayoutFiles(blueprint);
+      await this._generateLayoutFiles(blueprint, inputs);
 
     // --- Step 3: Write files in bulk (non-progressive) ----------------------
     const fileService = new ProgressiveFileApplicationService();
@@ -54,6 +61,11 @@ export class InstantPreviewPhaseHandler {
     const sandboxUrl =
       sandboxProvider.getSandboxUrl() ?? 'http://localhost:5173';
 
+    console.log(
+      `[Phase: instant_preview] Preview ready in ${Date.now() - phaseStart}ms — ` +
+      `${layoutFiles.length} layout files, sandboxUrl=${sandboxUrl}, ${tokenUsage} tokens`,
+    );
+
     // --- Step 7: Background error fixing — fire-and-forget (Req 2.9) -------
     // We intentionally do not await this so the phase resolves and the
     // pipeline transitions to progressive_cloning without delay.
@@ -62,7 +74,7 @@ export class InstantPreviewPhaseHandler {
       .catch(() => {
         // Background fix attempt — failures are non-fatal here.
         console.warn(
-          '[InstantPreviewPhase] Background build check failed; preview may contain errors.',
+          '[Phase: instant_preview] Background build check failed; preview may contain errors.',
         );
       });
 
@@ -79,6 +91,7 @@ export class InstantPreviewPhaseHandler {
    */
   private async _generateLayoutFiles(
     blueprint: SiteBlueprint,
+    inputs?: PipelineInputs,
   ): Promise<{
     files: import('../../file-parser').ParsedFile[];
     tokenUsage: number;
@@ -86,7 +99,14 @@ export class InstantPreviewPhaseHandler {
     const response = await fetch(phaseEndpointUrl(), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phase: 'instant_preview', blueprint }),
+      body: JSON.stringify({
+        phase: 'instant_preview',
+        blueprint,
+        ...(inputs?.model ? { model: inputs.model } : {}),
+        ...(inputs?.style ? { styleName: inputs.style } : {}),
+        ...(inputs?.instructions ? { instructions: inputs.instructions } : {}),
+        ...(inputs?.brandGuidelines ? { brandGuidelines: inputs.brandGuidelines } : {}),
+      }),
     });
 
     if (!response.ok) {

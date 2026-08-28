@@ -54,6 +54,15 @@ const openrouter = createOpenAI({
   baseURL: 'https://openrouter.ai/api/v1',
 });
 
+// OpenRouter model availability can change while a model remains saved in a
+// user's browser. The free router selects an available free model instead of
+// failing the entire clone when a provider temporarily returns 404.
+const OPENROUTER_FREE_ROUTER = 'openrouter/free';
+const UNAVAILABLE_OPENROUTER_MODELS = new Set([
+  'nvidia/nemotron-3.5-lightning:free',
+  'nvidia/nemotron-3-ultra-550b-a55b:free',
+]);
+
 // Helper function to analyze user preferences from conversation history
 function analyzeUserPreferences(messages: ConversationMessage[]): {
   commonPatterns: string[];
@@ -1263,12 +1272,21 @@ MORPH FAST APPLY MODE (EDIT-ONLY):
         // Auto-detect OpenRouter models by prefix if not in config
         let actualProvider = modelConfig?.provider || 'groq';
         let actualModel: string = model;
-        
+
         // If model starts with 'openrouter/', use OpenRouter provider
         if (model.startsWith('openrouter/')) {
           actualProvider = 'openrouter';
           // Remove 'openrouter/' prefix for the actual API call
           actualModel = model.replace('openrouter/', '');
+
+          if (UNAVAILABLE_OPENROUTER_MODELS.has(actualModel)) {
+            console.warn(`[generate-ai-code-stream] Model ${actualModel} is unavailable; using ${OPENROUTER_FREE_ROUTER}`);
+            actualModel = OPENROUTER_FREE_ROUTER;
+            await sendProgress({
+              type: 'info',
+              message: 'The selected model is temporarily unavailable. Switching to an available free model...'
+            });
+          }
         } else if (modelConfig) {
           actualModel = modelConfig.model;
         }
@@ -1373,38 +1391,50 @@ It's better to have 3 complete files than 10 incomplete files.`
         let result;
         let retryCount = 0;
         const maxRetries = 2;
-        
+
         while (retryCount <= maxRetries) {
           try {
             result = await streamText(streamOptions);
             break; // Success, exit retry loop
           } catch (streamError: any) {
             console.error(`[generate-ai-code-stream] Error calling streamText (attempt ${retryCount + 1}/${maxRetries + 1}):`, streamError);
-            
-            // Check if this is a retryable error
-            const isRetryableError = streamError.message?.includes('Service unavailable') || 
-                                    streamError.message?.includes('rate limit') ||
-                                    streamError.message?.includes('timeout');
-            
+
+            const errorText = [
+              streamError?.message,
+              streamError?.responseBody,
+              streamError?.cause?.message,
+            ].filter(Boolean).join(' ');
+            const isUnavailableModelError = actualProvider === 'openrouter' &&
+              (streamError?.statusCode === 404 || errorText.includes('404') || errorText.toLowerCase().includes('provider returned error'));
+            const isRetryableError = isUnavailableModelError ||
+              errorText.toLowerCase().includes('service unavailable') ||
+              errorText.toLowerCase().includes('rate limit') ||
+              errorText.toLowerCase().includes('timeout');
+
+            if (isUnavailableModelError && actualModel !== OPENROUTER_FREE_ROUTER) {
+              actualModel = OPENROUTER_FREE_ROUTER;
+              streamOptions.model = modelProvider(actualModel);
+              await sendProgress({
+                type: 'info',
+                message: 'The selected model is unavailable. Switching to an available free model...'
+              });
+              retryCount++;
+              continue;
+            }
+
             if (retryCount < maxRetries && isRetryableError) {
               retryCount++;
               console.log(`[generate-ai-code-stream] Retrying in ${retryCount * 2} seconds...`);
-              
-              // Send progress update about retry
-              await sendProgress({ 
-                type: 'info', 
-                message: `Service temporarily unavailable, retrying (attempt ${retryCount + 1}/${maxRetries + 1})...` 
+              await sendProgress({
+                type: 'info',
+                message: `Service temporarily unavailable, retrying (attempt ${retryCount + 1}/${maxRetries + 1})...`
               });
-              
-              // Wait before retry with exponential backoff
               await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
             } else {
-              // Final error, send to user
-              await sendProgress({ 
-                type: 'error', 
-                message: `Failed to initialize AI model streaming: ${streamError.message}` 
+              await sendProgress({
+                type: 'error',
+                error: `Failed to initialize AI model streaming: ${errorText || 'The selected AI model is unavailable.'}`
               });
-              
               throw streamError;
             }
           }

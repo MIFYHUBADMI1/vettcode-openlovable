@@ -27,6 +27,7 @@ import { HeaderProvider } from "@/components/shared/header/HeaderContext";
 import HeaderWrapper from "@/components/shared/header/Wrapper/Wrapper";
 import HeaderDropdownWrapper from "@/components/shared/header/Dropdown/Wrapper/Wrapper";
 import ButtonUI from "@/components/ui/shadcn/button";
+import UserMenu from "@/components/auth/UserMenu";
 import { Connector } from "@/components/shared/layout/curvy-rect";
 
 export default function PricingPage() {
@@ -132,20 +133,7 @@ export default function PricingPage() {
                 >
                   Pricing
                 </Link>
-                <Link 
-                  href="/login" 
-                  className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-all duration-200"
-                >
-                  Login
-                </Link>
-                <Link href="/signup">
-                  <ButtonUI 
-                    variant="primary"
-                    className="ml-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-6 py-2.5 rounded-lg transition-all duration-300 shadow-sm hover:shadow-md"
-                  >
-                    Sign Up
-                  </ButtonUI>
-                </Link>
+                <UserMenu />
               </div>
             </div>
           </HeaderWrapper>

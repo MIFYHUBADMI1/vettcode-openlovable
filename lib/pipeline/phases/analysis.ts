@@ -5,10 +5,13 @@ import { BlueprintParser } from '../blueprint-parser';
 import { phaseEndpointUrl } from '../phase-endpoint';
 import { collectPhaseStream } from '../sse-collect';
 import type { SiteBlueprint } from '../types/blueprint';
+import type { PipelineInputs } from '../types/pipeline';
 
 export interface AnalysisInput {
   scrapedContent: string;
   scrapedMetadata?: Record<string, unknown>;
+  /** User-provided generation inputs (model/style/instructions). */
+  inputs?: PipelineInputs;
 }
 
 export interface AnalysisOutput {
@@ -45,6 +48,11 @@ export class AnalysisPhaseHandler {
     let responseText: string;
     let tokenUsage = 0;
 
+    console.log(
+      `[Phase: analyzing] Starting analysis (${input.scrapedContent.length} chars of scraped content)`,
+    );
+    const phaseStart = Date.now();
+
     try {
       const response = await fetch(phaseEndpointUrl(), {
         method: 'POST',
@@ -53,6 +61,9 @@ export class AnalysisPhaseHandler {
           phase: 'analyze',
           scrapedContent: input.scrapedContent,
           ...(input.scrapedMetadata ? { scrapedMetadata: input.scrapedMetadata } : {}),
+          ...(input.inputs?.model ? { model: input.inputs.model } : {}),
+          ...(input.inputs?.style ? { styleName: input.inputs.style } : {}),
+          ...(input.inputs?.instructions ? { instructions: input.inputs.instructions } : {}),
         }),
         signal: mergedSignal,
       });
@@ -94,6 +105,11 @@ export class AnalysisPhaseHandler {
     }
 
     const blueprint = parseResult;
+
+    console.log(
+      `[Phase: analyzing] Analysis complete in ${Date.now() - phaseStart}ms — ` +
+      `${blueprint.sections.length} sections, ${blueprint.colors.length} colors, ${tokenUsage} tokens`,
+    );
 
     // --- Verify JSON serialization (Req 1.6) --------------------------------
     try {

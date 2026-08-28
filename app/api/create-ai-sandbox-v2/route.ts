@@ -29,8 +29,11 @@ export async function POST(req: NextRequest) {
   }
 
   // Use a global mutex so two concurrent requests don't create duplicate sandboxes.
-  return sessionMutex.run('create-sandbox-v2', async () => {
-    try {
+  // The mutex shares the plain result, not a NextResponse. Response bodies are
+  // readable streams and cannot be returned to multiple requests safely.
+  try {
+    const result = await sessionMutex.run('create-sandbox-v2', async () => {
+      try {
       console.log('[create-ai-sandbox-v2] Creating sandbox...');
       
       // Clean up all existing sandboxes
@@ -127,14 +130,14 @@ export async function POST(req: NextRequest) {
         console.warn('[create-ai-sandbox-v2] Failed to save project:', saveErr);
       }
 
-      return NextResponse.json({
+      return {
         success: true,
         sandboxId: sandboxInfo.sandboxId,
         url: sandboxInfo.url,
         provider: sandboxInfo.provider,
         projectId: project?._id?.toString() ?? null,
         message: 'Sandbox created and Vite React app initialized'
-      });
+      };
 
     } catch (error) {
       console.error('[create-ai-sandbox-v2] Error:', error);
@@ -150,13 +153,25 @@ export async function POST(req: NextRequest) {
         global.activeSandboxProvider = null;
       }
       
-      return NextResponse.json(
-        { 
-          error: error instanceof Error ? error.message : 'Failed to create sandbox',
-          details: error instanceof Error ? error.stack : undefined
-        },
-        { status: 500 }
-      );
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create sandbox',
+        details: error instanceof Error ? error.stack : undefined
+      };
     }
-  }); // sessionMutex.run
+    });
+
+    return NextResponse.json(result, {
+      status: result.success ? 200 : 500,
+    });
+  } catch (error) {
+    console.error('[create-ai-sandbox-v2] Mutex error:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create sandbox',
+      },
+      { status: 500 },
+    );
+  }
 }

@@ -70,6 +70,29 @@ export interface QueuedEdit {
   timestamp: number;
 }
 
+/**
+ * User-provided generation inputs threaded through /api/generation-pipeline
+ * into the phase prompts (style, model, custom instructions, brand extension).
+ * All fields optional; persisted with the pipeline context so a resumed run
+ * keeps the original inputs.
+ */
+export interface PipelineInputs {
+  /** Style id ("1".."8") or resolved style name. */
+  style?: string;
+  /** User-selected AI model id. */
+  model?: string;
+  /** Free-form additional instructions from the user. */
+  instructions?: string;
+  /** 'clone' (default) or 'brand' (build a new component from brand guidelines). */
+  mode?: 'clone' | 'brand';
+  /** Prompt for brand-extension mode. */
+  brandPrompt?: string;
+  /** Pre-scraped markdown from search results — skips the scrape step. */
+  siteMarkdown?: string;
+  /** Brand guidelines extracted from /api/extract-brand-styles (brand mode). */
+  brandGuidelines?: Record<string, unknown>;
+}
+
 /** Runtime context carried across all phases */
 export interface PipelineContext {
   sandboxId: string | null;

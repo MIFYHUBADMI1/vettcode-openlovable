@@ -109,7 +109,7 @@ export class ValidationPhaseHandler {
           fileContent = await sandboxProvider.readFile(filePath);
         } catch (readErr) {
           console.error(
-            `[ValidationPhase] Could not read file ${filePath}:`,
+            `[Phase: validating] Could not read file ${filePath}:`,
             readErr,
           );
           break;
@@ -126,7 +126,7 @@ export class ValidationPhaseHandler {
 
         if (!this.validateAIFixResponse(fixResponse)) {
           console.warn(
-            `[ValidationPhase] Invalid AI fix response for ${filePath} (attempt ${attempt})`,
+            `[Phase: validating] Invalid AI fix response for ${filePath} (attempt ${attempt})`,
           );
           continue;
         }
@@ -135,7 +135,7 @@ export class ValidationPhaseHandler {
         const fixedContent = this._extractFileContent(fixResponse, filePath);
         if (!fixedContent) {
           console.warn(
-            `[ValidationPhase] Could not extract fixed content for ${filePath} (attempt ${attempt})`,
+            `[Phase: validating] Could not extract fixed content for ${filePath} (attempt ${attempt})`,
           );
           continue;
         }
@@ -146,7 +146,7 @@ export class ValidationPhaseHandler {
           retriedFiles.push(filePath);
         } catch (writeErr) {
           console.error(
-            `[ValidationPhase] Failed to write fix for ${filePath}:`,
+            `[Phase: validating] Failed to write fix for ${filePath}:`,
             writeErr,
           );
           continue;
@@ -157,13 +157,13 @@ export class ValidationPhaseHandler {
         if (buildCheck.exitCode === 0) {
           fixed = true;
           console.log(
-            `[ValidationPhase] Fix succeeded for ${filePath} (attempt ${attempt})`,
+            `[Phase: validating] Fix succeeded for ${filePath} (attempt ${attempt})`,
           );
           break;
         }
 
         console.warn(
-          `[ValidationPhase] Fix attempt ${attempt} for ${filePath} did not resolve build errors`,
+          `[Phase: validating] Fix attempt ${attempt} for ${filePath} did not resolve build errors`,
         );
       }
 
@@ -314,7 +314,7 @@ export class ValidationPhaseHandler {
 
     if (!response.ok) {
       console.warn(
-        `[ValidationPhase] AI fix request failed: ${response.status} ${response.statusText}`,
+        `[Phase: validating] AI fix request failed: ${response.status} ${response.statusText}`,
       );
       return { text: '', tokenUsage: 0 };
     }

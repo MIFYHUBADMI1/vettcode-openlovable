@@ -17,6 +17,7 @@ export type {
   PipelineContext,
   PipelineEvent,
   PipelineEventType,
+  PipelineInputs,
   SectionStatus,
   SectionPriority,
   SectionResult,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -20,24 +20,25 @@ export default function ModelsPage() {
   const [selectedModels, setSelectedModels] = useState<string[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Load selected models from localStorage on mount
-  useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('selectedModels');
-      if (saved) {
-        setSelectedModels(JSON.parse(saved));
-      } else {
-        // Default to free models
-        const defaults = [
-          'groq/compound',
-          'openrouter/nvidia/nemotron-3.5-lightning:free',
-          'openrouter/google/gemma-4-26b-a4b-it',
-        ];
-        setSelectedModels(defaults);
-        localStorage.setItem('selectedModels', JSON.stringify(defaults));
-      }
+  // Load selected models from localStorage after hydration.
+  // This must run in an effect, not during render — otherwise the server
+  // renders "0" while the client renders the saved count, causing a
+  // hydration mismatch.
+  useEffect(() => {
+    const saved = localStorage.getItem('selectedModels');
+    if (saved) {
+      setSelectedModels(JSON.parse(saved));
+    } else {
+      // Default to free models
+      const defaults = [
+        'groq/compound',
+        'openrouter/free',
+        'openrouter/google/gemma-4-26b-a4b-it',
+      ];
+      setSelectedModels(defaults);
+      localStorage.setItem('selectedModels', JSON.stringify(defaults));
     }
-  });
+  }, []);
 
   const toggleModelSelection = (modelId: string) => {
     let newSelection: string[];

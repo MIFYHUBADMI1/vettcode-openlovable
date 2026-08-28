@@ -4,6 +4,7 @@
 
 import { SandboxProvider } from '../../sandbox/types';
 import type { SiteBlueprint } from '../types/blueprint';
+import type { PipelineInputs } from '../types/pipeline';
 import { phaseEndpointUrl } from '../phase-endpoint';
 import { collectPhaseStream } from '../sse-collect';
 import { parseAIResponse } from '../../file-parser';
@@ -50,6 +51,7 @@ export class PolishPhaseHandler {
     sandboxProvider: SandboxProvider,
     hasCriticalErrors?: boolean,
     abortSignal?: AbortSignal,
+    inputs?: PipelineInputs,
   ): Promise<PolishResult> {
     if (abortSignal?.aborted) {
       return {
@@ -62,6 +64,11 @@ export class PolishPhaseHandler {
         tokenUsage: 0,
       };
     }
+
+    const phaseStart = Date.now();
+    console.log(
+      `[Phase: polishing] Starting (${blueprint.sections.length} sections, model=${inputs?.model ?? 'default'})`,
+    );
 
     const passes = ['responsive', 'spacing', 'animation'] as const;
 
@@ -76,7 +83,7 @@ export class PolishPhaseHandler {
     for (const pass of passes) {
       // Bail out early if the client disconnected.
       if (abortSignal?.aborted) {
-        console.log('[PolishPhase] Pipeline aborted — stopping polish passes.');
+        console.log('[Phase: polishing] Pipeline aborted — stopping polish passes.');
         break;
       }
 
@@ -84,18 +91,18 @@ export class PolishPhaseHandler {
       // (Req 5.5). `undefined` means "unknown" → run the pass.
       if (pass === 'animation' && blueprint.hasAnimations === false) {
         console.log(
-          '[PolishPhase] Skipping animation pass — original site had no animations',
+          '[Phase: polishing] Skipping animation pass — original site had no animations',
         );
         passesSkipped.push(pass);
         continue;
       }
 
-      console.log(`[PolishPhase] Starting pass: ${pass}`);
+      console.log(`[Phase: polishing] Starting pass: ${pass}`);
 
       try {
         // Call AI for this polish pass.
         const { files, tokenUsage: passTokens } =
-          await this._generatePolishFiles(blueprint, pass);
+          await this._generatePolishFiles(blueprint, pass, inputs);
         tokenUsage += passTokens;
 
         // Write any returned files to the sandbox.
@@ -105,14 +112,14 @@ export class PolishPhaseHandler {
           }
         }
 
-        console.log(`[PolishPhase] Completed pass: ${pass}`);
+        console.log(`[Phase: polishing] Completed pass: ${pass} (${passTokens} tokens)`);
         passesCompleted.push(pass);
       } catch (err) {
         const errMessage =
           err instanceof Error ? err.message : String(err);
 
         console.warn(
-          `[PolishPhase] Pass "${pass}" failed: ${errMessage}`,
+          `[Phase: polishing] Pass "${pass}" failed: ${errMessage}`,
         );
 
         passesFailed.push(pass);
@@ -129,6 +136,12 @@ export class PolishPhaseHandler {
         completedWithWarnings = true;
       }
     }
+
+    console.log(
+      `[Phase: polishing] Phase complete in ${Date.now() - phaseStart}ms — ` +
+      `${passesCompleted.length} passes completed, ${passesFailed.length} failed, ` +
+      `${passesSkipped.length} skipped, ${tokenUsage} tokens`,
+    );
 
     return {
       passesCompleted,
@@ -155,6 +168,7 @@ export class PolishPhaseHandler {
   private async _generatePolishFiles(
     blueprint: SiteBlueprint,
     passType: string,
+    inputs?: PipelineInputs,
   ): Promise<{
     files: import('../../file-parser').ParsedFile[];
     tokenUsage: number;
@@ -166,6 +180,10 @@ export class PolishPhaseHandler {
         phase: 'polish',
         blueprint,
         targetSection: passType,
+        ...(inputs?.model ? { model: inputs.model } : {}),
+        ...(inputs?.style ? { styleName: inputs.style } : {}),
+        ...(inputs?.instructions ? { instructions: inputs.instructions } : {}),
+        ...(inputs?.brandGuidelines ? { brandGuidelines: inputs.brandGuidelines } : {}),
       }),
     });
 

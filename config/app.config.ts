@@ -51,7 +51,7 @@ export const appConfig = {
   // AI Model Configuration
   ai: {
     // Default AI model
-    defaultModel: 'qwen/qwen3.6-27b',
+    defaultModel: 'openrouter/free',
     
     // Available models (default to free models - max 3 shown in builder)
     availableModels: [
@@ -70,7 +70,7 @@ export const appConfig = {
     // Default models to show in builder (max 3)
     defaultBuilderModels: [
       'groq/compound',
-      'openrouter/nvidia/nemotron-3.5-lightning:free',
+      'openrouter/free',
       'openrouter/google/gemma-4-26b-a4b-it',
     ],
     
@@ -80,6 +80,7 @@ export const appConfig = {
       'groq/compound': 'Compound Latest',
       'groq/compound-mini': 'Compound Mini',
       'openai/gpt-oss-120b': 'GPT OSS 120B',
+      'openrouter/free': 'Free Model Router',
       'qwen/qwen3.6-27b': 'Qwen 3.6 27B',
       
       // OpenRouter - OpenAI Models
@@ -165,6 +166,10 @@ export const appConfig = {
       'openai/gpt-oss-120b': {
         provider: 'groq',
         model: 'openai/gpt-oss-120b'
+      },
+      'openrouter/free': {
+        provider: 'openrouter',
+        model: 'openrouter/free'
       },
       'qwen/qwen3.6-27b': {
         provider: 'groq',

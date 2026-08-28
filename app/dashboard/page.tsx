@@ -25,6 +25,7 @@ import { HeaderProvider } from "@/components/shared/header/HeaderContext";
 import HeaderWrapper from "@/components/shared/header/Wrapper/Wrapper";
 import HeaderDropdownWrapper from "@/components/shared/header/Dropdown/Wrapper/Wrapper";
 import { Connector } from "@/components/shared/layout/curvy-rect";
+import UserMenu from "@/components/auth/UserMenu";
 
 interface Project {
   _id: string;
@@ -273,6 +274,7 @@ export default function DashboardPage() {
                   </div>
                 </Link>
               </div>
+              <UserMenu />
             </div>
           </HeaderWrapper>
         </div>

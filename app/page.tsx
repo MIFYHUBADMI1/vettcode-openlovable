@@ -3,6 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import {
   Sparkles,
@@ -175,7 +177,13 @@ function UseCaseCard({
 
 // ─── Main Page Component ────────────────────────────────────────────────────
 export default function WelcomePage() {
+  const router = useRouter();
+  const { data: session, status } = useSession();
   const [videoId, setVideoId] = useState(YOUTUBE_VIDEO_ID);
+
+  const handlePrimaryCta = () => {
+    router.push(status === "authenticated" && session ? "/builder" : "/signup");
+  };
 
   return (
     <HeaderProvider>
@@ -291,16 +299,16 @@ export default function WelcomePage() {
                   custom={3}
                   className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8"
                 >
-                  <Link href="/signup">
-                    <motion.button
-                      whileHover={{ scale: 1.04, boxShadow: "0 8px 30px rgba(249, 115, 22, 0.3)" }}
-                      whileTap={{ scale: 0.97 }}
+                  <motion.button
+                    type="button"
+                    onClick={handlePrimaryCta}
+                    whileHover={{ scale: 1.04, boxShadow: "0 8px 30px rgba(249, 115, 22, 0.3)" }}
+                    whileTap={{ scale: 0.97 }}
                       className="inline-flex items-center gap-2.5 px-8 py-4 rounded-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold text-lg transition-all duration-300 shadow-lg cursor-pointer"
                     >
                       <Sparkles className="w-5 h-5" />
                       Try your first site free
                     </motion.button>
-                  </Link>
                   <a href="#product-demo">
                     <motion.button
                       whileHover={{ scale: 1.04 }}
@@ -559,12 +567,14 @@ export default function WelcomePage() {
                 Turn it into your starting point.
               </p>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Link href="/signup">
-                  <button className="inline-flex items-center gap-2.5 px-10 py-5 rounded-full bg-white text-orange-600 hover:bg-gray-50 font-bold text-lg transition-all duration-300 shadow-2xl hover:shadow-3xl cursor-pointer">
-                    Try MirrorSite AI Free
-                    <ArrowRight className="w-5 h-5" />
-                  </button>
-                </Link>
+                <button
+                  type="button"
+                  onClick={handlePrimaryCta}
+                  className="inline-flex items-center gap-2.5 px-10 py-5 rounded-full bg-white text-orange-600 hover:bg-gray-50 font-bold text-lg transition-all duration-300 shadow-2xl hover:shadow-3xl cursor-pointer"
+                >
+                  Try MirrorSite AI Free
+                  <ArrowRight className="w-5 h-5" />
+                </button>
               </motion.div>
             </motion.div>
           </div>

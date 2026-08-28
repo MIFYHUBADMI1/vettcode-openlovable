@@ -35,6 +35,12 @@ export interface PhaseGenerationRequest {
   model?: string;
   sandboxId?: string;
   retryAttempt?: number;
+  /** Resolved design style name, embedded in the phase prompt. */
+  styleName?: string;
+  /** Free-form additional user requirements, embedded in the phase prompt. */
+  instructions?: string;
+  /** Brand guidelines (brand-extension mode), embedded in the phase prompt. */
+  brandGuidelines?: Record<string, unknown>;
 }
 
 /**
