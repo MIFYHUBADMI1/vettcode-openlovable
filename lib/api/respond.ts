@@ -10,8 +10,14 @@ export function ok<T>(data: T, init?: ResponseInit) {
   return NextResponse.json({ ok: true, data }, init)
 }
 
+const DEFAULT_MESSAGES: Record<string, string> = {
+  EMAIL_ALREADY_REGISTERED: "An account with this email already exists. Try signing in instead.",
+  DATABASE_UNAVAILABLE: "The database is temporarily unavailable. Please try again shortly.",
+  VALIDATION: "Please check the submitted information.",
+}
+
 export function fail(code: string, message?: string, status = 400) {
-  return NextResponse.json({ ok: false, error: { code, message } }, { status })
+  return NextResponse.json({ ok: false, error: { code, message: message ?? DEFAULT_MESSAGES[code] ?? "Request failed." } }, { status })
 }
 
 export function handleRouteError(stage: string, error: unknown) {
@@ -24,6 +30,9 @@ export function handleRouteError(stage: string, error: unknown) {
   }
   if (error instanceof ProviderNotConfiguredError) {
     return fail("PROVIDER_NOT_CONFIGURED", "The website analyzer isn't connected yet. Add your Firecrawl API key to enable it.", 503)
+  }
+  if (error instanceof Error && /E11000|duplicate key/i.test(error.message)) {
+    return fail("EMAIL_ALREADY_REGISTERED", undefined, 409)
   }
   if (error instanceof Error && /mongo|mongodb|database|topology|server selection|connection/i.test(error.message)) {
     logger.error(stage, "database operation failed", { message: error.message })
