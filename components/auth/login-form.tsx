@@ -34,7 +34,9 @@ export function LoginForm({
     setSubmitting(true)
     try {
       await postJson("/api/auth/login", { email, password })
-      router.push("/")
+      const params = await searchParams
+      const next = params.next && params.next.startsWith("/") && !params.next.startsWith("//") ? params.next : "/workspace"
+      router.push(next)
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.")

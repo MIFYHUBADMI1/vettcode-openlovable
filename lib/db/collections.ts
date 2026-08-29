@@ -52,6 +52,16 @@ export async function ensureIndexes() {
     providerUsageCol(),
   ])
 
+  // Older/sample records may contain `id: null`. Replace legacy non-sparse
+  // unique id indexes so one malformed record cannot break every DB-backed route.
+  await Promise.all([
+    projects.dropIndex("id_1").catch(() => undefined),
+    buildRuns.dropIndex("id_1").catch(() => undefined),
+    creditTx.dropIndex("id_1").catch(() => undefined),
+    assets.dropIndex("id_1").catch(() => undefined),
+    usage.dropIndex("id_1").catch(() => undefined),
+  ])
+
   await Promise.all([
     users.createIndex({ email: 1 }, { unique: true }),
     users.createIndex({ googleId: 1 }, { sparse: true }),
@@ -63,15 +73,15 @@ export async function ensureIndexes() {
     tokens.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
     rateLimits.createIndex({ key: 1 }, { unique: true }),
     rateLimits.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
-    projects.createIndex({ id: 1 }, { unique: true }),
+    projects.createIndex({ id: 1 }, { unique: true, sparse: true, name: "projects_id_unique" }),
     projects.createIndex({ userId: 1, updatedAt: -1 }),
-    buildRuns.createIndex({ id: 1 }, { unique: true }),
+    buildRuns.createIndex({ id: 1 }, { unique: true, sparse: true, name: "build_runs_id_unique" }),
     buildRuns.createIndex({ mirrorProjectId: 1, startedAt: -1 }),
-    creditTx.createIndex({ id: 1 }, { unique: true }),
+    creditTx.createIndex({ id: 1 }, { unique: true, sparse: true, name: "credit_transactions_id_unique" }),
     creditTx.createIndex({ userId: 1, createdAt: -1 }),
-    assets.createIndex({ id: 1 }, { unique: true }),
+    assets.createIndex({ id: 1 }, { unique: true, sparse: true, name: "project_assets_id_unique" }),
     assets.createIndex({ userId: 1, createdAt: -1 }),
-    usage.createIndex({ id: 1 }, { unique: true }),
+    usage.createIndex({ id: 1 }, { unique: true, sparse: true, name: "provider_usage_id_unique" }),
     usage.createIndex({ provider: 1, createdAt: -1 }),
   ]).catch((error) => {
     // Never continue a request against a partially initialized database. Reset

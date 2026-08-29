@@ -28,9 +28,11 @@ export function AccountMenu() {
   const { session, isLoading } = useSession()
   const [signingOut, setSigningOut] = useState(false)
 
-  if (isLoading || !session) {
+  if (isLoading) {
     return <Skeleton className="size-9 rounded-full" />
   }
+
+  if (!session) return null
 
   const { user } = session
 
@@ -65,6 +67,11 @@ export function AccountMenu() {
         <DropdownMenuItem disabled className="gap-2">
           <User className="size-4" />
           {user.authProvider === "google" ? "Signed in with Google" : "Signed in with email"}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => router.push("/settings")} className="gap-2">
+          <User className="size-4" />
+          Account settings
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" disabled={signingOut} onSelect={handleSignOut} className="gap-2">

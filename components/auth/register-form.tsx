@@ -29,7 +29,7 @@ export function RegisterForm() {
     setSubmitting(true)
     try {
       await postJson("/api/auth/register", { name, email, password })
-      router.push("/")
+      router.push("/workspace")
       router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.")

@@ -41,7 +41,7 @@ export function CreateProjectForm() {
     try {
       const { project } = await postJson<{ project: Project }>("/api/projects", { url: normalized })
       await Promise.all([refreshProjects(), refreshSession()])
-      router.push(`/projects/${project.id}`)
+      router.push(`/project/${project.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create project")
       setSubmitting(false)
