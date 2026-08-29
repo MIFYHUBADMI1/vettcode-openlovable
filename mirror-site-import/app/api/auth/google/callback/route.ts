@@ -20,10 +20,8 @@ const STATE_COOKIE = "mirrorsite_oauth_state"
  */
 export async function GET(req: Request) {
   const appUrl = getAppUrl()
-  let stage = "start"
   try {
     const url = new URL(req.url)
-    stage = "state"
     const code = url.searchParams.get("code")
     const state = url.searchParams.get("state")
     const jar = await cookies()
@@ -34,14 +32,11 @@ export async function GET(req: Request) {
       return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`)
     }
 
-    stage = "exchange"
     const profile = await exchangeGoogleCode(code)
 
-    stage = "find-google-user"
     let user = await findUserByGoogleId(profile.googleId)
 
     if (!user) {
-      stage = "find-email-user"
       const existingByEmail = await findUserByEmail(profile.email)
       if (existingByEmail) {
         await linkGoogleToUser(existingByEmail.id, profile.googleId, profile.imageUrl)
@@ -56,16 +51,13 @@ export async function GET(req: Request) {
       }
     }
 
-    stage = "touch-login"
     await touchLastLogin(user.id)
-    stage = "create-session"
     const token = await createSession(user.id)
     await setSessionCookie(token)
 
     return NextResponse.redirect(`${appUrl}/`)
   } catch (e) {
-    logger.error("api.auth.google.callback", "OAuth callback failed", { stage, errorName: e instanceof Error ? e.name : "UnknownError", errorMessage: e instanceof Error ? e.message : String(e) })
-    const params = new URLSearchParams({ error: "google_auth_failed", stage })
-    return NextResponse.redirect(`${appUrl}/login?${params.toString()}`)
+    logger.error("api.auth.google.callback", { error: String(e) })
+    return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`)
   }
 }
