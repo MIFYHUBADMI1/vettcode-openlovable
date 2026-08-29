@@ -39,6 +39,11 @@ export async function getProject(projectId: string): Promise<TotalumProject> {
   return totalumFetch<TotalumProject>("GET", `/projects/${encodeURIComponent(projectId)}`)
 }
 
+/** GET /projects/:id/source-code — signed archive URL for latest source. */
+export async function getSourceCode(projectId: string): Promise<{ downloadUrl: string }> {
+  return totalumFetch<{ downloadUrl: string }>("GET", `/projects/${encodeURIComponent(projectId)}/source-code`, undefined, 60_000)
+}
+
 /** GET /credit-costs — current usage-based credit costs. Never hard-coded. */
 export async function getCreditCosts(): Promise<CreditCosts> {
   return totalumFetch<CreditCosts>("GET", "/credit-costs")
