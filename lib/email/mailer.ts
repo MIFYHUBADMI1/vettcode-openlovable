@@ -18,9 +18,9 @@ function getTransporter() {
 }
 
 export async function sendMail(params: { to: string; subject: string; html: string; text: string }): Promise<void> {
-  const config = getSmtpConfig()
-  const transporter = getTransporter()
   try {
+    const config = getSmtpConfig()
+    const transporter = getTransporter()
     await transporter.sendMail({
       from: `MirrorSite AI <${config.from}>`,
       to: params.to,

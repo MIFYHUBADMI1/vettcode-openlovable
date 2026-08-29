@@ -25,6 +25,10 @@ export function handleRouteError(stage: string, error: unknown) {
   if (error instanceof ProviderNotConfiguredError) {
     return fail("PROVIDER_NOT_CONFIGURED", "The website analyzer isn't connected yet. Add your Firecrawl API key to enable it.", 503)
   }
-  logger.error(stage, "unhandled route error", { message: (error as Error).message })
+  if (error instanceof Error && /mongo|mongodb|database|topology|server selection|connection/i.test(error.message)) {
+    logger.error(stage, "database operation failed", { message: error.message })
+    return fail("DATABASE_UNAVAILABLE", undefined, 503)
+  }
+  logger.error(stage, "unhandled route error", { message: error instanceof Error ? error.message : String(error) })
   return fail("UNKNOWN", "Something went wrong. Please try again.", 500)
 }
