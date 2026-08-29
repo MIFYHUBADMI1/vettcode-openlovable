@@ -1,0 +1,18 @@
+import Link from "next/link"
+import { notFound, redirect } from "next/navigation"
+import { AppHeader } from "@/components/app-header"
+import { StateBadge } from "@/components/state-badge"
+import { getCurrentUser } from "@/lib/auth/session"
+import { store } from "@/lib/store/store"
+
+export default async function ProjectWorkspacePage({ params }: { params: Promise<{ projectId: string }> }) {
+  const user = await getCurrentUser()
+  if (!user) redirect(`/login?next=${encodeURIComponent(`/project/${(await params).projectId}`)}`)
+  const { projectId } = await params
+  const project = await store.getProject(projectId)
+  if (!project || project.userId !== user.id) notFound()
+
+  return (
+    <main className="min-h-svh bg-background text-foreground"><AppHeader /><div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-6 py-10 lg:px-10"><div className="flex flex-col gap-5 border-b border-border pb-8 md:flex-row md:items-end md:justify-between"><div><Link href="/dashboard" className="font-mono text-xs text-primary hover:underline">← Dashboard</Link><h1 className="mt-4 text-4xl font-semibold tracking-tight">{project.name}</h1><p className="mt-2 text-sm text-muted-foreground">{project.sourceUrl ?? project.idea ?? "Project workspace"}</p></div><StateBadge state={project.state} /></div><div className="grid gap-6 lg:grid-cols-[0.7fr_1.3fr]"><aside className="flex flex-col gap-2 border border-border bg-card p-4"><p className="px-3 pb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground">Project</p>{["Overview", "Build", "Preview", "Context", "Data", "Assets", "Settings"].map((item) => <div key={item} className="flex items-center justify-between border border-transparent px-3 py-2 text-sm text-muted-foreground"><span>{item}</span>{item !== "Overview" ? <span className="font-mono text-[10px] uppercase">planned</span> : <span className="font-mono text-[10px] uppercase text-primary">open</span>}</div>)}</aside><section className="flex flex-col gap-6"><div className="border border-border bg-card p-6"><p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">What we know</p><h2 className="mt-3 text-2xl font-medium">{project.understanding?.purpose ?? "Analysis is preparing the project context."}</h2><p className="mt-4 max-w-2xl text-sm leading-7 text-muted-foreground">This workspace reflects the persisted project state. As analysis completes, its understanding, specification, events, and build result will appear here.</p></div><div className="grid gap-4 sm:grid-cols-3"><div className="border border-border bg-card p-4"><p className="font-mono text-xs text-muted-foreground">Mode</p><p className="mt-2 text-sm capitalize">{project.mode}</p></div><div className="border border-border bg-card p-4"><p className="font-mono text-xs text-muted-foreground">Events</p><p className="mt-2 text-sm">{project.events.length} recorded</p></div><div className="border border-border bg-card p-4"><p className="font-mono text-xs text-muted-foreground">Conversation</p><p className="mt-2 text-sm">{project.conversation.length} messages</p></div></div><div className="border border-border bg-card p-6"><p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Latest activity</p><div className="mt-5 flex flex-col gap-4">{project.events.slice(-5).reverse().map((event) => <div key={event.id} className="flex gap-4 border-l border-primary/50 pl-4"><div><p className="text-sm">{event.message}</p><p className="mt-1 font-mono text-xs text-muted-foreground">{event.stage}</p></div></div>)}</div></div></section></div></div></main>
+  )
+}
