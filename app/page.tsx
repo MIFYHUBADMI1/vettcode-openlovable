@@ -51,12 +51,12 @@ export default function Page() {
         <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
           <a href="#how-it-works" className="transition-colors hover:text-foreground">How it works</a>
           <a href="#principles" className="transition-colors hover:text-foreground">Why MirrorSite</a>
-          {session ? <Link href="/workspace" className="text-foreground transition-colors hover:text-primary">Workspace</Link> : null}
+          {session ? <Link href="/dashboard" className="text-foreground transition-colors hover:text-primary">Dashboard</Link> : null}
           {session ? <AccountMenu /> : null}
           {!session && !sessionLoading ? <><Link href="/login" className="text-foreground transition-colors hover:text-primary">Sign in</Link><Link href="/register" className={buttonVariants({ size: "sm" })}>Start building <ArrowRight className="size-4" /></Link></> : null}
         </nav>
         <div className="flex items-center gap-2 md:hidden">
-          {session ? <><Link href="/workspace" className={buttonVariants({ variant: "outline", size: "sm" })}>Workspace</Link><AccountMenu /></> : !sessionLoading ? <Link href="/register" className={buttonVariants({ size: "sm" })}>Start</Link> : null}
+          {session ? <><Link href="/dashboard" className={buttonVariants({ variant: "outline", size: "sm" })}>Dashboard</Link><AccountMenu /></> : !sessionLoading ? <Link href="/register" className={buttonVariants({ size: "sm" })}>Start</Link> : null}
         </div>
       </header>
 
@@ -69,7 +69,7 @@ export default function Page() {
           <h1 className="hero-title text-balance text-5xl font-semibold leading-[1.02] tracking-[-0.055em] sm:text-7xl">Make the leap from <span className="word-reveal text-primary">inspiration</span> to something real.</h1>
           <p className="hero-copy mt-7 max-w-xl text-pretty text-lg leading-8 text-muted-foreground">MirrorSite AI understands what you&apos;re trying to build, turns the signal into product structure, and gives you a working full-stack foundation to make your own.</p>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <Link href={session ? "/workspace" : "/register"} className={buttonVariants({ size: "lg" }) + " h-12 px-5"}>{session ? "Open your workspace" : "Build from a starting point"} <ArrowRight className="size-4" /></Link>
+            <Link href={session ? "/dashboard" : "/register"} className={buttonVariants({ size: "lg" }) + " h-12 px-5"}>{session ? "Open your dashboard" : "Build from a starting point"} <ArrowRight className="size-4" /></Link>
             <a href="#demo" className={buttonVariants({ variant: "outline", size: "lg" }) + " h-12 px-5"}><Play className="size-4" /> See how it works</a>
           </div>
           <div className="mt-5 flex items-center gap-3 font-mono text-xs text-muted-foreground"><span className="live-dot size-1.5 rounded-full bg-primary" /> No blank canvas. No magic prompt. <span className="text-primary transition-all duration-500">{discoveryStates[activeStep]}</span></div>
@@ -97,7 +97,7 @@ export default function Page() {
 
       <section className="border-y border-border bg-card/40"><div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-6 py-12 lg:flex-row lg:items-center lg:justify-between lg:px-10"><div><p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">For people who ship</p><p className="mt-3 text-xl font-medium">Bring the reference. Leave with momentum.</p></div><Link href="/register" className={buttonVariants({ size: "lg" })}>Start with your idea <ArrowRight className="size-4" /></Link></div></section>
 
-      <footer className="border-t border-border"><div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-6 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-10"><span className="font-mono text-xs">© 2026 MirrorSite AI</span><div className="flex flex-wrap gap-x-5 gap-y-2"><a href="#how-it-works" className="hover:text-foreground">How it works</a><Link href="/resources" className="hover:text-foreground">Resources</Link><Link href="/about" className="hover:text-foreground">About</Link><Link href="/privacy" className="hover:text-foreground">Privacy</Link><Link href="/terms" className="hover:text-foreground">Terms</Link><Link href={session ? "/workspace" : "/login"} className="hover:text-foreground">{session ? "Workspace" : "Sign in"}</Link></div></div></footer>
+      <footer className="border-t border-border"><div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-6 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-10"><span className="font-mono text-xs">© 2026 MirrorSite AI</span><div className="flex flex-wrap gap-x-5 gap-y-2"><a href="#how-it-works" className="hover:text-foreground">How it works</a><Link href="/resources" className="hover:text-foreground">Resources</Link><Link href="/about" className="hover:text-foreground">About</Link><Link href="/privacy" className="hover:text-foreground">Privacy</Link><Link href="/terms" className="hover:text-foreground">Terms</Link><Link href={session ? "/dashboard" : "/login"} className="hover:text-foreground">{session ? "Dashboard" : "Sign in"}</Link></div></div></footer>
       </main>
     </>
   )
