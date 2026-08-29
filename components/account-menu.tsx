@@ -69,6 +69,11 @@ export function AccountMenu() {
           {user.authProvider === "google" ? "Signed in with Google" : "Signed in with email"}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => router.push("/settings")} className="gap-2">
+          <User className="size-4" />
+          Account settings
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" disabled={signingOut} onSelect={handleSignOut} className="gap-2">
           <LogOut className="size-4" />
           {signingOut ? "Signing out…" : "Sign out"}

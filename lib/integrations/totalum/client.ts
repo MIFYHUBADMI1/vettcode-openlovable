@@ -8,8 +8,13 @@ import { TotalumError, mapTotalumError } from "./errors"
 const TOTALUM_BASE = "https://api-accounts.totalum.app"
 const API_PREFIX = "/api/v1/vcaas"
 
+function getTotalumApiKey() {
+  // TOTALUM_API_KEY is the project variable; keep the legacy VCaaS name as a fallback.
+  return process.env.TOTALUM_API_KEY ?? process.env.TOTALUM_VCAAS_API_KEY
+}
+
 export function isTotalumConfigured() {
-  return Boolean(process.env.TOTALUM_VCAAS_API_KEY)
+  return Boolean(getTotalumApiKey())
 }
 
 type Method = "GET" | "POST" | "PATCH" | "DELETE"
@@ -20,7 +25,7 @@ export async function totalumFetch<T>(
   body?: unknown,
   timeoutMs = 30_000,
 ): Promise<T> {
-  const key = process.env.TOTALUM_VCAAS_API_KEY
+  const key = getTotalumApiKey()
   if (!key) throw new TotalumError("PROVIDER_NOT_CONFIGURED")
 
   const controller = new AbortController()
