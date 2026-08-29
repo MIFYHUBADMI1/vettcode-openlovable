@@ -5,6 +5,7 @@ import Link from "next/link"
 import { ArrowRight, Check, Code2, GitBranch, Globe2, Layers3, Play, Sparkles, TerminalSquare, Zap } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { AccountMenu } from "@/components/account-menu"
+import { useSession } from "@/lib/client/api"
 
 const steps = [
   { icon: Globe2, title: "Bring the signal", copy: "Paste a URL, upload a design, or start from a thought." },
@@ -15,6 +16,7 @@ const steps = [
 export default function Page() {
   const [pulse, setPulse] = useState(0)
   const [activeStep, setActiveStep] = useState(1)
+  const { session, isLoading: sessionLoading } = useSession()
   const discoveryStates = ["signal detected", "intent emerging", "structure forming"]
 
   useEffect(() => {
@@ -49,10 +51,9 @@ export default function Page() {
         <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
           <a href="#how-it-works" className="transition-colors hover:text-foreground">How it works</a>
           <a href="#principles" className="transition-colors hover:text-foreground">Why MirrorSite</a>
-          <Link href="/workspace" className="text-foreground transition-colors hover:text-primary">Workspace</Link>
-          <AccountMenu />
-          <Link href="/login" className="text-foreground transition-colors hover:text-primary">Sign in</Link>
-          <Link href="/register" className={buttonVariants({ size: "sm" })}>Start building <ArrowRight className="size-4" /></Link>
+          {session ? <Link href="/workspace" className="text-foreground transition-colors hover:text-primary">Workspace</Link> : null}
+          {session ? <AccountMenu /> : null}
+          {!session && !sessionLoading ? <><Link href="/login" className="text-foreground transition-colors hover:text-primary">Sign in</Link><Link href="/register" className={buttonVariants({ size: "sm" })}>Start building <ArrowRight className="size-4" /></Link></> : null}
         </nav>
         <Link href="/register" className={buttonVariants({ size: "sm" }) + " md:hidden"}>Start</Link>
       </header>
