@@ -28,9 +28,11 @@ export function AccountMenu() {
   const { session, isLoading } = useSession()
   const [signingOut, setSigningOut] = useState(false)
 
-  if (isLoading || !session) {
+  if (isLoading) {
     return <Skeleton className="size-9 rounded-full" />
   }
+
+  if (!session) return null
 
   const { user } = session
 

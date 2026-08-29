@@ -29,8 +29,11 @@ export async function GET(req: Request) {
     const jar = await cookies()
     const expectedState = jar.get(STATE_COOKIE)?.value
     jar.delete(STATE_COOKIE)
+    const [stateNonce, encodedNext] = state?.split(".") ?? []
+    const [expectedNonce] = expectedState?.split(".") ?? []
+    const nextFromState = encodedNext ? Buffer.from(encodedNext, "base64url").toString("utf8") : "/workspace"
 
-    if (!code || !state || !expectedState || state !== expectedState) {
+    if (!code || !stateNonce || !expectedNonce || stateNonce !== expectedNonce) {
       return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`)
     }
 
@@ -62,7 +65,8 @@ export async function GET(req: Request) {
     const token = await createSession(user.id)
     await setSessionCookie(token)
 
-    return NextResponse.redirect(`${appUrl}/`)
+    const next = nextFromState.startsWith("/") && !nextFromState.startsWith("//") ? nextFromState : "/workspace"
+    return NextResponse.redirect(`${appUrl}${next}`)
   } catch (e) {
     logger.error("api.auth.google.callback", "OAuth callback failed", { stage, errorName: e instanceof Error ? e.name : "UnknownError", errorMessage: e instanceof Error ? e.message : String(e) })
     const params = new URLSearchParams({ error: "google_auth_failed", stage })
