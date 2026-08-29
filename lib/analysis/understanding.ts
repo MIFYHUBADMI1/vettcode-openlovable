@@ -41,6 +41,11 @@ export async function analyzeWebsite(evidence: WebsiteEvidence): Promise<Project
     "Never present an inference as a confirmed fact. Be concise and accurate.",
   ].join(" ")
 
+  console.log("[v0] analysis.understanding: calling generateObject", {
+    model: MODEL,
+    sourceUrl: evidence.sourceUrl,
+    digestChars: digest.length,
+  })
   try {
     const { object } = await generateObject({
       model: MODEL,
@@ -48,6 +53,7 @@ export async function analyzeWebsite(evidence: WebsiteEvidence): Promise<Project
       system,
       prompt: `<untrusted_website_evidence>\n${digest}\n</untrusted_website_evidence>\n\nProduce the structured website understanding from the evidence above.`,
     })
+    console.log("[v0] analysis.understanding: generateObject succeeded", { sourceUrl: evidence.sourceUrl })
 
     const understanding: ProjectUnderstanding = {
       ...object,
@@ -62,6 +68,13 @@ export async function analyzeWebsite(evidence: WebsiteEvidence): Promise<Project
     })
     return understanding
   } catch (e) {
+    console.log("[v0] analysis.understanding: generateObject FAILED", {
+      sourceUrl: evidence.sourceUrl,
+      model: MODEL,
+      message: (e as Error).message,
+      name: (e as Error).name,
+      cause: (e as { cause?: unknown }).cause,
+    })
     logger.error("analysis.understanding", "generation failed", { message: (e as Error).message })
     throw e
   }

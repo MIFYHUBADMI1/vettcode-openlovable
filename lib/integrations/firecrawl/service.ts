@@ -85,25 +85,35 @@ export async function crawlWebsite(inputUrl: string, options: FirecrawlOptions =
 
   const cached = cache.get(root)
   if (cached) {
+    console.log("[v0] firecrawl.crawl: cache hit", { root })
     logger.info("firecrawl.cache", "cache hit", { root })
     return { ...cached, usage: { ...cached.usage, cached: true } }
   }
 
+  console.log("[v0] firecrawl.crawl: step 1/3 scraping root page", { root, includeScreenshots: opts.includeScreenshots })
   logger.info("firecrawl.crawl", "starting", { root, maxPages: opts.maxPages })
 
   // 1. Scrape the root page (with screenshot).
   const rootRes = await scrapeUrl(root, opts.includeScreenshots, opts.timeoutMs)
   const rootPage = toPageEvidence(root, rootRes.data)
+  console.log("[v0] firecrawl.crawl: step 1/3 root page scraped", { root, hasScreenshot: Boolean(rootPage.screenshot) })
 
   // 2. Discover subpages cheaply and pick a relevant, deduped subset.
+  console.log("[v0] firecrawl.crawl: step 2/3 discovering subpages via mapUrl", { root })
   let discovered: string[] = []
   try {
     const mapRes = await mapUrl(root, 40, Math.min(opts.timeoutMs, 20_000))
     discovered = (mapRes.links ?? []).map((l) => (typeof l === "string" ? l : l.url)).filter(Boolean)
+    console.log("[v0] firecrawl.crawl: step 2/3 mapUrl discovered links", { root, count: discovered.length })
   } catch (e) {
+    console.log("[v0] firecrawl.crawl: step 2/3 mapUrl FAILED, continuing with root only", {
+      root,
+      message: (e as Error).message,
+    })
     logger.warn("firecrawl.map", "map failed, continuing with root only", { message: (e as Error).message })
   }
   const targets = selectRelevantPages(root, discovered, opts.maxPages)
+  console.log("[v0] firecrawl.crawl: step 3/3 scraping selected subpages", { root, targets })
 
   // 3. Scrape selected subpages (screenshots only up to maxScreenshots total).
   const pages: FirecrawlPageEvidence[] = [rootPage]
@@ -115,7 +125,9 @@ export async function crawlWebsite(inputUrl: string, options: FirecrawlOptions =
       const page = toPageEvidence(t, res.data)
       if (page.screenshot) screenshotBudget--
       pages.push(page)
+      console.log("[v0] firecrawl.crawl: subpage scraped", { url: t, hasScreenshot: Boolean(page.screenshot) })
     } catch (e) {
+      console.log("[v0] firecrawl.crawl: subpage FAILED", { url: t, message: (e as Error).message })
       logger.warn("firecrawl.scrape", "subpage failed", { url: t, message: (e as Error).message })
     }
   }

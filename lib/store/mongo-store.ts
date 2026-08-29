@@ -174,6 +174,38 @@ export class MongoStore implements DataStore {
     const docs = await col.find({ mirrorProjectId }).sort({ startedAt: -1 }).toArray()
     return docs.map(stripMongoId)
   }
+
+  async deleteProject(id: string, userId: string): Promise<boolean> {
+    console.log("[v0] store.deleteProject: checking ownership", { id, userId })
+    const col = await projectsCol()
+    const runsCol = await buildRunsCol()
+    const client = (await import("@/lib/db/mongodb")).getMongoClient
+    const mongoClient = await client()
+    const session = mongoClient.startSession()
+    try {
+      let deleted = false
+      await session.withTransaction(async () => {
+        // Ownership check and delete happen as one atomic filter, so a
+        // request can never delete a project it doesn't own.
+        const result = await col.deleteOne({ id, userId }, { session })
+        if (result.deletedCount === 0) {
+          console.log("[v0] store.deleteProject: not found or not owned, aborting", { id, userId })
+          deleted = false
+          return
+        }
+        const runsResult = await runsCol.deleteMany({ mirrorProjectId: id }, { session })
+        console.log("[v0] store.deleteProject: cascaded build run delete", {
+          id,
+          deletedBuildRuns: runsResult.deletedCount,
+        })
+        deleted = true
+      })
+      console.log("[v0] store.deleteProject: result", { id, deleted })
+      return deleted
+    } finally {
+      await session.endSession()
+    }
+  }
 }
 
 function stripMongoId<T extends { _id?: unknown }>(doc: T): Omit<T, "_id"> {

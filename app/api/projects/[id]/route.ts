@@ -45,3 +45,24 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return handleRouteError("api.projects.update", e)
   }
 }
+
+/** Permanently deletes a project the caller owns, cascading to its build
+ * runs. Ownership is enforced server-side (spec section 26). */
+export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const user = await requireUser()
+    const { id } = await params
+    console.log("[v0] api.projects.delete: request received", { id, userId: user.id })
+    const project = await store.getProject(id)
+    if (!project || project.userId !== user.id) {
+      console.log("[v0] api.projects.delete: ownership check failed", { id, userId: user.id })
+      return fail("UNAUTHORIZED_PROJECT_ACCESS", "We couldn't find this project.", 404)
+    }
+    const deleted = await store.deleteProject(id, user.id)
+    console.log("[v0] api.projects.delete: result", { id, deleted })
+    if (!deleted) return fail("UNAUTHORIZED_PROJECT_ACCESS", "We couldn't find this project.", 404)
+    return ok({ deleted: true })
+  } catch (e) {
+    return handleRouteError("api.projects.delete", e)
+  }
+}

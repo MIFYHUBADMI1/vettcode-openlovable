@@ -48,23 +48,51 @@ export async function generateSpecificationFromUnderstanding(
     null,
     2,
   )
-  const { object } = await generateObject({
+  console.log("[v0] analysis.specification: calling generateObject (from understanding)", {
     model: MODEL,
-    schema: ApplicationSpecificationSchema,
-    system: SPEC_SYSTEM,
-    prompt: `<website_understanding>\n${context}\n</website_understanding>\n\nProduce the ApplicationSpecification for the working application this website should become.`,
+    sourceUrl: understanding.sourceUrl,
+    contextChars: context.length,
   })
-  logger.info("analysis.specification", "generated from understanding", { type: object.applicationType })
-  return ensureFeatureCatalog(object)
+  try {
+    const { object } = await generateObject({
+      model: MODEL,
+      schema: ApplicationSpecificationSchema,
+      system: SPEC_SYSTEM,
+      prompt: `<website_understanding>\n${context}\n</website_understanding>\n\nProduce the ApplicationSpecification for the working application this website should become.`,
+    })
+    console.log("[v0] analysis.specification: generateObject succeeded (from understanding)", { type: object.applicationType })
+    logger.info("analysis.specification", "generated from understanding", { type: object.applicationType })
+    return ensureFeatureCatalog(object)
+  } catch (e) {
+    console.log("[v0] analysis.specification: generateObject FAILED (from understanding)", {
+      model: MODEL,
+      message: (e as Error).message,
+      name: (e as Error).name,
+      cause: (e as { cause?: unknown }).cause,
+    })
+    throw e
+  }
 }
 
 export async function generateSpecificationFromIdea(idea: string): Promise<ApplicationSpecification> {
-  const { object } = await generateObject({
-    model: MODEL,
-    schema: ApplicationSpecificationSchema,
-    system: SPEC_SYSTEM,
-    prompt: `<user_idea>\n${idea}\n</user_idea>\n\nProduce the ApplicationSpecification for this application idea.`,
-  })
-  logger.info("analysis.specification", "generated from idea", { type: object.applicationType })
-  return ensureFeatureCatalog(object)
+  console.log("[v0] analysis.specification: calling generateObject (from idea)", { model: MODEL, ideaChars: idea.length })
+  try {
+    const { object } = await generateObject({
+      model: MODEL,
+      schema: ApplicationSpecificationSchema,
+      system: SPEC_SYSTEM,
+      prompt: `<user_idea>\n${idea}\n</user_idea>\n\nProduce the ApplicationSpecification for this application idea.`,
+    })
+    console.log("[v0] analysis.specification: generateObject succeeded (from idea)", { type: object.applicationType })
+    logger.info("analysis.specification", "generated from idea", { type: object.applicationType })
+    return ensureFeatureCatalog(object)
+  } catch (e) {
+    console.log("[v0] analysis.specification: generateObject FAILED (from idea)", {
+      model: MODEL,
+      message: (e as Error).message,
+      name: (e as Error).name,
+      cause: (e as { cause?: unknown }).cause,
+    })
+    throw e
+  }
 }

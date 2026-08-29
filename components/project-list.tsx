@@ -5,7 +5,7 @@ import { ProjectCard } from "@/components/project-card"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export function ProjectList() {
-  const { projects, isLoading, error } = useProjects()
+  const { projects, isLoading, error, refresh } = useProjects()
 
   return (
     <section className="flex flex-col gap-4">
@@ -37,7 +37,7 @@ export function ProjectList() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => (
-            <ProjectCard key={project.id} project={project} />
+            <ProjectCard key={project.id} project={project} onDeleted={() => refresh()} />
           ))}
         </div>
       )}

@@ -32,12 +32,14 @@ export async function POST(req: Request) {
     const passwordHash = await hashPassword(password)
     const user = await createPasswordUser({ email, name, passwordHash })
 
-    await issueAndSendVerificationEmail(user.id, user.email, user.name)
+    console.log("[v0] auth.register: user created, issuing verification email", { userId: user.id })
+    const verification = await issueAndSendVerificationEmail(user.id, user.email, user.name)
+    console.log("[v0] auth.register: verification email result", { userId: user.id, verification })
 
     const token = await createSession(user.id)
     await setSessionCookie(token)
 
-    return ok({ user: toPublicUser(user) }, { status: 201 })
+    return ok({ user: toPublicUser(user), verificationEmail: verification }, { status: 201 })
   } catch (e) {
     return handleRouteError("api.auth.register", e)
   }

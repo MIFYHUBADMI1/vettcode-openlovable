@@ -43,6 +43,12 @@ export interface DataStore {
   getBuildRun(id: string): Promise<BuildRun | null>
   updateBuildRun(id: string, patch: Partial<BuildRun>): Promise<BuildRun | null>
   listBuildRuns(mirrorProjectId: string): Promise<BuildRun[]>
+
+  /** Permanently deletes a project owned by `userId`, cascading to remove
+   * all of its build runs in the same transaction. Returns false — without
+   * deleting anything — if the project doesn't exist or isn't owned by
+   * `userId`. */
+  deleteProject(id: string, userId: string): Promise<boolean>
 }
 
 // Persist a single instance across hot reloads in dev.

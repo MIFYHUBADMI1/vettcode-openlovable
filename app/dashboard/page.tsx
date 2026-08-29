@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation"
+import Link from "next/link"
+import { ArrowRight, Globe, Lightbulb } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
-import { CreateProjectForm } from "@/components/create-project-form"
-import { CreateIdeaForm } from "@/components/create-idea-form"
 import { ProjectList } from "@/components/project-list"
 import { OnboardingTour } from "@/components/onboarding-tour"
 import { OnboardingChecklist } from "@/components/onboarding-checklist"
@@ -26,8 +26,44 @@ export default async function DashboardPage() {
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
-          <div className="border border-border bg-card p-5"><p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Start here</p><h2 className="mt-4 text-xl font-medium">Create a project</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Bring a website reference and we’ll analyze its structure before you commit to a build.</p><div className="mt-6"><CreateProjectForm /></div></div>
-          <div className="border border-border bg-card p-5"><p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Start from an idea</p><h2 className="mt-4 text-xl font-medium">Describe what you need</h2><div className="mt-5"><CreateIdeaForm /></div></div>
+          <Link
+            href="/new/website"
+            className="group flex flex-col justify-between border border-border bg-card p-5 transition-colors hover:border-primary/50"
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <p className="font-mono text-xs uppercase tracking-widest text-primary">Website mode</p>
+                <Globe className="size-4 text-primary" />
+              </div>
+              <h2 className="mt-4 text-xl font-medium">Mirror an existing site</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                Bring a website reference and we&apos;ll analyze its structure before you commit to a build.
+              </p>
+            </div>
+            <span className="mt-6 inline-flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-primary">
+              Start mirroring
+              <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+            </span>
+          </Link>
+          <Link
+            href="/new/idea"
+            className="group flex flex-col justify-between border border-border bg-card p-5 transition-colors hover:border-accent-foreground/50"
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <p className="font-mono text-xs uppercase tracking-widest text-accent-foreground">Idea mode</p>
+                <Lightbulb className="size-4 text-accent-foreground" />
+              </div>
+              <h2 className="mt-4 text-xl font-medium">Start from an idea</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                No reference site. Describe what you need and we&apos;ll turn it into a plan.
+              </p>
+            </div>
+            <span className="mt-6 inline-flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-accent-foreground">
+              Describe your app
+              <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+            </span>
+          </Link>
           <OnboardingChecklist />
         </div>
         <ProjectList />

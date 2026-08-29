@@ -62,6 +62,15 @@ export async function postJson<T>(url: string, payload?: unknown): Promise<T> {
   return unwrap<T>(body, res.status)
 }
 
+export async function deleteJson<T>(url: string): Promise<T> {
+  const res = await fetch(url, {
+    method: "DELETE",
+    headers: { accept: "application/json" },
+  })
+  const body = await res.json().catch(() => null)
+  return unwrap<T>(body, res.status)
+}
+
 export function useSession() {
   const { data, error, isLoading, mutate } = useSWR<SessionInfo>("/api/me", jsonFetcher, {
     refreshInterval: 15000,

@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { CreditMeter } from "@/components/credit-meter"
 import { AccountMenu } from "@/components/account-menu"
+import { VerifyEmailBanner } from "@/components/verify-email-banner"
 
 export function AppHeader() {
   return (
@@ -22,6 +23,7 @@ export function AppHeader() {
           <AccountMenu />
         </div>
       </div>
+      <VerifyEmailBanner />
     </header>
   )
 }
