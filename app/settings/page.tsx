@@ -1,3 +1,4 @@
+import Link from "next/link"
 import { redirect } from "next/navigation"
 import { AppHeader } from "@/components/app-header"
 import { getCurrentUser } from "@/lib/auth/session"
@@ -24,12 +25,12 @@ export default async function SettingsPage() {
             <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Profile</p>
             <h2 className="mt-4 text-xl font-medium">{user.name}</h2>
             <p className="mt-2 text-sm text-muted-foreground">{user.email}</p>
-            <p className="mt-6 text-xs text-muted-foreground">Authentication: {user.authProvider === "google" ? "Google" : "Email and password"}</p>
+            <p className="mt-6 text-xs text-muted-foreground">Authentication: {user.authProvider === "google" ? "Google" : "Email and password"}</p><div className="mt-5 flex gap-4 font-mono text-xs"><Link href="/settings/profile" className="text-primary hover:underline">Profile →</Link><Link href="/settings/security" className="text-primary hover:underline">Security →</Link></div>
           </div>
           <div className="border border-border bg-card p-6">
             <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Credits</p>
             <p className="mt-4 text-4xl font-semibold tabular-nums">{balance.toLocaleString()}</p>
-            <p className="mt-2 text-sm text-muted-foreground">Available build credits</p>
+            <p className="mt-2 text-sm text-muted-foreground">Available build credits</p><Link href="/settings/billing" className="mt-4 inline-block font-mono text-xs text-primary hover:underline">View usage history →</Link>
           </div>
         </section>
         <section className="border border-border bg-card p-6">

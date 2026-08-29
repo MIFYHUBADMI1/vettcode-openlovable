@@ -2,6 +2,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { AppHeader } from "@/components/app-header"
 import { CreateProjectForm } from "@/components/create-project-form"
+import { CreateIdeaForm } from "@/components/create-idea-form"
 import { ProjectList } from "@/components/project-list"
 import { getCurrentUser } from "@/lib/auth/session"
 
@@ -25,7 +26,7 @@ export default async function DashboardPage() {
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           <div className="border border-border bg-card p-5"><p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Start here</p><h2 className="mt-4 text-xl font-medium">Create a project</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Bring a website reference and we’ll analyze its structure before you commit to a build.</p><div className="mt-6"><CreateProjectForm /></div></div>
-          <div className="border border-border bg-card p-5"><p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Your signal</p><h2 className="mt-4 text-xl font-medium">Analysis before execution</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Every project keeps its understanding, specification, events, and build history available for review.</p></div>
+          <div className="border border-border bg-card p-5"><p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Start from an idea</p><h2 className="mt-4 text-xl font-medium">Describe what you need</h2><div className="mt-5"><CreateIdeaForm /></div></div><div className="border border-border bg-card p-5"><p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Your signal</p><h2 className="mt-4 text-xl font-medium">Analysis before execution</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Every project keeps its understanding, specification, events, and build history available for review.</p></div>
           <div className="border border-border bg-card p-5"><p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Next action</p><h2 className="mt-4 text-xl font-medium">Open a project</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Continue from the latest persisted state. Refreshes do not erase your work.</p></div>
         </div>
         <ProjectList />
