@@ -35,7 +35,7 @@ export function LoginForm({
     try {
       await postJson("/api/auth/login", { email, password })
       const params = await searchParams
-      const next = params.next && params.next.startsWith("/") && !params.next.startsWith("//") ? params.next : "/workspace"
+      const next = params.next && params.next.startsWith("/") && !params.next.startsWith("//") ? params.next : "/dashboard"
       router.push(next)
       router.refresh()
     } catch (err) {
