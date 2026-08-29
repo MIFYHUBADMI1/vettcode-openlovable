@@ -28,7 +28,7 @@ export function ProjectCard({ project }: { project: ProjectSummary }) {
   const subtitle = project.sourceUrl ?? "Built from scratch"
   return (
     <Link
-      href={`/projects/${project.id}`}
+      href={`/project/${project.id}`}
       className="group flex flex-col gap-4 rounded-lg border border-border bg-card p-4 transition-colors hover:border-accent/50"
     >
       <div className="flex items-start justify-between gap-3">

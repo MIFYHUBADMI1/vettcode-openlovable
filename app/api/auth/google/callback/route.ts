@@ -20,23 +20,31 @@ const STATE_COOKIE = "mirrorsite_oauth_state"
  */
 export async function GET(req: Request) {
   const appUrl = getAppUrl()
+  let stage = "start"
   try {
     const url = new URL(req.url)
+    stage = "state"
     const code = url.searchParams.get("code")
     const state = url.searchParams.get("state")
     const jar = await cookies()
     const expectedState = jar.get(STATE_COOKIE)?.value
     jar.delete(STATE_COOKIE)
+    const [stateNonce, encodedNext] = state?.split(".") ?? []
+    const [expectedNonce] = expectedState?.split(".") ?? []
+    const nextFromState = encodedNext ? Buffer.from(encodedNext, "base64url").toString("utf8") : "/workspace"
 
-    if (!code || !state || !expectedState || state !== expectedState) {
+    if (!code || !stateNonce || !expectedNonce || stateNonce !== expectedNonce) {
       return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`)
     }
 
+    stage = "exchange"
     const profile = await exchangeGoogleCode(code)
 
+    stage = "find-google-user"
     let user = await findUserByGoogleId(profile.googleId)
 
     if (!user) {
+      stage = "find-email-user"
       const existingByEmail = await findUserByEmail(profile.email)
       if (existingByEmail) {
         await linkGoogleToUser(existingByEmail.id, profile.googleId, profile.imageUrl)
@@ -51,13 +59,17 @@ export async function GET(req: Request) {
       }
     }
 
+    stage = "touch-login"
     await touchLastLogin(user.id)
+    stage = "create-session"
     const token = await createSession(user.id)
     await setSessionCookie(token)
 
-    return NextResponse.redirect(`${appUrl}/`)
+    const next = nextFromState.startsWith("/") && !nextFromState.startsWith("//") ? nextFromState : "/workspace"
+    return NextResponse.redirect(`${appUrl}${next}`)
   } catch (e) {
-    logger.error("api.auth.google.callback", "OAuth callback failed", { error: String(e) })
-    return NextResponse.redirect(`${appUrl}/login?error=google_auth_failed`)
+    logger.error("api.auth.google.callback", "OAuth callback failed", { stage, errorName: e instanceof Error ? e.name : "UnknownError", errorMessage: e instanceof Error ? e.message : String(e) })
+    const params = new URLSearchParams({ error: "google_auth_failed", stage })
+    return NextResponse.redirect(`${appUrl}/login?${params.toString()}`)
   }
 }
