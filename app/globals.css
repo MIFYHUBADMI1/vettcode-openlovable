@@ -1,0 +1,40 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root { --radius: 0.5rem; --background: oklch(0.985 0.002 240); --foreground: oklch(0.18 0.02 250); --card: oklch(1 0 0); --card-foreground: oklch(0.18 0.02 250); --popover: oklch(1 0 0); --popover-foreground: oklch(0.18 0.02 250); --primary: oklch(0.6 0.14 233); --primary-foreground: oklch(0.99 0.005 240); --secondary: oklch(0.96 0.005 240); --secondary-foreground: oklch(0.24 0.02 250); --muted: oklch(0.96 0.005 240); --muted-foreground: oklch(0.52 0.015 250); --accent: oklch(0.94 0.02 233); --accent-foreground: oklch(0.24 0.03 250); --destructive: oklch(0.58 0.2 25); --destructive-foreground: oklch(0.99 0.005 240); --border: oklch(0.9 0.006 250); --input: oklch(0.9 0.006 250); --ring: oklch(0.6 0.14 233); }
+.dark { --background: oklch(0.17 0.015 250); --foreground: oklch(0.93 0.008 240); --card: oklch(0.21 0.017 250); --card-foreground: oklch(0.93 0.008 240); --popover: oklch(0.21 0.017 250); --popover-foreground: oklch(0.93 0.008 240); --primary: oklch(0.7 0.14 225); --primary-foreground: oklch(0.15 0.02 250); --secondary: oklch(0.26 0.018 250); --secondary-foreground: oklch(0.93 0.008 240); --muted: oklch(0.25 0.016 250); --muted-foreground: oklch(0.65 0.015 245); --accent: oklch(0.3 0.03 230); --accent-foreground: oklch(0.95 0.01 230); --destructive: oklch(0.62 0.2 25); --destructive-foreground: oklch(0.98 0.005 240); --border: oklch(0.29 0.017 250); --input: oklch(0.31 0.018 250); --ring: oklch(0.7 0.14 225); }
+
+@theme inline { --color-background: var(--background); --color-foreground: var(--foreground); --color-card: var(--card); --color-card-foreground: var(--card-foreground); --color-popover: var(--popover); --color-popover-foreground: var(--popover-foreground); --color-primary: var(--primary); --color-primary-foreground: var(--primary-foreground); --color-secondary: var(--secondary); --color-secondary-foreground: var(--secondary-foreground); --color-muted: var(--muted); --color-muted-foreground: var(--muted-foreground); --color-accent: var(--accent); --color-accent-foreground: var(--accent-foreground); --color-destructive: var(--destructive); --color-destructive-foreground: var(--destructive-foreground); --color-border: var(--border); --color-input: var(--input); --color-ring: var(--ring); --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif; --font-mono: var(--font-geist-mono), ui-monospace, monospace; --radius-sm: calc(var(--radius) - 4px); --radius-md: calc(var(--radius) - 2px); --radius-lg: var(--radius); --radius-xl: calc(var(--radius) + 4px); }
+
+@layer base { * { border-color: var(--border); outline-color: color-mix(in oklab, var(--ring) 50%, transparent); } body { background-color: var(--background); color: var(--foreground); font-feature-settings: "cv11", "ss01"; } }
+
+@keyframes signal-scan { from { transform: translateY(-120%); opacity: 0; } 20%, 80% { opacity: 0.45; } to { transform: translateY(520%); opacity: 0; } }
+@keyframes telemetry { 0%, 100% { opacity: .45; transform: scaleX(.82); transform-origin: left; } 50% { opacity: 1; transform: scaleX(1); } }
+@keyframes live-pulse { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 0%, transparent); } 50% { box-shadow: 0 0 0 5px color-mix(in oklab, var(--primary) 18%, transparent); } }
+@keyframes float-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes letter-breathe { 0%, 100% { opacity: .58; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-1px); color: var(--foreground); } }
+@keyframes word-reveal { from { opacity: .15; filter: blur(5px); transform: translateY(.12em); } to { opacity: 1; filter: blur(0); transform: translateY(0); } }
+@keyframes copy-reveal { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.hero-console { animation: float-in .8s cubic-bezier(.2,.8,.2,1) both; }
+.eyebrow-letters { display: inline-flex; }
+.eyebrow-letters > span { display: inline-block; animation: letter-breathe 2.8s ease-in-out infinite; }
+.hero-title { animation: float-in .8s .12s cubic-bezier(.2,.8,.2,1) both; }
+.word-reveal { display: inline-block; animation: word-reveal 1.15s .45s cubic-bezier(.2,.8,.2,1) both; }
+.hero-copy { animation: copy-reveal .8s .55s cubic-bezier(.2,.8,.2,1) both; }
+.scanline { position: absolute; inset: 0 0 auto; height: 20%; pointer-events: none; background: linear-gradient(to bottom, transparent, color-mix(in oklab, var(--primary) 13%, transparent), transparent); animation: signal-scan 4.8s ease-in-out infinite; }
+.live-dot { animation: live-pulse 2s ease-in-out infinite; }
+.telemetry-bar { animation: telemetry 2.1s ease-in-out infinite; }
+.telemetry-bar-delay { animation-delay: .28s; }
+.telemetry-bar-delay-2 { animation-delay: .56s; }
+@keyframes ambient-drift { from { transform: translate3d(-2%, -1%, 0) scale(1); } 50% { transform: translate3d(2%, 1%, 0) scale(1.04); } to { transform: translate3d(-2%, -1%, 0) scale(1); } }
+@keyframes ambient-grid { from { transform: translateX(0); } to { transform: translateX(56px); } }
+@keyframes ambient-signal { from { transform: translateX(-110%); opacity: 0; } 20% { opacity: .5; } 80% { opacity: .2; } to { transform: translateX(110%); opacity: 0; } }
+.workspace-environment { position: relative; isolation: isolate; overflow: hidden; background: var(--background); }
+.workspace-environment::before, .workspace-environment::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: -1; }
+.workspace-environment::before { background: radial-gradient(circle at 78% 8%, color-mix(in oklab, var(--primary) 11%, transparent), transparent 30%), radial-gradient(circle at 12% 88%, color-mix(in oklab, var(--accent) 22%, transparent), transparent 34%); animation: ambient-drift 18s ease-in-out infinite; }
+.workspace-environment::after { opacity: .16; background-image: linear-gradient(90deg, transparent 49.5%, color-mix(in oklab, var(--border) 90%, transparent) 50%, transparent 50.5%), linear-gradient(0deg, transparent 49.5%, color-mix(in oklab, var(--border) 90%, transparent) 50%, transparent 50.5%); background-size: 56px 56px; mask-image: linear-gradient(to bottom, black, transparent 72%); animation: ambient-grid 14s linear infinite; }
+.workspace-signal { position: absolute; top: 18%; left: -20%; width: 140%; height: 1px; pointer-events: none; background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--primary) 50%, transparent), transparent); animation: ambient-signal 8s ease-in-out infinite; }
+.workspace-environment > * { position: relative; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; } }
