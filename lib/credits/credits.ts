@@ -36,6 +36,42 @@ export function estimateFollowup(providerHigh = 40): CostEstimate {
   return { reserve: high, low, high, basis: "AI development prompt" }
 }
 
+/** Tier-based credit costs matching the pricing page. */
+const TIER_COSTS: Record<string, number> = {
+  simple: 25000,
+  medium: 50000,
+  complex: 75000,
+}
+
+/** Return the credit cost for a given complexity tier. */
+export function getTierCost(tier: string): number {
+  return TIER_COSTS[tier] ?? TIER_COSTS.medium
+}
+
+/**
+ * Classify a specification into a complexity tier based on its features,
+ * data entities, integrations, and core flows. Used when the spec doesn't
+ * already have a pre-set complexity value.
+ */
+export function classifyComplexity(spec: {
+  suggestedFeatures?: { enabled?: boolean }[]
+  dataEntities?: unknown[]
+  integrations?: string[]
+  coreFlows?: unknown[]
+  backendRequirements?: string[]
+}): string {
+  let score = 0
+  const enabledFeatures = (spec.suggestedFeatures ?? []).filter((f) => f.enabled).length
+  score += enabledFeatures * 2
+  score += (spec.dataEntities ?? []).length
+  score += (spec.integrations ?? []).length * 3
+  score += (spec.coreFlows ?? []).length
+  score += (spec.backendRequirements ?? []).length
+  if (score <= 6) return "simple"
+  if (score <= 14) return "medium"
+  return "complex"
+}
+
 export const SCRAPE_COST = 5
 export const PLAN_COST = 5
 

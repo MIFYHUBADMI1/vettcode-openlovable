@@ -45,6 +45,7 @@ export const ApplicationSpecificationSchema = z.object({
   designDirection: z.string().optional(),
   responsiveRequirements: z.string().optional(),
   additionalInstructions: z.string().default(""),
+  complexity: z.enum(["simple", "medium", "complex"]).optional(),
 })
 export type ApplicationSpecification = z.infer<typeof ApplicationSpecificationSchema>
 
