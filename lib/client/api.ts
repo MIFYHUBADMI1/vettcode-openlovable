@@ -46,7 +46,7 @@ function unwrap<T>(body: unknown, status: number): T {
   throw new Error(`Request failed (${status})`)
 }
 
-async function jsonFetcher<T>(url: string): Promise<T> {
+export async function jsonFetcher<T>(url: string): Promise<T> {
   const res = await fetch(url, { headers: { accept: "application/json" } })
   const body = await res.json().catch(() => null)
   return unwrap<T>(body, res.status)
@@ -55,6 +55,16 @@ async function jsonFetcher<T>(url: string): Promise<T> {
 export async function postJson<T>(url: string, payload?: unknown): Promise<T> {
   const res = await fetch(url, {
     method: "POST",
+    headers: { "content-type": "application/json", accept: "application/json" },
+    body: payload === undefined ? undefined : JSON.stringify(payload),
+  })
+  const body = await res.json().catch(() => null)
+  return unwrap<T>(body, res.status)
+}
+
+export async function patchJson<T>(url: string, payload?: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method: "PATCH",
     headers: { "content-type": "application/json", accept: "application/json" },
     body: payload === undefined ? undefined : JSON.stringify(payload),
   })
