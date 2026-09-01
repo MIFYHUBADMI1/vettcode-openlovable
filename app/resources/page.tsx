@@ -1,3 +1,4 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowLeft, BookOpen, Code2, Compass, Sparkles } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
@@ -8,9 +9,21 @@ const resources = [
   { icon: Sparkles, title: "For designers", copy: "Keep the visual language while making room for states, behavior, and the details screenshots cannot show." },
 ]
 
-export const metadata = {
-  title: "Resources | MirrorSite AI",
+export const metadata: Metadata = {
+  title: "Resources",
   description: "Guides for turning references and ideas into working applications with MirrorSite AI.",
+  openGraph: {
+    title: "Resources — MirrorSite AI",
+    description: "Guides for turning references and ideas into working applications with MirrorSite AI.",
+    url: "https://mirrorsiteai.vercel.app/resources",
+    images: [{ url: "/hero/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI resources and guides" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Resources — MirrorSite AI",
+    description: "Guides for turning references and ideas into working applications with MirrorSite AI.",
+    images: ["/hero/after-landing.png"],
+  },
 }
 
 export default function ResourcesPage() {

@@ -704,15 +704,16 @@ export default function TermsPage() {
           {/* ── 14. Refunds ── */}
           <Section id="refunds" number="14" icon={AlertCircle} title="Refunds">
             <p>
-              Refund eligibility may depend on the applicable purchase, payment method, promotional terms, and applicable law.
+              Refund eligibility depends on the applicable purchase, payment method, promotional terms, and applicable law. For full details, see the <Link href="/refund-policy" className="text-primary hover:underline">Refund Policy</Link>.
             </p>
             <p>
-              MirrorSite may, at its discretion, offer refunds or credit adjustments in cases such as:
+              Key points:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Failed or incomplete service delivery</li>
-              <li>Technical issues preventing use of purchased credits</li>
-              <li>Duplicate transactions</li>
+              <li>Failed payments that deducted funds without awarding credits are eligible for investigation and resolution</li>
+              <li>Duplicate transactions are eligible for refund of the duplicate amount</li>
+              <li>Credits consumed through platform actions (analysis, generation, deployment) are not refundable</li>
+              <li>Promotional and referral credits are not refundable and have no cash value</li>
             </ul>
             <p>
               Requests for refunds should be directed to MirrorSite support. MirrorSite reserves the right to deny refund requests where the terms of a specific purchase or promotion do not provide for refunds.
@@ -1121,10 +1122,10 @@ export default function TermsPage() {
                 <p className="font-medium">Contact MirrorSite AI</p>
               </div>
               <p className="text-sm text-muted-foreground">
-                For questions about these Terms, contact: <span className="text-primary">[OFFICIAL MIRRORSITE LEGAL CONTACT]</span>
+                Reach MirrorSite support through the platform or call <span className="font-mono text-foreground">+256 761 819 885</span> for payment-related assistance.
               </p>
-              <p className="text-xs text-muted-foreground mt-2 italic">
-                [Replace with official support email or contact page route before production deployment.]
+              <p className="text-sm text-muted-foreground mt-2">
+                For legal inquiries, contact: <span className="text-primary">[OFFICIAL MIRRORSITE LEGAL CONTACT]</span>
               </p>
             </div>
           </Section>
@@ -1192,6 +1193,7 @@ export default function TermsPage() {
               <Link href="/resources" className="hover:text-foreground">Resources</Link>
               <Link href="/about" className="hover:text-foreground">About</Link>
               <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
+              <Link href="/refund-policy" className="hover:text-foreground">Refunds</Link>
               <Link href="/terms" className="text-foreground">Terms</Link>
               <Link href="/login" className="hover:text-foreground">Sign in</Link>
             </div>

@@ -18,7 +18,7 @@ export const metadata: Metadata = {
     "Turn a website or idea into a working application with MirrorSite AI. Analyze structure, generate an editable build plan, and create a full-stack project you can continue developing.",
   applicationName: "MirrorSite AI",
   generator: "v0.app",
-  keywords: ["AI website builder", "website to app", "design to code", "AI application builder"],
+  keywords: ["AI website builder", "website to app", "design to code", "AI application builder", "AI code generator", "full-stack app builder", "no-code to code"],
   verification: { google: "bbkrXgFBFqHI_aNH3QKoMBn22EHoa4kBZxmFRObvCIQ" },
   alternates: { canonical: "/" },
   openGraph: {
@@ -28,14 +28,19 @@ export const metadata: Metadata = {
     siteName: "MirrorSite AI",
     title: "MirrorSite AI — Turn Websites & Ideas Into Working Apps",
     description: "Turn a website or idea into a working full-stack application you can continue developing.",
-    images: [{ url: "/hero/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI website-to-application workflow" }],
+    images: [{ url: "/hero/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI — Turn websites and ideas into working apps" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "MirrorSite AI — Turn Websites & Ideas Into Working Apps",
     description: "Analyze a website or idea, create an editable build plan, and start with a working full-stack foundation.",
-    images: ["/hero/og-image.png"],
+    images: [{ url: "/hero/after-landing.png", width: 1200, height: 630, alt: "MirrorSite AI generated landing page result" }],
   },
+  icons: {
+    icon: "/favicon.png",
+    apple: "/favicon.png",
+  },
+  authors: [{ name: "ATAI Enterprises", url: "https://mirrorsiteai.vercel.app" }],
   robots: { index: true, follow: true },
 }
 
@@ -56,6 +61,20 @@ export default function RootLayout({
     <html suppressHydrationWarning lang="en" className={`dark bg-background ${jakarta.variable} ${geistMono.variable}`}>
       <body className="font-sans antialiased">
         <ThemeProvider>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                name: "ATAI Enterprises",
+                url: "https://mirrorsiteai.vercel.app",
+                logo: "https://mirrorsiteai.vercel.app/favicon.png",
+                sameAs: [],
+                description: "Building AI-powered developer tools that turn ideas into working applications.",
+              }),
+            }}
+          />
           {children}
           <Toaster />
         </ThemeProvider>

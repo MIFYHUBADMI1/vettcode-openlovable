@@ -28,16 +28,64 @@ export default function Page() {
     return () => window.clearInterval(timer)
   }, [])
 
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    name: "MirrorSite AI",
-    applicationCategory: "DeveloperApplication",
-    operatingSystem: "Web",
-    url: "https://mirrorsiteai.vercel.app",
-    description: "Turn websites and ideas into working full-stack applications.",
-    publisher: { "@type": "Organization", name: "ATAI Enterprises", url: "https://mirrorsiteai.vercel.app" },
-  }
+  const structuredData = [
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      name: "MirrorSite AI",
+      applicationCategory: "DeveloperApplication",
+      operatingSystem: "Web",
+      url: "https://mirrorsiteai.vercel.app",
+      description: "Turn websites and ideas into working full-stack applications with authentication, database, backend, and infrastructure included.",
+      image: "/hero/og-image.png",
+      screenshot: "/hero/after-landing.png",
+      offers: {
+        "@type": "AggregateOffer",
+        lowPrice: "25000",
+        highPrice: "75000",
+        priceCurrency: "UGX",
+        offerCount: 3,
+        offers: [
+          {
+            "@type": "Offer",
+            name: "Simple",
+            price: "25000",
+            priceCurrency: "UGX",
+            description: "25,000 credits for basic website/application generation.",
+          },
+          {
+            "@type": "Offer",
+            name: "Medium",
+            price: "50000",
+            priceCurrency: "UGX",
+            description: "50,000 credits for multi-page applications with authentication and database.",
+          },
+          {
+            "@type": "Offer",
+            name: "Complex",
+            price: "75000",
+            priceCurrency: "UGX",
+            description: "75,000 credits for advanced full-stack application projects.",
+          },
+        ],
+      },
+      author: { "@type": "Organization", name: "ATAI Enterprises", url: "https://mirrorsiteai.vercel.app" },
+      publisher: { "@type": "Organization", name: "ATAI Enterprises", url: "https://mirrorsiteai.vercel.app" },
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: "MirrorSite AI",
+      url: "https://mirrorsiteai.vercel.app",
+      description: "Turn websites and ideas into working full-stack applications.",
+      publisher: { "@type": "Organization", name: "ATAI Enterprises", url: "https://mirrorsiteai.vercel.app" },
+      potentialAction: {
+        "@type": "SearchAction",
+        target: "https://mirrorsiteai.vercel.app/dashboard?q={search_term_string}",
+        "query-input": "required name=search_term_string",
+      },
+    },
+  ]
 
   return (
     <>

@@ -51,9 +51,28 @@ const TIERS = [
   },
 ]
 
+const pricingStructuredData = {
+  "@context": "https://schema.org",
+  "@type": "Product",
+  name: "MirrorSite AI",
+  description: "AI-powered application builder that turns websites and ideas into working full-stack applications.",
+  brand: { "@type": "Organization", name: "ATAI Enterprises" },
+  offers: TIERS.map((tier) => ({
+    "@type": "Offer",
+    name: `${tier.name} Plan`,
+    price: tier.credits.replace(/,/g, ""),
+    priceCurrency: "UGX",
+    description: tier.description,
+    url: "https://mirrorsiteai.vercel.app/pricing",
+    availability: "https://schema.org/InStock",
+    priceValidUntil: "2026-12-31",
+  })),
+}
+
 export default function PricingPage() {
   return (
     <main className="min-h-screen bg-background text-foreground">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingStructuredData) }} />
       {/* Header */}
       <header className="border-b border-border">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-4">
