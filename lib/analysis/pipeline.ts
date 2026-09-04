@@ -1,11 +1,11 @@
 import "server-only"
 import { store, cryptoId } from "@/lib/store/store"
 import { logger } from "@/lib/logging/logger"
-import { crawlWebsite, isFirecrawlConfigured } from "@/lib/integrations/firecrawl/service"
+import { crawlWebsite, crawlWebsiteDeep, isFirecrawlConfigured } from "@/lib/integrations/firecrawl/service"
 import { launchProject, isTotalumConfigured } from "@/lib/integrations/totalum/service"
 import { initializeProjectInfrastructure } from "@/lib/infrastructure/service"
 import { getInfrastructurePlan } from "@/lib/infrastructure/plans"
-import { chargeScrapeCredits, chargePlanCredits, reserveCredits, refundReservation, getTierCost, classifyComplexity, hasSufficientCredits, SCRAPE_COST, PLAN_COST } from "@/lib/credits/credits"
+import { chargeScrapeCredits, chargePlanCredits, chargeDeepCrawlCredits, reserveCredits, refundReservation, getTierCost, classifyComplexity, hasSufficientCredits, SCRAPE_COST, PLAN_COST, DEEP_CRAWL_COST } from "@/lib/credits/credits"
 import { buildInitialBuildPrompt } from "./prompt-builder"
 import { analyzeWebsite } from "./understanding"
 import { generateSpecificationFromUnderstanding, generateSpecificationFromIdea } from "./specification"
@@ -276,5 +276,195 @@ export async function runScratchAnalysis(projectId: string) {
     logger.error("pipeline.scratch", "failed", { projectId, message: (e as Error).message })
     await store.updateProject(projectId, { state: "build_failed", error: "We couldn't generate a plan from your idea." })
     await store.appendEvent(projectId, event("specify", "Planning failed. Please try again.", "error"))
+  }
+}
+
+/**
+ * Deep crawl pipeline: crawls the ENTIRE site, skips AI understanding,
+ * and passes raw findings directly to the builder as an exact replica spec.
+ * Charges 500 credits (DEEP_CRAWL_COST).
+ */
+export async function runDeepCrawlAnalysis(projectId: string) {
+  console.log("[v0] pipeline.deepCrawl: start", { projectId })
+  const project = await store.getProject(projectId)
+  if (!project || !project.sourceUrl) {
+    console.log("[v0] pipeline.deepCrawl: aborting, no project or sourceUrl", { projectId })
+    return
+  }
+
+  try {
+    await store.updateProject(projectId, { state: "analyzing" })
+    await store.appendEvent(projectId, event("analyze", `Deep crawling ${project.sourceUrl} — collecting entire site`))
+    console.log("[v0] pipeline.deepCrawl: state -> analyzing", { projectId, sourceUrl: project.sourceUrl })
+
+    if (!isFirecrawlConfigured()) {
+      await store.updateProject(projectId, { state: "build_failed", error: "Firecrawl is not configured." })
+      await store.appendEvent(projectId, event("analyze", "Firecrawl is not connected.", "error"))
+      return
+    }
+
+    // Check credits before crawling
+    const canAfford = await hasSufficientCredits(project.userId, DEEP_CRAWL_COST)
+    if (!canAfford) {
+      await store.updateProject(projectId, { state: "build_failed", error: "Not enough credits for deep crawl (500 credits required)." })
+      await store.appendEvent(projectId, event("analyze", "Not enough credits for deep crawl.", "error"))
+      return
+    }
+
+    // Charge 500 credits upfront for deep crawl
+    try {
+      await chargeDeepCrawlCredits(project.userId, projectId)
+      await store.appendEvent(projectId, event("analyze", "Deep crawl credits charged (500)"))
+    } catch (e) {
+      console.log("[v0] pipeline.deepCrawl: credit charge failed", { projectId, message: (e as Error).message })
+      logger.error("pipeline.deepCrawl", "credit charge failed", { projectId, message: (e as Error).message })
+    }
+
+    // Deep crawl the entire site
+    console.log("[v0] pipeline.deepCrawl: crawlWebsiteDeep starting", { projectId })
+    const evidence = await crawlWebsiteDeep(project.sourceUrl, 50)
+    console.log("[v0] pipeline.deepCrawl: crawlWebsiteDeep done", { projectId, pages: evidence.pages.length })
+    await store.appendEvent(projectId, event("analyze", `Deep crawl complete — ${evidence.pages.length} pages collected`))
+
+    // Store evidence — for deep crawl, we store the raw crawled data
+    // directly. The understanding type is not used for AI interpretation
+    // in deep crawl mode, so we store what we need for the clone spec.
+    const crawlAssets = [...new Set(evidence.pages.flatMap((p) => p.images))].slice(0, 80)
+    await store.updateProject(projectId, {
+      understanding: {
+        sourceUrl: evidence.sourceUrl,
+        screenshots: evidence.screenshots,
+        assets: crawlAssets,
+        pages: evidence.pages.map((p) => ({
+          url: p.url,
+          title: p.title,
+          importance: "primary" as const,
+        })),
+        targetUsers: [],
+        userRoles: [],
+        components: [],
+        dataEntities: [],
+        userFlows: [],
+        designSystem: { colors: [], typography: [], visualLanguage: "Deep crawl — raw content preserved" },
+        navigation: evidence.navigation,
+        confidenceNotes: `Deep crawl: ${evidence.pages.length} pages collected from ${evidence.sourceUrl}`,
+      } as unknown as import("@/lib/types/understanding").ProjectUnderstanding,
+    })
+
+    // Generate a "clone" specification directly from the evidence — NO AI understanding step
+    console.log("[v0] pipeline.deepCrawl: generating clone spec from evidence", { projectId })
+    const specification = generateCloneSpecification(evidence, project.name)
+    specification.complexity = classifyComplexity(specification)
+    await store.updateProject(projectId, {
+      state: "specification_ready",
+      specification,
+      name: specification.title || project.name,
+    })
+    await store.appendEvent(projectId, event("specify", `Clone specification ready — ${specification.complexity} tier`))
+    console.log("[v0] pipeline.deepCrawl: spec ready, auto-launching build", { projectId })
+
+    // Auto-launch build
+    await autoLaunchBuild(projectId)
+  } catch (e) {
+    console.log("[v0] pipeline.deepCrawl: FAILED", { projectId, message: (e as Error).message })
+    logger.error("pipeline.deepCrawl", "failed", { projectId, message: (e as Error).message })
+    await store.updateProject(projectId, { state: "build_failed", error: "Deep crawl failed." })
+    await store.appendEvent(projectId, event("analyze", "Deep crawl failed. Please try again.", "error"))
+  }
+}
+
+/**
+ * Generate a clone specification directly from crawled evidence.
+ * No AI interpretation — the builder receives the raw page structure
+ * and is instructed to create an exact replica.
+ */
+function generateCloneSpecification(
+  evidence: import("@/lib/integrations/firecrawl/types").WebsiteEvidence,
+  projectName: string,
+): import("@/lib/types/specification").ApplicationSpecification {
+  // Extract all page content as the "design direction"
+  const allContent = evidence.pages
+    .map((p) => {
+      const headings = p.headings.join(", ")
+      const contentPreview = (p.markdown ?? "").slice(0, 500)
+      return `[${p.title ?? p.url}]\nHeadings: ${headings}\nContent: ${contentPreview}`
+    })
+    .join("\n\n")
+
+  // Extract navigation structure
+  const navStructure = evidence.navigation.slice(0, 30).join("\n")
+
+  // Deduce page count and structure
+  const pageCount = evidence.pages.length
+  const hasAuth = allContent.toLowerCase().includes("login") || allContent.toLowerCase().includes("sign in") || allContent.toLowerCase().includes("register")
+  const hasDashboard = allContent.toLowerCase().includes("dashboard") || allContent.toLowerCase().includes("account")
+
+  // Build data entities from page headings and content
+  const dataEntities: import("@/lib/types/specification").SpecDataEntity[] = []
+  const seenEntities = new Set<string>()
+  for (const page of evidence.pages) {
+    for (const heading of page.headings) {
+      const normalized = heading.toLowerCase().trim()
+      if (normalized.length > 2 && normalized.length < 50 && !seenEntities.has(normalized)) {
+        seenEntities.add(normalized)
+        // Only add if it looks like a data concept
+        if (normalized.includes("list") || normalized.includes("table") || normalized.includes("record") || normalized.includes("item") || normalized.includes("entry")) {
+          dataEntities.push({ name: heading, fields: [] })
+        }
+      }
+    }
+  }
+
+  // Build core flows from navigation links
+  const coreFlows: import("@/lib/types/specification").CoreFlow[] = evidence.navigation
+    .filter((url) => {
+      try {
+        const path = new URL(url).pathname
+        return path !== "/" && path.length > 1
+      } catch {
+        return false
+      }
+    })
+    .slice(0, 15)
+    .map((url) => {
+      try {
+        const path = new URL(url).pathname
+        const label = path.split("/").filter(Boolean).pop() ?? path
+        return { name: label.charAt(0).toUpperCase() + label.slice(1).replace(/-/g, " "), description: `Navigate to ${path}` }
+      } catch {
+        return { name: "Page", description: url }
+      }
+    })
+
+  // Enable features based on what was found
+  const features: import("@/lib/types/specification").SuggestedFeature[] = [
+    { key: "auth", label: "Authentication", description: "User sign up, login, sessions", enabled: hasAuth },
+    { key: "database", label: "Database", description: "Persistent data storage", enabled: hasDashboard },
+    { key: "dashboard", label: "Dashboard", description: "Primary user dashboard", enabled: hasDashboard },
+    { key: "api", label: "API", description: "Backend API endpoints", enabled: true },
+    { key: "payments", label: "Payments", description: "Checkout and billing", enabled: false },
+    { key: "admin", label: "Admin panel", description: "Administrative management UI", enabled: false },
+    { key: "uploads", label: "File uploads", description: "Upload and manage files", enabled: false },
+  ]
+
+  return {
+    applicationType: "full-stack",
+    title: projectName || evidence.title || "Cloned Application",
+    description: `Exact replica of ${evidence.sourceUrl} — ${pageCount} pages crawled and reconstructed.`,
+    purpose: `Clone and replicate the website at ${evidence.sourceUrl} as a working full-stack application. Preserve the original site's navigation, layout, content, and structure exactly as crawled.`,
+    targetUsers: [],
+    userRoles: [],
+    coreFlows,
+    suggestedFeatures: features,
+    dataEntities,
+    authenticationRequirements: hasAuth ? "Include authentication flows matching the original site." : undefined,
+    backendRequirements: ["Replicate the original site's structure and content"],
+    integrations: [],
+    designDirection: `EXACT REPLICA MODE — Reproduce the crawled website's design, layout, colors, typography, and visual structure as closely as possible. Use the following crawled content as the source of truth:\n\nNAVIGATION STRUCTURE:\n${navStructure}\n\nPAGE CONTENT:\n${allContent.slice(0, 15000)}`,
+    responsiveRequirements: "Match the original site's responsive behavior.",
+    additionalInstructions: `DEEP CRAWL CLONE MODE: This project was created by deep-crawling ${evidence.sourceUrl}. The builder should create an EXACT REPLICA of the crawled site — do NOT reinterpret or redesign. Use the crawled page content, navigation structure, and visual patterns as-is. The user expects a pixel-accurate reproduction of the original website's experience, adapted into a working React/Next.js application.
+
+Crawled pages (${pageCount}):
+${evidence.pages.map((p) => `- ${p.title ?? p.url} (${p.url})`).join("\n")}`,
   }
 }

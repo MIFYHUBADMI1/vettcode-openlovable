@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { ProjectPreferencesDialog } from "@/components/project-preferences-dialog"
+import { CrawlModeDialog, type CrawlMode } from "@/components/crawl-mode-dialog"
 
 function normalizeUrl(raw: string): string | null {
   const trimmed = raw.trim()
@@ -31,18 +32,21 @@ export function CreateProjectForm() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPrefs, setShowPrefs] = useState(false)
+  const [showCrawlMode, setShowCrawlMode] = useState(false)
   const [pendingPrefs, setPendingPrefs] = useState<ProjectPreferences | null>(null)
+  const [pendingCrawlMode, setPendingCrawlMode] = useState<CrawlMode | null>(null)
 
   const normalized = normalizeUrl(url)
   const valid = normalized !== null
 
-  async function doSubmit(preferences?: ProjectPreferences) {
+  async function doSubmit(preferences?: ProjectPreferences, crawlMode?: CrawlMode) {
     if (!valid) return
     setSubmitting(true)
     setError(null)
     try {
       const { project } = await postJson<{ project: Project }>("/api/projects", {
         url: normalized,
+        crawlMode: crawlMode ?? undefined,
         preferences: preferences ?? undefined,
       })
       await Promise.all([refreshProjects(), refreshSession()])
@@ -56,14 +60,21 @@ export function CreateProjectForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!valid || submitting) return
-    // Show preferences dialog before submitting
+    // Show crawl mode dialog first
+    setShowCrawlMode(true)
+  }
+
+  function handleCrawlModeSelect(mode: CrawlMode) {
+    setShowCrawlMode(false)
+    setPendingCrawlMode(mode)
+    // Then show preferences
     setShowPrefs(true)
   }
 
   function handlePrefsSubmit(preferences: ProjectPreferences) {
     setPendingPrefs(preferences)
     setShowPrefs(false)
-    doSubmit(preferences)
+    doSubmit(preferences, pendingCrawlMode ?? undefined)
   }
 
   return (
@@ -98,7 +109,7 @@ export function CreateProjectForm() {
         <p className="font-mono text-xs text-destructive">Enter a valid website URL (e.g. example.com).</p>
       ) : (
         <p className="font-mono text-xs text-muted-foreground">
-          {"We\u2019ll crawl, analyze, and generate a specification before any credits are spent on building."}
+          Choose between AI-powered analysis or deep crawl for an exact replica.
         </p>
       )}
       {error ? (
@@ -106,6 +117,12 @@ export function CreateProjectForm() {
           {error}
         </p>
       ) : null}
+      <CrawlModeDialog
+        open={showCrawlMode}
+        onOpenChange={setShowCrawlMode}
+        onSelect={handleCrawlModeSelect}
+        url={normalized ?? url}
+      />
       <ProjectPreferencesDialog
         open={showPrefs}
         onOpenChange={setShowPrefs}

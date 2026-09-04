@@ -59,6 +59,7 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
           <>
             <a href="#how-it-works" className="transition-colors hover:text-foreground">How it works</a>
             <a href="#principles" className="transition-colors hover:text-foreground">Why MirrorSite</a>
+            <Link href="/docs" className="transition-colors hover:text-foreground">Docs</Link>
             {session ? <Link href="/dashboard" className="text-foreground transition-colors hover:text-primary">Dashboard</Link> : null}
             <Link href="/pricing" className="transition-colors hover:text-foreground">Pricing</Link>
             {session ? <AccountMenu /> : null}

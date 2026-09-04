@@ -34,10 +34,19 @@ export function getGoogleOAuthConfig(): GoogleOAuthConfig {
   if (!clientId || !clientSecret) {
     throw new AppError("GOOGLE_AUTH_FAILED", "Google sign-in is not configured yet.", 503)
   }
+  // OAuth redirect must point to where the app is ACTUALLY running,
+  // not the public canonical URL. Allow an explicit override via
+  // GOOGLE_REDIRECT_URI or OAUTH_BASE_URL for local dev.
+  const base = process.env.GOOGLE_REDIRECT_URI
+    ?? process.env.OAUTH_BASE_URL
+    ?? getAppUrl()
+  const redirectUri = base.endsWith("/api/auth/google/callback")
+    ? base
+    : `${base}/api/auth/google/callback`
   return {
     clientId,
     clientSecret,
-    redirectUri: `${getAppUrl()}/api/auth/google/callback`,
+    redirectUri,
   }
 }
 

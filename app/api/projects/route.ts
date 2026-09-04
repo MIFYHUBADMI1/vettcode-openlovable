@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth/session"
 import { store, cryptoId } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
-import { runWebsiteAnalysis, runScratchAnalysis } from "@/lib/analysis/pipeline"
+import { runWebsiteAnalysis, runScratchAnalysis, runDeepCrawlAnalysis } from "@/lib/analysis/pipeline"
 import { normalizeUrl } from "@/lib/integrations/firecrawl/service"
 import type { MirrorProject, ProjectPreferences } from "@/lib/types/project"
 
@@ -28,8 +28,9 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const user = await requireUser()
-    const body = (await req.json().catch(() => ({}))) as { mode?: string; url?: string; idea?: string; preferences?: ProjectPreferences }
+    const body = (await req.json().catch(() => ({}))) as { mode?: string; url?: string; idea?: string; crawlMode?: string; preferences?: ProjectPreferences }
     const mode = body.mode === "scratch" ? "scratch" : "website"
+    const crawlMode = body.crawlMode === "deep" ? "deep" : "relevant"
 
     if (mode === "website") {
       if (!body.url || typeof body.url !== "string") return fail("VALIDATION", "A website URL is required.", 422)
@@ -41,10 +42,14 @@ export async function POST(req: Request) {
       }
       const preferences = body.preferences as ProjectPreferences | undefined
       const projectName = preferences?.appName || new URL(sourceUrl).host
-      const project = newProject(user.id, { mode, sourceUrl, name: projectName, preferences })
+      const project = newProject(user.id, { mode, sourceUrl, name: projectName, preferences, crawlMode })
       await store.createProject(project)
       // Fire-and-forget analysis; client polls status.
-      void runWebsiteAnalysis(project.id)
+      if (crawlMode === "deep") {
+        void runDeepCrawlAnalysis(project.id)
+      } else {
+        void runWebsiteAnalysis(project.id)
+      }
       return ok({ project }, { status: 201 })
     }
 
@@ -74,6 +79,7 @@ function newProject(
     name: partial.name,
     state: "created",
     sourceUrl: partial.sourceUrl,
+    crawlMode: partial.crawlMode as import("@/lib/types/project").CrawlMode | undefined,
     idea: partial.idea,
     preferences: partial.preferences,
     events: [{ id: cryptoId(), at: now, level: "info", stage: "create", message: "Project created" }],

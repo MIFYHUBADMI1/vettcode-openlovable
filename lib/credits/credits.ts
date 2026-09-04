@@ -74,6 +74,7 @@ export function classifyComplexity(spec: {
 
 export const SCRAPE_COST = 5
 export const PLAN_COST = 5
+export const DEEP_CRAWL_COST = 500
 
 /** Charge a user for a successful website scrape. */
 export async function chargeScrapeCredits(userId: string, projectId: string) {
@@ -86,6 +87,19 @@ export async function chargeScrapeCredits(userId: string, projectId: string) {
     createdAt: Date.now(),
   })
   logger.info("credits.scrape", "charged", { userId, projectId, amount: SCRAPE_COST })
+}
+
+/** Charge a user for a deep crawl (full-site exact replica mode). */
+export async function chargeDeepCrawlCredits(userId: string, projectId: string) {
+  await store.addTransaction({
+    id: cryptoId(),
+    userId,
+    type: "consume",
+    amount: -DEEP_CRAWL_COST,
+    reason: "Deep crawl — full site replica",
+    createdAt: Date.now(),
+  })
+  logger.info("credits.deepCrawl", "charged", { userId, projectId, amount: DEEP_CRAWL_COST })
 }
 
 /** Charge a user for a successful plan/specification generation. */

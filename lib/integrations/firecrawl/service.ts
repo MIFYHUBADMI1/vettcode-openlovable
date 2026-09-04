@@ -1,6 +1,6 @@
 import "server-only"
 import { logger } from "@/lib/logging/logger"
-import { scrapeUrl, mapUrl, isFirecrawlConfigured } from "./client"
+import { scrapeUrl, mapUrl, crawlSiteUrl, isFirecrawlConfigured } from "./client"
 import type { FirecrawlOptions, FirecrawlPageEvidence, WebsiteEvidence } from "./types"
 
 export { isFirecrawlConfigured }
@@ -195,5 +195,73 @@ export async function crawlWebsite(inputUrl: string, options: FirecrawlOptions =
 
   cache.set(root, evidence)
   logger.info("firecrawl.crawl", "complete", { root, pages: pages.length, screenshots: screenshots.length })
+  return evidence
+}
+
+/**
+ * crawlWebsiteDeep — recursively crawls the ENTIRE site using Firecrawl's
+ * /v2/crawl endpoint. Returns all discovered pages with their full content.
+ * Used for "deep crawl" / exact-replica mode where the user wants the
+ * crawled findings passed directly to the builder without AI interpretation.
+ */
+export async function crawlWebsiteDeep(inputUrl: string, maxPages = 50): Promise<WebsiteEvidence> {
+  const root = normalizeUrl(inputUrl)
+  const timeoutMs = 120_000 // 2 minutes for deep crawl
+
+  console.log("[v0] firecrawl.deepCrawl: starting", { root, maxPages })
+  logger.info("firecrawl.deepCrawl", "starting", { root, maxPages })
+
+  // Use the /v2/crawl endpoint to recursively fetch the entire site
+  const crawlResult = await crawlSiteUrl(root, maxPages, timeoutMs)
+  console.log("[v0] firecrawl.deepCrawl: crawl returned", { root, pageCount: crawlResult.pages.length })
+
+  // Convert raw crawl results into our normalized evidence format
+  const pages: FirecrawlPageEvidence[] = []
+  const allScreenshots: string[] = []
+  const allAssets: string[] = []
+  const allNavigation: string[] = []
+
+  for (const raw of crawlResult.pages) {
+    const url = (raw.metadata as Record<string, unknown>)?.sourceURL as string ?? raw.url as string ?? ""
+    if (!url) continue
+
+    const page = toPageEvidence(url, raw)
+    pages.push(page)
+    if (page.screenshot) allScreenshots.push(page.screenshot)
+    allAssets.push(...page.images)
+    allNavigation.push(...page.links)
+  }
+
+  // Also scrape the root page with a screenshot if we don't have one yet
+  const hasRootPage = pages.some((p) => normalizeUrl(p.url) === root)
+  if (!hasRootPage) {
+    try {
+      const rootRes = await scrapeUrl(root, true, 45_000)
+      pages.unshift(toPageEvidence(root, rootRes.data))
+    } catch (e) {
+      console.log("[v0] firecrawl.deepCrawl: root screenshot failed", { message: (e as Error).message })
+    }
+  }
+
+  const rootPage = pages.find((p) => normalizeUrl(p.url) === root)
+  const screenshots = [...new Set([...allScreenshots, ...(rootPage?.screenshot ? [rootPage.screenshot] : [])])].slice(0, 10)
+  const assets = [...new Set(allAssets)].slice(0, 80)
+  const navigation = [...new Set(allNavigation)].slice(0, 50)
+
+  const evidence: WebsiteEvidence = {
+    sourceUrl: root,
+    title: rootPage?.title,
+    description: rootPage?.description,
+    pages,
+    navigation,
+    assets,
+    screenshots,
+    metadata: { crawlMode: "deep", discoveredCount: crawlResult.pages.length, scrapedCount: pages.length },
+    usage: { pagesCrawled: pages.length, creditsEstimated: pages.length, cached: false },
+    collectedAt: Date.now(),
+  }
+
+  console.log("[v0] firecrawl.deepCrawl: complete", { root, pages: pages.length, screenshots: screenshots.length })
+  logger.info("firecrawl.deepCrawl", "complete", { root, pages: pages.length, screenshots: screenshots.length })
   return evidence
 }

@@ -19,6 +19,9 @@ export type ProjectState =
 
 export type ProjectMode = "website" | "scratch"
 
+/** How the website was analyzed: "relevant" (AI-interpreted) or "deep" (exact replica). */
+export type CrawlMode = "relevant" | "deep"
+
 export type BuildRunStatus = "reserved" | "running" | "succeeded" | "failed" | "stopped"
 
 export interface BuildRun {
@@ -158,6 +161,7 @@ export interface MirrorProject {
   name: string
   state: ProjectState
   sourceUrl?: string
+  crawlMode?: CrawlMode
   idea?: string
   understanding?: ProjectUnderstanding
   specification?: ApplicationSpecification
