@@ -103,6 +103,7 @@ export default function Page() {
             <span className="size-1.5 rounded-full bg-primary" />
             <span className="eyebrow-letters" aria-label="The missing layer between idea and app">{"THE MISSING LAYER BETWEEN IDEA AND APP".split("").map((letter, index) => <span key={`${letter}-${index}`} style={{ animationDelay: `${index * 24}ms` }}>{letter === " " ? "\u00a0" : letter}</span>)}</span>
           </div>
+          <p className="mb-3 font-mono text-sm font-medium tracking-wide text-primary">AI-Powered Application Builder</p>
           <h1 className="hero-title text-balance text-5xl font-semibold leading-[1.02] tracking-[-0.055em] sm:text-7xl">Make the leap from <span className="word-reveal text-primary">inspiration</span> to something real.</h1>
           <p className="hero-copy mt-7 max-w-xl text-pretty text-lg leading-8 text-muted-foreground">MirrorSite AI understands what you&apos;re trying to build, turns inspiration into product structure, and generates a working full-stack foundation — with the data, authentication, backend, storage, and infrastructure your application needs to become something real.</p>
           <div className="mt-7 space-y-3">
@@ -120,6 +121,11 @@ export default function Page() {
             <a href="#demo" className={buttonVariants({ variant: "outline", size: "lg" }) + " h-12 px-5"}><Play className="size-4" /> See how it works</a>
           </div>
           <div className="mt-5 flex items-center gap-3 font-mono text-xs text-muted-foreground"><span className="live-dot size-1.5 rounded-full bg-primary" /> No blank canvas. No magic prompt. <span className="text-primary transition-all duration-500">{discoveryStates[activeStep]}</span></div>
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            {["React", "Next.js", "Node.js", "MongoDB", "TypeScript"].map((tech) => (
+              <span key={tech} className="rounded-md border border-border/60 bg-card/40 px-2.5 py-1 font-mono text-[10px] text-muted-foreground">{tech}</span>
+            ))}
+          </div>
           <div className="mt-10 grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-3" aria-label="MirrorSite AI before and after examples">
             {[{ src: "/hero/before-landing.png", label: "Before / inspiration" }, { src: "/hero/after-landing.png", label: "After / landing page" }, { src: "/hero/before-dashboard.png", label: "Before / dashboard" }, { src: "/hero/after-dashboard.png", label: "After / full-stack app" }, { src: "/hero/before-mobile.png", label: "Before / mobile idea" }, { src: "/hero/after-mobile.png", label: "After / mobile flow" }].map((image) => <figure key={image.src} className="group overflow-hidden rounded-lg border border-border/50 bg-card/60 backdrop-blur-sm"><img src={image.src} alt={image.label} className="aspect-[16/10] w-full object-cover grayscale transition duration-500 group-hover:scale-105 group-hover:grayscale-0" /><figcaption className="px-2 py-2 font-mono text-[10px] text-muted-foreground">{image.label}</figcaption></figure>)}
           </div>
