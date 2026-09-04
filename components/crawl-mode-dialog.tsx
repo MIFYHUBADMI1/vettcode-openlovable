@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { ScanSearch, Cpu, Zap, ArrowRight } from "lucide-react"
+import { ScanSearch, Cpu, Zap, ArrowRight, Shield, Globe, Brain, Layers } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export type CrawlMode = "relevant" | "deep"
@@ -39,7 +39,7 @@ export function CrawlModeDialog({ open, onOpenChange, onSelect, url }: CrawlMode
         </DialogHeader>
 
         <div className="grid gap-3 mt-2">
-          {/* Relevant Info mode */}
+          {/* ── Intelligent Analysis ── */}
           <button
             onClick={() => setSelected("relevant")}
             className={cn(
@@ -50,24 +50,36 @@ export function CrawlModeDialog({ open, onOpenChange, onSelect, url }: CrawlMode
             )}
           >
             <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-              <ScanSearch className="size-5 text-primary" />
+              <Brain className="size-5 text-primary" />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <p className="font-medium">Relevant Info</p>
+                <p className="font-medium">Intelligent Analysis</p>
                 <span className="rounded-full bg-primary/10 px-2 py-0.5 font-mono text-[10px] text-primary">Standard</span>
               </div>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                We analyze the most relevant pages, understand the product, and generate a custom application plan with AI.
+              <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
+                Our AI engine reads your site&apos;s structure, extracts product logic, maps user flows, and generates a complete application blueprint — including authentication flows, data models, and interactive states.
               </p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {[
+                  { icon: Globe, text: "Handles JS-rendered pages" },
+                  { icon: Shield, text: "Works through auth walls" },
+                  { icon: Layers, text: "Extracts navigation + data" },
+                ].map(({ icon: Icon, text }) => (
+                  <span key={text} className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-card/60 px-2 py-1 text-[10px] text-muted-foreground">
+                    <Icon className="size-3 text-primary" />
+                    {text}
+                  </span>
+                ))}
+              </div>
               <p className="mt-2 font-mono text-xs text-muted-foreground">
-                Best for: marketing sites, app front-ends, landing pages
+                Best for: marketing sites, SaaS apps, dashboards, e-commerce, any public-facing product
               </p>
             </div>
             {selected === "relevant" && <CheckMark />}
           </button>
 
-          {/* Deep Crawl mode */}
+          {/* ── Deep Crawl ── */}
           <button
             onClick={() => setSelected("deep")}
             className={cn(
@@ -83,13 +95,28 @@ export function CrawlModeDialog({ open, onOpenChange, onSelect, url }: CrawlMode
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <p className="font-medium">Deep Crawl</p>
-                <span className="rounded-full bg-amber-500/10 px-2 py-0.5 font-mono text-[10px] text-amber-500">500 credits</span>
+                <span className="rounded-full bg-green-500/10 px-2 py-0.5 font-mono text-[10px] text-green-500">New</span>
+                <span className="rounded-full bg-amber-500/10 px-2 py-0.5 font-mono text-[10px] text-amber-500">Beta</span>
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 font-mono text-[10px] text-primary">500 credits</span>
               </div>
-              <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                We crawl the entire site, collect all pages and content, and build an exact replica — no AI reinterpretation.
+              <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
+                We deploy 30+ AI agents to crawl your entire site — every page, every route, every state. They handle heavy JavaScript, authentication middleware, protected dashboards, dynamic content, and user-facing lockages. Everything is captured and reconstructed as an exact replica.
               </p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {[
+                  { icon: Cpu, text: "30+ parallel AI agents" },
+                  { icon: Shield, text: "Bypasses auth + middleware" },
+                  { icon: Globe, text: "Crawls JS-heavy SPAs" },
+                  { icon: Layers, text: "Captures every page + state" },
+                ].map(({ icon: Icon, text }) => (
+                  <span key={text} className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-card/60 px-2 py-1 text-[10px] text-muted-foreground">
+                    <Icon className="size-3 text-primary" />
+                    {text}
+                  </span>
+                ))}
+              </div>
               <p className="mt-2 font-mono text-xs text-muted-foreground">
-                Best for: full site clones, exact reproductions, preserving all content
+                Best for: full site clones, complex SPAs, authenticated apps, preserving every detail
               </p>
             </div>
             {selected === "deep" && <CheckMark />}
@@ -101,7 +128,7 @@ export function CrawlModeDialog({ open, onOpenChange, onSelect, url }: CrawlMode
             Cancel
           </Button>
           <Button onClick={handleConfirm} disabled={!selected} className="gap-1.5">
-            {selected === "deep" ? <Zap className="size-3.5" /> : <ScanSearch className="size-3.5" />}
+            <Zap className="size-3.5" />
             {selected === "deep" ? "Deep crawl for 500 credits" : "Analyze with AI"}
             <ArrowRight className="size-3.5" />
           </Button>
