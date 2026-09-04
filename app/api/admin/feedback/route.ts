@@ -1,7 +1,6 @@
-import { NextRequest } from "next/server"
 import { docFeedbackCol } from "@/lib/db/collections"
-import { ok, fail, handleRouteError } from "@/lib/api/respond"
-import { getSessionUser } from "@/lib/auth/session"
+import { ok, handleRouteError } from "@/lib/api/respond"
+import { requireAdmin } from "@/lib/auth/session"
 
 const SECTION_LABELS: Record<string, string> = {
   "getting-started": "Getting Started",
@@ -26,10 +25,7 @@ const SECTION_LABELS: Record<string, string> = {
  */
 export async function GET(req: NextRequest) {
   try {
-    const user = await getSessionUser()
-    if (!user || !user.isAdmin) {
-      return fail("FORBIDDEN", "Admin access required.", 403)
-    }
+    await requireAdmin() // throws 401/403 if not admin
 
     const col = await docFeedbackCol()
 
