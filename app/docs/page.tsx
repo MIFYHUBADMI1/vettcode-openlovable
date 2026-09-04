@@ -5,6 +5,7 @@ import { buttonVariants } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { SITE_URL } from "@/lib/env"
+import { SectionFeedback } from "@/components/section-feedback"
 
 /* ═══════════════════════════════════════════════════════════════
    SEO METADATA
@@ -137,6 +138,7 @@ export default function DocsPage() {
                 ))}
               </div>
             </div>
+            <SectionFeedback sectionId="getting-started" />
           </section>
 
           {/* ─── HOW IT WORKS ─── */}
@@ -165,6 +167,7 @@ export default function DocsPage() {
                 The key difference from other tools is that MirrorSite AI understands the full picture before building. It doesn&apos;t just generate screens — it creates a complete application with working data, user accounts, and real functionality.
               </p>
             </div>
+            <SectionFeedback sectionId="how-it-works" />
           </section>
 
           {/* ─── WEBSITE MODE ─── */}
@@ -211,6 +214,7 @@ export default function DocsPage() {
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> SaaS product interfaces</li>
               </ul>
             </div>
+            <SectionFeedback sectionId="website-mode" />
           </section>
 
           {/* ─── IDEA MODE ─── */}
@@ -244,6 +248,7 @@ export default function DocsPage() {
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Don&apos;t worry about technical details</strong> — MirrorSite AI handles the technology for you</span></li>
               </ul>
             </div>
+            <SectionFeedback sectionId="idea-mode" />
           </section>
 
           {/* ─── UNDERSTANDING & PLANNING ─── */}
@@ -275,6 +280,7 @@ export default function DocsPage() {
                 You can review and edit every part of this plan before building. Nothing gets built until you say it&apos;s ready.
               </p>
             </div>
+            <SectionFeedback sectionId="understanding" />
           </section>
 
           {/* ─── EDITING YOUR PLAN ─── */}
@@ -298,6 +304,7 @@ export default function DocsPage() {
                 After editing, MirrorSite AI will update the plan to reflect your changes. You can go back and forth as many times as you need.
               </p>
             </div>
+            <SectionFeedback sectionId="editing-your-plan" />
           </section>
 
           {/* ─── BUILDING ─── */}
@@ -339,6 +346,7 @@ export default function DocsPage() {
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> Publish to a web address for anyone to access</li>
               </ul>
             </div>
+            <SectionFeedback sectionId="building" />
           </section>
 
           {/* ─── WORKSPACE ─── */}
@@ -376,6 +384,7 @@ export default function DocsPage() {
                 ))}
               </div>
             </div>
+            <SectionFeedback sectionId="workspace" />
           </section>
 
           {/* ─── PUBLISHING ─── */}
@@ -404,6 +413,7 @@ export default function DocsPage() {
                 <li>Your application goes live within minutes</li>
               </ol>
             </div>
+            <SectionFeedback sectionId="publishing" />
           </section>
 
           {/* ─── CREDITS ─── */}
@@ -448,6 +458,7 @@ export default function DocsPage() {
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Complex</strong> — advanced applications with multiple features and integrations</span></li>
               </ul>
             </div>
+            <SectionFeedback sectionId="credits" />
           </section>
 
           {/* ─── ACCOUNT ─── */}
@@ -466,6 +477,7 @@ export default function DocsPage() {
                 Invite friends to MirrorSite AI and earn bonus credits. When someone signs up using your referral link and becomes an active user, you both receive credits. Share your referral link from the <strong className="text-foreground">Refer &amp; Earn</strong> page in your account menu.
               </p>
             </div>
+            <SectionFeedback sectionId="account" />
           </section>
 
           {/* ─── FAQ ─── */}
@@ -520,6 +532,7 @@ export default function DocsPage() {
                 </div>
               ))}
             </div>
+            <SectionFeedback sectionId="faq" />
           </section>
 
           {/* ─── CTA ─── */}
