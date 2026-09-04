@@ -23,6 +23,7 @@ import { buttonVariants } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { DocsSearch } from "@/components/docs-search"
+import { VideoEmbed } from "@/components/video-embed"
 
 /* ═══════════════════════════════════════════════════════════════
    SECTION METADATA (for search)
@@ -131,6 +132,14 @@ export function DocsContent() {
               <p>
                 You don&apos;t need to know how to code. You don&apos;t need design skills. You just need an idea of what you want to build, or a website you want to turn into something new.
               </p>
+
+              {/* Video placeholder — replace src with your YouTube/Vimeo URL when ready */}
+              <VideoEmbed
+                title="Getting Started with MirrorSite AI"
+                duration="3:45"
+                /* Uncomment and paste your video URL when ready: */
+                /* src="https://www.youtube.com/embed/YOUR_VIDEO_ID" */
+              />
 
               <h3 className="text-lg font-semibold text-foreground mt-8">What you&apos;ll need</h3>
               <ul className="space-y-2">
