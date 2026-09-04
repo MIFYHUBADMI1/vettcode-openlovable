@@ -1,3 +1,4 @@
+import { NextRequest } from "next/server"
 import { docFeedbackCol } from "@/lib/db/collections"
 import { ok, handleRouteError } from "@/lib/api/respond"
 import { requireAdmin } from "@/lib/auth/session"
