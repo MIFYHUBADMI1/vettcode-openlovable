@@ -123,7 +123,7 @@ export default function Page() {
           <div className="mt-5 flex items-center gap-3 font-mono text-xs text-muted-foreground"><span className="live-dot size-1.5 rounded-full bg-primary" /> No blank canvas. No magic prompt. <span className="text-primary transition-all duration-500">{discoveryStates[activeStep]}</span></div>
           <div className="mt-6 flex flex-wrap items-center gap-2">
             {["React", "Next.js", "Node.js", "MongoDB", "TypeScript"].map((tech) => (
-              <span key={tech} className="rounded-md border border-border/60 bg-card/40 px-2.5 py-1 font-mono text-[10px] text-muted-foreground">{tech}</span>
+              <span key={tech} className="tech-badge rounded-md border border-border/60 bg-card/40 px-2.5 py-1 font-mono text-[10px] text-muted-foreground cursor-default">{tech}</span>
             ))}
           </div>
           <div className="mt-10 grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-3" aria-label="MirrorSite AI before and after examples">
