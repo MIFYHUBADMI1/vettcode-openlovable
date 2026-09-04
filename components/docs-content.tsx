@@ -735,7 +735,8 @@ function SectionFeedbackInline({ sectionId }: { sectionId: string }) {
 /**
  * Generate a stable visitor ID from browser signals. Stored in localStorage
  * so it persists across page loads but isn't tied to a real identity.
- */unction getVisitorId(): string {
+ */
+function getVisitorId(): string {
   const STORAGE_KEY = "ms_feedback_visitor"
   try {
     const existing = localStorage.getItem(STORAGE_KEY)
