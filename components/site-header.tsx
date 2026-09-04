@@ -22,6 +22,7 @@ interface SiteHeaderProps {
 
 const defaultLinks: NavLink[] = [
   { href: "/", label: "Home" },
+  { href: "/docs", label: "Docs" },
   { href: "/pricing", label: "Pricing" },
   { href: "/about", label: "About" },
   { href: "/resources", label: "Resources" },

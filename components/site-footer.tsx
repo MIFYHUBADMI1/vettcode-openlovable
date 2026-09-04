@@ -19,6 +19,7 @@ interface SiteFooterProps {
 
 const defaultLinks: FooterLink[] = [
   { href: "/", label: "Home" },
+  { href: "/docs", label: "Docs" },
   { href: "/pricing", label: "Pricing" },
   { href: "/about", label: "About" },
   { href: "/privacy", label: "Privacy" },
@@ -38,6 +39,7 @@ export function SiteFooter({ activePage, links = defaultLinks, wrapperClassName 
           {isHome ? (
             <>
               <a href="#how-it-works" className="hover:text-foreground">How it works</a>
+              <Link href="/docs" className="hover:text-foreground">Docs</Link>
               <Link href="/pricing" className="hover:text-foreground">Pricing</Link>
               <Link href="/about" className="hover:text-foreground">About</Link>
               <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
