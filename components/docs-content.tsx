@@ -24,6 +24,7 @@ import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { DocsSearch } from "@/components/docs-search"
 import { VideoEmbed } from "@/components/video-embed"
+import { ScrollProgress } from "@/components/scroll-progress"
 
 /* ═══════════════════════════════════════════════════════════════
    SECTION METADATA (for search)
@@ -61,6 +62,7 @@ export function DocsContent() {
 
   return (
     <>
+      <ScrollProgress />
       <SiteHeader activePage="/docs" />
 
       {/* Hero */}
