@@ -220,6 +220,24 @@ export interface PublishEventDoc {
   createdAt: number
 }
 
+// ─── Doc Feedback Document ──────────────────────────────────────────────────
+
+export type FeedbackVote = "up" | "down"
+
+export interface DocFeedbackDoc {
+  _id: ObjectId
+  /** Unique key: `${sectionId}:${visitorId}` to prevent duplicate votes */
+  key: string
+  /** Doc section ID, e.g. "getting-started" */
+  sectionId: string
+  /** Anonymous visitor identifier (hashed fingerprint) */
+  visitorId: string
+  /** The vote */
+  vote: FeedbackVote
+  createdAt: number
+  updatedAt: number
+}
+
 // Re-exported for convenience so Mongo-aware modules can import model +
 // persistence types from a single place.
 export type { MirrorProject, BuildRun, CreditTransaction }

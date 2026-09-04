@@ -1,5 +1,5 @@
 import { getDb } from "@/lib/db/mongodb"
-import type { UserDoc, SessionDoc, VerificationTokenDoc, RateLimitDoc, ProjectAssetDoc, ProviderUsageDoc, TopUpDoc, PublishEventDoc, ReferralDoc } from "@/lib/types/db"
+import type { UserDoc, SessionDoc, VerificationTokenDoc, RateLimitDoc, ProjectAssetDoc, ProviderUsageDoc, TopUpDoc, PublishEventDoc, ReferralDoc, DocFeedbackDoc } from "@/lib/types/db"
 import type { MirrorProject, BuildRun, CreditTransaction } from "@/lib/types/project"
 
 /** Cache the Db reference across hot reloads so we don't re-resolve per call. */
@@ -52,6 +52,9 @@ export async function publishEventsCol() {
 }
 export async function referralsCol() {
   return (await getDbCached()).collection<ReferralDoc & { _id?: unknown }>("referrals")
+}
+export async function docFeedbackCol() {
+  return (await getDbCached()).collection<DocFeedbackDoc & { _id?: unknown }>("doc_feedback")
 }
 
 let indexesEnsured = false
@@ -148,6 +151,13 @@ export async function ensureIndexes() {
     referrals.createIndex({ referrerUserId: 1, createdAt: -1 }),
     referrals.createIndex({ referredUserId: 1 }, { unique: true }),
     referrals.createIndex({ referralCode: 1 }),
+  ])
+
+  // Doc feedback indexes
+  const docFeedback = await docFeedbackCol()
+  await Promise.all([
+    docFeedback.createIndex({ key: 1 }, { unique: true, name: "doc_feedback_key_unique" }),
+    docFeedback.createIndex({ sectionId: 1, vote: 1 }),
   ])
 
   indexesEnsured = true

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import Link from "next/link"
 import {
   ArrowRight,
@@ -95,23 +95,7 @@ export function DocsContent() {
       <div className="mx-auto max-w-7xl px-6 py-12 lg:px-10 lg:grid lg:grid-cols-[220px_1fr] lg:gap-12">
         {/* Sidebar Navigation */}
         <aside className="hidden lg:block">
-          <nav className="sticky top-24 space-y-1">
-            <DocsSearch sections={sectionMeta} onFilter={handleFilter} />
-            {sectionMeta.map(({ id, label, icon: Icon }) => (
-              <a
-                key={id}
-                href={`#${id}`}
-                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
-                  isVisible(id)
-                    ? "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
-                    : "text-muted-foreground/30"
-                }`}
-              >
-                <Icon className="size-4 shrink-0" />
-                {label}
-              </a>
-            ))}
-          </nav>
+          <ScrollSpyNav sectionIds={sectionMeta.map((s) => s.id)} visibleIds={visibleIds} />
         </aside>
 
         {/* Content */}
@@ -166,7 +150,7 @@ export function DocsContent() {
                 ))}
               </div>
             </div>
-            <SectionFeedbackInline />
+            <SectionFeedbackInline sectionId="getting-started" />
           </section>
 
           {/* ─── HOW IT WORKS ─── */}
@@ -195,7 +179,7 @@ export function DocsContent() {
                 The key difference from other tools is that MirrorSite AI understands the full picture before building. It doesn&apos;t just generate screens — it creates a complete application with working data, user accounts, and real functionality.
               </p>
             </div>
-            <SectionFeedbackInline />
+            <SectionFeedbackInline sectionId="how-it-works" />
           </section>
 
           {/* ─── WEBSITE MODE ─── */}
@@ -240,7 +224,7 @@ export function DocsContent() {
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> SaaS product interfaces</li>
               </ul>
             </div>
-            <SectionFeedbackInline />
+            <SectionFeedbackInline sectionId="website-mode" />
           </section>
 
           {/* ─── IDEA MODE ─── */}
@@ -274,7 +258,7 @@ export function DocsContent() {
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Don&apos;t worry about technical details</strong> — MirrorSite AI handles the technology for you</span></li>
               </ul>
             </div>
-            <SectionFeedbackInline />
+            <SectionFeedbackInline sectionId="idea-mode" />
           </section>
 
           {/* ─── UNDERSTANDING & PLANNING ─── */}
@@ -306,7 +290,7 @@ export function DocsContent() {
                 You can review and edit every part of this plan before building. Nothing gets built until you say it&apos;s ready.
               </p>
             </div>
-            <SectionFeedbackInline />
+            <SectionFeedbackInline sectionId="understanding" />
           </section>
 
           {/* ─── EDITING YOUR PLAN ─── */}
@@ -330,7 +314,7 @@ export function DocsContent() {
                 After editing, MirrorSite AI will update the plan to reflect your changes. You can go back and forth as many times as you need.
               </p>
             </div>
-            <SectionFeedbackInline />
+            <SectionFeedbackInline sectionId="editing-your-plan" />
           </section>
 
           {/* ─── BUILDING ─── */}
@@ -370,7 +354,7 @@ export function DocsContent() {
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> Publish to a web address for anyone to access</li>
               </ul>
             </div>
-            <SectionFeedbackInline />
+            <SectionFeedbackInline sectionId="building" />
           </section>
 
           {/* ─── WORKSPACE ─── */}
@@ -406,7 +390,7 @@ export function DocsContent() {
                 ))}
               </div>
             </div>
-            <SectionFeedbackInline />
+            <SectionFeedbackInline sectionId="workspace" />
           </section>
 
           {/* ─── PUBLISHING ─── */}
@@ -435,7 +419,7 @@ export function DocsContent() {
                 <li>Your application goes live within minutes</li>
               </ol>
             </div>
-            <SectionFeedbackInline />
+            <SectionFeedbackInline sectionId="publishing" />
           </section>
 
           {/* ─── CREDITS ─── */}
@@ -478,7 +462,7 @@ export function DocsContent() {
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Complex</strong> — advanced applications with multiple features and integrations</span></li>
               </ul>
             </div>
-            <SectionFeedbackInline />
+            <SectionFeedbackInline sectionId="credits" />
           </section>
 
           {/* ─── ACCOUNT ─── */}
@@ -497,7 +481,7 @@ export function DocsContent() {
                 Invite friends to MirrorSite AI and earn bonus credits. When someone signs up using your referral link and becomes an active user, you both receive credits. Share your referral link from the <strong className="text-foreground">Refer &amp; Earn</strong> page in your account menu.
               </p>
             </div>
-            <SectionFeedbackInline />
+            <SectionFeedbackInline sectionId="account" />
           </section>
 
           {/* ─── FAQ ─── */}
@@ -552,7 +536,7 @@ export function DocsContent() {
                 </div>
               ))}
             </div>
-            <SectionFeedbackInline />
+            <SectionFeedbackInline sectionId="faq" />
           </section>
 
           {/* ─── CTA ─── */}
@@ -587,9 +571,121 @@ function SectionHeader({ icon: Icon, title }: { icon: React.ComponentType<{ clas
   )
 }
 
-/** Inline feedback widget (reuses SectionFeedback logic, no sectionId needed for client-side) */
-function SectionFeedbackInline() {
+// ─── Scroll-spy sidebar navigation ─────────────────────────────────────────
+
+/**
+ * Sidebar nav that highlights whichever section is currently in the viewport
+ * using IntersectionObserver. The active item gets a left accent bar and bold
+ * text so it visually pops from the rest.
+ */
+function ScrollSpyNav({
+  sectionIds,
+  visibleIds,
+}: {
+  sectionIds: string[]
+  visibleIds: string[]
+}) {
+  const [activeId, setActiveId] = useState("")
+  const observerRef = useRef<IntersectionObserver | null>(null)
+
+  useEffect(() => {
+    observerRef.current?.disconnect()
+
+    const callbacks = new Map<string, IntersectionObserverCallback>()
+    for (const id of sectionIds) {
+      callbacks.set(id, ([entry]) => {
+        if (entry?.isIntersecting) setActiveId(id)
+      })
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const cb = callbacks.get(entry.target.id)
+          if (cb) cb([entry] as IntersectionObserverEntry[], observerRef.current!)
+        }
+      },
+      {
+        // Trigger when the section header enters the top 20% of the viewport
+        rootMargin: "-15% 0px -70% 0px",
+        threshold: 0,
+      },
+    )
+
+    for (const id of sectionIds) {
+      const el = document.getElementById(id)
+      if (el) observerRef.current.observe(el)
+    }
+
+    return () => observerRef.current?.disconnect()
+  }, [sectionIds])
+
+  const metaMap = Object.fromEntries(sectionMeta.map((s) => [s.id, s]))
+
+  return (
+    <nav className="sticky top-24 space-y-1">
+      <DocsSearch sections={sectionMeta} onFilter={() => {}} />
+      {sectionIds.map((id) => {
+        const meta = metaMap[id]
+        if (!meta) return null
+        const Icon = meta.icon
+        const isActive = id === activeId
+        const isVisible = visibleIds.includes(id)
+
+        return (
+          <a
+            key={id}
+            href={`#${id}`}
+            className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-all ${
+              isActive
+                ? "bg-primary/5 text-foreground font-medium border-l-2 border-primary pl-4"
+                : isVisible
+                  ? "text-muted-foreground hover:bg-accent/50 hover:text-foreground border-l-2 border-transparent"
+                  : "text-muted-foreground/30 border-l-2 border-transparent"
+            }`}
+          >
+            <Icon className="size-4 shrink-0" />
+            {meta.label}
+          </a>
+        )
+      })}
+    </nav>
+  )
+}
+
+// ─── Feedback widget ───────────────────────────────────────────────────────
+
+/**
+ * Inline feedback widget — persists votes to the database and shows
+ * aggregate counts. Uses a browser fingerprint as visitor ID so each
+ * visitor can change their vote per section.
+ */
+function SectionFeedbackInline({ sectionId }: { sectionId: string }) {
   const [vote, setVote] = useState<"up" | "down" | null>(null)
+  const [stats, setStats] = useState<{ up: number; down: number } | null>(null)
+  const [sending, setSending] = useState(false)
+
+  const handleVote = async (v: "up" | "down") => {
+    if (sending) return
+    setSending(true)
+    setVote(v)
+
+    try {
+      // Generate a stable visitor ID from browser fingerprint
+      const visitorId = getVisitorId()
+      const res = await fetch("/api/public/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sectionId, vote: v, visitorId }),
+      })
+      const json = await res.json()
+      if (json.ok && json.data?.stats) {
+        setStats(json.data.stats)
+      }
+    } catch {
+      // Silently fail — feedback is best-effort
+    }
+  }
 
   if (vote) {
     return (
@@ -600,6 +696,11 @@ function SectionFeedbackInline() {
             ? "Glad this helped! Thanks for the feedback."
             : "Sorry to hear that. We'll work on improving this section."}
         </span>
+        {stats && (
+          <span className="ml-auto text-xs text-muted-foreground/60">
+            {stats.up + stats.down} {stats.up + stats.down === 1 ? "vote" : "votes"}
+          </span>
+        )}
       </div>
     )
   }
@@ -609,15 +710,17 @@ function SectionFeedbackInline() {
       <span>Was this section helpful?</span>
       <div className="flex items-center gap-1.5">
         <button
-          onClick={() => setVote("up")}
-          className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-foreground"
+          onClick={() => handleVote("up")}
+          disabled={sending}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium transition-colors hover:border-primary/50 hover:bg-primary/5 hover:text-foreground disabled:opacity-50"
           aria-label="Yes, this was helpful"
         >
           👍 Yes
         </button>
         <button
-          onClick={() => setVote("down")}
-          className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium transition-colors hover:border-border hover:bg-accent/50 hover:text-foreground"
+          onClick={() => handleVote("down")}
+          disabled={sending}
+          className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 text-xs font-medium transition-colors hover:border-border hover:bg-accent/50 hover:text-foreground disabled:opacity-50"
           aria-label="No, this was not helpful"
         >
           👎 No
@@ -625,4 +728,22 @@ function SectionFeedbackInline() {
       </div>
     </div>
   )
+}
+
+/**
+ * Generate a stable visitor ID from browser signals. Stored in localStorage
+ * so it persists across page loads but isn't tied to a real identity.
+ */unction getVisitorId(): string {
+  const STORAGE_KEY = "ms_feedback_visitor"
+  try {
+    const existing = localStorage.getItem(STORAGE_KEY)
+    if (existing) return existing
+    // Generate a random ID
+    const id = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    localStorage.setItem(STORAGE_KEY, id)
+    return id
+  } catch {
+    // localStorage unavailable (SSR, private browsing, etc.)
+    return `fallback-${Date.now()}`
+  }
 }
