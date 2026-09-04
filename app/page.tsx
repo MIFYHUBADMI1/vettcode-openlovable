@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { ArrowRight, Check, Code2, GitBranch, Globe2, Layers3, Play, Sparkles, TerminalSquare, Zap, Database, Shield, Server, HardDrive, BarChart3, Lock, Globe, Users, Briefcase, Smartphone, TrendingUp } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
-import { useSession } from "@/lib/client/api"
+import { useSession, usePublicStats } from "@/lib/client/api"
 import { HeroPreviewCard } from "@/components/hero-preview-card"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
@@ -19,6 +19,7 @@ export default function Page() {
   const [pulse, setPulse] = useState(0)
   const [activeStep, setActiveStep] = useState(1)
   const { session } = useSession()
+  const builders = usePublicStats()
   const discoveryStates = ["signal detected", "intent emerging", "structure forming"]
 
   useEffect(() => {
@@ -126,6 +127,16 @@ export default function Page() {
               <span key={tech} className="tech-badge rounded-md border border-border/60 bg-card/40 px-2.5 py-1 font-mono text-[10px] text-muted-foreground cursor-default">{tech}</span>
             ))}
           </div>
+          {builders > 0 && (
+            <div className="mt-5 flex items-center gap-2.5">
+              <div className="flex -space-x-1.5">
+                {[0, 1, 2].map((i) => (
+                  <span key={i} className="inline-block size-5 rounded-full border-2 border-background bg-primary/20" style={{ zIndex: 3 - i }} />
+                ))}
+              </div>
+              <span className="text-xs text-muted-foreground"><span className="font-medium text-foreground">{builders.toLocaleString()}+</span> builders shipping with MirrorSite AI</span>
+            </div>
+          )}
           <div className="mt-10 grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-3" aria-label="MirrorSite AI before and after examples">
             {[{ src: "/hero/before-landing.png", label: "Before / inspiration" }, { src: "/hero/after-landing.png", label: "After / landing page" }, { src: "/hero/before-dashboard.png", label: "Before / dashboard" }, { src: "/hero/after-dashboard.png", label: "After / full-stack app" }, { src: "/hero/before-mobile.png", label: "Before / mobile idea" }, { src: "/hero/after-mobile.png", label: "After / mobile flow" }].map((image) => <figure key={image.src} className="group overflow-hidden rounded-lg border border-border/50 bg-card/60 backdrop-blur-sm"><img src={image.src} alt={image.label} className="aspect-[16/10] w-full object-cover grayscale transition duration-500 group-hover:scale-105 group-hover:grayscale-0" /><figcaption className="px-2 py-2 font-mono text-[10px] text-muted-foreground">{image.label}</figcaption></figure>)}
           </div>

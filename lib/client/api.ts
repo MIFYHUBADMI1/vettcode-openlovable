@@ -111,6 +111,14 @@ export function useCreditCosts() {
   return { costs: data, error, isLoading }
 }
 
+export function usePublicStats() {
+  const { data } = useSWR<{ builders: number }>("/api/public/stats", jsonFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000,
+  })
+  return data?.builders ?? 0
+}
+
 export function useProjects() {
   const { data, error, isLoading, mutate } = useSWR<{ projects: ProjectSummary[] }>("/api/projects", jsonFetcher, {
     dedupingInterval: 10000,
