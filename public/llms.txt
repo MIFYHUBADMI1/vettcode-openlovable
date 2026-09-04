@@ -22,6 +22,7 @@ MirrorSite AI is an AI-powered application development platform that turns websi
 ## Links
 
 - Homepage: https://mirrorsite.atai.ink/
+- Documentation: https://mirrorsite.atai.ink/docs
 - About: https://mirrorsite.atai.ink/about
 - Pricing: https://mirrorsite.atai.ink/pricing
 - Resources: https://mirrorsite.atai.ink/resources

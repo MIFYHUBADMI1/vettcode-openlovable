@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   description:
     "Instant full-stack code and web generation powered by ATAI Enterprises. Turn websites and ideas into working applications with AI-powered planning, generation, and infrastructure.",
   applicationName: "MirrorSite AI",
-  generator: "v0.app",
+
   keywords: ["AI website builder", "AI application builder", "full-stack app builder", "AI code generator", "website to app", "design to code", "rapid application development", "MVP builder", "AI-powered development"],
   verification: { google: "fVuc4AOfzEAxCg2a5vgQ967z_AGcs2MbUn6QUjl70b4" },
   alternates: { canonical: "/" },
