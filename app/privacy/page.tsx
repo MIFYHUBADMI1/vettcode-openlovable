@@ -23,6 +23,9 @@ import {
   Key,
 } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
+import { SiteHeader } from "@/components/site-header"
+import { SiteFooter } from "@/components/site-footer"
+import { SITE_URL } from "@/lib/env"
 
 /* ═══════════════════════════════════════════════════════════════
    SEO METADATA
@@ -35,19 +38,19 @@ export const metadata: Metadata = {
   alternates: { canonical: "/privacy" },
   openGraph: {
     type: "website",
-    locale: "en_UG",
-    url: "https://mirrorsiteai.vercel.app/privacy",
+    locale: "en_US",
+    url: `${SITE_URL}/privacy`,
     siteName: "MirrorSite AI",
     title: "MirrorSite AI Privacy Policy | Data & Privacy",
     description:
       "Learn how MirrorSite AI collects, processes, stores and protects your information.",
-    images: [{ url: "/hero/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI Privacy Policy" }],
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI Privacy Policy" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "MirrorSite AI Privacy Policy | Data & Privacy",
     description: "Learn how MirrorSite AI collects, processes, stores and protects your information.",
-    images: ["/hero/after-landing.png"],
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI Privacy Policy" }],
   },
 }
 
@@ -61,11 +64,11 @@ const privacyPageStructuredData = {
   name: "MirrorSite AI Privacy Policy",
   description:
     "Learn how MirrorSite AI collects, processes, stores and protects account, project, AI, website-analysis, billing and technical information.",
-  url: "https://mirrorsiteai.vercel.app/privacy",
+  url: `${SITE_URL}/privacy`,
   isPartOf: {
     "@type": "WebSite",
     name: "MirrorSite AI",
-    url: "https://mirrorsiteai.vercel.app",
+    url: SITE_URL,
   },
 }
 
@@ -298,22 +301,7 @@ export default function PrivacyPage() {
       <main className="workspace-environment min-h-svh overflow-hidden bg-background text-foreground">
         <span className="workspace-signal" aria-hidden="true" />
 
-        {/* ── Header ──────────────────────────────────────────── */}
-        <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6 lg:px-10">
-          <Link href="/" className="flex items-center gap-3 font-mono text-sm font-semibold tracking-tight">
-            <span className="grid size-8 place-items-center rounded-md bg-primary text-primary-foreground">M</span>
-            <span>mirrorsite<span className="text-primary">.ai</span></span>
-          </Link>
-          <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex">
-            <Link href="/" className="transition-colors hover:text-foreground">Home</Link>
-            <Link href="/pricing" className="transition-colors hover:text-foreground">Pricing</Link>
-            <Link href="/about" className="transition-colors hover:text-foreground">About</Link>
-            <Link href="/login" className={buttonVariants({ size: "sm" })}>Sign in</Link>
-          </nav>
-          <div className="flex items-center gap-2 md:hidden">
-            <Link href="/login" className={buttonVariants({ size: "sm" })}>Sign in</Link>
-          </div>
-        </header>
+        <SiteHeader activePage="/privacy" links={[{ href: "/", label: "Home" }, { href: "/pricing", label: "Pricing" }, { href: "/about", label: "About" }]} />
 
         {/* ═══════════════════════════════════════════════════════
            PAGE HEADER
@@ -952,20 +940,7 @@ export default function PrivacyPage() {
 
         </article>
 
-        {/* ── Footer ──────────────────────────────────────────── */}
-        <footer className="border-t border-border">
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-6 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-10">
-            <span className="font-mono text-xs">© 2026 MirrorSite AI</span>
-            <div className="flex flex-wrap gap-x-5 gap-y-2">
-              <Link href="/" className="hover:text-foreground">Home</Link>
-              <Link href="/pricing" className="hover:text-foreground">Pricing</Link>
-              <Link href="/about" className="hover:text-foreground">About</Link>
-              <Link href="/privacy" className="text-foreground">Privacy</Link>
-              <Link href="/terms" className="hover:text-foreground">Terms</Link>
-              <Link href="/login" className="hover:text-foreground">Sign in</Link>
-            </div>
-          </div>
-        </footer>
+        <SiteFooter activePage="/privacy" />
       </main>
     </>
   )

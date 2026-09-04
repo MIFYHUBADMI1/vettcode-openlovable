@@ -7,6 +7,7 @@ import { AppHeader } from "@/components/app-header"
 export const metadata: Metadata = {
   title: "Refer & Earn — MirrorSite",
   description: "Invite friends to MirrorSite AI and earn credits when they become active users.",
+  robots: { index: false, follow: false },
 }
 
 export default async function ReferralsPage() {

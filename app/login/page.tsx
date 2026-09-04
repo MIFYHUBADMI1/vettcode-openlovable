@@ -6,6 +6,7 @@ import { Zap, Globe, Code2, ArrowRight, Terminal, Sparkles, Users, TrendingUp } 
 export const metadata: Metadata = {
   title: "Sign in — MirrorSite",
   description: "Sign in to your MirrorSite AI account.",
+  robots: { index: false, follow: false },
 }
 
 export default function LoginPage({

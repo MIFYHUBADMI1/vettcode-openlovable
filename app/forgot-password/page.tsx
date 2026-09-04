@@ -6,6 +6,7 @@ import { Shield, Clock, CheckCircle2, ArrowRight, Lock, Eye, Fingerprint, Users,
 export const metadata: Metadata = {
   title: "Forgot password — MirrorSite",
   description: "Reset your MirrorSite AI password.",
+  robots: { index: false, follow: false },
 }
 
 export default function ForgotPasswordPage() {

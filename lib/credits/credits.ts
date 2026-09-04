@@ -59,7 +59,7 @@ export function classifyComplexity(spec: {
   integrations?: string[]
   coreFlows?: unknown[]
   backendRequirements?: string[]
-}): string {
+}): "simple" | "medium" | "complex" {
   let score = 0
   const enabledFeatures = (spec.suggestedFeatures ?? []).filter((f) => f.enabled).length
   score += enabledFeatures * 2

@@ -3,44 +3,47 @@ import type { Metadata, Viewport } from "next"
 import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
+import { SITE_URL } from "@/lib/env"
 import "./globals.css"
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta" })
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" })
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://mirrorsiteai.vercel.app"),
+  metadataBase: new URL(SITE_URL),
   title: {
-    default: "MirrorSite AI — Turn Websites & Ideas Into Working Apps",
+    default: "MirrorSite AI | Automated Application & Site Builder",
     template: "%s | MirrorSite AI",
   },
   description:
-    "Turn a website or idea into a working application with MirrorSite AI. Analyze structure, generate an editable build plan, and create a full-stack project you can continue developing.",
+    "Instant full-stack code and web generation powered by ATAI Enterprises. Turn websites and ideas into working applications with AI-powered planning, generation, and infrastructure.",
   applicationName: "MirrorSite AI",
   generator: "v0.app",
-  keywords: ["AI website builder", "website to app", "design to code", "AI application builder", "AI code generator", "full-stack app builder", "no-code to code"],
-  verification: { google: "bbkrXgFBFqHI_aNH3QKoMBn22EHoa4kBZxmFRObvCIQ" },
+  keywords: ["AI website builder", "AI application builder", "full-stack app builder", "AI code generator", "website to app", "design to code", "rapid application development", "MVP builder", "AI-powered development"],
+  verification: { google: "fVuc4AOfzEAxCg2a5vgQ967z_AGcs2MbUn6QUjl70b4" },
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
-    locale: "en_UG",
-    url: "https://mirrorsiteai.vercel.app",
+    locale: "en_US",
+    url: SITE_URL,
     siteName: "MirrorSite AI",
-    title: "MirrorSite AI — Turn Websites & Ideas Into Working Apps",
-    description: "Turn a website or idea into a working full-stack application you can continue developing.",
-    images: [{ url: "/hero/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI — Turn websites and ideas into working apps" }],
+    title: "MirrorSite AI | Automated Application & Site Builder",
+    description: "Instant full-stack code and web generation powered by ATAI Enterprises.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI — Automated application and site builder" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "MirrorSite AI — Turn Websites & Ideas Into Working Apps",
-    description: "Analyze a website or idea, create an editable build plan, and start with a working full-stack foundation.",
-    images: [{ url: "/hero/after-landing.png", width: 1200, height: 630, alt: "MirrorSite AI generated landing page result" }],
+    title: "MirrorSite AI | Automated Application & Site Builder",
+    description: "Instant full-stack code and web generation powered by ATAI Enterprises.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI — Automated application and site builder" }],
   },
   icons: {
     icon: "/favicon.png",
     apple: "/favicon.png",
   },
-  authors: [{ name: "ATAI Enterprises", url: "https://mirrorsiteai.vercel.app" }],
+  authors: [{ name: "ATAI Enterprises", url: "https://atai.ink" }],
+  creator: "ATAI Enterprises",
+  publisher: "ATAI Enterprises",
   robots: { index: true, follow: true },
 }
 
@@ -66,12 +69,29 @@ export default function RootLayout({
             dangerouslySetInnerHTML={{
               __html: JSON.stringify({
                 "@context": "https://schema.org",
-                "@type": "Organization",
-                name: "ATAI Enterprises",
-                url: "https://mirrorsiteai.vercel.app",
-                logo: "https://mirrorsiteai.vercel.app/favicon.png",
-                sameAs: [],
-                description: "Building AI-powered developer tools that turn ideas into working applications.",
+                "@type": "SoftwareApplication",
+                name: "MirrorSite AI",
+                applicationCategory: "DeveloperApplication",
+                operatingSystem: "Web",
+                url: SITE_URL,
+                description: "Instant full-stack code and web generation powered by ATAI Enterprises.",
+                image: `${SITE_URL}/og-image.png`,
+                brand: {
+                  "@type": "Organization",
+                  name: "ATAI Enterprises",
+                  url: "https://atai.ink",
+                },
+                author: {
+                  "@type": "Organization",
+                  name: "ATAI Enterprises",
+                  url: "https://atai.ink",
+                },
+                publisher: {
+                  "@type": "Organization",
+                  name: "ATAI Enterprises",
+                  url: "https://atai.ink",
+                  logo: `${SITE_URL}/favicon.png`,
+                },
               }),
             }}
           />

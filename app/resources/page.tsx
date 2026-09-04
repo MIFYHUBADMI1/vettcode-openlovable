@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowLeft, BookOpen, Code2, Compass, Sparkles } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
+import { SITE_URL } from "@/lib/env"
 
 const resources = [
   { icon: Compass, title: "The MirrorSite method", copy: "A practical guide to moving from reference, intent, and structure into a buildable first version." },
@@ -10,17 +11,21 @@ const resources = [
 ]
 
 export const metadata: Metadata = {
-  title: "Resources",
+  title: "MirrorSite AI Resources | Guides for AI-Powered App Development",
   description: "Guides for turning references and ideas into working applications with MirrorSite AI.",
+  alternates: { canonical: "/resources" },
   openGraph: {
-    title: "Resources — MirrorSite AI",
+    type: "website",
+    locale: "en_US",
+    title: "MirrorSite AI Resources | Guides for AI-Powered App Development",
     description: "Guides for turning references and ideas into working applications with MirrorSite AI.",
-    url: "https://mirrorsiteai.vercel.app/resources",
-    images: [{ url: "/hero/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI resources and guides" }],
+    url: `${SITE_URL}/resources`,
+    siteName: "MirrorSite AI",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI resources and guides" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Resources — MirrorSite AI",
+    title: "MirrorSite AI Resources | Guides for AI-Powered App Development",
     description: "Guides for turning references and ideas into working applications with MirrorSite AI.",
     images: ["/hero/after-landing.png"],
   },

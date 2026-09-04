@@ -1,0 +1,33 @@
+# MirrorSite AI
+
+> Instant full-stack code and web generation powered by ATAI Enterprises.
+
+MirrorSite AI is an AI-powered application development platform that turns websites and ideas into working full-stack applications. It analyzes a starting point — an idea, a product concept, or an existing website — structures what needs to be built, and generates a complete application foundation including frontend, backend, authentication, database, and infrastructure.
+
+## Key Features
+
+- AI-powered application planning and generation
+- Website analysis and structure extraction
+- Full-stack code generation (React, Next.js, Node.js)
+- Authentication, database, and backend included
+- Managed infrastructure and deployment
+- Credit-based pricing with transparent tiers
+
+## Pricing
+
+- Simple: 25,000 credits (25,000 UGX) — basic website/application generation
+- Medium: 50,000 credits (50,000 UGX) — multi-page apps with auth and database
+- Complex: 75,000 credits (75,000 UGX) — advanced full-stack projects
+
+## Links
+
+- Homepage: https://mirrorsite.atai.ink/
+- About: https://mirrorsite.atai.ink/about
+- Pricing: https://mirrorsite.atai.ink/pricing
+- Resources: https://mirrorsite.atai.ink/resources
+- Privacy Policy: https://mirrorsite.atai.ink/privacy
+- Terms of Service: https://mirrorsite.atai.ink/terms
+
+## Organization
+
+MirrorSite AI is built by ATAI Enterprises (https://atai.ink).

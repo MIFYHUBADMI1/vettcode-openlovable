@@ -104,6 +104,12 @@ export function getAppUrl(): string {
   return "http://localhost:3000"
 }
 
+/**
+ * Canonical site URL used across SEO metadata, structured data, sitemaps, and robots.
+ * Resolves from NEXT_PUBLIC_APP_URL → VERCEL_URL → localhost at runtime.
+ */
+export const SITE_URL = getAppUrl()
+
 export function isMongoConfigured(): boolean {
   return Boolean(process.env.MONGODB_URI)
 }

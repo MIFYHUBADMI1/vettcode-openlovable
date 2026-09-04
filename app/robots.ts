@@ -1,13 +1,16 @@
 import type { MetadataRoute } from "next"
-
-const baseUrl = "https://mirrorsiteai.vercel.app"
+import { SITE_URL } from "@/lib/env"
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
-      { userAgent: "*", allow: ["/", "/pricing", "/about", "/resources", "/database-terms", "/privacy", "/terms"], disallow: ["/api/", "/dashboard", "/workspace", "/project/", "/admin", "/account", "/settings", "/login", "/register"] },
+      {
+        userAgent: "*",
+        allow: ["/", "/pricing", "/about", "/resources", "/database-terms", "/privacy", "/terms", "/refund-policy"],
+        disallow: ["/api/", "/dashboard", "/workspace", "/project/", "/admin", "/account", "/settings", "/login", "/register", "/new/", "/forgot-password", "/verify-email", "/confirm-email-change", "/referrals"],
+      },
     ],
-    sitemap: `${baseUrl}/sitemap.xml`,
-    host: baseUrl,
+    sitemap: `${SITE_URL}/sitemap.xml`,
+    host: SITE_URL,
   }
 }

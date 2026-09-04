@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>OG Image Preview — Screenshot this at 1200×630</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #111; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: system-ui, -apple-system, sans-serif; }
+    .container { width: 1200px; height: 630px; overflow: hidden; position: relative; background: linear-gradient(135deg, #1a1410, #1e1612 50%, #0f0d0a); }
+    .grid { position: absolute; inset: 0; opacity: 0.04; background-image: repeating-linear-gradient(90deg, #c75a2a 0px, #c75a2a 1px, transparent 1px, transparent 56px), repeating-linear-gradient(0deg, #c75a2a 0px, #c75a2a 1px, transparent 1px, transparent 56px); }
+    .glow-1 { position: absolute; width: 600px; height: 600px; border-radius: 50%; top: -150px; right: -100px; background: radial-gradient(circle, rgba(199,90,42,0.15), transparent 70%); }
+    .glow-2 { position: absolute; width: 500px; height: 500px; border-radius: 50%; bottom: -100px; left: -50px; background: radial-gradient(circle, rgba(199,90,42,0.08), transparent 70%); }
+    .content { position: relative; z-index: 1; padding: 80px; height: 100%; display: flex; flex-direction: column; justify-content: space-between; }
+    .top { display: flex; align-items: center; gap: 16px; }
+    .logo { width: 64px; height: 64px; border-radius: 14px; background: linear-gradient(135deg, #c75a2a, #e07040); display: flex; align-items: center; justify-content: center; color: white; font-size: 36px; font-weight: 700; }
+    .brand { font-size: 28px; font-weight: 600; color: #f5f0eb; letter-spacing: -0.5px; }
+    .brand span { color: #c75a2a; }
+    .middle { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .headline { font-size: 52px; font-weight: 700; color: #f5f0eb; letter-spacing: -1.5px; line-height: 1.1; }
+    .desc { margin-top: 20px; font-size: 22px; color: #a09080; letter-spacing: 0.2px; line-height: 1.5; }
+    .pills { display: flex; gap: 20px; margin-top: 30px; }
+    .pill { padding: 8px 24px; border-radius: 19px; background: rgba(199,90,42,0.12); border: 1px solid rgba(199,90,42,0.25); color: #c75a2a; font-size: 14px; font-weight: 500; }
+    .bottom { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-top: 1px solid rgba(199,90,42,0.1); }
+    .bottom span { font-size: 15px; font-weight: 500; color: #706050; letter-spacing: 0.5px; }
+    .hint { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: #666; font-size: 14px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="grid"></div>
+    <div class="glow-1"></div>
+    <div class="glow-2"></div>
+    <div class="content">
+      <div class="top">
+        <div class="logo">M</div>
+        <div class="brand">MirrorSite<span>.ai</span></div>
+      </div>
+      <div class="middle">
+        <div class="headline">Automated Application<br>&amp; Site Builder</div>
+        <div class="desc">Instant full-stack code and web generation<br>powered by ATAI Enterprises.</div>
+        <div class="pills">
+          <div class="pill">AI-Powered</div>
+          <div class="pill">Full-Stack Generation</div>
+          <div class="pill">MVP Builder</div>
+        </div>
+      </div>
+      <div class="bottom">
+        <span>mirrorsite.atai.ink</span>
+        <span>by ATAI Enterprises</span>
+      </div>
+    </div>
+  </div>
+  <div class="hint">Open this file in Chrome, take a screenshot at 1200×630, save as public/og-image.png</div>
+</body>
+</html>

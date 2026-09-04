@@ -122,7 +122,7 @@ MirrorSite AI accepts **mobile money** payments via:
 
 ## License
 
-This is proprietary software owned by **ATAI — Advanced Technologies and AI Enterprises**. All rights reserved. Unauthorized copying, distribution, modification, or use of this software is strictly prohibited. See the [Terms of Service](https://mirrorsiteai.vercel.app/terms) for usage terms.
+This is proprietary software owned by **ATAI — Advanced Technologies and AI Enterprises**. All rights reserved. Unauthorized copying, distribution, modification, or use of this software is strictly prohibited. See the [Terms of Service](https://mirrorsite.atai.ink/terms) for usage terms.
 
 ---
 
@@ -130,5 +130,5 @@ This is proprietary software owned by **ATAI — Advanced Technologies and AI En
 
 **ATAI — Advanced Technologies and AI Enterprises**
 
-- Website: [mirrorsiteai.vercel.app](https://mirrorsiteai.vercel.app)
-- Product: [MirrorSite AI](https://mirrorsiteai.vercel.app)
+- Website: [mirrorsite.atai.ink](https://mirrorsite.atai.ink)
+- Product: [MirrorSite AI](https://mirrorsite.atai.ink)

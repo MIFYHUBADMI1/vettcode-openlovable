@@ -75,7 +75,7 @@ export function HeroPreviewCard() {
                     <ExternalLink className="size-2.5 text-muted-foreground" />
                   </div>
                   <iframe
-                    src="https://mirrorsiteai.vercel.app/"
+                    src={`${window.location.origin}/`}
                     className="w-full h-[280px] sm:h-[320px] border-0"
                     title="Reference site preview"
                     loading="lazy"

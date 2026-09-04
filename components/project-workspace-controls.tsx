@@ -52,9 +52,10 @@ export function ProjectWorkspaceControls({ projectId }: { projectId: string }) {
   // Determine tier and cost for display
   const spec = project.specification
   const tier = spec?.complexity ?? "medium"
-  const buildCost = costs?.tiers?.[tier]?.credits ?? costs?.tiers?.medium?.credits ?? 50_000
-  const tierLabel = costs?.tiers?.[tier]?.label ?? tier.charAt(0).toUpperCase() + tier.slice(1)
-  const followupCost = costs?.followupCost ?? 5_000
+  const tierCosts: Record<string, number> = { simple: 25_000, medium: 50_000, complex: 75_000 }
+  const buildCost = tierCosts[tier] ?? tierCosts.medium
+  const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1)
+  const followupCost = costs?.mirrorSite?.followup?.reserve ?? 5_000
 
   return <div className="flex flex-col gap-6">
     {error ? <p role="alert" className="border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}

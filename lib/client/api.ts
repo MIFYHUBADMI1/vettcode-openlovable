@@ -11,6 +11,10 @@ export interface SessionUser {
   emailVerified: boolean
   imageUrl?: string
   credits: number
+  isAdmin?: boolean
+  onboarding?: { source?: string; role?: string; signalType?: string; completedAt: number }
+  suspended?: boolean
+  banned?: boolean
   createdAt: number
 }
 
@@ -25,9 +29,12 @@ export interface SessionInfo {
 }
 
 export interface CreditCostTable {
-  costs: Record<string, number>
-  currency: "credits"
-  providerConfigured: boolean
+  configured: boolean
+  mirrorSite: {
+    initialBuild: { reserve: number; low: number; high: number; basis: string }
+    followup: { reserve: number; low: number; high: number; basis: string }
+  }
+  provider: unknown
 }
 
 /** Every API route responds with the `{ ok, data }` / `{ ok: false, error }`

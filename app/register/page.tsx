@@ -7,6 +7,7 @@ import { Rocket, Shield, CreditCard, Sparkles, ArrowRight, Code2, Palette, Light
 export const metadata: Metadata = {
   title: "Create account — MirrorSite",
   description: "Create a MirrorSite AI account.",
+  robots: { index: false, follow: false },
 }
 
 export default function RegisterPage() {

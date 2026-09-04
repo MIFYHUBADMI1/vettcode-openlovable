@@ -1,6 +1,10 @@
+import type { Metadata } from "next"
 import Link from "next/link"
 import { ArrowRight, Check, Zap, Code2, Layers3, Globe, Link as LinkIcon, Shield, Clock, Settings, DollarSign, AlertTriangle, X } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
+import { SiteHeader } from "@/components/site-header"
+import { SiteFooter } from "@/components/site-footer"
+import { SITE_URL } from "@/lib/env"
 
 const TIERS = [
   {
@@ -51,19 +55,41 @@ const TIERS = [
   },
 ]
 
+export const metadata: Metadata = {
+  title: "MirrorSite AI Pricing | Credits & Application Generation Plans",
+  description:
+    "Choose a MirrorSite AI plan to generate full-stack applications. Simple, Medium, and Complex tiers with transparent credit-based pricing.",
+  alternates: { canonical: "/pricing" },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: `${SITE_URL}/pricing`,
+    siteName: "MirrorSite AI",
+    title: "MirrorSite AI Pricing | Credits & Application Generation Plans",
+    description: "Choose a MirrorSite AI plan to generate full-stack applications. Simple, Medium, and Complex tiers with transparent credit-based pricing.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI Pricing" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MirrorSite AI Pricing | Credits & Application Generation Plans",
+    description: "Choose a MirrorSite AI plan to generate full-stack applications.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI Pricing" }],
+  },
+}
+
 const pricingStructuredData = {
   "@context": "https://schema.org",
   "@type": "Product",
   name: "MirrorSite AI",
   description: "AI-powered application builder that turns websites and ideas into working full-stack applications.",
-  brand: { "@type": "Organization", name: "ATAI Enterprises" },
+  brand: { "@type": "Organization", name: "ATAI Enterprises", url: "https://atai.ink" },
   offers: TIERS.map((tier) => ({
     "@type": "Offer",
     name: `${tier.name} Plan`,
     price: tier.credits.replace(/,/g, ""),
     priceCurrency: "UGX",
     description: tier.description,
-    url: "https://mirrorsiteai.vercel.app/pricing",
+    url: `${SITE_URL}/pricing`,
     availability: "https://schema.org/InStock",
     priceValidUntil: "2026-12-31",
   })),
@@ -73,22 +99,7 @@ export default function PricingPage() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingStructuredData) }} />
-      {/* Header */}
-      <header className="border-b border-border">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-2 font-mono text-sm font-semibold tracking-tight">
-            <span className="grid size-7 place-items-center rounded-md bg-primary text-primary-foreground text-xs font-bold">
-              M
-            </span>
-            <span>mirrorsite<span className="text-primary">.ai</span></span>
-          </Link>
-          <nav className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
-            <Link href="/pricing" className="text-foreground">Pricing</Link>
-            <Link href="/login" className={buttonVariants({ size: "sm" })}>Get Started</Link>
-          </nav>
-        </div>
-      </header>
+      <SiteHeader activePage="/pricing" variant="bordered" />
 
       {/* Hero */}
       <section className="mx-auto max-w-4xl px-6 pt-20 pb-16 text-center">
@@ -478,19 +489,7 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border">
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 px-6 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <span className="font-mono text-xs">© 2026 MirrorSite AI</span>
-          <div className="flex flex-wrap gap-x-5 gap-y-2">
-            <Link href="/" className="hover:text-foreground">Home</Link>
-            <Link href="/pricing" className="hover:text-foreground">Pricing</Link>
-            <Link href="/about" className="hover:text-foreground">About</Link>
-            <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
-            <Link href="/terms" className="hover:text-foreground">Terms</Link>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter activePage="/pricing" links={[{ href: "/", label: "Home" }, { href: "/pricing", label: "Pricing" }, { href: "/about", label: "About" }, { href: "/privacy", label: "Privacy" }, { href: "/terms", label: "Terms" }]} wrapperClassName="mx-auto flex w-full max-w-5xl flex-col gap-5 px-6 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between" />
     </main>
   )
 }
