@@ -30,7 +30,8 @@ export default function Page() {
     return () => window.clearInterval(timer)
   }, [])
 
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : ""
+  const [baseUrl, setBaseUrl] = useState("")
+  useEffect(() => { setBaseUrl(window.location.origin) }, [])
 
   const structuredData = [
     {
