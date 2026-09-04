@@ -105,6 +105,16 @@ export default function Page() {
           </div>
           <h1 className="hero-title text-balance text-5xl font-semibold leading-[1.02] tracking-[-0.055em] sm:text-7xl">Make the leap from <span className="word-reveal text-primary">inspiration</span> to something real.</h1>
           <p className="hero-copy mt-7 max-w-xl text-pretty text-lg leading-8 text-muted-foreground">MirrorSite AI understands what you&apos;re trying to build, turns inspiration into product structure, and generates a working full-stack foundation — with the data, authentication, backend, storage, and infrastructure your application needs to become something real.</p>
+          <div className="mt-7 space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10"><Check className="size-3.5 text-primary" /></span>
+              <span className="text-sm font-medium text-foreground">Turn any website into a full-stack app with backend and auth</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/10"><Check className="size-3.5 text-primary" /></span>
+              <span className="text-sm font-medium text-foreground">Generate your working application foundation in minutes</span>
+            </div>
+          </div>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Link href={session ? "/dashboard" : "/register"} className={buttonVariants({ size: "lg" }) + " h-12 px-5"}>{session ? "Open your dashboard" : "Build from a starting point"} <ArrowRight className="size-4" /></Link>
             <a href="#demo" className={buttonVariants({ variant: "outline", size: "lg" }) + " h-12 px-5"}><Play className="size-4" /> See how it works</a>
