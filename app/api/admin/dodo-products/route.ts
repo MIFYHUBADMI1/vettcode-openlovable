@@ -227,7 +227,7 @@ export async function PATCH(req: Request) {
       }
     }
 
-    const product = await client.products.update(body.productId, updateData)
+    await client.products.update(body.productId, updateData)
 
     logger.info("admin.dodo-products", "Product updated", {
       productId: body.productId,
@@ -236,10 +236,7 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json({
       ok: true,
-      data: {
-        productId: product.product_id,
-        name: product.name,
-      },
+      data: { productId: body.productId, updated: true },
     })
   } catch (error) {
     logger.error("admin.dodo-products", "Failed to update product", {

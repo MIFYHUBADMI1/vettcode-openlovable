@@ -50,9 +50,14 @@ async function findProductByName(
 ): Promise<string | null> {
   try {
     const products = await client.products.list()
-    // SDK returns items directly as an iterable/array, not nested under `.data`
-    const items: Array<{ product_id: string; name: string; is_recurring?: boolean }> =
-      Array.isArray(products) ? products : (products as unknown as { items: unknown[] }).items ?? []
+    // Cast through unknown to satisfy TypeScript — the SDK's pagination wrapper
+    // is iterable and Array.isArray returns true at runtime, but the declared
+    // return type doesn't narrow cleanly. We type-assert after the check.
+    const items = (
+      Array.isArray(products)
+        ? products
+        : ((products as unknown as { items?: unknown[] }).items ?? [])
+    ) as Array<{ product_id: string; name: string }>
     const match = items.find((p) => p.name === name)
     return match?.product_id ?? null
   } catch {
