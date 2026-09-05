@@ -24,6 +24,7 @@ export const metadata: Metadata = {
     google: "fVuc4AOfzEAxCg2a5vgQ967z_AGcs2MbUn6QUjl70b4",
     other: {
       "pressplaced-verification": "fc52a89ec5ab0207",
+      
     },
   },
   alternates: { canonical: "/" },
