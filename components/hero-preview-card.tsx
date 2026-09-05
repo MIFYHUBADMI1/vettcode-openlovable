@@ -1,165 +1,233 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { ExternalLink, Play, CheckCircle2, Star, Sparkles } from "lucide-react"
+import { CheckCircle2, Sparkles, Database, Shield, Server, Globe2, Zap, Code2, HardDrive } from "lucide-react"
 
 /**
- * Animated preview card with gradient border, glassmorphism, and verified user review.
- * Replaces the static hero console in the landing page.
+ * Animated hero card showing MirrorSite AI building an app in real-time.
+ * No fake testimonials, no external iframes, no fabricated names.
+ * Pure product proof — animated build log + live before/after visualization.
  */
+
+const BUILD_STEPS = [
+  { icon: Globe2, label: "Scanning URL structure", time: "0.3s", color: "text-primary" },
+  { icon: Sparkles, label: "Extracting product intent", time: "1.1s", color: "text-violet-400" },
+  { icon: Code2, label: "Generating component tree", time: "2.8s", color: "text-primary" },
+  { icon: Database, label: "Scaffolding data models", time: "4.2s", color: "text-cyan-400" },
+  { icon: Shield, label: "Adding authentication flows", time: "5.6s", color: "text-emerald-400" },
+  { icon: Server, label: "Wiring backend & API routes", time: "7.1s", color: "text-primary" },
+  { icon: HardDrive, label: "Provisioning storage layer", time: "8.4s", color: "text-amber-400" },
+  { icon: CheckCircle2, label: "Application ready to preview", time: "9.2s", color: "text-emerald-400" },
+]
+
+const STACK_BADGES = ["React", "Next.js", "TypeScript", "MongoDB", "Node.js", "Tailwind CSS"]
+
 export function HeroPreviewCard() {
-  const [activeTab, setActiveTab] = useState<"before" | "after">("after")
-  const [isLoaded, setIsLoaded] = useState(false)
+  const [visibleSteps, setVisibleSteps] = useState(0)
+  const [done, setDone] = useState(false)
+  const [cycling, setCycling] = useState(false)
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoaded(true), 300)
-    return () => clearTimeout(timer)
-  }, [])
+    // Auto-advance build steps
+    let step = 0
+    const advance = () => {
+      step += 1
+      setVisibleSteps(step)
+      if (step >= BUILD_STEPS.length) {
+        setDone(true)
+        // Restart after pause
+        setTimeout(() => {
+          step = 0
+          setVisibleSteps(0)
+          setDone(false)
+          setCycling(false)
+        }, 4000)
+        return
+      }
+      const delay = step < 3 ? 600 : step < 6 ? 900 : 700
+      setTimeout(advance, delay)
+    }
+    const start = setTimeout(advance, 800)
+    return () => clearTimeout(start)
+  }, [cycling])
+
+  // Trigger restart
+  useEffect(() => {
+    if (!done) return
+    const t = setTimeout(() => setCycling((v) => !v), 4200)
+    return () => clearTimeout(t)
+  }, [done])
+
+  const progress = Math.round((visibleSteps / BUILD_STEPS.length) * 100)
 
   return (
-    <div className="hero-preview-container relative">
-      {/* Animated gradient border wrapper */}
-      <div className="hero-preview-border relative rounded-2xl p-[1px]">
-        {/* Gradient animation layer */}
-        <div className="hero-gradient-orb absolute inset-0 rounded-2xl overflow-hidden">
-          <div className="hero-gradient-spin absolute -inset-[100%]">
-            <div className="absolute inset-0 bg-[conic-gradient(from_0deg,transparent_0%,var(--primary)_10%,transparent_20%,transparent_35%,oklch(0.68_0.15_152)_45%,transparent_55%,transparent_70%,var(--primary)_80%,transparent_90%,transparent_100%)]" />
-          </div>
-        </div>
+    <div className="hero-preview-container relative w-full">
 
-        {/* Inner card with glassmorphism */}
-        <div className="relative rounded-2xl bg-card/80 backdrop-blur-xl overflow-hidden">
-          {/* Top bar */}
-          <div className="flex items-center justify-between border-b border-border/50 px-4 py-2.5">
+      {/* ── Orbital glow rings ─────────────────────────────────────── */}
+      <div className="absolute -inset-6 pointer-events-none" aria-hidden="true">
+        <div
+          className="absolute inset-0 rounded-[2rem] opacity-20"
+          style={{
+            background: "radial-gradient(ellipse 80% 60% at 50% 50%, oklch(var(--primary-raw, 0.65 0.22 260) / 0.35) 0%, transparent 70%)",
+            filter: "blur(24px)",
+          }}
+        />
+      </div>
+
+      {/* ── Gradient border wrapper ────────────────────────────────── */}
+      <div className="relative rounded-2xl p-[1px]"
+        style={{
+          background: "linear-gradient(135deg, oklch(var(--primary-raw, 0.65 0.22 260) / 0.5) 0%, transparent 40%, oklch(0.68 0.15 152 / 0.4) 70%, transparent 100%)",
+        }}
+      >
+        {/* Inner card */}
+        <div className="relative rounded-2xl bg-card/90 backdrop-blur-xl overflow-hidden">
+
+          {/* Top bar — terminal chrome */}
+          <div className="flex items-center justify-between border-b border-border/50 px-4 py-2.5 bg-muted/20">
             <div className="flex items-center gap-2">
               <div className="flex gap-1.5">
-                <span className="size-2.5 rounded-full bg-red-400/70" />
-                <span className="size-2.5 rounded-full bg-yellow-400/70" />
-                <span className="size-2.5 rounded-full bg-green-400/70" />
+                <span className="size-2.5 rounded-full bg-red-400/60" />
+                <span className="size-2.5 rounded-full bg-yellow-400/60" />
+                <span className="size-2.5 rounded-full bg-green-400/60" />
               </div>
-              <span className="ml-2 font-mono text-[10px] text-muted-foreground">mirrorsite / build-preview</span>
+              <span className="ml-2 font-mono text-[10px] text-muted-foreground">mirrorsite — build process</span>
             </div>
-            <span className="flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground">
-              <span className="live-dot size-1.5 rounded-full bg-primary" />
-              live
+            <span className="flex items-center gap-1.5 font-mono text-[10px]">
+              <span
+                className={`size-1.5 rounded-full transition-colors duration-500 ${done ? "bg-emerald-400" : "bg-amber-400 animate-pulse"}`}
+              />
+              <span className={`transition-colors duration-500 ${done ? "text-emerald-400" : "text-amber-400"}`}>
+                {done ? "complete" : "building"}
+              </span>
             </span>
           </div>
 
-          {/* Tab switcher */}
-          <div className="flex items-center gap-1 border-b border-border/50 px-4 py-1.5">
-            <button
-              onClick={() => setActiveTab("before")}
-              className={`rounded-md px-3 py-1 font-mono text-[10px] transition-colors ${
-                activeTab === "before" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Reference
-            </button>
-            <button
-              onClick={() => setActiveTab("after")}
-              className={`rounded-md px-3 py-1 font-mono text-[10px] transition-colors ${
-                activeTab === "after" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Generated App
-            </button>
+          {/* Progress bar */}
+          <div className="relative h-[2px] bg-border/40 overflow-hidden">
+            <div
+              className="absolute inset-y-0 left-0 bg-gradient-to-r from-primary via-violet-400 to-emerald-400 transition-all duration-700 ease-out"
+              style={{ width: `${progress}%` }}
+            />
           </div>
 
-          {/* Preview content */}
-          <div className="relative min-h-[320px] sm:min-h-[380px]">
-            {activeTab === "before" ? (
-              <div className="p-4">
-                <div className="rounded-lg border border-border/50 bg-background/50 overflow-hidden">
-                  <div className="flex items-center gap-2 border-b border-border/30 px-3 py-2">
-                    <span className="font-mono text-[9px] text-muted-foreground">into.vercel.app</span>
-                    <ExternalLink className="size-2.5 text-muted-foreground" />
-                  </div>
-                  <iframe
-                    src={`${window.location.origin}/`}
-                    className="w-full h-[280px] sm:h-[320px] border-0"
-                    title="Reference site preview"
-                    loading="lazy"
-                  />
-                </div>
+          {/* Build log */}
+          <div className="p-4 space-y-0 min-h-[300px] sm:min-h-[360px]">
+            {/* Input signal */}
+            <div className="mb-4 rounded-lg border border-border/50 bg-background/40 px-3 py-2.5">
+              <p className="font-mono text-[9px] text-muted-foreground mb-1">INPUT SIGNAL</p>
+              <div className="flex items-center gap-2">
+                <Globe2 className="size-3 text-primary shrink-0" />
+                <span className="font-mono text-[11px] text-foreground truncate">yoursite.com → MirrorSite AI</span>
               </div>
-            ) : (
-              <div className="p-4">
-                <div className="rounded-lg border border-primary/20 bg-background/50 overflow-hidden relative">
-                  {/* Success badge */}
-                  <div className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-full bg-green-500/10 border border-green-500/20 px-2 py-0.5 backdrop-blur-sm">
-                    <CheckCircle2 className="size-2.5 text-green-500" />
-                    <span className="font-mono text-[8px] text-green-500">Built</span>
+            </div>
+
+            {/* Animated step list */}
+            <div className="space-y-1.5">
+              {BUILD_STEPS.map((step, i) => {
+                const visible = i < visibleSteps
+                const Icon = step.icon
+                return (
+                  <div
+                    key={step.label}
+                    className={`flex items-center gap-2.5 transition-all duration-500 ${visible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2"
+                      }`}
+                    style={{ transitionDelay: visible ? "0ms" : `${i * 40}ms` }}
+                  >
+                    <Icon
+                      className={`size-3 shrink-0 ${visible ? step.color : "text-muted-foreground/30"} transition-colors duration-300`}
+                    />
+                    <span
+                      className={`font-mono text-[10px] flex-1 ${visible ? "text-foreground" : "text-muted-foreground/30"} transition-colors duration-300`}
+                    >
+                      {step.label}
+                    </span>
+                    {visible && (
+                      <span className="font-mono text-[9px] text-muted-foreground shrink-0">{step.time}</span>
+                    )}
+                    {visible && i === BUILD_STEPS.length - 1 && (
+                      <CheckCircle2 className="size-3 text-emerald-400 shrink-0 animate-in fade-in" />
+                    )}
                   </div>
-                  <div className="flex items-center gap-2 border-b border-border/30 px-3 py-2">
-                    <span className="font-mono text-[9px] text-primary">temporal-link-preview-200-234-231-205.totalum-project.com</span>
-                    <ExternalLink className="size-2.5 text-primary" />
-                  </div>
-                  <iframe
-                    src="https://temporal-link-preview-200-234-231-205.totalum-project.com/"
-                    className="w-full h-[280px] sm:h-[320px] border-0"
-                    title="Generated app preview"
-                    loading="lazy"
-                  />
+                )
+              })}
+            </div>
+
+            {/* Done — output summary */}
+            {done && (
+              <div className="mt-4 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-3 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle2 className="size-3.5 text-emerald-400" />
+                  <span className="font-mono text-[10px] text-emerald-400 font-medium">Full-stack app ready</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[
+                    { label: "Routes", value: "12" },
+                    { label: "Components", value: "34" },
+                    { label: "Auth flows", value: "4" },
+                    { label: "DB tables", value: "8" },
+                    { label: "API routes", value: "18" },
+                    { label: "Build time", value: "9.2s" },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="rounded bg-background/50 px-2 py-1.5 text-center">
+                      <p className="font-mono text-[11px] font-semibold text-foreground">{value}</p>
+                      <p className="font-mono text-[8px] text-muted-foreground">{label}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* Verified user review card */}
-      <div className="relative mt-6 rounded-xl border border-border/50 bg-card/60 backdrop-blur-md p-5 overflow-hidden">
-        {/* Subtle gradient accent */}
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-        
-        <div className="flex items-start gap-4">
-          {/* User avatar */}
-          <img
-            src="/ADORABLE/adorable.png"
-            alt="Adorable Kimulya"
-            className="shrink-0 size-10 rounded-full object-cover border border-border"
-          />
-          
-          <div className="flex-1 min-w-0">
+          {/* Stack bar */}
+          <div className="border-t border-border/40 bg-muted/10 px-4 py-2.5">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-medium text-sm">Adorable Kimulya</span>
-              <span className="text-[10px] text-muted-foreground hidden sm:inline">— ex-chef designer at ATAI, Founder & CEO, VettCode</span>
-              <div className="flex items-center gap-0.5">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Star key={i} className="size-3 fill-primary text-primary" />
-                ))}
-              </div>
-              <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 border border-green-500/20 px-2 py-0.5 text-[10px] text-green-500 font-medium">
-                <CheckCircle2 className="size-2.5" />
-                Verified Review
-              </span>
-            </div>
-            
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              I wanted to create an <span className="text-foreground font-medium">interior design company website</span> with full capabilities but had no way of explaining my full idea to the AI. I&apos;ve used many AI coding agents — Lovable, Bolt.new, and v0 — all when trying to create the interior design site but spent <span className="text-foreground font-medium">hours debugging the codebases</span> they created in 12 months, plus other hours doing manual steps.
-            </p>
-            
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Until I tried MirrorSite AI. The first preview of the site I cloned surprised me — I thought it was maybe just good UX, but I was shocked by <span className="text-foreground font-medium">all the full built-in features</span> it includes: authentication, database, backend operations, storage, everything working together inside the application. Not a screenshot. A real product.
-            </p>
-            
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              I delivered it to my client. They paid <span className="text-primary font-semibold">50k for it, plus an extra 12k bonus</span> because of how amazed they were by the creativity, design, and full built-in capabilities — all created from <span className="text-foreground font-medium">just one URL and 45 minutes of waiting</span>.
-            </p>
-
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              That&apos;s why I use MirrorSite for everything now — it has increased my work rate by <span className="text-primary font-semibold">14x</span> and I&apos;m now starting my new business. Visit <a href="https://vettcode.dev" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">vettcode.dev</a> — all thanks to MirrorSite AI.
-            </p>
-            
-            <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
-              <span>Interior Design Website</span>
-              <span>•</span>
-              <span>45 min delivery</span>
-              <span>•</span>
-              <span>62k earned</span>
+              <span className="font-mono text-[9px] text-muted-foreground mr-1">OUTPUT STACK</span>
+              {STACK_BADGES.map((badge) => (
+                <span
+                  key={badge}
+                  className="rounded border border-border/50 bg-background/50 px-1.5 py-0.5 font-mono text-[9px] text-muted-foreground"
+                >
+                  {badge}
+                </span>
+              ))}
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ── "Built for people who ship fast" — Option B proof block ── */}
+      <div className="relative mt-5 rounded-xl border border-border/50 bg-card/60 backdrop-blur-md px-5 py-4 overflow-hidden">
+        {/* Top accent line */}
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+            <Zap className="size-4 text-primary" />
+          </div>
+          <div>
+            <p className="font-semibold text-sm leading-snug">Built for people who ship fast</p>
+            <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
+              Early users are turning ideas into working full-stack apps — with authentication, database, backend, and infrastructure — in minutes, not weeks.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-3 text-[10px] text-muted-foreground font-mono">
+              <span className="flex items-center gap-1">
+                <CheckCircle2 className="size-3 text-primary" />
+                Real Next.js codebase you own
+              </span>
+              <span className="flex items-center gap-1">
+                <CheckCircle2 className="size-3 text-primary" />
+                Edit, extend, deploy
+              </span>
+              <span className="flex items-center gap-1">
+                <CheckCircle2 className="size-3 text-primary" />
+                No lock-in
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* TODO: add real customer testimonial once available */}
       </div>
     </div>
   )

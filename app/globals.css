@@ -77,11 +77,21 @@
 
 /* Hero preview card */
 .hero-preview-container { position: relative; }
-.hero-preview-border { position: relative; z-index: 0; }
-.hero-gradient-orb { z-index: -1; }
-.hero-gradient-spin { animation: hero-spin 6s linear infinite; }
-@keyframes hero-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-.hero-preview-border .relative.rounded-2xl { box-shadow: 0 0 40px -12px color-mix(in oklab, var(--primary) 20%, transparent); }
+
+/* Floating glow pulse on the card */
+@keyframes hero-card-glow {
+  0%, 100% { box-shadow: 0 0 40px -12px color-mix(in oklab, var(--primary) 18%, transparent), 0 24px 48px -16px color-mix(in oklab, var(--primary) 10%, transparent); }
+  50% { box-shadow: 0 0 60px -8px color-mix(in oklab, var(--primary) 28%, transparent), 0 32px 64px -12px color-mix(in oklab, var(--primary) 16%, transparent); }
+}
+.hero-preview-container > div > div:first-child { animation: hero-card-glow 4s ease-in-out infinite; }
+
+/* Animate-in utilities used by the build log */
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slide-in-from-bottom { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.animate-in { animation-fill-mode: both; animation-duration: 400ms; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+.fade-in { animation-name: fade-in; }
+.slide-in-from-bottom-2 { animation-name: slide-in-from-bottom; }
+.duration-500 { animation-duration: 500ms; }
 
 /* Hero glass section */
 .hero-glass-section::before { content: ""; position: absolute; top: -10%; left: -5%; right: -5%; bottom: -10%; background: radial-gradient(ellipse at 30% 20%, color-mix(in oklab, var(--primary) 8%, transparent), transparent 50%), radial-gradient(ellipse at 70% 80%, color-mix(in oklab, var(--accent) 12%, transparent), transparent 50%); pointer-events: none; z-index: -1; filter: blur(40px); }
