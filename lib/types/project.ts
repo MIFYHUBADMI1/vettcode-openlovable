@@ -52,6 +52,8 @@ export interface CreditTransaction {
   reason: string
   buildRunId?: string
   createdAt: number
+  /** Optional metadata for webhook tracking, payment IDs, etc. */
+  metadata?: Record<string, unknown>
 }
 
 export interface ProjectEvent {

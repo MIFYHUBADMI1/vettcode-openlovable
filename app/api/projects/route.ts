@@ -1,24 +1,36 @@
 import { requireUser } from "@/lib/auth/session"
 import { store, cryptoId } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
+import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { runWebsiteAnalysis, runScratchAnalysis, runDeepCrawlAnalysis } from "@/lib/analysis/pipeline"
 import { normalizeUrl } from "@/lib/integrations/firecrawl/service"
 import type { MirrorProject, ProjectPreferences } from "@/lib/types/project"
+import { singleFlight } from "@/lib/cache/single-flight"
 
+/**
+ * Returns the list of projects for the authenticated user.
+ *
+ * Single-flight deduplication prevents thundering herds when many SWR clients
+ * revalidate simultaneously.
+ */
 export async function GET() {
   try {
     const user = await requireUser()
-    const projects = await store.listProjects(user.id)
-    // Return lightweight summaries for the list view.
-    return ok({
-      projects: projects.map((p) => ({
-        id: p.id,
-        name: p.name,
-        mode: p.mode,
-        state: p.state,
-        sourceUrl: p.sourceUrl,
-        updatedAt: p.updatedAt,
-      })),
+
+    const fetcher = singleFlight<typeof GET>(`api.projects:${user.id}`)
+    return fetcher(async () => {
+      const projects = await store.listProjects(user.id)
+      // Return lightweight summaries for the list view.
+      return ok({
+        projects: projects.map((p) => ({
+          id: p.id,
+          name: p.name,
+          mode: p.mode,
+          state: p.state,
+          sourceUrl: p.sourceUrl,
+          updatedAt: p.updatedAt,
+        })),
+      })
     })
   } catch (e) {
     return handleRouteError("api.projects.list", e)
@@ -28,6 +40,15 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const user = await requireUser()
+
+    // Rate-limit project creation: 10 new projects per hour per user.
+    await checkRateLimit({
+      action: "project_create",
+      identifier: user.id,
+      limit: 10,
+      windowMs: 60 * 60 * 1000,
+    })
+
     const body = (await req.json().catch(() => ({}))) as { mode?: string; url?: string; idea?: string; crawlMode?: string; preferences?: ProjectPreferences }
     const mode = body.mode === "scratch" ? "scratch" : "website"
     const crawlMode = body.crawlMode === "deep" ? "deep" : "relevant"

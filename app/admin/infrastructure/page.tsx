@@ -275,7 +275,7 @@ export default function AdminInfrastructurePage() {
                     <p className="text-xs text-muted-foreground">Estimated Gross Profit</p>
                     <p className="mt-2 text-3xl font-semibold tabular-nums text-green-500">
                       {(projectsData && (projectsData as unknown as { infra?: InfraStats }).infra?.estimatedGrossProfit)
-                        ? `${((projectsData as unknown as { infra?: InfraStats }).infra!.estimatedGrossProfit).toLocaleString()} UGX`
+                        ? `${((projectsData as unknown as { infra?: InfraStats }).infra!.estimatedGrossProfit).toLocaleString()}`
                         : "—"
                       }
                     </p>

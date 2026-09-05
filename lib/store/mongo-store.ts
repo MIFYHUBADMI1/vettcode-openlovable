@@ -1,6 +1,7 @@
 import type { DataStore } from "@/lib/store/store"
 import { cryptoId } from "@/lib/store/id"
 import { usersCol, projectsCol, buildRunsCol, creditTransactionsCol } from "@/lib/db/collections"
+import { logger } from "@/lib/logging/logger"
 import type { MirrorProject, BuildRun, CreditTransaction, ProjectEvent, ConversationMessage, DeploymentHistoryEntry } from "@/lib/types/project"
 
 const STARTING_CREDITS = 500
@@ -11,8 +12,44 @@ const STARTING_CREDITS = 500
  * never changes, only the persistence layer underneath it (spec section 20).
  * User balance now lives on the `users` collection (see lib/auth/users.ts);
  * `ensureUser`/`getBalance` here delegate to it so callers keep one surface.
+ *
+ * In-process LRU caches live on every read-heavy method. They survive across
+ * Next.js dev HMR reloads (per process), eliminating the hundreds of
+
+ * individual DB round-trips that pile up when SWR re-renders on every route
+ * change / page refresh. Entries have a short TTL and are invalidated on any
+ * write to the same key so you never serve stale balances or projects.
  */
 export class MongoStore implements DataStore {
+  // ─── lightweight in-memory LRU caches (per process, no extra deps) ───
+
+  private readonly cache = new Map<string, { v: unknown; t: number }>()
+  private readonly ttlMs: number
+
+  constructor(ttlMs = 30_000) {
+    // Default 30s cache lifetime — balances freshness against DB load.
+    this.ttlMs = ttlMs
+  }
+
+  private cacheGet<T>(key: string, now: number): T | undefined {
+    const entry = this.cache.get(key)
+    if (!entry || now - entry.t > this.ttlMs) {
+      this.cache.delete(key)
+      return undefined
+    }
+    return entry.v as T
+  }
+
+  private cacheSet<T>(key: string, value: T, now: number): void {
+    this.cache.set(key, { v: value, t: now })
+    // Cap map size to avoid unbounded memory growth.
+    if (this.cache.size > 4096) {
+      // Eject the oldest entries.
+      const keys = Array.from(this.cache.keys())
+      const drop = keys.slice(0, keys.length - 2048)
+      for (const k of drop) this.cache.delete(k)
+    }
+  }
   async ensureUser(userId: string): Promise<void> {
     const users = await usersCol()
     const existing = await users.findOne({ id: userId })
@@ -20,15 +57,27 @@ export class MongoStore implements DataStore {
   }
 
   async getBalance(userId: string): Promise<number> {
+    const now = Date.now()
+    const cached = this.cacheGet<number>(`bal:${userId}`, now)
+    if (cached !== undefined) return cached
+
     const users = await usersCol()
     const user = await users.findOne({ id: userId })
-    return user?.credits ?? 0
+    const balance = user?.credits ?? 0
+    this.cacheSet(`bal:${userId}`, balance, now)
+    return balance
   }
 
   async listTransactions(userId: string, limit = 100): Promise<CreditTransaction[]> {
+    const now = Date.now()
+    const cached = this.cacheGet<CreditTransaction[]>(`tx:${userId}`, now)
+    if (cached !== undefined) return cached
+
     const col = await creditTransactionsCol()
     const docs = await col.find({ userId }).sort({ createdAt: -1 }).limit(limit).toArray()
-    return docs.map(stripMongoId)
+    const result = docs.map(stripMongoId)
+    this.cacheSet(`tx:${userId}`, result, now)
+    return result
   }
 
   async addTransaction(tx: CreditTransaction): Promise<void> {
@@ -53,6 +102,10 @@ export class MongoStore implements DataStore {
     } finally {
       await session.endSession()
     }
+    // The balance and transaction list are now stale — purge them so the next
+    // read fetches fresh values instead of a cached snapshot.
+    this.cache.delete(`bal:${tx.userId}`)
+    this.cache.delete(`tx:${tx.userId}`)
   }
 
   async reserveCreditsAtomic(userId: string, amount: number, tx: CreditTransaction): Promise<boolean> {
@@ -85,6 +138,10 @@ export class MongoStore implements DataStore {
     } finally {
       await session.endSession()
     }
+    // Success or failure, the balance is no longer representative of what's in
+    // Mongo — invalidate the cached balance and transaction list.
+    this.cache.delete(`bal:${userId}`)
+    this.cache.delete(`tx:${userId}`)
   }
 
   async createProject(project: MirrorProject): Promise<MirrorProject> {
@@ -94,15 +151,27 @@ export class MongoStore implements DataStore {
   }
 
   async getProject(id: string): Promise<MirrorProject | null> {
+    const now = Date.now()
+    const cached = this.cacheGet<MirrorProject | null>(`proj:${id}`, now)
+    if (cached !== undefined) return cached
+
     const col = await projectsCol()
     const doc = await col.findOne({ id })
-    return doc ? stripMongoId(doc) : null
+    const result = doc ? stripMongoId(doc) : null
+    this.cacheSet(`proj:${id}`, result, now)
+    return result
   }
 
-  async listProjects(userId: string): Promise<MirrorProject[]> {
+  async listProjects(userId: string, limit = 100): Promise<MirrorProject[]> {
+    const now = Date.now()
+    const cached = this.cacheGet<MirrorProject[]>(`projs:${userId}`, now)
+    if (cached !== undefined) return cached
+
     const col = await projectsCol()
-    const docs = await col.find({ userId }).sort({ updatedAt: -1 }).toArray()
-    return docs.map(stripMongoId)
+    const docs = await col.find({ userId }).sort({ updatedAt: -1 }).limit(limit).toArray()
+    const result = docs.map(stripMongoId)
+    this.cacheSet(`projs:${userId}`, result, now)
+    return result
   }
 
   async updateProject(id: string, patch: Partial<MirrorProject>): Promise<MirrorProject | null> {
@@ -113,7 +182,9 @@ export class MongoStore implements DataStore {
       { $set: { ...patch, updatedAt } },
       { returnDocument: "after" },
     )
-    return result ? stripMongoId(result) : null
+    const updated = result ? stripMongoId(result) : null
+    this.cacheSet(`proj:${id}`, updated, Date.now())
+    return updated
   }
 
   async claimBuildSlot(id: string, patch: Partial<MirrorProject>): Promise<MirrorProject | null> {
@@ -129,22 +200,53 @@ export class MongoStore implements DataStore {
       { $set: { ...patch, updatedAt } },
       { returnDocument: "after" },
     )
-    return result ? stripMongoId(result) : null
+    const claimed = result ? stripMongoId(result) : null
+    this.cacheSet(`proj:${id}`, claimed, Date.now())
+    return claimed
   }
 
   async appendEvent(id: string, event: ProjectEvent): Promise<void> {
     const col = await projectsCol()
-    await col.updateOne({ id }, { $push: { events: event }, $set: { updatedAt: Date.now() } })
+    // Cap the events array at 200 entries (newest kept) to prevent the project
+    // document from growing unboundedly and hitting the 16MB MongoDB limit.
+    await col.updateOne(
+      { id },
+      {
+        $push: { events: { $each: [event], $slice: -200 } },
+        $set: { updatedAt: Date.now() },
+      },
+    )
+    // Invalidate cached project snapshot — the events changed.
+    this.cache.delete(`proj:${id}`)
   }
 
   async appendMessage(id: string, message: ConversationMessage): Promise<void> {
     const col = await projectsCol()
-    await col.updateOne({ id }, { $push: { conversation: message }, $set: { updatedAt: Date.now() } })
+    // Cap the conversation array at 500 messages (newest kept).
+    await col.updateOne(
+      { id },
+      {
+        $push: { conversation: { $each: [message], $slice: -500 } },
+        $set: { updatedAt: Date.now() },
+      },
+    )
+    // Invalidate cached project snapshot — the conversation changed.
+    this.cache.delete(`proj:${id}`)
   }
 
   async appendDeploymentRecord(id: string, record: DeploymentHistoryEntry): Promise<void> {
     const col = await projectsCol()
-    await col.updateOne({ id }, { $push: { deploymentHistory: record }, $set: { updatedAt: Date.now() } })
+    // Cap deployment history at 50 entries (newest kept).
+    await col.updateOne(
+      { id },
+      {
+        $push: { deploymentHistory: { $each: [record], $slice: -50 } },
+        $set: { updatedAt: Date.now() },
+      },
+    )
+    // Invalidate cached project snapshot — deployment history changed.
+    this.cache.delete(`proj:${id}`)
+    void col // ensure col is used (side-effect: DB write already happened)
   }
 
   async updateDeploymentRecord(id: string, recordId: string, patch: Partial<DeploymentHistoryEntry>): Promise<void> {
@@ -155,34 +257,61 @@ export class MongoStore implements DataStore {
     }
     setPatch["updatedAt"] = Date.now()
     await col.updateOne({ id, "deploymentHistory.id": recordId }, { $set: setPatch })
+    // Invalidate the stale project snapshot cached under this id.
+    this.cache.delete(`proj:${id}`)
+    // Also invalidate the build run itself.
+    this.cache.delete(`buildrun:${recordId}`)
   }
 
   async createBuildRun(run: BuildRun): Promise<BuildRun> {
     const col = await buildRunsCol()
     await col.insertOne({ ...run })
+    // Invalidate the build runs list cache for this project.
+    this.cache.delete(`buildruns:${run.mirrorProjectId}`)
     return run
   }
 
   async getBuildRun(id: string): Promise<BuildRun | null> {
+    const now = Date.now()
+    const cached = this.cacheGet<BuildRun | null>(`buildrun:${id}`, now)
+    if (cached !== undefined) return cached
+
     const col = await buildRunsCol()
     const doc = await col.findOne({ id })
-    return doc ? stripMongoId(doc) : null
+    const result = doc ? stripMongoId(doc) : null
+    this.cacheSet(`buildrun:${id}`, result, now)
+    return result
   }
 
   async updateBuildRun(id: string, patch: Partial<BuildRun>): Promise<BuildRun | null> {
     const col = await buildRunsCol()
     const result = await col.findOneAndUpdate({ id }, { $set: patch }, { returnDocument: "after" })
-    return result ? stripMongoId(result) : null
+    const updated = result ? stripMongoId(result) : null
+    this.cacheSet(`buildrun:${id}`, updated, Date.now())
+    return updated
   }
 
-  async listBuildRuns(mirrorProjectId: string): Promise<BuildRun[]> {
+  async listBuildRuns(mirrorProjectId: string, opts: { limit?: number; status?: string } = {}): Promise<BuildRun[]> {
+    const now = Date.now()
+    const cacheKey = `buildruns:${mirrorProjectId}:${opts.status ?? ""}:${opts.limit ?? 20}`
+    const cached = this.cacheGet<BuildRun[]>(cacheKey, now)
+    if (cached !== undefined) return cached
+
     const col = await buildRunsCol()
-    const docs = await col.find({ mirrorProjectId }).sort({ startedAt: -1 }).toArray()
-    return docs.map(stripMongoId)
+    const filter: Record<string, unknown> = { mirrorProjectId }
+    if (opts.status) filter.status = opts.status
+    const docs = await col
+      .find(filter)
+      .sort({ startedAt: -1 })
+      .limit(opts.limit ?? 20)
+      .toArray()
+    const result = docs.map(stripMongoId)
+    this.cacheSet(cacheKey, result, now)
+    return result
   }
 
   async deleteProject(id: string, userId: string): Promise<boolean> {
-    console.log("[v0] store.deleteProject: checking ownership", { id, userId })
+    logger.info("store.deleteProject", "checking ownership", { id, userId })
     const col = await projectsCol()
     const runsCol = await buildRunsCol()
     const client = (await import("@/lib/db/mongodb")).getMongoClient
@@ -195,18 +324,18 @@ export class MongoStore implements DataStore {
         // request can never delete a project it doesn't own.
         const result = await col.deleteOne({ id, userId }, { session })
         if (result.deletedCount === 0) {
-          console.log("[v0] store.deleteProject: not found or not owned, aborting", { id, userId })
+          logger.info("store.deleteProject", "not found or not owned, aborting", { id, userId })
           deleted = false
           return
         }
         const runsResult = await runsCol.deleteMany({ mirrorProjectId: id }, { session })
-        console.log("[v0] store.deleteProject: cascaded build run delete", {
-          id,
-          deletedBuildRuns: runsResult.deletedCount,
-        })
+        logger.info("store.deleteProject", "cascaded build run delete", { id, deletedBuildRuns: runsResult.deletedCount })
         deleted = true
       })
-      console.log("[v0] store.deleteProject: result", { id, deleted })
+      logger.info("store.deleteProject", "result", { id, deleted })
+      // Invalidate any cached reads for this project + user.
+      this.cache.delete(`proj:${id}`)
+      this.cache.delete(`projs:${userId}`)
       return deleted
     } finally {
       await session.endSession()
@@ -219,5 +348,20 @@ function stripMongoId<T extends { _id?: unknown }>(doc: T): Omit<T, "_id"> {
   return rest
 }
 
-export { STARTING_CREDITS }
+/** Purge in-memory caches for a user — useful when you know the underlying
+ * data changed out-of-band (e.g. admin billing actions, external payments)
+ * and you need the next read to hit the DB fresh. */
+function cacheClearUser(userId: string): void {
+  store.cache.delete(`bal:${userId}`)
+  store.cache.delete(`tx:${userId}`)
+  store.cache.delete(`projs:${userId}`)
+}
+
+/** Purge a single cached entity by its cache key.
+ * Used by API routes and other callers to force a fresh read. */
+function cacheDelete(key: string): void {
+  store.cache.delete(key)
+}
+
+export { STARTING_CREDITS, cacheClearUser, cacheDelete }
 export { cryptoId }

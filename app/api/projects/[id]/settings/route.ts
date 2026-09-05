@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth/session"
 import { store } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { updateProject as totalumUpdateProject, isTotalumConfigured } from "@/lib/integrations/totalum/service"
+import { logger } from "@/lib/logging/logger"
 
 /**
  * PATCH /api/projects/:id/settings
@@ -33,7 +34,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           await totalumUpdateProject(project.totalumProjectId, totalumPatch)
         } catch (err) {
           // Non-fatal: local update still goes through
-          console.error("[settings] Totalum update failed (non-fatal)", err)
+          logger.warn("api.projects.settings", "Totalum update failed (non-fatal)", { id, error: (err as Error).message })
         }
       }
     }

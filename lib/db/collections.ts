@@ -1,6 +1,7 @@
 import { getDb } from "@/lib/db/mongodb"
-import type { UserDoc, SessionDoc, VerificationTokenDoc, RateLimitDoc, ProjectAssetDoc, ProviderUsageDoc, TopUpDoc, PublishEventDoc, ReferralDoc, DocFeedbackDoc } from "@/lib/types/db"
+import type { UserDoc, SessionDoc, VerificationTokenDoc, RateLimitDoc, ProjectAssetDoc, ProviderUsageDoc, TopUpDoc, PublishEventDoc, ReferralDoc, DocFeedbackDoc, WebhookEventDoc } from "@/lib/types/db"
 import type { MirrorProject, BuildRun, CreditTransaction } from "@/lib/types/project"
+import type { CreditLedgerEntry, BuildAuthorization, PaymentRecord, SubscriptionRecord } from "@/lib/billing/billing-types"
 
 /** Cache the Db reference across hot reloads so we don't re-resolve per call. */
 const globalForDb = globalThis as unknown as { __mirrorDb?: Awaited<ReturnType<typeof getDb>> }
@@ -56,6 +57,27 @@ export async function referralsCol() {
 export async function docFeedbackCol() {
   return (await getDbCached()).collection<DocFeedbackDoc & { _id?: unknown }>("doc_feedback")
 }
+export async function webhookEventsCol() {
+  return (await getDbCached()).collection<WebhookEventDoc & { _id?: unknown }>("webhook_events")
+}
+
+// ─── Unified Billing Collections ─────────────────────────────────────────────
+
+export async function creditLedgerCol() {
+  return (await getDbCached()).collection<CreditLedgerEntry>("credit_ledger")
+}
+
+export async function buildAuthorizationsCol() {
+  return (await getDbCached()).collection<BuildAuthorization>("build_authorizations")
+}
+
+export async function paymentRecordsCol() {
+  return (await getDbCached()).collection<PaymentRecord>("payment_records")
+}
+
+export async function subscriptionRecordsCol() {
+  return (await getDbCached()).collection<SubscriptionRecord>("subscription_records")
+}
 
 let indexesEnsured = false
 
@@ -99,6 +121,10 @@ export async function ensureIndexes() {
     users.createIndex({ email: 1 }, { unique: true }),
     users.createIndex({ googleId: 1 }, { sparse: true }),
     users.createIndex({ referralCode: 1 }, { sparse: true }),
+    // Supports the admin "top users by credits" query: find non-deleted users
+    // sorted by credits descending — without this index it requires a full
+    // collection scan + in-memory sort.
+    users.createIndex({ deletedAt: 1, credits: -1 }, { sparse: true, name: "users_credits_desc" }),
     sessions.createIndex({ tokenHash: 1 }, { unique: true }),
     sessions.createIndex({ userId: 1 }),
     sessions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
@@ -158,6 +184,52 @@ export async function ensureIndexes() {
   await Promise.all([
     docFeedback.createIndex({ key: 1 }, { unique: true, name: "doc_feedback_key_unique" }),
     docFeedback.createIndex({ sectionId: 1, vote: 1 }),
+  ])
+
+  // Webhook event indexes
+  const webhookEvents = await webhookEventsCol()
+  await Promise.all([
+    webhookEvents.createIndex({ id: 1 }, { unique: true, sparse: true, name: "webhook_events_id_unique" }),
+    webhookEvents.createIndex({ webhookId: 1 }, { unique: true, name: "webhook_events_webhook_id_unique" }),
+    webhookEvents.createIndex({ eventType: 1, receivedAt: -1 }),
+    webhookEvents.createIndex({ status: 1, receivedAt: -1 }),
+    webhookEvents.createIndex({ receivedAt: -1 }),
+  ])
+
+  // ─── Unified Billing Indexes ────────────────────────────────────────────
+  const creditLedger = await creditLedgerCol()
+  await Promise.all([
+    creditLedger.createIndex({ id: 1 }, { unique: true, sparse: true, name: "credit_ledger_id_unique" }),
+    creditLedger.createIndex({ userId: 1, createdAt: -1 }),
+    creditLedger.createIndex({ userId: 1, creditType: 1, createdAt: -1 }),
+    creditLedger.createIndex({ idempotencyKey: 1 }, { unique: true, name: "credit_ledger_idempotency_unique" }),
+    creditLedger.createIndex({ transactionType: 1, createdAt: -1 }),
+    creditLedger.createIndex({ referenceType: 1, referenceId: 1 }),
+  ])
+
+  const buildAuths = await buildAuthorizationsCol()
+  await Promise.all([
+    buildAuths.createIndex({ id: 1 }, { unique: true, sparse: true, name: "build_auth_id_unique" }),
+    buildAuths.createIndex({ userId: 1, createdAt: -1 }),
+    buildAuths.createIndex({ projectId: 1, createdAt: -1 }),
+    buildAuths.createIndex({ status: 1, createdAt: -1 }),
+    buildAuths.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+  ])
+
+  const paymentRecords = await paymentRecordsCol()
+  await Promise.all([
+    paymentRecords.createIndex({ id: 1 }, { unique: true, sparse: true, name: "payment_records_id_unique" }),
+    paymentRecords.createIndex({ dodoPaymentId: 1 }, { unique: true, name: "payment_records_dodo_id_unique" }),
+    paymentRecords.createIndex({ userId: 1, createdAt: -1 }),
+    paymentRecords.createIndex({ status: 1, createdAt: -1 }),
+  ])
+
+  const subRecords = await subscriptionRecordsCol()
+  await Promise.all([
+    subRecords.createIndex({ id: 1 }, { unique: true, sparse: true, name: "subscription_records_id_unique" }),
+    subRecords.createIndex({ dodoSubscriptionId: 1 }, { unique: true, name: "subscription_records_dodo_id_unique" }),
+    subRecords.createIndex({ userId: 1, createdAt: -1 }),
+    subRecords.createIndex({ status: 1, createdAt: -1 }),
   ])
 
   indexesEnsured = true

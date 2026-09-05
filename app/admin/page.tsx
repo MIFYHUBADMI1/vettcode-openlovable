@@ -346,7 +346,7 @@ export default function AdminDashboardPage() {
             <StatCard label="Rejected" value={stats?.topUps.rejected ?? 0} icon={ShoppingCart} color="text-red-500" />
             <StatCard
               label="Total Revenue"
-              value={`${(stats?.topUps.totalAmount ?? 0).toLocaleString()} UGX`}
+              value={`${(stats?.topUps.totalAmount ?? 0).toLocaleString()}`}
               icon={CreditCard}
               color="text-primary"
             />
@@ -678,7 +678,7 @@ export default function AdminDashboardPage() {
               />
               <StatCard
                 label="Estimated Gross Profit"
-                value={`${stats.infrastructure.estimatedGrossProfit.toLocaleString()} UGX`}
+                value={`${stats.infrastructure.estimatedGrossProfit.toLocaleString()}`}
                 icon={TrendingUp}
                 color="text-green-500"
               />

@@ -135,7 +135,7 @@ const faqStructuredData = {
       name: "What are MirrorSite credits?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "MirrorSite credits are an internal usage unit where 1 credit equals 1 UGX. Credits are consumed when MirrorSite AI generates applications, analyzes websites, or performs other platform actions. New users receive 500 free credits upon account verification.",
+        text: "MirrorSite credits are an internal usage unit consumed when MirrorSite AI generates applications, analyzes websites, or performs other platform actions. New users receive 500 free credits upon account verification. Credits can be purchased via Dodo Payments or earned through subscriptions.",
       },
     },
     {
@@ -257,7 +257,7 @@ const faqItems = [
   },
   {
     q: "What are MirrorSite credits?",
-    a: "MirrorSite credits are an internal usage unit where 1 credit equals 1 UGX. Credits are consumed when MirrorSite AI generates applications, analyzes websites, or performs other platform actions. New users receive 500 free credits upon account verification.",
+    a: "MirrorSite credits are an internal usage unit consumed when MirrorSite AI generates applications, analyzes websites, or performs other platform actions. New users receive 500 free credits upon account verification. Credits can be purchased via Dodo Payments or earned through subscriptions.",
   },
   {
     q: "Can credits be exchanged for cash?",
@@ -623,7 +623,7 @@ export default function TermsPage() {
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Credits are an internal usage unit for the MirrorSite platform</li>
-              <li>1 MirrorSite credit equals 1 UGX</li>
+              <li>MirrorSite credits are consumed when building applications</li>
               <li>Credits are consumed for actions such as website analysis, plan generation, and application generation</li>
               <li>Different actions may consume different amounts of credits</li>
               <li>New users receive 500 free credits upon account verification</li>

@@ -15,9 +15,16 @@ MirrorSite AI is an AI-powered application development platform that turns websi
 
 ## Pricing
 
-- Simple: 25,000 credits (25,000 UGX) — basic website/application generation
-- Medium: 50,000 credits (50,000 UGX) — multi-page apps with auth and database
-- Complex: 75,000 credits (75,000 UGX) — advanced full-stack projects
+- Explorer: $12/month — 50,000 credits
+- Starter: $79/month — 300,000 credits
+- Business: $139/month — 600,000 credits
+- Professional: $219/month — 1,400,000 credits
+- Enterprise: $499+/month — 5,000,000+ credits
+
+Application build costs:
+- Simple: 50,000 credits — basic website/application generation
+- Medium: 75,000 credits — multi-page apps with auth and database
+- Complex: 100,000 credits — advanced full-stack projects
 
 ## Links
 

@@ -1,7 +1,10 @@
 import "server-only"
 import { ObjectId } from "mongodb"
 import { topupsCol, usersCol, creditTransactionsCol } from "@/lib/db/collections"
-import { getPackageById, REFERENCE_EXPIRY_MS } from "./packages"
+import { getPackageById } from "./packages"
+
+/** @deprecated Legacy reference expiry — 24 hours. */
+const REFERENCE_EXPIRY_MS = 24 * 60 * 60 * 1000
 import { generatePaymentReference, normalizePhone, hashBuffer } from "./payment-ref"
 import { cryptoId } from "@/lib/store/store"
 import { logger } from "@/lib/logging/logger"
@@ -47,7 +50,7 @@ export async function createTopUp(params: CreateTopUpParams): Promise<CreateTopU
     userId: params.userId,
     packageId: params.packageId,
     credits: pkg.credits,
-    expectedAmount: pkg.priceUGX,
+    expectedAmount: pkg.priceUSD,
     paymentReference,
     payerPhone: normalizedPhone,
     paymentNetwork: params.paymentNetwork,
@@ -75,7 +78,7 @@ export async function createTopUp(params: CreateTopUpParams): Promise<CreateTopU
       id,
       packageId: params.packageId,
       credits: pkg.credits,
-      expectedAmount: pkg.priceUGX,
+      expectedAmount: pkg.priceUSD,
       paymentReference,
       payerPhone: normalizedPhone,
       paymentNetwork: params.paymentNetwork,

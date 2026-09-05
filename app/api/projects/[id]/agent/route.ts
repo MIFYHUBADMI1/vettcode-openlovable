@@ -1,7 +1,10 @@
 import { requireUser } from "@/lib/auth/session"
 import { store, cryptoId } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
-import { getTierCost, classifyComplexity, reserveCredits, refundReservation } from "@/lib/credits/credits"
+import { checkRateLimit } from "@/lib/auth/rate-limit"
+import { getBuildCost } from "@/lib/billing/build-auth"
+import { reserveCredits, releaseReservation, getAvailableCredits } from "@/lib/billing/credit-service"
+import { classifyComplexity } from "@/lib/credits/credits"
 import { runAgent, isTotalumConfigured } from "@/lib/integrations/totalum/service"
 import type { BuildRun, ConversationMessage } from "@/lib/types/project"
 
@@ -15,6 +18,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const user = await requireUser()
     const userId = user.id
     const { id } = await params
+
+    // Rate-limit agent follow-ups: 20 per hour per user.
+    await checkRateLimit({
+      action: "project_agent",
+      identifier: userId,
+      limit: 20,
+      windowMs: 60 * 60 * 1000,
+    })
+
     const project = await store.getProject(id)
     if (!project || project.userId !== userId) return fail("UNAUTHORIZED_PROJECT_ACCESS", "We couldn't find this project.", 404)
     if (!project.totalumProjectId) return fail("VALIDATION", "This project hasn't been built yet.", 409)
@@ -38,7 +50,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // Determine the credit cost based on the project's complexity tier,
     // matching the initial build cost — not a flat follow-up rate.
     const tier = project.specification?.complexity ?? classifyComplexity(project.specification!)
-    const creditsNeeded = getTierCost(tier)
+    const creditsNeeded = getBuildCost(tier)
 
     const run: BuildRun = {
       id: cryptoId(),
@@ -64,7 +76,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return fail("AGENT_RUNNING", "Please wait for the current change to finish.", 409)
     }
 
-    const reserved = await reserveCredits(userId, creditsNeeded, run.id, `${tier.charAt(0).toUpperCase() + tier.slice(1)} application edit`)
+    // Pre-flight balance check for a friendlier error message before reserving.
+    const available = await getAvailableCredits(userId)
+    if (available < creditsNeeded) {
+      await store.updateBuildRun(run.id, { status: "failed", error: "insufficient credits" })
+      await store.updateProject(id, { state: project.state })
+      return fail("INSUFFICIENT_CREDITS", `You need ${creditsNeeded.toLocaleString()} credits for this edit (${tier} tier). Available: ${available.toLocaleString()}.`, 402)
+    }
+
+    const reserved = await reserveCredits({
+      userId,
+      amount: creditsNeeded,
+      buildId: run.id,
+      reason: `${tier.charAt(0).toUpperCase() + tier.slice(1)} application follow-up`,
+    })
     if (!reserved) {
       await store.updateBuildRun(run.id, { status: "failed", error: "insufficient credits" })
       await store.updateProject(id, { state: project.state })
@@ -78,7 +103,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       await store.updateProject(id, { state: "building" })
       return ok({ buildRunId: run.id, state: "building", creditsCharged: creditsNeeded, tier })
     } catch (providerError) {
-      await refundReservation(userId, creditsNeeded, run.id)
+      await releaseReservation({ userId, amount: creditsNeeded, buildId: run.id, reason: "Agent provider failure" })
       await store.updateBuildRun(run.id, { status: "failed", error: (providerError as Error).message })
       await store.updateProject(id, { state: previousState })
       throw providerError

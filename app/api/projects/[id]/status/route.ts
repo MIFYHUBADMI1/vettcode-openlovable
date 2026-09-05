@@ -8,6 +8,18 @@ import { publishEventsCol } from "@/lib/db/collections"
 import { logger } from "@/lib/logging/logger"
 import type { ConversationMessage, ProjectEvent, BuildSummary } from "@/lib/types/project"
 
+/**
+ * Per-project in-process lock for build-completion handling.
+ * The status endpoint is polled every few seconds per active build; if two
+ * concurrent polls both observe `status === "done"` they would both run the
+ * expensive completion pipeline (external fetches, DB writes, credit
+ * reconciliation) at the same time. This Set ensures only one request runs
+ * the completion logic per project — the second one short-circuits and returns
+ * the current stored state, which will already be "ready" once the first
+ * request finishes.
+ */
+const buildCompletionInProgress = new Set<string>()
+
 function event(stage: string, message: string, level: ProjectEvent["level"] = "info"): ProjectEvent {
   return { id: cryptoId(), at: Date.now(), level, stage, message }
 }
@@ -28,14 +40,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     // Nothing to sync unless a Totalum project exists and we're mid-build.
     const active = project.state === "building" || project.state === "deploying"
     if (!active) {
-      console.log("[status] not active, returning stored state", { id, state: project.state })
+      logger.info("api.projects.status", "not active, returning stored state", { id, state: project.state })
 
       // Backfill buildSummary for projects built before this field existed.
       // Only fetch once — once persisted, subsequent requests return it from MongoDB.
       let buildSummary = project.buildSummary
       if (!buildSummary && project.totalumProjectId && (project.state === "ready" || project.state === "build_complete")) {
         try {
-          console.log("[status] backfilling buildSummary from Totalum", { id })
+          logger.info("api.projects.status", "backfilling buildSummary from Totalum", { id })
           const fullConv = await getFullConversation(project.totalumProjectId)
           const finishedMsg = [...fullConv.conversation]
             .reverse()
@@ -49,10 +61,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
             }
             // Persist so we never need to fetch again
             await store.updateProject(id, { buildSummary })
-            console.log("[status] buildSummary backfilled and persisted", { id })
+            logger.info("api.projects.status", "buildSummary backfilled and persisted", { id })
           }
         } catch (err) {
-          console.error("[status] failed to backfill buildSummary (non-fatal)", err)
+          logger.error("api.projects.status", "failed to backfill buildSummary (non-fatal)", { id, error: (err as Error).message })
         }
       }
 
@@ -79,7 +91,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     // This happens when the auto-launch from the pipeline failed to persist the
     // totalumProjectId. Reset to specification_ready so the user can retry.
     if (!project.totalumProjectId) {
-      console.warn("[status] orphaned build state — no totalumProjectId, resetting", { id, state: project.state })
+      logger.warn("api.projects.status", "orphaned build state — no totalumProjectId, resetting", { id, state: project.state })
       await store.updateProject(id, { state: "specification_ready" })
       await store.appendEvent(id, event("build", "Build lost its connection to the builder. Please try building again.", "warn"))
       return ok({
@@ -101,14 +113,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     try {
       // Handle deployment status separately from agent status
       if (project.state === "deploying") {
-        console.log("[status] polling deployment status", { id, totalumProjectId: project.totalumProjectId })
+        logger.info("api.projects.status", "polling deployment status", { id, totalumProjectId: project.totalumProjectId })
         const deployStatus = await getDeploymentStatus(project.totalumProjectId)
-        console.log("[status] deployment status", { id, deployStatus: deployStatus.status })
+        logger.info("api.projects.status", "deployment status", { id, deployStatus: deployStatus.status })
 
         if (deployStatus.status === "success") {
           const totalumProject = await getProject(project.totalumProjectId)
           const productionUrl = totalumProject.productionProjectUrl
-          console.log("[status] deployment success", { id, productionUrl })
+          logger.info("api.projects.status", "deployment success", { id, productionUrl })
           // Update latest deploying entry in history (best-effort)
           const latestDeploy = [...(project.deploymentHistory || [])].reverse().find(d => d.status === "deploying")
           if (latestDeploy) {
@@ -120,7 +132,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
                 customDomain: totalumProject.customDomain?.hostname,
               })
             } catch (err) {
-              console.error("[status] failed to update deployment history (non-fatal)", err)
+              logger.error("api.projects.status", "failed to update deployment history (non-fatal)", { id, error: (err as Error).message })
             }
             try {
               const peCol = await publishEventsCol()
@@ -129,7 +141,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
                 { $set: { status: "success", productionUrl, customDomain: totalumProject.customDomain?.hostname, durationMs: Date.now() - latestDeploy.startedAt } },
               )
             } catch (err) {
-              console.error("[status] failed to update publish analytics (non-fatal)", err)
+              logger.error("api.projects.status", "failed to update publish analytics (non-fatal)", { id, error: (err as Error).message })
             }
           }
           await store.updateProject(id, {
@@ -167,7 +179,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
                 error: "Deployment failed",
               })
             } catch (err) {
-              console.error("[status] failed to update deployment history (non-fatal)", err)
+              logger.error("api.projects.status", "failed to update deployment history on error (non-fatal)", { id, error: (err as Error).message })
             }
             try {
               const peCol = await publishEventsCol()
@@ -176,7 +188,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
                 { $set: { status: "failed", error: "Deployment failed", durationMs: Date.now() - latestDeploy.startedAt } },
               )
             } catch (err) {
-              console.error("[status] failed to update publish analytics (non-fatal)", err)
+              logger.error("api.projects.status", "failed to update publish analytics on error (non-fatal)", { id, error: (err as Error).message })
             }
           }
           await store.updateProject(id, { state: "ready" })
@@ -216,105 +228,133 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         })
       }
 
-      console.log("[status] polling Totalum", { id, totalumProjectId: project.totalumProjectId })
+      logger.info("api.projects.status", "polling Totalum", { id, totalumProjectId: project.totalumProjectId })
       const status = await getAgentStatus(project.totalumProjectId)
-      console.log("[status] Totalum responded", { id, agentStatus: status.status, progress: status.progress, messageCount: status.messages?.length })
+      logger.info("api.projects.status", "Totalum responded", { id, agentStatus: status.status, progress: status.progress, messageCount: status.messages?.length })
 
       if (status.status === "done") {
-        console.log("[status] build done, resolving dev URL", { id, totalumProjectId: project.totalumProjectId })
-        const totalumProject = await getProject(project.totalumProjectId)
-        const devUrl = resolveDevelopmentUrl(totalumProject)
-        console.log("[status] resolved dev URL", { id, devUrl })
-
-        // Fetch the full conversation from Totalum to extract the AI's
-        // post-build summary ("finished" messages with important info like
-        // credentials, what's included, next steps).
-        let buildSummary: BuildSummary | undefined
+        // Deduplication: if another concurrent poll is already handling
+        // completion for this project, skip and return stored state.
+        // The first request will finish and set state to "ready".
+        if (buildCompletionInProgress.has(id)) {
+          logger.info("api.projects.status", "build completion already in progress, skipping duplicate", { id })
+          const current = await store.getProject(id)
+          return ok({
+            state: current?.state ?? project.state,
+            progress: current?.state === "ready" ? 100 : (status.progress ?? null),
+            events: (current?.events ?? project.events).slice(-30),
+            project: {
+              id: project.id,
+              name: project.name,
+              mode: project.mode,
+              state: current?.state ?? project.state,
+              sourceUrl: project.sourceUrl,
+              understanding: project.understanding,
+              specification: project.specification,
+              conversation: (current?.conversation ?? project.conversation).slice(-20),
+            },
+          })
+        }
+        buildCompletionInProgress.add(id)
         try {
-          const fullConv = await getFullConversation(project.totalumProjectId)
-          // The "finished" message contains the AI's final summary — the most
-          // important message for the user (login creds, what's built, etc.)
-          const finishedMsg = [...fullConv.conversation]
-            .reverse()
-            .find((m) => m.messageType === "finished")
-          if (finishedMsg) {
-            buildSummary = {
-              message: finishedMsg.message,
-              createdAt: Date.now(),
-              versionId: finishedMsg.versionId,
-              secretKeysNeeded: finishedMsg.secretKeysNeeded,
-            }
-            console.log("[status] captured build summary", { id, hasSecrets: Boolean(finishedMsg.secretKeysNeeded) })
-          }
-          // Also persist all conversation messages from the build
-          for (const m of fullConv.conversation) {
-            if (m.author === "agent" && m.message) {
-              const msg: ConversationMessage = {
-                id: cryptoId(),
-                role: "assistant",
-                content: m.message,
-                at: Date.now(),
+          logger.info("api.projects.status", "build done, resolving dev URL", { id, totalumProjectId: project.totalumProjectId })
+          const totalumProject = await getProject(project.totalumProjectId)
+          const devUrl = resolveDevelopmentUrl(totalumProject)
+          logger.info("api.projects.status", "resolved dev URL", { id, devUrl })
+
+          // Fetch the full conversation from Totalum to extract the AI's
+          // post-build summary ("finished" messages with important info like
+          // credentials, what's included, next steps).
+          let buildSummary: BuildSummary | undefined
+          try {
+            const fullConv = await getFullConversation(project.totalumProjectId)
+            // The "finished" message contains the AI's final summary — the most
+            // important message for the user (login creds, what's built, etc.)
+            const finishedMsg = [...fullConv.conversation]
+              .reverse()
+              .find((m) => m.messageType === "finished")
+            if (finishedMsg) {
+              buildSummary = {
+                message: finishedMsg.message,
+                createdAt: Date.now(),
+                versionId: finishedMsg.versionId,
+                secretKeysNeeded: finishedMsg.secretKeysNeeded,
               }
-              await store.appendMessage(id, msg)
+              logger.info("api.projects.status", "captured build summary", { id, hasSecrets: Boolean(finishedMsg.secretKeysNeeded) })
+            }
+            // Also persist all conversation messages from the build
+            for (const m of fullConv.conversation) {
+              if (m.author === "agent" && m.message) {
+                const msg: ConversationMessage = {
+                  id: cryptoId(),
+                  role: "assistant",
+                  content: m.message,
+                  at: Date.now(),
+                }
+                await store.appendMessage(id, msg)
+              }
+            }
+          } catch (err) {
+            // Full conversation fetch is best-effort — don't fail the build
+            logger.error("api.projects.status", "failed to fetch full conversation (non-fatal)", { id, error: (err as Error).message })
+            // Fallback: surface any messages from the status response
+            for (const m of status.messages ?? []) {
+              if (m.role === "assistant" && m.content) {
+                const msg: ConversationMessage = { id: cryptoId(), role: "assistant", content: m.content, at: Date.now() }
+                await store.appendMessage(id, msg)
+              }
             }
           }
-        } catch (err) {
-          // Full conversation fetch is best-effort — don't fail the build
-          console.error("[status] failed to fetch full conversation (non-fatal)", err)
-          // Fallback: surface any messages from the status response
-          for (const m of status.messages ?? []) {
-            if (m.role === "assistant" && m.content) {
-              const msg: ConversationMessage = { id: cryptoId(), role: "assistant", content: m.content, at: Date.now() }
-              await store.appendMessage(id, msg)
+
+          await store.updateProject(id, {
+            state: "ready",
+            developmentUrl: devUrl,
+            ...(buildSummary ? { buildSummary } : {}),
+          })
+          await store.appendEvent(id, event("build", "Build complete — your app is ready to preview"))
+
+          // Reconcile credits against actual provider usage when available.
+          // Query only running runs for this project to avoid loading all build history.
+          const runs = await store.listBuildRuns(id, { status: "running", limit: 5 })
+          const run = runs.find((r) => r.totalumProjectId === project.totalumProjectId)
+          if (run) {
+            await store.updateBuildRun(run.id, { status: "succeeded", completedAt: Date.now() })
+            await reconcileCredits(userId, run.creditsReserved, run.creditsReserved, run.id)
+
+            // Check referral milestone after successful build
+            const qualifyingUsage = run.creditsConsumed ?? run.creditsReserved
+            if (qualifyingUsage > 0) {
+              await processMilestoneCheck(userId, qualifyingUsage).catch((e) => {
+                logger.error("api.projects.status", "referral milestone check failed", { id, error: (e as Error).message })
+              })
             }
           }
+
+          const updated = await store.getProject(id)
+          return ok({
+            state: "ready",
+            developmentUrl: devUrl,
+            progress: 100,
+            events: updated!.events.slice(-30),
+            project: {
+              id: updated!.id,
+              name: updated!.name,
+              mode: updated!.mode,
+              state: updated!.state,
+              sourceUrl: updated!.sourceUrl,
+              understanding: updated!.understanding,
+              specification: updated!.specification,
+              conversation: updated!.conversation.slice(-20),
+              buildSummary: updated!.buildSummary,
+            },
+          })
+        } finally {
+          buildCompletionInProgress.delete(id)
         }
-
-        await store.updateProject(id, {
-          state: "ready",
-          developmentUrl: devUrl,
-          ...(buildSummary ? { buildSummary } : {}),
-        })
-        await store.appendEvent(id, event("build", "Build complete — your app is ready to preview"))
-
-        // Reconcile credits against actual provider usage when available.
-        const runs = await store.listBuildRuns(id)
-        const run = runs.find((r) => r.totalumProjectId === project.totalumProjectId && r.status === "running")
-        if (run) {
-          await store.updateBuildRun(run.id, { status: "succeeded", completedAt: Date.now() })
-          await reconcileCredits(userId, run.creditsReserved, run.creditsReserved, run.id)
-
-          // Check referral milestone after successful build
-          const qualifyingUsage = run.creditsConsumed ?? run.creditsReserved
-          if (qualifyingUsage > 0) {
-            await processMilestoneCheck(userId, qualifyingUsage).catch((e) => {
-              console.error("[status] referral milestone check failed", e)
-            })
-          }
-        }
-
-        const updated = await store.getProject(id)
-        return ok({
-          state: "ready",
-          developmentUrl: devUrl,
-          progress: 100,
-          events: updated!.events.slice(-30),
-          project: {
-            id: updated!.id,
-            name: updated!.name,
-            mode: updated!.mode,
-            state: updated!.state,
-            sourceUrl: updated!.sourceUrl,
-            understanding: updated!.understanding,
-            specification: updated!.specification,
-            conversation: updated!.conversation.slice(-20),
-            buildSummary: updated!.buildSummary,
-          },
-        })
       }
 
       if (status.status === "failed") {
-        console.log("[status] build failed", { id, error: status.error })
+        logger.warn("api.projects.status", "build failed", { id, error: status.error })
         await store.updateProject(id, { state: "build_failed", error: status.error })
         await store.appendEvent(id, event("build", "Build failed", "error"))
         const updated = await store.getProject(id)
@@ -353,7 +393,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         },
       })
     } catch (providerError) {
-      console.error("[status] provider error", { id, message: (providerError as Error).message })
       logger.error("api.projects.status", "provider error", { id, message: (providerError as Error).message })
       // Transient provider errors should not corrupt persisted state.
       return ok({ state: project.state, transient: true, message: "Waiting for the builder…", events: project.events.slice(-30) })

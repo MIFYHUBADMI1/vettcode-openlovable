@@ -5,6 +5,7 @@ import { createSession, setSessionCookie } from "@/lib/auth/session"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { issueAndSendVerificationEmail } from "@/lib/auth/verification"
 import { captureReferral } from "@/lib/referrals/referrals"
+import { logger } from "@/lib/logging/logger"
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -34,19 +35,16 @@ export async function POST(req: Request) {
     const passwordHash = await hashPassword(password)
     const user = await createPasswordUser({ email, name, passwordHash })
 
-    console.log("[v0] auth.register: user created, issuing verification email", { userId: user.id })
+    logger.info("api.auth.register", "user created, issuing verification email", { userId: user.id })
     const verification = await issueAndSendVerificationEmail(user.id, user.email, user.name)
-    console.log("[v0] auth.register: verification email result", { userId: user.id, verification })
+    logger.info("api.auth.register", "verification email result", { userId: user.id, sent: verification?.sent ?? false })
 
     // Capture referral relationship if a referral code was provided
     let referralCaptured = false
-    console.log("[referral] register: referralCode from body", { referralCode, userId: user.id })
     if (referralCode) {
       const referral = await captureReferral(user.id, referralCode)
       referralCaptured = !!referral
-      console.log("[referral] register: captureReferral result", { referralCaptured, referralId: referral?.id })
-    } else {
-      console.log("[referral] register: no referral code provided")
+      logger.info("api.auth.register", "captureReferral result", { referralCaptured, referralId: referral?.id, userId: user.id })
     }
 
     const token = await createSession(user.id)

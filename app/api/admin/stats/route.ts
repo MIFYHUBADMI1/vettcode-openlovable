@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth/session"
 import { ok, handleRouteError } from "@/lib/api/respond"
 import { usersCol, projectsCol, buildRunsCol, creditTransactionsCol, topupsCol, publishEventsCol, referralsCol } from "@/lib/db/collections"
@@ -81,6 +81,20 @@ interface AdminStats {
 }
 
 /** Admin endpoint: system stats for the dashboard overview. */
+
+// ─── In-process stats cache ───────────────────────────────────────────────────
+// The stats endpoint fires 25+ parallel DB queries and is called on every admin
+// dashboard load/refresh. A 60-second in-process cache cuts connection-pool
+// pressure dramatically at no cost to data freshness for an admin overview.
+// Filtered (date-range) queries use a shorter 30-second TTL.
+interface CacheEntry {
+  data: AdminStats
+  expiresAt: number
+}
+const statsCache = new Map<string, CacheEntry>()
+const CACHE_TTL_DEFAULT_MS = 60_000
+const CACHE_TTL_FILTERED_MS = 30_000
+
 export async function GET(request: NextRequest) {
   try {
     await requireAdmin()
@@ -92,6 +106,14 @@ export async function GET(request: NextRequest) {
     const onboardingFrom = onboardingFromStr ? new Date(onboardingFromStr).getTime() : undefined
     const onboardingTo = onboardingToStr ? new Date(onboardingToStr).getTime() + 24 * 60 * 60 * 1000 : undefined // end of day
     const hasOnboardingFilter = onboardingFrom || onboardingTo
+
+    // ── Cache lookup ────────────────────────────────────────────────────────
+    const cacheKey = `stats:${onboardingFromStr ?? ""}:${onboardingToStr ?? ""}`
+    const ttl = hasOnboardingFilter ? CACHE_TTL_FILTERED_MS : CACHE_TTL_DEFAULT_MS
+    const cached = statsCache.get(cacheKey)
+    if (cached && Date.now() < cached.expiresAt) {
+      return ok(cached.data)
+    }
 
     const now = Date.now()
     const oneDayAgo = now - 24 * 60 * 60 * 1000
@@ -424,8 +446,22 @@ export async function GET(request: NextRequest) {
       },
     }
 
+    // ── Store in cache, then respond ───────────────────────────────────────
+    statsCache.set(cacheKey, { data: stats, expiresAt: Date.now() + ttl })
+
     return ok(stats)
   } catch (e) {
     return handleRouteError("api.admin.stats", e)
+  }
+}
+
+/** POST /api/admin/stats — bust the stats cache immediately. */
+export async function POST() {
+  try {
+    await requireAdmin()
+    statsCache.clear()
+    return NextResponse.json({ ok: true, data: { cleared: true } })
+  } catch (e) {
+    return handleRouteError("api.admin.stats.bust", e)
   }
 }

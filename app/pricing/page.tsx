@@ -1,59 +1,56 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight, Check, Zap, Code2, Layers3, Globe, Link as LinkIcon, Shield, Clock, Settings, DollarSign, AlertTriangle, X } from "lucide-react"
+import { ArrowRight, Check, Zap, Code2, Layers3, Globe, Link as LinkIcon, Shield, Clock, Settings, DollarSign, AlertTriangle, X, Coins } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { SITE_URL } from "@/lib/env"
+import { getCurrentUser } from "@/lib/auth/session"
+import {
+  BUILD_TIERS,
+  SUBSCRIPTION_PLANS,
+  PERMANENT_CREDIT_PACKS,
+  CREDIT_UNIT_NAME,
+  formatUSD,
+  WELCOME_BONUS_CREDITS,
+} from "@/lib/billing/config"
+import { CheckoutButton } from "@/components/billing/checkout-button"
+import { PlanCard } from "@/components/billing/plan-card"
 
-const TIERS = [
-  {
-    name: "Simple",
-    credits: "25,000",
-    price: "25,000 UGX",
-    description: "For smaller applications and straightforward website experiences.",
-    icon: Code2,
-    features: [
+const TIERS = Object.values(BUILD_TIERS).map((tier) => ({
+  name: tier.label,
+  credits: tier.credits.toLocaleString(),
+  price: `${tier.credits.toLocaleString()} ${CREDIT_UNIT_NAME}`,
+  description: tier.description,
+  icon: tier.id === "simple" ? Code2 : tier.id === "medium" ? Layers3 : Zap,
+  popular: tier.id === "medium",
+  features: tier.id === "simple"
+    ? [
       "Basic website/application generation",
       "Standard pages and components",
       "Responsive UI",
       "Basic functionality",
       "Suitable for simpler projects",
-    ],
-  },
-  {
-    name: "Medium",
-    credits: "50,000",
-    price: "50,000 UGX",
-    description: "For more capable full-stack applications.",
-    icon: Layers3,
-    popular: true,
-    features: [
-      "Multi-page applications",
-      "Authentication",
-      "Database-backed functionality",
-      "APIs",
-      "Dashboards",
-      "More advanced application logic",
-      "More customization",
-    ],
-  },
-  {
-    name: "Complex",
-    credits: "75,000",
-    price: "75,000 UGX",
-    description: "For advanced application projects.",
-    icon: Zap,
-    features: [
-      "Complex application structures",
-      "Advanced backend functionality",
-      "Multiple application features",
-      "More sophisticated data flows",
-      "Advanced integrations",
-      "Larger full-stack projects",
-    ],
-  },
-]
+    ]
+    : tier.id === "medium"
+      ? [
+        "Multi-page applications",
+        "Authentication",
+        "Database-backed functionality",
+        "APIs",
+        "Dashboards",
+        "More advanced application logic",
+        "More customization",
+      ]
+      : [
+        "Complex application structures",
+        "Advanced backend functionality",
+        "Multiple application features",
+        "More sophisticated data flows",
+        "Advanced integrations",
+        "Larger full-stack projects",
+      ],
+}))
 
 export const metadata: Metadata = {
   title: "MirrorSite AI Pricing | Credits & Application Generation Plans",
@@ -83,19 +80,25 @@ const pricingStructuredData = {
   name: "MirrorSite AI",
   description: "AI-powered application builder that turns websites and ideas into working full-stack applications.",
   brand: { "@type": "Organization", name: "ATAI Enterprises", url: "https://atai.ink" },
-  offers: TIERS.map((tier) => ({
+  offers: SUBSCRIPTION_PLANS.filter((p) => !p.custom).map((plan) => ({
     "@type": "Offer",
-    name: `${tier.name} Plan`,
-    price: tier.credits.replace(/,/g, ""),
-    priceCurrency: "UGX",
-    description: tier.description,
+    name: `${plan.name} Plan`,
+    price: plan.priceUSD,
+    priceCurrency: "USD",
+    description: `${plan.mirrorCredits.toLocaleString()} ${CREDIT_UNIT_NAME} per month`,
     url: `${SITE_URL}/pricing`,
     availability: "https://schema.org/InStock",
     priceValidUntil: "2026-12-31",
   })),
 }
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  let user = null
+  try {
+    user = await getCurrentUser()
+  } catch {
+    // Not logged in — show register buttons
+  }
   return (
     <main className="min-h-screen bg-background text-foreground">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingStructuredData) }} />
@@ -105,11 +108,11 @@ export default function PricingPage() {
       <section className="mx-auto max-w-4xl px-6 pt-20 pb-16 text-center">
         <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">Pricing</p>
         <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
-          Build More With<br />MirrorSite Credits
+          Build More With<br />{CREDIT_UNIT_NAME}
         </h1>
         <p className="mt-5 text-lg text-muted-foreground max-w-xl mx-auto">
           Use credits to create, improve and customize applications with MirrorSite AI.
-          Start with 500 free credits on us.
+          Start with {WELCOME_BONUS_CREDITS.toLocaleString()} free credits on us.
         </p>
         <div className="mt-8 flex items-center justify-center gap-3">
           <Link href="/register" className={buttonVariants({ size: "lg" }) + " h-12 px-6"}>
@@ -127,34 +130,106 @@ export default function PricingPage() {
               <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <span className="font-mono text-lg font-bold">1</span>
               </div>
-              <p className="mt-4 font-medium">1 Credit = 1 UGX</p>
+              <p className="mt-4 font-medium">Subscription Credits</p>
               <p className="mt-2 text-sm text-muted-foreground">
-                Simple, transparent pricing. What you see is what you pay.
+                Monthly credits from your plan. Consumed first, expire at period end.
               </p>
             </div>
             <div className="text-center">
               <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <span className="font-mono text-lg font-bold">2</span>
               </div>
-              <p className="mt-4 font-medium">500 Free Credits</p>
+              <p className="mt-4 font-medium">Permanent Credits</p>
               <p className="mt-2 text-sm text-muted-foreground">
-                New users receive 500 credits to try MirrorSite AI.
+                Buy once, use forever. Never expire, consumed after subscription credits.
               </p>
             </div>
             <div className="text-center">
               <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <span className="font-mono text-lg font-bold">3</span>
               </div>
-              <p className="mt-4 font-medium">Top Up Anytime</p>
+              <p className="mt-4 font-medium">{WELCOME_BONUS_CREDITS.toLocaleString()} Free Credits</p>
               <p className="mt-2 text-sm text-muted-foreground">
-                Buy more credits via MTN or Airtel Mobile Money.
+                New users receive {WELCOME_BONUS_CREDITS.toLocaleString()} permanent credits to try MirrorSite AI.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Pricing Tiers */}
+      {/* Subscription Plans */}
+      <section className="mx-auto max-w-6xl px-6 py-20">
+        <div className="text-center mb-12">
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">Subscription Plans</p>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight">Choose Your Plan</h2>
+          <p className="mt-3 text-muted-foreground">
+            Monthly subscriptions with recurring {CREDIT_UNIT_NAME}. Cancel any time.
+          </p>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-4">
+          {SUBSCRIPTION_PLANS.filter((p) => !p.custom).map((plan) => (
+            <PlanCard
+              key={plan.id}
+              plan={plan}
+              isLoggedIn={!!user}
+            />
+          ))}
+        </div>
+      </section>
+
+      {/* Permanent Credit Packs */}
+      <section className="border-y border-border bg-card/40">
+        <div className="mx-auto max-w-5xl px-6 py-20">
+          <div className="text-center mb-12">
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">Permanent Credits</p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight">Buy Once, Use Forever</h2>
+            <p className="mt-3 text-muted-foreground">
+              Permanent credits never expire and remain available after subscription cancellation.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {PERMANENT_CREDIT_PACKS.map((pack) => (
+              <div
+                key={pack.id}
+                className={`rounded-xl border bg-card p-5 ${pack.popular ? "border-primary/50 shadow-lg shadow-primary/5" : "border-border"
+                  }`}
+              >
+                {pack.popular && (
+                  <div className="mb-3 inline-block rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                    Best Value
+                  </div>
+                )}
+                <p className="text-2xl font-bold">{pack.credits.toLocaleString()}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{CREDIT_UNIT_NAME}</p>
+                <p className="mt-3 text-xl font-semibold">{formatUSD(pack.priceUSD)}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  ${(pack.priceUSD / pack.credits).toFixed(4)} per credit
+                </p>
+                {user ? (
+                  <CheckoutButton
+                    type="permanent"
+                    productId={pack.id}
+                    className="mt-4 w-full bg-background text-foreground border border-border hover:bg-accent"
+                  >
+                    Buy Now
+                  </CheckoutButton>
+                ) : (
+                  <Link
+                    href="/register"
+                    className="mt-4 block text-center py-2 rounded-lg text-sm font-medium border border-border hover:bg-accent transition-colors"
+                  >
+                    Get Started
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Application Generation Pricing */}
       <section className="mx-auto max-w-5xl px-6 py-20">
         <div className="text-center mb-12">
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">Application Generation</p>
@@ -168,11 +243,10 @@ export default function PricingPage() {
           {TIERS.map((tier) => (
             <div
               key={tier.name}
-              className={`relative flex flex-col rounded-xl border p-6 ${
-                tier.popular
-                  ? "border-primary/50 bg-card shadow-lg shadow-primary/5"
-                  : "border-border bg-card"
-              }`}
+              className={`relative flex flex-col rounded-xl border p-6 ${tier.popular
+                ? "border-primary/50 bg-card shadow-lg shadow-primary/5"
+                : "border-border bg-card"
+                }`}
             >
               {tier.popular && (
                 <div className="absolute -top-3 left-6 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
@@ -192,9 +266,8 @@ export default function PricingPage() {
 
               <div className="mt-6">
                 <span className="text-3xl font-bold">{tier.credits}</span>
-                <span className="ml-2 text-muted-foreground">credits</span>
+                <span className="ml-2 text-muted-foreground">{CREDIT_UNIT_NAME}</span>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">{tier.price}</p>
 
               <ul className="mt-6 flex-1 space-y-3">
                 {tier.features.map((feature) => (
@@ -207,11 +280,10 @@ export default function PricingPage() {
 
               <Link
                 href="/register"
-                className={`mt-6 block text-center py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  tier.popular
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                    : "border border-border hover:bg-accent"
-                }`}
+                className={`mt-6 block text-center py-2.5 rounded-lg text-sm font-medium transition-colors ${tier.popular
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                  : "border border-border hover:bg-accent"
+                  }`}
               >
                 Get Started
               </Link>
@@ -232,9 +304,8 @@ export default function PricingPage() {
             </p>
           </div>
 
-          {/* Side-by-side cards */}
           <div className="grid gap-6 lg:grid-cols-2">
-            {/* ── Free Subdomain ── */}
+            {/* Free Subdomain */}
             <div className="relative flex flex-col rounded-xl border-2 border-primary/30 bg-card p-6">
               <div className="absolute -top-3 left-6 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
                 Recommended
@@ -272,26 +343,10 @@ export default function PricingPage() {
                 </ul>
               </div>
 
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Trade-offs</p>
-                <ul className="space-y-2">
-                  {[
-                    "Uses *.totalum-project.com subdomain",
-                    "Less professional for client-facing projects",
-                    "Cannot use your own branding in the URL",
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <AlertTriangle className="size-4 text-amber-500 mt-0.5 shrink-0" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
               <div className="mt-auto pt-5">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-medium">Deployment Cost</span>
-                  <span className="font-mono text-sm">500 credits</span>
+                  <span className="font-mono text-sm">500 {CREDIT_UNIT_NAME}</span>
                 </div>
                 <Link
                   href="/register"
@@ -302,7 +357,7 @@ export default function PricingPage() {
               </div>
             </div>
 
-            {/* ── Custom Domain ── */}
+            {/* Custom Domain */}
             <div className="relative flex flex-col rounded-xl border border-border bg-card p-6">
               <div className="absolute -top-3 left-6 rounded-full border border-border bg-background px-3 py-1 text-xs font-medium">
                 Advanced
@@ -340,28 +395,10 @@ export default function PricingPage() {
                 </ul>
               </div>
 
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Trade-offs</p>
-                <ul className="space-y-2">
-                  {[
-                    "Requires DNS configuration at your provider",
-                    "DNS propagation may take up to 24 hours",
-                    "Hosting is free for 6 months, then paid",
-                    "Manual steps needed for DNS records",
-                    "Requires owning a domain name",
-                  ].map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
-                      <AlertTriangle className="size-4 text-amber-500 mt-0.5 shrink-0" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
               <div className="mt-auto pt-5">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-sm font-medium">Deployment Cost</span>
-                  <span className="font-mono text-sm">500 credits</span>
+                  <span className="font-mono text-sm">500 {CREDIT_UNIT_NAME}</span>
                 </div>
                 <Link
                   href="/register"
@@ -425,50 +462,6 @@ export default function PricingPage() {
               </tbody>
             </table>
           </div>
-
-          {/* When to choose each */}
-          <div className="mt-12 grid gap-6 sm:grid-cols-2">
-            <div className="rounded-xl border border-border bg-card p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <Globe className="size-5 text-primary" />
-                <h3 className="font-semibold">Choose Free Subdomain if…</h3>
-              </div>
-              <ul className="space-y-2">
-                {[
-                  "You're prototyping or testing an idea",
-                  "You want to share a demo with others quickly",
-                  "You don't own a domain name yet",
-                  "You want zero setup and instant deployment",
-                  "Cost is your primary concern",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <Check className="size-3.5 text-primary mt-0.5 shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-5">
-              <div className="flex items-center gap-2 mb-3">
-                <LinkIcon className="size-5 text-muted-foreground" />
-                <h3 className="font-semibold">Choose Custom Domain if…</h3>
-              </div>
-              <ul className="space-y-2">
-                {[
-                  "You're building a production app or business",
-                  "You want professional branding in the URL",
-                  "SEO and domain authority matter to you",
-                  "You need to build trust with customers",
-                  "You already own a domain name",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <Check className="size-3.5 text-muted-foreground mt-0.5 shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -479,7 +472,7 @@ export default function PricingPage() {
             Ready to build something real?
           </h2>
           <p className="mt-3 text-muted-foreground">
-            Start with 500 free credits and see what MirrorSite AI can create.
+            Start with {WELCOME_BONUS_CREDITS.toLocaleString()} free credits and see what MirrorSite AI can create.
           </p>
           <div className="mt-6 flex items-center justify-center gap-3">
             <Link href="/register" className={buttonVariants({ size: "lg" }) + " h-12 px-6"}>

@@ -1,9 +1,11 @@
 import { requireUser } from "@/lib/auth/session"
 import { store, cryptoId } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
-import { reserveCredits, refundReservation, hasSufficientCredits } from "@/lib/credits/credits"
+import { checkRateLimit } from "@/lib/auth/rate-limit"
+import { reserveCredits, releaseReservation, getAvailableCredits } from "@/lib/billing/credit-service"
 import { deployProject, isTotalumConfigured, getDeploymentStatus, getProject } from "@/lib/integrations/totalum/service"
 import { publishEventsCol } from "@/lib/db/collections"
+import { logger } from "@/lib/logging/logger"
 import type { ProjectEvent } from "@/lib/types/project"
 import type { PublishEventDoc } from "@/lib/types/db"
 
@@ -22,6 +24,15 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
   try {
     const user = await requireUser()
     const { id } = await params
+
+    // Rate-limit deploy: 10 per day per user (it costs 500 credits per deploy).
+    await checkRateLimit({
+      action: "project_deploy",
+      identifier: user.id,
+      limit: 10,
+      windowMs: 24 * 60 * 60 * 1000,
+    })
+
     const project = await store.getProject(id)
     if (!project || project.userId !== user.id) return fail("UNAUTHORIZED_PROJECT_ACCESS", "We couldn't find this project.", 404)
 
@@ -31,8 +42,8 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     if (!isTotalumConfigured()) return fail("PROVIDER_NOT_CONFIGURED", "Deployment service is not connected.", 503)
 
     // Check credits
-    const canAfford = await hasSufficientCredits(user.id, DEPLOY_CREDITS)
-    if (!canAfford) return fail("INSUFFICIENT_CREDITS", `Deploying requires ${DEPLOY_CREDITS} credits.`, 402)
+    const available = await getAvailableCredits(user.id)
+    if (available < DEPLOY_CREDITS) return fail("INSUFFICIENT_CREDITS", `Deploying requires ${DEPLOY_CREDITS} credits. Available: ${available.toLocaleString()}.`, 402)
 
     // Check if already deployed
     try {
@@ -44,7 +55,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
     // Reserve credits
     const runId = cryptoId()
-    const reserved = await reserveCredits(user.id, DEPLOY_CREDITS, runId, "Production deployment")
+    const reserved = await reserveCredits({ userId: user.id, amount: DEPLOY_CREDITS, buildId: runId, reason: "Production deployment" })
     if (!reserved) return fail("INSUFFICIENT_CREDITS", "Could not reserve credits for deployment.", 402)
 
     // Deploy via Totalum
@@ -95,7 +106,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       })
     } catch (providerError) {
       // Refund on failure
-      await refundReservation(user.id, DEPLOY_CREDITS, runId)
+      await releaseReservation({ userId: user.id, amount: DEPLOY_CREDITS, buildId: runId, reason: "Deployment failure" })
       // Update history/analytics (best-effort)
       try {
         await store.updateDeploymentRecord(id, runId, { status: "failed", completedAt: Date.now(), error: providerError instanceof Error ? providerError.message : "Deployment failed" })

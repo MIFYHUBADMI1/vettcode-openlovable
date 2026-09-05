@@ -1,9 +1,8 @@
-import { ObjectId } from "mongodb"
 import { requireAdmin } from "@/lib/auth/session"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { usersCol, creditTransactionsCol, sessionsCol } from "@/lib/db/collections"
-import { cryptoId } from "@/lib/store/store"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
+import { adminAdjustCredits } from "@/lib/billing/credit-service"
 import { logger } from "@/lib/logging/logger"
 
 /** Admin endpoint: get detailed user info. */
@@ -85,40 +84,27 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const col = await usersCol()
     const amount = body.action === "grant" ? body.amount : -body.amount
 
-    // Atomic deduction: use $inc with a conditional to prevent race conditions.
-    // For deductions, the update only applies if credits >= amount, preventing
-    // double-spend from concurrent requests.
-    if (body.action === "deduct") {
-      const result = await col.updateOne(
-        { id, credits: { $gte: body.amount } },
-        { $inc: { credits: amount }, $set: { updatedAt: Date.now() } },
-      )
-      if (result.modifiedCount === 0) {
-        const user = await col.findOne({ id })
-        if (!user) return fail("NOT_FOUND", "User not found.", 404)
+    // Route all credit mutations through the unified credit-service so both
+    // the users.credits field AND subscriptionCredits/permanentCredits stay
+    // in sync, and every adjustment is recorded in the credit_ledger for
+    // billing reconciliation. The previous raw updateOne only touched `credits`
+    // and missed the split-field update, causing permanent balance divergence.
+    const reason = body.reason || `Admin ${body.action}: ${body.amount.toLocaleString()} credits`
+    const success = await adminAdjustCredits({
+      userId: id,
+      amount,
+      adminId: admin.id,
+      reason,
+    })
+
+    if (!success) {
+      const user = await col.findOne({ id })
+      if (!user) return fail("NOT_FOUND", "User not found.", 404)
+      if (body.action === "deduct") {
         return fail("VALIDATION", `Insufficient credits. User has ${user.credits.toLocaleString()} credits.`, 422)
       }
-    } else {
-      const result = await col.updateOne(
-        { id },
-        { $inc: { credits: amount }, $set: { updatedAt: Date.now() } },
-      )
-      if (result.modifiedCount === 0) {
-        return fail("NOT_FOUND", "User not found.", 404)
-      }
+      return fail("UNKNOWN", "Credit adjustment failed.", 500)
     }
-
-    // Record transaction with admin info for audit trail
-    const txCol = await creditTransactionsCol()
-    await txCol.insertOne({
-      _id: new ObjectId(),
-      id: cryptoId(),
-      userId: id,
-      type: body.action === "grant" ? "grant" : "deduction",
-      amount,
-      reason: body.reason || `Admin ${body.action}: ${body.amount.toLocaleString()} credits`,
-      createdAt: Date.now(),
-    })
 
     const updatedUser = await col.findOne({ id })
     const newBalance = updatedUser?.credits ?? 0
@@ -128,7 +114,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       targetUserId: id,
       amount: body.amount,
       action: body.action,
-      reason: body.reason,
+      reason,
       newBalance,
     })
 

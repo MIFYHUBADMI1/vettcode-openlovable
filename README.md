@@ -72,10 +72,11 @@ MirrorSite AI is a web-based platform built by **ATAI — Advanced Technologies 
 
 ## Credit System
 
-- 1 MirrorSite credit = 1 UGX
-- 500 free credits on account verification
-- Credit packages: 5K, 10K, 25K, 50K, 100K
-- Transparent pricing with no hidden fees
+- MirrorSite Credits are consumed when building applications
+- 500 free permanent credits on account verification
+- Subscription plans: Explorer ($12/mo), Starter ($79/mo), Business ($139/mo), Professional ($219/mo), Enterprise ($499+/mo)
+- Permanent credit packs available for one-time purchase via Dodo Payments
+- Subscription credits consumed first, permanent credits consumed second
 
 ### Credit Costs
 

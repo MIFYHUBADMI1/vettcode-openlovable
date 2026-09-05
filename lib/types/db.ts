@@ -28,7 +28,16 @@ export interface UserDoc {
   emailVerified: boolean
   imageUrl?: string
   imageFileId?: string
+  /** @deprecated Use subscriptionCredits + permanentCredits instead. Kept for migration. */
   credits: number
+  /** Subscription credits — expire at end of billing period, consumed first. */
+  subscriptionCredits: number
+  /** Permanent credits — never expire, consumed after subscription credits. */
+  permanentCredits: number
+  /** Start of the current subscription billing period (epoch ms). */
+  subscriptionPeriodStart?: number
+  /** End of the current subscription billing period (epoch ms). */
+  subscriptionPeriodEnd?: number
   isAdmin?: boolean
   onboarding?: UserOnboarding
   suspended?: boolean
@@ -236,6 +245,34 @@ export interface DocFeedbackDoc {
   vote: FeedbackVote
   createdAt: number
   updatedAt: number
+}
+
+// ─── Dodo Webhook Event Document ──────────────────────────────────────────
+
+export type WebhookEventStatus = "received" | "processed" | "failed" | "ignored"
+export type WebhookEventProvider = "dodo"
+
+export interface WebhookEventDoc {
+  _id: ObjectId
+  /** Internal id. */
+  id: string
+  /** The provider that sent the webhook. */
+  provider: WebhookEventProvider
+  /** The Dodo webhook-id header (unique per event, used for idempotency). */
+  webhookId: string
+  /** The event type, e.g. "payment.succeeded", "subscription.active". */
+  eventType: string
+  /** Raw payload body for audit. */
+  payload: Record<string, unknown>
+  /** SHA-256 hash of the raw payload for integrity checks. */
+  payloadHash: string
+  /** Processing status. */
+  status: WebhookEventStatus
+  /** Error message if processing failed. */
+  error?: string
+  /** Timestamps. */
+  receivedAt: number
+  processedAt?: number
 }
 
 // Re-exported for convenience so Mongo-aware modules can import model +

@@ -29,7 +29,7 @@ export interface DataStore {
 
   createProject(project: MirrorProject): Promise<MirrorProject>
   getProject(id: string): Promise<MirrorProject | null>
-  listProjects(userId: string): Promise<MirrorProject[]>
+  listProjects(userId: string, limit?: number): Promise<MirrorProject[]>
   updateProject(id: string, patch: Partial<MirrorProject>): Promise<MirrorProject | null>
   /** Atomically transitions a project into `building` only if it is not
    * already in an active build/deploy state, preventing a duplicate build
@@ -45,7 +45,7 @@ export interface DataStore {
   createBuildRun(run: BuildRun): Promise<BuildRun>
   getBuildRun(id: string): Promise<BuildRun | null>
   updateBuildRun(id: string, patch: Partial<BuildRun>): Promise<BuildRun | null>
-  listBuildRuns(mirrorProjectId: string): Promise<BuildRun[]>
+  listBuildRuns(mirrorProjectId: string, opts?: { limit?: number; status?: string }): Promise<BuildRun[]>
 
   /** Permanently deletes a project owned by `userId`, cascading to remove
    * all of its build runs in the same transaction. Returns false — without

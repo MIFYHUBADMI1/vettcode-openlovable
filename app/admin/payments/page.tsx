@@ -316,7 +316,7 @@ export default function AdminPaymentsPage() {
                       )}
                     </div>
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-medium">{topUp.expectedAmount.toLocaleString()} UGX</p>
+                      <p className="text-sm font-medium">{topUp.expectedAmount.toLocaleString()}</p>
                       <p className="mt-1 text-xs text-muted-foreground">{timeAgo(topUp.createdAt)}</p>
                     </div>
                   </div>
@@ -351,7 +351,7 @@ export default function AdminPaymentsPage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   <InfoRow label="User" value={`${selectedTopUp.userName ?? "Unknown"} (${selectedTopUp.userEmail ?? "no email"})`} />
                   <InfoRow label="Credits" value={`${selectedTopUp.credits.toLocaleString()} credits`} />
-                  <InfoRow label="Expected Amount" value={`${selectedTopUp.expectedAmount.toLocaleString()} UGX`} />
+                  <InfoRow label="Expected Amount" value={`${selectedTopUp.expectedAmount.toLocaleString()}`} />
                   <InfoRow label="Network" value={selectedTopUp.paymentNetwork.toUpperCase()} />
                   <InfoRow label="Payer Phone" value={selectedTopUp.payerPhone} />
                   <InfoRow label="Payment Reference" value={selectedTopUp.paymentReference} />
@@ -380,7 +380,7 @@ export default function AdminPaymentsPage() {
                         </span>
                       </div>
                       {selectedTopUp.aiAnalysis.extractedAmount != null && (
-                        <InfoRow label="Extracted Amount" value={`${selectedTopUp.aiAnalysis.extractedAmount.toLocaleString()} ${selectedTopUp.aiAnalysis.extractedCurrency ?? "UGX"}`} />
+                        <InfoRow label="Extracted Amount" value={`${selectedTopUp.aiAnalysis.extractedAmount.toLocaleString()} ${selectedTopUp.aiAnalysis.extractedCurrency ?? "currency"}`} />
                       )}
                       {selectedTopUp.aiAnalysis.extractedRecipientName && (
                         <InfoRow label="Extracted Recipient" value={selectedTopUp.aiAnalysis.extractedRecipientName} />

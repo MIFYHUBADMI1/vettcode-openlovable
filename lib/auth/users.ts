@@ -79,6 +79,8 @@ export async function createPasswordUser(params: {
     // verification (see markEmailVerified). Google-auth users are pre-verified
     // by Google and receive STARTING_CREDITS immediately.
     credits: 0,
+    subscriptionCredits: 0,
+    permanentCredits: 0,
     createdAt: now,
     updatedAt: now,
   }
@@ -106,6 +108,8 @@ export async function createGoogleUser(params: {
     emailVerified: true,
     imageUrl: params.imageUrl,
     credits: STARTING_CREDITS,
+    subscriptionCredits: 0,
+    permanentCredits: STARTING_CREDITS,
     createdAt: now,
     updatedAt: now,
   }

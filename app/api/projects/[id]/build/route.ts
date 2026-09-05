@@ -1,12 +1,16 @@
 import { requireUser } from "@/lib/auth/session"
 import { store, cryptoId } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
-import { getTierCost, classifyComplexity, reserveCredits, refundReservation } from "@/lib/credits/credits"
+import { checkRateLimit } from "@/lib/auth/rate-limit"
+import { getBuildCost } from "@/lib/billing/build-auth"
+import { reserveCredits, releaseReservation, getAvailableCredits } from "@/lib/billing/credit-service"
+import { classifyComplexity } from "@/lib/credits/credits"
 import { launchProject, isTotalumConfigured } from "@/lib/integrations/totalum/service"
 import { initializeProjectInfrastructure } from "@/lib/infrastructure/service"
 import { getInfrastructurePlan } from "@/lib/infrastructure/plans"
 import { buildInitialBuildPrompt } from "@/lib/analysis/prompt-builder"
 import { ApplicationSpecificationSchema } from "@/lib/types/specification"
+import { logger } from "@/lib/logging/logger"
 import type { BuildRun, ProjectEvent } from "@/lib/types/project"
 
 function event(stage: string, message: string, level: ProjectEvent["level"] = "info"): ProjectEvent {
@@ -24,6 +28,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const user = await requireUser()
     const userId = user.id
     const { id } = await params
+
+    // Rate-limit build initiation: 5 builds per hour per user.
+    await checkRateLimit({
+      action: "project_build",
+      identifier: userId,
+      limit: 5,
+      windowMs: 60 * 60 * 1000,
+    })
+
     const project = await store.getProject(id)
     if (!project || project.userId !== userId) return fail("UNAUTHORIZED_PROJECT_ACCESS", "We couldn't find this project.", 404)
 
@@ -53,7 +66,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     // 1. Determine tier and reserve credits.
     const tier = project.specification.complexity ?? classifyComplexity(project.specification)
-    const creditsNeeded = getTierCost(tier)
+    const creditsNeeded = getBuildCost(tier)
     const run: BuildRun = {
       id: cryptoId(),
       userId,
@@ -77,7 +90,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return fail("AGENT_RUNNING", "This project is already being built.", 409)
     }
 
-    const reserved = await reserveCredits(userId, creditsNeeded, run.id, `${tier.charAt(0).toUpperCase() + tier.slice(1)} application build`)
+    const available = await getAvailableCredits(userId)
+    if (available < creditsNeeded) {
+      await store.updateBuildRun(run.id, { status: "failed", error: "insufficient credits" })
+      await store.updateProject(id, { state: project.state })
+      return fail("INSUFFICIENT_CREDITS", `You don't have enough credits for this build. Required: ${creditsNeeded.toLocaleString()}, Available: ${available.toLocaleString()}.`, 402)
+    }
+
+    const reserved = await reserveCredits({ userId, amount: creditsNeeded, buildId: run.id, reason: `${tier.charAt(0).toUpperCase() + tier.slice(1)} application build` })
     if (!reserved) {
       await store.updateBuildRun(run.id, { status: "failed", error: "insufficient credits" })
       await store.updateProject(id, { state: project.state })
@@ -105,7 +125,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       // Initialize infrastructure subscription if not already set
       if (!project.infrastructure) {
         await initializeProjectInfrastructure(id, launch.projectId).catch((e) => {
-          console.error("[build] infrastructure init failed", e)
+          logger.error("api.projects.build", "infrastructure init failed", { id, error: (e as Error).message })
         })
       }
 
@@ -113,7 +133,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return ok({ buildRunId: run.id, totalumProjectId: launch.projectId, state: "building" })
     } catch (providerError) {
       // 3. Refund on provider failure.
-      await refundReservation(userId, creditsNeeded, run.id)
+      await releaseReservation({ userId, amount: creditsNeeded, buildId: run.id, reason: "Build provider failure" })
       await store.updateBuildRun(run.id, { status: "failed", error: (providerError as Error).message })
       await store.updateProject(id, { state: previousState })
       await store.appendEvent(id, event("build", "Build could not be started. Credits were refunded.", "error"))

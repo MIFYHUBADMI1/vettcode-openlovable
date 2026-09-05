@@ -4,6 +4,7 @@ import { hashToken } from "@/lib/auth/crypto"
 import { markEmailVerified } from "@/lib/auth/users"
 import { AppError } from "@/lib/errors"
 import { processVerificationReward } from "@/lib/referrals/referrals"
+import { logger } from "@/lib/logging/logger"
 
 /**
  * Consumes an email-verification token (spec section 5). Tokens are single
@@ -30,14 +31,14 @@ export async function POST(req: Request) {
     }
 
     await markEmailVerified(record.userId)
-    console.log("[referral] verify-email: user verified", { userId: record.userId })
+    logger.info("api.auth.verify_email", "user verified", { userId: record.userId })
 
     // Process referral verification reward if applicable
     const rewardResult = await processVerificationReward(record.userId).catch((e) => {
-      console.error("[referral] verification reward failed", e)
+      logger.error("api.auth.verify_email", "verification reward failed", { userId: record.userId, error: (e as Error).message })
       return false
     })
-    console.log("[referral] verify-email: reward result", { userId: record.userId, awarded: rewardResult })
+    logger.info("api.auth.verify_email", "reward result", { userId: record.userId, awarded: rewardResult })
 
     return ok({ verified: true })
   } catch (e) {

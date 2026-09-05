@@ -122,3 +122,32 @@ export const SITE_URL = getAppUrl()
 export function isMongoConfigured(): boolean {
   return Boolean(process.env.MONGODB_URI)
 }
+
+// ─── Dodo Payments ──────────────────────────────────────────────────────────
+
+export interface DodoConfig {
+  apiKey: string
+  webhookKey: string
+  environment: string
+}
+
+/**
+ * Get Dodo Payments configuration.
+ * @throws if API key is missing.
+ */
+export function getDodoConfig(): DodoConfig {
+  const apiKey = process.env.DODO_PAYMENTS_API_KEY
+  const webhookKey = process.env.DODO_PAYMENTS_WEBHOOK_KEY
+  if (!apiKey) {
+    throw new AppError("PAYMENT_UNAVAILABLE", "Dodo Payments API key is not configured.", 503)
+  }
+  return {
+    apiKey,
+    webhookKey: webhookKey ?? "",
+    environment: process.env.DODO_PAYMENTS_ENVIRONMENT ?? "test_mode",
+  }
+}
+
+export function isDodoConfigured(): boolean {
+  return Boolean(process.env.DODO_PAYMENTS_API_KEY)
+}

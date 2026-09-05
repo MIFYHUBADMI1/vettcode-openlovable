@@ -1,19 +1,29 @@
 import { requireUser } from "@/lib/auth/session"
 import { store } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
+import { logger } from "@/lib/logging/logger"
 import { ProjectUnderstandingSchema } from "@/lib/types/understanding"
 import { ApplicationSpecificationSchema } from "@/lib/types/specification"
+import { singleFlight } from "@/lib/cache/single-flight"
 
 /** Returns a project the caller owns. Ownership is enforced server-side — a
- * user can never read another user's project (spec section 26). */
+ * user can never read another user's project (spec section 26).
+ *
+ * Single-flight deduplication prevents thundering herds when many SWR clients
+ * poll the same project simultaneously (e.g. during a build).
+ */
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireUser()
     const { id } = await params
-    const project = await store.getProject(id)
-    if (!project || project.userId !== user.id)
-      return fail("UNAUTHORIZED_PROJECT_ACCESS", "We couldn't find this project.", 404)
-    return ok({ project })
+
+    const fetcher = singleFlight<typeof GET>(`api.projects.get:${id}`)
+    return fetcher(async () => {
+      const project = await store.getProject(id)
+      if (!project || project.userId !== user.id)
+        return fail("UNAUTHORIZED_PROJECT_ACCESS", "We couldn't find this project.", 404)
+      return ok({ project })
+    })
   } catch (e) {
     return handleRouteError("api.projects.get", e)
   }
@@ -56,14 +66,14 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   try {
     const user = await requireUser()
     const { id } = await params
-    console.log("[v0] api.projects.delete: request received", { id, userId: user.id })
+    logger.info("api.projects.delete", "request received", { id, userId: user.id })
     const project = await store.getProject(id)
     if (!project || project.userId !== user.id) {
-      console.log("[v0] api.projects.delete: ownership check failed", { id, userId: user.id })
+      logger.warn("api.projects.delete", "ownership check failed", { id, userId: user.id })
       return fail("UNAUTHORIZED_PROJECT_ACCESS", "We couldn't find this project.", 404)
     }
     const deleted = await store.deleteProject(id, user.id)
-    console.log("[v0] api.projects.delete: result", { id, deleted })
+    logger.info("api.projects.delete", "result", { id, deleted })
     if (!deleted) return fail("UNAUTHORIZED_PROJECT_ACCESS", "We couldn't find this project.", 404)
     return ok({ deleted: true })
   } catch (e) {

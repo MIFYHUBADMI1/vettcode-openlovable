@@ -434,9 +434,9 @@ export function DocsContent() {
 
               <h3 className="text-lg font-semibold text-foreground">How credits work</h3>
               <ul className="space-y-2">
-                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">1 credit = 1 UGX</strong> — simple, transparent pricing</span></li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Subscription & permanent credits</strong> — monthly plans plus one-time credit packs</span></li>
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">500 free credits</strong> — every new account starts with credits to try MirrorSite AI</span></li>
-                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Top up anytime</strong> — buy more credits via Mobile Money (MTN or Airtel)</span></li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Buy more anytime</strong> — purchase permanent credit packs or subscribe via Dodo Payments</span></li>
               </ul>
 
               <h3 className="text-lg font-semibold text-foreground mt-8">What costs credits</h3>

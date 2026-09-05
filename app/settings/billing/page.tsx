@@ -2,10 +2,13 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { AppHeader } from "@/components/app-header"
 import { getCurrentUser } from "@/lib/auth/session"
-import { getBalance } from "@/lib/credits/credits"
-import { store } from "@/lib/store/store"
+import { getBalance, getCreditHistory } from "@/lib/billing/credit-service"
+import { subscriptionRecordsCol } from "@/lib/db/collections"
+import { PERMANENT_CREDIT_PACKS, SUBSCRIPTION_PLANS, CREDIT_UNIT_NAME, formatUSD } from "@/lib/billing/config"
 import { cn } from "@/lib/utils"
-import { Plus } from "lucide-react"
+import { Plus, CreditCard, ArrowRight } from "lucide-react"
+import { CheckoutButton } from "@/components/billing/checkout-button"
+import { PlanCard } from "@/components/billing/plan-card"
 
 function formatCredits(amount: number): string {
   const abs = Math.abs(amount)
@@ -33,15 +36,23 @@ export default async function BillingSettingsPage() {
   const user = await getCurrentUser()
   if (!user) redirect("/login?next=%2Fsettings%2Fbilling")
 
-  const [balance, transactions] = await Promise.all([
+  const [balance, creditHistory, activeSubscription] = await Promise.all([
     getBalance(user.id),
-    store.listTransactions(user.id),
+    getCreditHistory(user.id, 50),
+    (async () => {
+      const col = await subscriptionRecordsCol()
+      return col.findOne({ userId: user.id, status: { $in: ["active", "trialing"] } })
+    })(),
   ])
+
+  const activePlan = activeSubscription
+    ? SUBSCRIPTION_PLANS.find((p) => p.id === activeSubscription.planId)
+    : null
 
   return (
     <main className="min-h-svh bg-background text-foreground">
       <AppHeader />
-      <div className="mx-auto flex max-w-4xl flex-col gap-8 px-6 py-10">
+      <div className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-10">
         <Link href="/settings" className="font-mono text-xs text-primary hover:underline">
           ← Settings
         </Link>
@@ -50,75 +61,175 @@ export default async function BillingSettingsPage() {
           <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
             Billing
           </p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight">Credits</h1>
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight">MirrorSite Billing</h1>
         </header>
 
-        {/* Credit Balance Card */}
+        {/* ── Credit Balance Card ── */}
         <section className="border border-border bg-card p-6">
           <div className="flex items-start justify-between">
             <div>
               <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-                Your Credits
+                Available {CREDIT_UNIT_NAME}
               </p>
               <p className="mt-4 text-5xl font-semibold tabular-nums">
-                {balance.toLocaleString()}
+                {balance.total.toLocaleString()}
               </p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Available credits
-              </p>
+              <div className="mt-3 flex items-center gap-6 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Subscription: </span>
+                  <span className="font-mono font-medium">{balance.subscription.toLocaleString()}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Permanent: </span>
+                  <span className="font-mono font-medium">{balance.permanent.toLocaleString()}</span>
+                </div>
+              </div>
             </div>
-            <Link
-              href="/billing/top-up"
+            <CheckoutButton
+              type="subscription"
+              productId="business"
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
             >
               <Plus className="size-4" />
-              Top Up Credits
-            </Link>
+              Buy Credits (Business)
+            </CheckoutButton>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
-            Credits are used to build, improve and customize applications with MirrorSite AI.
+            Subscription credits are consumed first and expire at the end of your billing period.
+            Permanent credits never expire and are consumed after subscription credits.
           </p>
         </section>
 
-        {/* How Credits Work */}
+        {/* ── Current Plan ── */}
+        <section className="rounded-lg border border-border bg-card/50 p-5">
+          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Current Plan
+          </p>
+          <div className="mt-3 flex items-center justify-between">
+            <div>
+              <p className="text-lg font-medium">
+                {activePlan
+                  ? activePlan.name
+                  : "No Active Subscription"}
+              </p>
+              {activePlan && (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {formatUSD(activePlan.priceUSD)}/month
+                  · {activePlan.mirrorCredits.toLocaleString()} {CREDIT_UNIT_NAME}/month
+                </p>
+              )}
+            </div>
+            <Link
+              href="/pricing#subscription-plans"
+              className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-accent transition-colors"
+            >
+              {activePlan ? "Manage Plan" : "Choose Plan"}
+              <ArrowRight className="size-3" />
+            </Link>
+          </div>
+        </section>
+
+        {/* ── How Credits Work ── */}
         <section className="rounded-lg border border-border bg-card/50 p-5">
           <p className="text-sm font-medium">How Credits Work</p>
           <div className="mt-3 grid gap-3 text-sm text-muted-foreground sm:grid-cols-3">
             <div className="flex items-start gap-2">
               <span className="font-mono text-primary">1</span>
-              <span>1 Credit = 1 UGX</span>
+              <span>Subscription credits are consumed first</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-mono text-primary">2</span>
-              <span>New users get 500 free credits</span>
+              <span>Permanent credits are consumed second</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="font-mono text-primary">3</span>
-              <span>Buy more via Mobile Money</span>
+              <span>New users get 500 free permanent credits</span>
             </div>
           </div>
         </section>
 
-        {/* Credit History */}
+        {/* ── Buy Permanent Credits ── */}
+        <section className="border border-border bg-card p-6">
+          <h2 className="text-xl font-medium">Buy Permanent Credits</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Permanent credits never expire and remain available after subscription cancellation.
+          </p>
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {PERMANENT_CREDIT_PACKS.map((pack) => (
+              <div
+                key={pack.id}
+                className={cn(
+                  "rounded-lg border border-border p-4 transition-colors hover:border-primary/50",
+                  pack.popular && "border-primary/30",
+                )}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-medium">{pack.label}</p>
+                    <p className="mt-1 text-2xl font-bold text-primary">{formatUSD(pack.priceUSD)}</p>
+                  </div>
+                  {pack.popular && (
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">Popular</span>
+                  )}
+                </div>
+                <div className="mt-3 text-xs text-muted-foreground">
+                  ${(pack.priceUSD / pack.credits).toFixed(4)} per credit
+                </div>
+                <CheckoutButton
+                  type="permanent"
+                  productId={pack.id}
+                  className="mt-3 w-full"
+                >
+                  Buy {pack.label}
+                </CheckoutButton>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Subscription Plans ── */}
+        <section className="border border-border bg-card p-6">
+          <h2 className="text-xl font-medium">Subscription Plans</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Monthly subscriptions with recurring credit grants.{" "}
+            <span className="font-medium text-primary">Business plan recommended</span> for best value.
+          </p>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {SUBSCRIPTION_PLANS.filter((p) => !p.custom).map((plan) => (
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+                activePlanId={activeSubscription?.planId}
+                isLoggedIn={true}
+              />
+            ))}
+          </div>
+        </section>
+
+        {/* ── Credit History ── */}
         <section className="border border-border bg-card p-6">
           <h2 className="text-xl font-medium">Credit History</h2>
 
-          {transactions.length > 0 ? (
+          {creditHistory.length > 0 ? (
             <div className="mt-5">
               {/* Desktop table */}
               <div className="hidden sm:block">
-                <div className="grid grid-cols-[1fr_auto_auto] gap-4 border-b border-border pb-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                <div className="grid grid-cols-[1fr_auto_auto_auto] gap-4 border-b border-border pb-3 text-xs font-mono uppercase tracking-wider text-muted-foreground">
                   <span>Description</span>
+                  <span>Type</span>
                   <span>Date</span>
                   <span className="text-right">Credits</span>
                 </div>
                 <div className="divide-y divide-border">
-                  {transactions.slice(0, 50).map((tx) => (
+                  {creditHistory.map((tx) => (
                     <div
                       key={tx.id}
-                      className="grid grid-cols-[1fr_auto_auto] gap-4 py-3 text-sm"
+                      className="grid grid-cols-[1fr_auto_auto_auto] gap-4 py-3 text-sm"
                     >
                       <span className="text-muted-foreground truncate">{tx.reason}</span>
+                      <span className="font-mono text-xs text-muted-foreground capitalize">
+                        {tx.creditType}
+                      </span>
                       <span className="font-mono text-xs text-muted-foreground whitespace-nowrap">
                         {formatDate(tx.createdAt)}
                       </span>
@@ -137,7 +248,7 @@ export default async function BillingSettingsPage() {
 
               {/* Mobile list */}
               <div className="sm:hidden space-y-3">
-                {transactions.slice(0, 50).map((tx) => (
+                {creditHistory.map((tx) => (
                   <div
                     key={tx.id}
                     className="flex items-center justify-between gap-3 py-2"
@@ -145,7 +256,7 @@ export default async function BillingSettingsPage() {
                     <div className="min-w-0">
                       <p className="text-sm truncate">{tx.reason}</p>
                       <p className="font-mono text-xs text-muted-foreground">
-                        {formatFullDate(tx.createdAt)}
+                        {tx.creditType} · {formatFullDate(tx.createdAt)}
                       </p>
                     </div>
                     <span
@@ -168,4 +279,3 @@ export default async function BillingSettingsPage() {
     </main>
   )
 }
-
