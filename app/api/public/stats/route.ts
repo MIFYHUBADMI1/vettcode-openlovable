@@ -10,7 +10,7 @@ import { singleFlight } from "@/lib/cache/single-flight"
  */
 export async function GET() {
   try {
-    const fetcher = singleFlight<typeof GET>("api.public.stats")
+    const fetcher = singleFlight<Response>("api.public.stats")
     return fetcher(async () => {
       const col = await usersCol()
       const total = await col.countDocuments({ deletedAt: { $exists: false } })

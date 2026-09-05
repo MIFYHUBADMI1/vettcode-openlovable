@@ -22,6 +22,7 @@ export type ErrorCode =
   | "RATE_LIMITED"
   | "VALIDATION"
   | "EMAIL_ALREADY_REGISTERED"
+  | "PAYMENT_UNAVAILABLE"
   | "UNKNOWN"
 
 export const ERROR_MESSAGES: Record<ErrorCode, string> = {
@@ -43,6 +44,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   RATE_LIMITED: "Too many attempts. Please wait and try again.",
   VALIDATION: "Please check your input and try again.",
   EMAIL_ALREADY_REGISTERED: "An account with this email already exists.",
+  PAYMENT_UNAVAILABLE: "Payment processing is not available right now.",
   UNKNOWN: "Something went wrong. Please try again.",
 }
 
@@ -65,6 +67,7 @@ const STATUS_BY_CODE: Record<ErrorCode, number> = {
   RATE_LIMITED: 429,
   VALIDATION: 422,
   EMAIL_ALREADY_REGISTERED: 409,
+  PAYMENT_UNAVAILABLE: 503,
   UNKNOWN: 500,
 }
 

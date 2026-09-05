@@ -30,7 +30,7 @@ export async function GET() {
     const user = await requireUser()
 
     // Single-flight wrapper: concurrent identical calls share one DB query.
-    const fetcher = singleFlight<typeof GET>(`api.me:${user.id}`)
+    const fetcher = singleFlight<Response>(`api.me:${user.id}`)
     return fetcher(async () => {
       const [balance, transactions] = await Promise.all([getBalance(user.id), store.listTransactions(user.id, 30)])
       return ok({

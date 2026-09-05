@@ -135,7 +135,8 @@ export async function POST(req: Request) {
         const session = await client.checkoutSessions.create({
           product_cart: [{ product_id: product.productId, quantity: 1 }],
           return_url: returnUrl,
-          ...(billingCurrency ? { billing_currency: billingCurrency } : {}),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ...(billingCurrency ? { billing_currency: billingCurrency as any } : {}),
           metadata: {
             userId: user.id,
             type: "subscription",
@@ -178,7 +179,8 @@ export async function POST(req: Request) {
         const session = await client.checkoutSessions.create({
           product_cart: [{ product_id: product.productId, quantity: 1 }],
           return_url: returnUrl,
-          ...(billingCurrency ? { billing_currency: billingCurrency } : {}),
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          ...(billingCurrency ? { billing_currency: billingCurrency as any } : {}),
           metadata: {
             userId: user.id,
             type: "permanent",

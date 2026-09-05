@@ -14,7 +14,7 @@ import { singleFlight } from "@/lib/cache/single-flight"
  */
 export async function GET() {
   try {
-    const fetcher = singleFlight<typeof GET>("api.credit-costs")
+    const fetcher = singleFlight<Response>("api.credit-costs")
     return fetcher(async () => {
       const configured = isTotalumConfigured()
       let providerCosts: unknown = null

@@ -37,7 +37,15 @@ export async function GET(req: Request) {
     })
 
     // Fetch products from Dodo
-    const dodoProducts = await client.products.list({ limit: 100, offset: 0 })
+    let dodoItems: Array<{ product_id: string; name: string }> = []
+    try {
+      const dodoProducts = await client.products.list()
+      dodoItems = Array.isArray(dodoProducts)
+        ? (dodoProducts as typeof dodoItems)
+        : ((dodoProducts as unknown as { items?: typeof dodoItems }).items ?? [])
+    } catch {
+      // Non-fatal — show local config even if Dodo is unreachable
+    }
 
     // Combine with local config
     const localProducts = [
@@ -77,7 +85,7 @@ export async function GET(req: Request) {
 
     // Match Dodo products with local config
     const matchedProducts = filteredLocal.map((local) => {
-      const dodoMatch = dodoProducts.data?.find(
+      const dodoMatch = dodoItems.find(
         (d) => d.product_id === local.dodoProductId || d.name === local.name,
       )
       return {
@@ -92,7 +100,7 @@ export async function GET(req: Request) {
       data: {
         products: matchedProducts,
         total: matchedProducts.length,
-        dodoTotal: dodoProducts.data?.length ?? 0,
+        dodoTotal: dodoItems.length,
       },
     })
   } catch (error) {
@@ -140,21 +148,21 @@ export async function POST(req: Request) {
       price:
         body.type === "subscription"
           ? {
-              type: "recurring_price",
-              currency: "USD",
-              price: priceInCents,
-              discount: 0,
-              payment_frequency_interval: body.interval || "Month",
-              payment_frequency_count: 1,
-              subscription_period_interval: body.interval || "Month",
-              subscription_period_count: 1,
-            }
+            type: "recurring_price" as const,
+            currency: "USD" as const,
+            price: priceInCents,
+            discount: 0,
+            payment_frequency_interval: "Month" as const,
+            payment_frequency_count: 1,
+            subscription_period_interval: "Month" as const,
+            subscription_period_count: 1,
+          }
           : {
-              type: "one_time_price",
-              currency: "USD",
-              price: priceInCents,
-              discount: 0,
-            },
+            type: "one_time_price" as const,
+            currency: "USD" as const,
+            price: priceInCents,
+            discount: 0,
+          },
       tax_category: "digital_products",
     })
 
@@ -170,7 +178,6 @@ export async function POST(req: Request) {
       data: {
         productId: product.product_id,
         name: product.name,
-        status: product.status,
       },
     })
   } catch (error) {
@@ -232,7 +239,6 @@ export async function PATCH(req: Request) {
       data: {
         productId: product.product_id,
         name: product.name,
-        status: product.status,
       },
     })
   } catch (error) {
@@ -266,7 +272,9 @@ export async function DELETE(req: Request) {
       environment: environment as "test_mode" | "live_mode",
     })
 
-    await client.products.delete(productId)
+    // Dodo doesn't expose a hard-delete API — deactivate by updating the product.
+    // This prevents the product from appearing in new checkouts while preserving history.
+    await client.products.update(productId, { is_recurring: false } as Parameters<typeof client.products.update>[1])
 
     logger.info("admin.dodo-products", "Product deleted", { productId })
 

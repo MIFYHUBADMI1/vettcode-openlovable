@@ -17,7 +17,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     const user = await requireUser()
     const { id } = await params
 
-    const fetcher = singleFlight<typeof GET>(`api.projects.get:${id}`)
+    const fetcher = singleFlight<Response>(`api.projects.get:${id}`)
     return fetcher(async () => {
       const project = await store.getProject(id)
       if (!project || project.userId !== user.id)

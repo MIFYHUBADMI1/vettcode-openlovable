@@ -17,7 +17,7 @@ export async function GET() {
   try {
     const user = await requireUser()
 
-    const fetcher = singleFlight<typeof GET>(`api.projects:${user.id}`)
+    const fetcher = singleFlight<Response>(`api.projects:${user.id}`)
     return fetcher(async () => {
       const projects = await store.listProjects(user.id)
       // Return lightweight summaries for the list view.

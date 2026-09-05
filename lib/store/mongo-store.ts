@@ -348,20 +348,5 @@ function stripMongoId<T extends { _id?: unknown }>(doc: T): Omit<T, "_id"> {
   return rest
 }
 
-/** Purge in-memory caches for a user — useful when you know the underlying
- * data changed out-of-band (e.g. admin billing actions, external payments)
- * and you need the next read to hit the DB fresh. */
-function cacheClearUser(userId: string): void {
-  store.cache.delete(`bal:${userId}`)
-  store.cache.delete(`tx:${userId}`)
-  store.cache.delete(`projs:${userId}`)
-}
-
-/** Purge a single cached entity by its cache key.
- * Used by API routes and other callers to force a fresh read. */
-function cacheDelete(key: string): void {
-  store.cache.delete(key)
-}
-
-export { STARTING_CREDITS, cacheClearUser, cacheDelete }
+export { STARTING_CREDITS }
 export { cryptoId }

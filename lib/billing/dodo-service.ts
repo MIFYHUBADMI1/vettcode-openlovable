@@ -21,6 +21,7 @@ export interface DodoProductInfo {
   priceUSD: number
   credits: number
   type: "subscription" | "permanent"
+  createdAt: number
 }
 
 // In-memory cache of created products (per process, survives HMR)
@@ -48,15 +49,11 @@ async function findProductByName(
   name: string,
 ): Promise<string | null> {
   try {
-    // Dodo API: search products by name
-    const products = await client.products.list({
-      limit: 50,
-      offset: 0,
-    })
-
-    const match = products.data?.find(
-      (p) => p.name === name && p.status === "active",
-    )
+    const products = await client.products.list()
+    // SDK returns items directly as an iterable/array, not nested under `.data`
+    const items: Array<{ product_id: string; name: string; is_recurring?: boolean }> =
+      Array.isArray(products) ? products : (products as unknown as { items: unknown[] }).items ?? []
+    const match = items.find((p) => p.name === name)
     return match?.product_id ?? null
   } catch {
     return null
@@ -197,10 +194,11 @@ export async function getOrCreateSubscriptionProduct(
       priceUSD,
       credits,
       type: "subscription",
+      createdAt: Date.now(),
     }
 
     // Cache the result
-    createdProducts.set(cacheKey, { ...productInfo, createdAt: Date.now() })
+    createdProducts.set(cacheKey, productInfo)
 
     return productInfo
   } finally {
@@ -292,10 +290,11 @@ export async function getOrCreatePermanentProduct(
       priceUSD,
       credits,
       type: "permanent",
+      createdAt: Date.now(),
     }
 
     // Cache the result
-    createdProducts.set(cacheKey, { ...productInfo, createdAt: Date.now() })
+    createdProducts.set(cacheKey, productInfo)
 
     return productInfo
   } finally {
