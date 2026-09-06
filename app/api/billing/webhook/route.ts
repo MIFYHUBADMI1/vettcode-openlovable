@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createHash } from "crypto"
 import { ObjectId } from "mongodb"
-import { webhookEventsCol, paymentRecordsCol, subscriptionRecordsCol } from "@/lib/db/collections"
+import { webhookEventsCol, paymentRecordsCol, subscriptionRecordsCol, creditLedgerCol } from "@/lib/db/collections"
 import { verifyWebhookSignature } from "@/lib/billing/dodo-webhook"
 import {
   grantCredits,
@@ -450,6 +450,35 @@ async function handleSubscriptionActive(data: Record<string, unknown> | undefine
   const now = Date.now()
   const periodEnd = nextBillingDate ? new Date(nextBillingDate).getTime() : now + 30 * 24 * 60 * 60 * 1000
 
+  // ── Plan switch guard: expire previous subscription's credits ──────────
+  // When a user switches plans, Dodo creates a new subscription and fires
+  // subscription.active for it while the old subscription may still have
+  // active credits. We must expire the old credits before granting new ones
+  // to prevent stacking (e.g. 50k Explorer + 600k Business = 650k).
+  //
+  // We only expire if the user has an active subscription record with a
+  // DIFFERENT subscription ID — a brand-new signup has no prior sub to expire.
+  const subCol = await subscriptionRecordsCol()
+  const existingSub = await subCol.findOne({
+    userId,
+    status: { $in: ["active", "trialing"] },
+    dodoSubscriptionId: { $ne: subscriptionId },
+  })
+  if (existingSub) {
+    logger.info("webhook.dodo", "Plan switch detected — expiring previous subscription credits", {
+      userId,
+      previousSubscriptionId: existingSub.dodoSubscriptionId,
+      newSubscriptionId: subscriptionId,
+    })
+    await expireSubscriptionCredits({
+      userId,
+      subscriptionId: existingSub.dodoSubscriptionId,
+      // No periodStart — this is an early expiration on plan switch, not a
+      // natural renewal. Use the stable subscriptionId-only key.
+      metadata: { event: "plan_switch", newSubscriptionId: subscriptionId },
+    })
+  }
+
   // Grant subscription credits via CreditService
   const result = await grantSubscriptionCredits({
     userId,
@@ -518,6 +547,29 @@ async function handleSubscriptionRenewed(data: Record<string, unknown> | undefin
 
   const now = Date.now()
   const periodEnd = nextBillingDate ? new Date(nextBillingDate).getTime() : now + 30 * 24 * 60 * 60 * 1000
+
+  // ── Duplicate-event guard ──────────────────────────────────────────────
+  // When a user switches plans, Dodo fires subscription.active (handled
+  // above) AND sometimes subscription.renewed for the same new subscription
+  // within seconds. The grant idempotency key is sub_grant_{subId}_{periodStart}.
+  // If a grant for this subscription + approximate period already exists,
+  // this renewed event is a duplicate — skip the expire+grant to prevent
+  // wiping credits that were just correctly granted by subscription.active.
+  const grantKeyPrefix = `sub_grant_${subscriptionId}_`
+  const ledger = await creditLedgerCol()
+  const recentGrant = await ledger.findOne({
+    idempotencyKey: { $regex: `^${grantKeyPrefix}` },
+    userId,
+    createdAt: { $gte: now - 5 * 60 * 1000 }, // within last 5 minutes
+  })
+  if (recentGrant) {
+    logger.info("webhook.dodo", "subscription.renewed: skipping — grant already recorded (plan switch duplicate)", {
+      userId,
+      subscriptionId,
+      existingKey: recentGrant.idempotencyKey,
+    })
+    return
+  }
 
   // Expire previous period's subscription credits
   await expireSubscriptionCredits({
