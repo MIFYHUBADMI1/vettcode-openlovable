@@ -176,7 +176,7 @@ export default async function BillingSettingsPage() {
             }
           </p>
           {/* 5 columns: Free + Explorer + Starter + Business + Professional */}
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 items-start">
             {SUBSCRIPTION_PLANS.filter((p) => !p.custom).map((plan) => (
               <PlanCard
                 key={plan.id}

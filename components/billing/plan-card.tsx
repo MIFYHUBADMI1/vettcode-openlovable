@@ -89,7 +89,7 @@ export function PlanCard({
           }
         }}
         className={cn(
-          "relative flex flex-col rounded-xl border p-6 transition-all duration-150 outline-none",
+          "relative rounded-xl border p-6 transition-all duration-150 outline-none",
           !isActive && "cursor-pointer focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           // Base state
           !isHighlighted && "border-border bg-card hover:border-primary/40 hover:shadow-sm",
@@ -150,7 +150,7 @@ export function PlanCard({
         </div>
 
         {/* Included features */}
-        <ul className="mt-5 flex-1 space-y-2.5">
+        <ul className="mt-5 space-y-2.5">
           {plan.features.map((feature) => (
             <li key={feature} className="flex items-start gap-2 text-sm">
               {feature.startsWith("Everything in") ? (
