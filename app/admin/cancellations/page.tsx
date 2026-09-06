@@ -1,8 +1,11 @@
-﻿import { redirect } from "next/navigation"
+﻿"use client"
+
+import { useState } from "react"
 import Link from "next/link"
-import { getCurrentUser } from "@/lib/auth/session"
-import { getMongoClient } from "@/lib/db/mongodb"
-import { ArrowLeft, TrendingDown, Users, MessageSquare } from "lucide-react"
+import useSWR from "swr"
+import { ArrowLeft, TrendingDown, Users, MessageSquare, Loader2, AlertTriangle } from "lucide-react"
+import { AdminNav } from "@/components/admin-nav"
+import { jsonFetcher } from "@/lib/client/api"
 
 interface CancellationFeedback {
   _id: string
@@ -12,8 +15,16 @@ interface CancellationFeedback {
   planName: string
   reason: string
   feedback: string | null
-  createdAt: Date
+  createdAt: string
   timestamp: number
+}
+
+interface CancellationStats {
+  feedbacks: CancellationFeedback[]
+  totalCancellations: number
+  reasonCounts: Record<string, number>
+  topReason: [string, number] | null
+  withFeedbackCount: number
 }
 
 const REASON_LABELS: Record<string, string> = {
@@ -27,7 +38,7 @@ const REASON_LABELS: Record<string, string> = {
   other: "Other",
 }
 
-function formatDate(date: Date): string {
+function formatDate(date: string): string {
   return new Date(date).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
@@ -37,53 +48,51 @@ function formatDate(date: Date): string {
   })
 }
 
-export default async function CancellationsPage() {
-  const user = await getCurrentUser()
+export default function CancellationsPage() {
+  const { data, error, isLoading } = useSWR<CancellationStats>(
+    "/api/admin/cancellations",
+    jsonFetcher,
+  )
 
-  // Check if user is admin
-  if (!user || user.role !== "admin") {
-    redirect("/")
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    )
   }
 
-  // Fetch cancellation feedback
-  const client = await getMongoClient()
-  const db = client.db()
-  const collection = db.collection("cancellation_feedback")
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle className="mx-auto size-12 text-destructive" />
+          <p className="mt-4 text-sm text-muted-foreground">
+            Failed to load cancellations
+          </p>
+        </div>
+      </div>
+    )
+  }
 
-  const feedbacks = (await collection
-    .find({})
-    .sort({ timestamp: -1 })
-    .limit(100)
-    .toArray()) as unknown as CancellationFeedback[]
-
-  // Calculate stats
-  const totalCancellations = feedbacks.length
-  const reasonCounts = feedbacks.reduce((acc, fb) => {
-    acc[fb.reason] = (acc[fb.reason] || 0) + 1
-    return acc
-  }, {} as Record<string, number>)
-
-  const topReason = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1])[0]
+  const feedbacks = data?.feedbacks || []
+  const totalCancellations = data?.totalCancellations || 0
+  const reasonCounts = data?.reasonCounts || {}
+  const topReason = data?.topReason || null
+  const withFeedbackCount = data?.withFeedbackCount || 0
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b border-border bg-card">
-        <div className="mx-auto max-w-7xl px-6 py-6">
-          <Link
-            href="/admin"
-            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="size-4" />
-            Back to Admin
-          </Link>
-          <h1 className="mt-4 text-3xl font-semibold">Subscription Cancellations</h1>
+      <AdminNav />
+      
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        <div className="mb-6">
+          <h1 className="text-3xl font-semibold">Subscription Cancellations</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             View and analyze cancellation feedback from users
           </p>
         </div>
-      </div>
 
-      <div className="mx-auto max-w-7xl px-6 py-8">
         {/* Stats Cards */}
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-lg border border-border bg-card p-4">
@@ -112,39 +121,39 @@ export default async function CancellationsPage() {
               <MessageSquare className="size-4" />
               With Feedback
             </div>
-            <p className="mt-2 text-3xl font-semibold">
-              {feedbacks.filter((f) => f.feedback).length}
-            </p>
+            <p className="mt-2 text-3xl font-semibold">{withFeedbackCount}</p>
           </div>
         </div>
 
         {/* Reason Breakdown */}
-        <div className="mt-6 rounded-lg border border-border bg-card p-6">
-          <h2 className="font-semibold">Cancellation Reasons Breakdown</h2>
-          <div className="mt-4 space-y-3">
-            {Object.entries(reasonCounts)
-              .sort((a, b) => b[1] - a[1])
-              .map(([reason, count]) => {
-                const percentage = ((count / totalCancellations) * 100).toFixed(1)
-                return (
-                  <div key={reason}>
-                    <div className="flex items-center justify-between text-sm">
-                      <span>{REASON_LABELS[reason] || reason}</span>
-                      <span className="font-medium">
-                        {count} ({percentage}%)
-                      </span>
+        {Object.keys(reasonCounts).length > 0 && (
+          <div className="mt-6 rounded-lg border border-border bg-card p-6">
+            <h2 className="font-semibold">Cancellation Reasons Breakdown</h2>
+            <div className="mt-4 space-y-3">
+              {Object.entries(reasonCounts)
+                .sort((a, b) => b[1] - a[1])
+                .map(([reason, count]) => {
+                  const percentage = ((count / totalCancellations) * 100).toFixed(1)
+                  return (
+                    <div key={reason}>
+                      <div className="flex items-center justify-between text-sm">
+                        <span>{REASON_LABELS[reason] || reason}</span>
+                        <span className="font-medium">
+                          {count} ({percentage}%)
+                        </span>
+                      </div>
+                      <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full bg-primary"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted">
-                      <div
-                        className="h-full bg-primary"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Feedback List */}
         <div className="mt-6 rounded-lg border border-border bg-card">
@@ -158,7 +167,7 @@ export default async function CancellationsPage() {
               </div>
             ) : (
               feedbacks.map((fb) => (
-                <div key={fb._id.toString()} className="p-4 hover:bg-accent/50">
+                <div key={fb._id} className="p-4 hover:bg-accent/50">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3">
