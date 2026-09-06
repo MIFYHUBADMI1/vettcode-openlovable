@@ -17,6 +17,25 @@ export interface UserOnboarding {
   completedAt: number
 }
 
+/**
+ * A single credit bucket — one entry per subscription grant or plan switch.
+ * Multiple buckets can coexist; they are consumed oldest-expiry-first.
+ */
+export interface CreditBucket {
+  /** The Dodo subscription ID that created this bucket. */
+  subscriptionId: string
+  /** The plan ID (e.g. "explorer", "business"). */
+  planId: string
+  /** Credits remaining in this bucket. */
+  amount: number
+  /** Original amount granted (for reference). */
+  originalAmount: number
+  /** When this bucket's credits expire (epoch ms). */
+  expiresAt: number
+  /** When this bucket was created (epoch ms). */
+  createdAt: number
+}
+
 export interface UserDoc {
   _id: ObjectId
   id: string // string mirror of _id for callers that expect a string id
@@ -38,6 +57,13 @@ export interface UserDoc {
   subscriptionPeriodStart?: number
   /** End of the current subscription billing period (epoch ms). */
   subscriptionPeriodEnd?: number
+  /**
+   * Individual subscription credit buckets, each with its own expiry.
+   * On plan switch, new bucket is pushed instead of replacing the old one.
+   * Consumed oldest-expiry-first. The sum of all bucket.amount values
+   * equals subscriptionCredits (kept in sync atomically).
+   */
+  creditBuckets?: CreditBucket[]
   isAdmin?: boolean
   onboarding?: UserOnboarding
   suspended?: boolean

@@ -225,10 +225,14 @@ export async function grantCredits(params: {
 // ─── Credit Consumption ──────────────────────────────────────────────────────
 
 /**
- * Consume credits from a user's balance, following consumption order:
- * subscription credits first, then permanent credits.
+ * Consume credits from a user's balance.
  *
- * Returns the actual amounts consumed from each bucket.
+ * Order:
+ * 1. Subscription credit buckets — oldest expiry date consumed first so
+ *    credits closest to expiring are used before newer ones.
+ * 2. Permanent credits — consumed after all subscription buckets are empty.
+ *
+ * Returns the actual amounts consumed from each type.
  */
 export async function consumeCredits(params: {
   userId: string
@@ -244,6 +248,9 @@ export async function consumeCredits(params: {
   permanentConsumed: number
 }> {
   const users = await usersCol()
+  const user = await users.findOne({ id: params.userId })
+  if (!user) return { success: false, subscriptionConsumed: 0, permanentConsumed: 0 }
+
   const balance = await getBalance(params.userId)
 
   if (balance.total < params.amount) {
@@ -255,20 +262,43 @@ export async function consumeCredits(params: {
     return { success: false, subscriptionConsumed: 0, permanentConsumed: 0 }
   }
 
-  // Calculate consumption split
+  // ── Sort buckets oldest-expiry-first ─────────────────────────────────────
+  const rawBuckets: import("@/lib/types/db").CreditBucket[] = user.creditBuckets ?? []
+  const sortedBuckets = [...rawBuckets].sort((a, b) => a.expiresAt - b.expiresAt)
+
   let remaining = params.amount
   let subConsumed = 0
   let permConsumed = 0
 
-  for (const creditType of CONSUMPTION_ORDER) {
+  // Track how much to deduct from each bucket (for the DB update)
+  const bucketDeductions: Array<{ subscriptionId: string; deduct: number; newAmount: number }> = []
+
+  for (const bucket of sortedBuckets) {
     if (remaining <= 0) break
-    const available = creditType === "subscription" ? balance.subscription : balance.permanent
-    const toConsume = Math.min(remaining, available)
+    const toConsume = Math.min(remaining, bucket.amount)
     if (toConsume > 0) {
-      if (creditType === "subscription") subConsumed = toConsume
-      else permConsumed = toConsume
+      subConsumed += toConsume
       remaining -= toConsume
+      bucketDeductions.push({
+        subscriptionId: bucket.subscriptionId,
+        deduct: toConsume,
+        newAmount: bucket.amount - toConsume,
+      })
     }
+  }
+
+  // If subscription buckets are exhausted, consume from permanent
+  if (remaining > 0 && balance.permanent > 0) {
+    const toConsume = Math.min(remaining, balance.permanent)
+    permConsumed += toConsume
+    remaining -= toConsume
+  }
+
+  // Fallback: no buckets but has legacy subscriptionCredits — consume from flat field
+  if (remaining > 0 && rawBuckets.length === 0 && balance.subscription > 0) {
+    const toConsume = Math.min(remaining, balance.subscription)
+    subConsumed += toConsume
+    remaining -= toConsume
   }
 
   const client = (await import("@/lib/db/mongodb")).getMongoClient
@@ -279,7 +309,7 @@ export async function consumeCredits(params: {
     let success = false
 
     await session.withTransaction(async () => {
-      // Check for idempotency
+      // Idempotency check
       const existingLedger = await (await creditLedgerCol()).findOne(
         { idempotencyKey: params.idempotencyKey },
         { session },
@@ -289,9 +319,7 @@ export async function consumeCredits(params: {
         return
       }
 
-      // Update user balance with atomic $gte check to prevent double-spend
-      // The filter ensures credits >= amount BEFORE the $inc applies,
-      // preventing two concurrent requests from both succeeding.
+      // Build the flat-field update
       const filter: Record<string, unknown> = { id: params.userId, credits: { $gte: params.amount } }
       const updateOps: Record<string, unknown> = {
         $inc: { credits: -params.amount },
@@ -306,9 +334,31 @@ export async function consumeCredits(params: {
 
       const result = await users.updateOne(filter, updateOps, { session })
       if (result.modifiedCount === 0) {
-        // Insufficient credits at atomic check time — another request consumed them
         success = false
         return
+      }
+
+      // Update individual bucket amounts (set each bucket's new amount)
+      // We do this as a separate update since MongoDB doesn't support
+      // updating array elements by a filter in the same operation.
+      if (bucketDeductions.length > 0) {
+        for (const { subscriptionId, newAmount, deduct } of bucketDeductions) {
+          if (newAmount <= 0) {
+            // Bucket fully consumed — remove it
+            await users.updateOne(
+              { id: params.userId },
+              { $pull: { creditBuckets: { subscriptionId } } as Record<string, unknown> },
+              { session },
+            )
+          } else {
+            // Partially consumed — update the amount
+            await users.updateOne(
+              { id: params.userId, "creditBuckets.subscriptionId": subscriptionId },
+              { $inc: { "creditBuckets.$.amount": -deduct } },
+              { session },
+            )
+          }
+        }
       }
 
       // Record ledger entries
@@ -350,11 +400,12 @@ export async function consumeCredits(params: {
     })
 
     if (success) {
-      logger.info("credit.consume", "Credits consumed", {
+      logger.info("credit.consume", "Credits consumed (oldest-first)", {
         userId: params.userId,
         amount: params.amount,
         subscriptionConsumed: subConsumed,
         permanentConsumed: permConsumed,
+        bucketsUsed: bucketDeductions.length,
         transactionType: params.transactionType,
       })
     }
@@ -429,6 +480,11 @@ export async function releaseReservation(params: {
 /**
  * Grant subscription credits for a new billing period.
  * Idempotent per subscription per period.
+ *
+ * Instead of overwriting a single credit pool, pushes a new CreditBucket so
+ * that credits from different plans/periods coexist and can be consumed
+ * oldest-expiry-first. The flat subscriptionCredits field is kept in sync
+ * for backward-compatibility.
  */
 export async function grantSubscriptionCredits(params: {
   userId: string
@@ -439,12 +495,22 @@ export async function grantSubscriptionCredits(params: {
   periodEnd: number
   metadata?: Record<string, unknown>
 }): Promise<boolean> {
+  const idempotencyKey = `sub_grant_${params.subscriptionId}_${params.periodStart}`
+
+  // Idempotency check first — don't double-grant
+  const ledger = await creditLedgerCol()
+  const existing = await ledger.findOne({ idempotencyKey })
+  if (existing) {
+    logger.info("credit.grant", "Subscription grant already recorded (idempotent)", { idempotencyKey })
+    return true
+  }
+
   const result = await grantCredits({
     userId: params.userId,
     creditType: "subscription",
     amount: params.amount,
     transactionType: "subscription_grant",
-    idempotencyKey: `sub_grant_${params.subscriptionId}_${params.periodStart}`,
+    idempotencyKey,
     referenceType: "subscription",
     referenceId: params.subscriptionId,
     metadata: {
@@ -456,15 +522,26 @@ export async function grantSubscriptionCredits(params: {
   })
 
   if (result.success) {
-    // Update user's subscription period
     const users = await usersCol()
+    const now = Date.now()
+    const newBucket: import("@/lib/types/db").CreditBucket = {
+      subscriptionId: params.subscriptionId,
+      planId: params.planId,
+      amount: params.amount,
+      originalAmount: params.amount,
+      expiresAt: params.periodEnd,
+      createdAt: now,
+    }
+    // Push the new bucket and update the period timestamps.
+    // subscriptionCredits is already incremented by grantCredits above.
     await users.updateOne(
       { id: params.userId },
       {
+        $push: { creditBuckets: newBucket } as Record<string, unknown>,
         $set: {
           subscriptionPeriodStart: params.periodStart,
           subscriptionPeriodEnd: params.periodEnd,
-          updatedAt: Date.now(),
+          updatedAt: now,
         },
       },
     )
@@ -474,18 +551,14 @@ export async function grantSubscriptionCredits(params: {
 }
 
 /**
- * Expire subscription credits at the end of a billing period.
- * Directly debits the subscription bucket without going through normal
- * consumption logic (which would consume subscription first anyway, but
- * this is more explicit and correct).
+ * Expire subscription credits for a specific subscription.
  *
- * @param periodStart - The start timestamp (ms) of the NEW billing period
- *   being activated. Used to build a stable, time-independent idempotency
- *   key of the form `sub_expire_<id>_<dayEpoch>` so that webhook retries
- *   within the same billing period are safely deduplicated regardless of
- *   which minute they arrive. When omitted (subscription expiration, not
- *   renewal) the key is simply `sub_expire_<id>` since the sub won't
- *   be renewed again.
+ * With the bucket model: removes the matching CreditBucket from the user's
+ * creditBuckets array and decrements subscriptionCredits by that bucket's
+ * remaining amount. If no matching bucket exists (e.g. older account without
+ * buckets), falls back to expiring the full subscription balance.
+ *
+ * Idempotent — safe to call multiple times with the same params.
  */
 export async function expireSubscriptionCredits(params: {
   userId: string
@@ -493,54 +566,65 @@ export async function expireSubscriptionCredits(params: {
   periodStart?: number
   metadata?: Record<string, unknown>
 }): Promise<boolean> {
+  const users = await usersCol()
+  const user = await users.findOne({ id: params.userId })
+  if (!user) return false
+
+  // ── Bucket-aware path ────────────────────────────────────────────────────
+  const buckets: import("@/lib/types/db").CreditBucket[] = user.creditBuckets ?? []
+  const matchingBucket = buckets.find((b) => b.subscriptionId === params.subscriptionId)
+
+  // Amount to expire: use the matching bucket's remaining amount if found,
+  // otherwise fall back to the entire subscription balance (legacy accounts).
   const balance = await getBalance(params.userId)
   if (balance.subscription <= 0) return true
 
-  const amount = balance.subscription
-  const users = await usersCol()
-  const client = (await import("@/lib/db/mongodb")).getMongoClient
-  const mongoClient = await client()
-  const session = mongoClient.startSession()
+  const amount = matchingBucket
+    ? Math.min(matchingBucket.amount, balance.subscription)
+    : balance.subscription
 
-  // Build a stable idempotency key that does NOT depend on the current clock
-  // minute. For renewals, key on day-epoch of the new period start so retries
-  // within the same billing cycle always produce the same key. For plain
-  // expirations there is no future renewal, so the subscriptionId alone is unique.
+  if (amount <= 0) return true
+
+  // Stable idempotency key
   const idempotencyKey = params.periodStart
     ? `sub_expire_${params.subscriptionId}_${Math.floor(params.periodStart / 86400000)}`
     : `sub_expire_${params.subscriptionId}`
+
+  const client = (await import("@/lib/db/mongodb")).getMongoClient
+  const mongoClient = await client()
+  const session = mongoClient.startSession()
 
   try {
     let success = false
 
     await session.withTransaction(async () => {
       // Idempotency check
-      const existingLedger = await (await creditLedgerCol()).findOne(
-        { idempotencyKey },
-        { session },
-      )
+      const existingLedger = await (await creditLedgerCol()).findOne({ idempotencyKey }, { session })
       if (existingLedger) {
         success = true
         return
       }
 
-      // Directly debit subscription credits
+      // Debit subscriptionCredits by the bucket amount (not the full balance)
       const filter = { id: params.userId, subscriptionCredits: { $gte: amount } }
-      const result = await users.updateOne(
-        filter,
-        {
-          $inc: { subscriptionCredits: -amount, credits: -amount },
-          $set: { updatedAt: Date.now() },
-        },
-        { session },
-      )
+      const updateOps: Record<string, unknown> = {
+        $inc: { subscriptionCredits: -amount, credits: -amount },
+        $set: { updatedAt: Date.now() },
+      }
 
+      // Remove the matching bucket from the array if it existed
+      if (matchingBucket) {
+        (updateOps as Record<string, unknown>).$pull = {
+          creditBuckets: { subscriptionId: params.subscriptionId },
+        }
+      }
+
+      const result = await users.updateOne(filter, updateOps, { session })
       if (result.modifiedCount === 0) {
         success = false
         return
       }
 
-      // Record ledger entry
       await recordLedgerEntry({
         userId: params.userId,
         creditType: "subscription",
@@ -550,9 +634,13 @@ export async function expireSubscriptionCredits(params: {
         referenceType: "subscription",
         referenceId: params.subscriptionId,
         balanceBefore: balance.subscription,
-        balanceAfter: 0,
+        balanceAfter: balance.subscription - amount,
         idempotencyKey,
-        metadata: { ...params.metadata, expiredAmount: amount },
+        metadata: {
+          ...params.metadata,
+          expiredAmount: amount,
+          hadBucket: Boolean(matchingBucket),
+        },
       })
 
       success = true

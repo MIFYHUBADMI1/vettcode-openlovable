@@ -121,6 +121,9 @@ export async function ensureIndexes() {
     users.createIndex({ email: 1 }, { unique: true }),
     users.createIndex({ googleId: 1 }, { sparse: true }),
     users.createIndex({ referralCode: 1 }, { sparse: true }),
+    // Supports lookups and expiry queries on individual credit buckets
+    users.createIndex({ "creditBuckets.subscriptionId": 1 }, { sparse: true }),
+    users.createIndex({ "creditBuckets.expiresAt": 1 }, { sparse: true }),
     // Supports the admin "top users by credits" query: find non-deleted users
     // sorted by credits descending — without this index it requires a full
     // collection scan + in-memory sort.
