@@ -116,6 +116,14 @@ export async function POST(req: Request) {
           )
         }
 
+        // The Free plan has no Dodo product — it's automatically assigned to new accounts.
+        if (plan.priceUSD === 0 || plan.id === "free") {
+          return NextResponse.json(
+            { ok: false, error: { code: "INVALID_REQUEST", message: "The Free plan cannot be purchased. It is automatically applied to all new accounts." } },
+            { status: 400 },
+          )
+        }
+
         // Auto-provision the product if not configured
         const product = await getOrCreateSubscriptionProduct(
           plan.id,
@@ -203,13 +211,23 @@ export async function POST(req: Request) {
       releaseSessionLock?.()
     }
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    const isConfig = message.includes("not configured") || message.includes("PAYMENT_UNAVAILABLE")
     logger.error("checkout", "Failed to create checkout session", {
-      error: error instanceof Error ? error.message : String(error),
-      userId: (error instanceof Error && error.message.includes("UNAUTHORIZED")) ? "unknown" : "unknown",
+      error: message,
+      isConfigError: isConfig,
     })
     return NextResponse.json(
-      { ok: false, error: { code: "INTERNAL_ERROR", message: "Failed to create checkout session" } },
-      { status: 500 },
+      {
+        ok: false,
+        error: {
+          code: isConfig ? "PAYMENT_UNAVAILABLE" : "INTERNAL_ERROR",
+          message: isConfig
+            ? "Payment processing is not available right now. Please try again later."
+            : "Failed to create checkout session. Please try again.",
+        },
+      },
+      { status: isConfig ? 503 : 500 },
     )
   }
 }
