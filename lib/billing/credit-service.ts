@@ -358,13 +358,6 @@ export async function grantCredits(params: {
  * }
  * ```
  */
- * Order:
- * 1. Subscription credit buckets — oldest expiry date consumed first so
-  * credits closest to expiring are used before newer ones.
- * 2. Permanent credits — consumed after all subscription buckets are empty.
- *
- * Returns the actual amounts consumed from each type.
- */
 export async function consumeCredits(params: {
   userId: string
   amount: number
