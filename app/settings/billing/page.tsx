@@ -134,31 +134,32 @@ export default async function BillingSettingsPage() {
               )}
               {currentPeriodEnd && (
                 <>
-                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Calendar className="size-3 shrink-0" />
-                  Current period ends{" "}
-                  <span className="font-medium text-foreground">
-                    {formatPeriodEnd(currentPeriodEnd)}
-                  </span>
-                  {" "}— your credits remain available until then.
-                </p>
-                {activeSubscription && !activeSubscription.cancelAtPeriodEnd && (
-                  <div className="mt-2">
-                    <CancelSubscriptionButton
-                      planName={activePlan.name}
-                      periodEnd={currentPeriodEnd}
-                      monthlyCredits={activePlan.mirrorCredits}
-                      priceUSD={activePlan.priceUSD}
-                    />
-                  </div>
-                )}
-                {activeSubscription?.cancelAtPeriodEnd && (
-                  <div className="mt-2 rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
-                    <strong>Cancellation scheduled:</strong> Your subscription will end on{" "}
-                    {formatPeriodEnd(currentPeriodEnd)}. You'll retain access until then.
-                  </div>
-                )}
+                  <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Calendar className="size-3 shrink-0" />
+                    Current period ends{" "}
+                    <span className="font-medium text-foreground">
+                      {formatPeriodEnd(currentPeriodEnd)}
+                    </span>
+                    {" "}— your credits remain available until then.
+                  </p>
+                  {activeSubscription && !activeSubscription.cancelAtPeriodEnd && (
+                    <div className="mt-2">
+                      <CancelSubscriptionButton
+                        planName={activePlan.name}
+                        periodEnd={currentPeriodEnd}
+                        monthlyCredits={activePlan.mirrorCredits}
+                        priceUSD={activePlan.priceUSD}
+                      />
+                    </div>
+                  )}
+                  {activeSubscription?.cancelAtPeriodEnd && (
+                    <div className="mt-2 rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
+                      <strong>Cancellation scheduled:</strong> Your subscription will end on{" "}
+                      {formatPeriodEnd(currentPeriodEnd)}. You'll retain access until then.
+                    </div>
+                  )}
               </>
+            )}
             </div>
           </div>
         </section>
