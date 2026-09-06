@@ -149,6 +149,7 @@ export default async function BillingSettingsPage() {
                         periodEnd={currentPeriodEnd}
                         monthlyCredits={activePlan.mirrorCredits}
                         priceUSD={activePlan.priceUSD}
+                        currentPlanId={activePlanId}
                       />
                     </div>
                   )}
