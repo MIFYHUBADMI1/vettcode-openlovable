@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server"
 import { requireAdmin } from "@/lib/auth/session"
 import { ok, handleRouteError } from "@/lib/api/respond"
-import { usersCol, creditTransactionsCol, topupsCol, projectsCol, buildRunsCol } from "@/lib/db/collections"
+import { usersCol, creditLedgerCol, topupsCol, projectsCol, buildRunsCol } from "@/lib/db/collections"
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") ?? "0", 10)
 
     const users = await usersCol()
-    const txCol = await creditTransactionsCol()
+    const ledgerCol = await creditLedgerCol()
     const topUps = await topupsCol()
     const projects = await projectsCol()
     const buildRuns = await buildRunsCol()
@@ -41,21 +41,21 @@ export async function GET(request: NextRequest) {
     // Enrich each user with billing data
     const enrichedUsers = await Promise.all(
       userList.map(async (user) => {
-        // Credit transactions summary
-        const [grantAgg, chargeAgg, refundAgg, recentTx] = await Promise.all([
-          txCol.aggregate([
-            { $match: { userId: user.id, amount: { $gt: 0 } } },
+        // Credit ledger summary - use ledger direction to determine grants vs charges
+        const [grantAgg, chargeAgg, refundAgg, recentEntries] = await Promise.all([
+          ledgerCol.aggregate([
+            { $match: { userId: user.id, direction: "credit" } },
             { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } },
           ]).toArray(),
-          txCol.aggregate([
-            { $match: { userId: user.id, amount: { $lt: 0 } } },
-            { $group: { _id: null, total: { $sum: { $abs: "$amount" } }, count: { $sum: 1 } } },
+          ledgerCol.aggregate([
+            { $match: { userId: user.id, direction: "debit" } },
+            { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } },
           ]).toArray(),
-          txCol.aggregate([
-            { $match: { userId: user.id, type: "refund" } },
-            { $group: { _id: null, total: { $sum: { $abs: "$amount" } }, count: { $sum: 1 } } },
+          ledgerCol.aggregate([
+            { $match: { userId: user.id, transactionType: { $in: ["refund", "build_refund"] } } },
+            { $group: { _id: null, total: { $sum: "$amount" }, count: { $sum: 1 } } },
           ]).toArray(),
-          txCol.find({ userId: user.id }).sort({ createdAt: -1 }).limit(5).toArray(),
+          ledgerCol.find({ userId: user.id }).sort({ createdAt: -1 }).limit(5).toArray(),
         ])
 
         // Top-up history
@@ -134,12 +134,12 @@ export async function GET(request: NextRequest) {
             totalCreditsSpent: totalBuildCredits[0]?.total ?? 0,
             successRate: totalBuilds > 0 ? Math.round((successfulBuilds / totalBuilds) * 100) : 0,
           },
-          recentTransactions: recentTx.map((tx) => ({
-            id: tx.id,
-            type: tx.type,
-            amount: tx.amount,
-            reason: tx.reason,
-            createdAt: tx.createdAt,
+          recentTransactions: recentEntries.map((entry) => ({
+            id: entry.id,
+            type: entry.transactionType,
+            amount: entry.direction === "credit" ? entry.amount : -entry.amount,
+            reason: entry.metadata?.reason as string || entry.transactionType,
+            createdAt: entry.createdAt,
           })),
         }
       })

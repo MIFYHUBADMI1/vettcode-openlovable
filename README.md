@@ -72,11 +72,38 @@ MirrorSite AI is a web-based platform built by **ATAI — Advanced Technologies 
 
 ## Credit System
 
-- MirrorSite Credits are consumed when building applications
-- 500 free permanent credits on account verification
-- Subscription plans: Explorer ($12/mo), Starter ($79/mo), Business ($139/mo), Professional ($219/mo), Enterprise ($499+/mo)
-- Permanent credit packs available for one-time purchase via Dodo Payments
-- Subscription credits consumed first, permanent credits consumed second
+MirrorSite uses a unified credit system with double-entry ledger accounting to track all credit operations.
+
+### Credit Types
+
+- **Subscription Credits:** Granted as part of a subscription plan, expire at the end of the billing period
+- **Permanent Credits:** Never expire, purchased via one-time credit packs or earned through referrals
+
+### Credit Consumption Order
+
+When you perform an action that consumes credits, the system automatically uses your credits in this order:
+
+1. **Subscription credits first** (oldest expiring first) - maximizes value by using time-limited credits before they expire
+2. **Permanent credits second** - preserved as long-term balance since they never expire
+
+This ensures you always get maximum value from your subscription credits while maintaining a permanent credit reserve.
+
+### Getting Credits
+
+- **Welcome Bonus:** 500 free permanent credits on account verification
+- **Subscription Plans:** Monthly recurring subscription credits (Explorer: 10k, Starter: 100k, Business: 250k, Professional: 500k, Enterprise: 1M+)
+- **Credit Packs:** One-time purchase of permanent credits via Dodo Payments
+- **Referral Program:** Earn permanent credits by referring new users
+
+### Subscription Plans
+
+| Plan | Monthly Price | Subscription Credits | Best For |
+|------|--------------|---------------------|----------|
+| Explorer | $12 | 10,000 credits/mo | Individual developers exploring the platform |
+| Starter | $79 | 100,000 credits/mo | Small teams and early-stage projects |
+| Business | $139 | 250,000 credits/mo | Growing businesses with regular deployments |
+| Professional | $219 | 500,000 credits/mo | Professional teams with high usage |
+| Enterprise | $499+ | 1M+ credits/mo | Large organizations with custom requirements |
 
 ### Credit Costs
 

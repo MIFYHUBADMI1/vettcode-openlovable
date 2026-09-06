@@ -5,7 +5,6 @@ import {
   paymentRecordsCol,
   subscriptionRecordsCol,
   creditLedgerCol,
-  creditTransactionsCol,
 } from "@/lib/db/collections"
 
 /**
@@ -39,12 +38,11 @@ export async function GET() {
     const issues: ReconciliationIssue[] = []
     const now = Date.now()
 
-    const [payCol, subCol, ledgerCol, users, txCol] = await Promise.all([
+    const [payCol, subCol, ledgerCol, users] = await Promise.all([
       paymentRecordsCol(),
       subscriptionRecordsCol(),
       creditLedgerCol(),
       usersCol(),
-      creditTransactionsCol(),
     ])
 
     // ── 1. Check for successful payments without credit grants ──
@@ -56,42 +54,28 @@ export async function GET() {
       .toArray()
 
     // Batch: collect all payment IDs that have a userId+creditsGranted, then
-    // fetch all matching ledger entries and legacy transactions in two queries
-    // instead of 2 × N sequential round-trips.
+    // fetch all matching ledger entries in one query instead of N sequential
+    // round-trips.
     const paymentsToCheck = successfulPayments.filter(
       (p) => p.userId && p.creditsGranted,
     )
     const dodoPaymentIds = paymentsToCheck.map((p) => p.dodoPaymentId)
 
-    const [existingLedgerGrants, existingLegacyGrants] = await Promise.all([
-      dodoPaymentIds.length
-        ? ledgerCol
-          .find(
-            { transactionType: "credit_purchase", "metadata.dodoPaymentId": { $in: dodoPaymentIds } },
-            { projection: { "metadata.dodoPaymentId": 1, _id: 0 } },
-          )
-          .toArray()
-        : Promise.resolve([]),
-      dodoPaymentIds.length
-        ? txCol
-          .find(
-            { "metadata.paymentId": { $in: dodoPaymentIds } },
-            { projection: { "metadata.paymentId": 1, _id: 0 } },
-          )
-          .toArray()
-        : Promise.resolve([]),
-    ])
+    const existingLedgerGrants = dodoPaymentIds.length
+      ? await ledgerCol
+        .find(
+          { transactionType: "credit_purchase", "metadata.dodoPaymentId": { $in: dodoPaymentIds } },
+          { projection: { "metadata.dodoPaymentId": 1, _id: 0 } },
+        )
+        .toArray()
+      : []
 
     const ledgerGrantedIds = new Set(
       existingLedgerGrants.map((g) => g.metadata?.dodoPaymentId as string).filter(Boolean),
     )
-    const legacyGrantedIds = new Set(
-      existingLegacyGrants.map((g) => g.metadata?.paymentId as string).filter(Boolean),
-    )
 
     for (const payment of paymentsToCheck) {
       if (ledgerGrantedIds.has(payment.dodoPaymentId)) continue
-      if (legacyGrantedIds.has(payment.dodoPaymentId)) continue
       issues.push({
         id: `pay_no_grant_${payment.id}`,
         type: "payment_without_grant",

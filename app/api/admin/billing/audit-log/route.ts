@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server"
 import { requireAdmin } from "@/lib/auth/session"
 import { ok, handleRouteError } from "@/lib/api/respond"
-import { creditTransactionsCol, topupsCol, usersCol } from "@/lib/db/collections"
+import { creditLedgerCol, topupsCol, usersCol } from "@/lib/db/collections"
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,18 +14,18 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get("userId") ?? ""
     const search = searchParams.get("search") ?? ""
 
-    const txCol = await creditTransactionsCol()
+    const ledgerCol = await creditLedgerCol()
 
-    // Build query
+    // Build query - use ledger schema
     const query: Record<string, unknown> = {}
-    if (type) query.type = type
+    if (type) query.transactionType = type
     if (userId) query.userId = userId
 
     // Get total count
-    const total = await txCol.countDocuments(query)
+    const total = await ledgerCol.countDocuments(query)
 
-    // Get transactions
-    const transactions = await txCol
+    // Get ledger entries
+    const entries = await ledgerCol
       .find(query)
       .sort({ createdAt: -1 })
       .skip(offset)
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       .toArray()
 
     // Enrich with user info
-    const userIds = [...new Set(transactions.map((tx) => tx.userId))]
+    const userIds = [...new Set(entries.map((entry) => entry.userId))]
     const users = await usersCol()
     const userDocs = userIds.length > 0
       ? await users.find({ id: { $in: userIds } }).project({ id: 1, name: 1, email: 1 }).toArray()
@@ -41,27 +41,28 @@ export async function GET(request: NextRequest) {
     const userMap = new Map(userDocs.map((u) => [u.id, u]))
 
     // Get top-up details for purchase transactions
-    const topUpIds = transactions
-      .filter((tx) => tx.type === "grant" && tx.reason.includes("purchase"))
-      .map((tx) => tx.id)
+    const topUpIds = entries
+      .filter((entry) => entry.transactionType === "credit_purchase" && entry.referenceId)
+      .map((entry) => entry.referenceId)
+      .filter(Boolean) as string[]
     const topUps = topUpIds.length > 0
       ? await (await topupsCol()).find({ id: { $in: topUpIds } }).toArray()
       : []
     const topUpMap = new Map(topUps.map((t) => [t.id, t]))
 
-    let enriched = transactions.map((tx) => {
-      const u = userMap.get(tx.userId)
-      const topUp = topUpMap.get(tx.id)
+    let enriched = entries.map((entry) => {
+      const u = userMap.get(entry.userId)
+      const topUp = entry.referenceType === "topup" ? topUpMap.get(entry.referenceId || "") : undefined
       return {
-        id: tx.id,
-        userId: tx.userId,
+        id: entry.id,
+        userId: entry.userId,
         userName: u?.name,
         userEmail: u?.email,
-        type: tx.type,
-        amount: tx.amount,
-        reason: tx.reason,
-        buildRunId: tx.buildRunId,
-        createdAt: tx.createdAt,
+        type: entry.transactionType,
+        amount: entry.direction === "credit" ? entry.amount : -entry.amount,
+        reason: entry.metadata?.reason as string || entry.transactionType,
+        buildRunId: entry.metadata?.buildId as string,
+        createdAt: entry.createdAt,
         topUp: topUp ? {
           id: topUp.id,
           packageId: topUp.packageId,

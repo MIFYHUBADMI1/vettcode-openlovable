@@ -2,26 +2,24 @@ import { requireAdmin } from "@/lib/auth/session"
 import { ok, handleRouteError } from "@/lib/api/respond"
 import {
   usersCol,
-  creditTransactionsCol,
+  creditLedgerCol,
   projectsCol,
   buildRunsCol,
   paymentRecordsCol,
   subscriptionRecordsCol,
-  creditLedgerCol,
 } from "@/lib/db/collections"
 
 export async function GET() {
   try {
     await requireAdmin()
 
-    const [usersCol_, txCol_, projectsCol_, buildRunsCol_, payCol_, subCol_, ledgerCol_] = await Promise.all([
+    const [usersCol_, ledgerCol_, projectsCol_, buildRunsCol_, payCol_, subCol_] = await Promise.all([
       usersCol(),
-      creditTransactionsCol(),
+      creditLedgerCol(),
       projectsCol(),
       buildRunsCol(),
       paymentRecordsCol(),
       subscriptionRecordsCol(),
-      creditLedgerCol(),
     ])
 
     const now = Date.now()
@@ -79,19 +77,19 @@ export async function GET() {
       subCol_.countDocuments({ status: "cancelled" }),
     ])
 
-    // ── Credit statistics ──
+    // ── Credit statistics from ledger (use direction instead of amount sign) ──
     const [grantAgg, chargeAgg, refundAgg] = await Promise.all([
-      txCol_.aggregate([
-        { $match: { amount: { $gt: 0 } } },
+      ledgerCol_.aggregate([
+        { $match: { direction: "credit" } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]).toArray(),
-      txCol_.aggregate([
-        { $match: { amount: { $lt: 0 } } },
-        { $group: { _id: null, total: { $sum: { $abs: "$amount" } } } },
+      ledgerCol_.aggregate([
+        { $match: { direction: "debit" } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
       ]).toArray(),
-      txCol_.aggregate([
-        { $match: { type: "refund" } },
-        { $group: { _id: null, total: { $sum: { $abs: "$amount" } } } },
+      ledgerCol_.aggregate([
+        { $match: { transactionType: { $in: ["refund", "build_refund"] } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
       ]).toArray(),
     ])
 
@@ -140,16 +138,16 @@ export async function GET() {
       .project({ id: 1, name: 1, email: 1, credits: 1, subscriptionCredits: 1, permanentCredits: 1 })
       .toArray()
 
-    // ── Transaction type distribution ──
-    const transactionTypes = await txCol_.aggregate([
-      { $group: { _id: "$type", count: { $sum: 1 }, totalAmount: { $sum: { $abs: "$amount" } } } },
+    // ── Transaction type distribution from ledger ──
+    const transactionTypes = await ledgerCol_.aggregate([
+      { $group: { _id: "$transactionType", count: { $sum: 1 }, totalAmount: { $sum: "$amount" } } },
       { $sort: { count: -1 } },
     ]).toArray()
 
-    // ── Build cost analysis ──
-    const buildCosts = await txCol_.aggregate([
-      { $match: { type: { $in: ["consume", "reserve"] } } },
-      { $group: { _id: "$reason", count: { $sum: 1 }, totalCredits: { $sum: { $abs: "$amount" } } } },
+    // ── Build cost analysis from ledger ──
+    const buildCosts = await ledgerCol_.aggregate([
+      { $match: { transactionType: { $in: ["build_finalization", "build_reservation"] } } },
+      { $group: { _id: "$metadata.reason", count: { $sum: 1 }, totalCredits: { $sum: "$amount" } } },
       { $sort: { totalCredits: -1 } },
       { $limit: 10 },
     ]).toArray()
