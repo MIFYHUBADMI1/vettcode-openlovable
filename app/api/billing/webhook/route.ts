@@ -196,7 +196,8 @@ async function processEvent(
         break
       case "payment.failed":
         await handlePaymentFailed(data)
-        break      case "payment.processing":
+        break
+      case "payment.processing":
         logger.info("webhook.dodo", "Payment processing", { eventId })
         break
       case "payment.cancelled":
