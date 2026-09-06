@@ -327,6 +327,7 @@ export type LedgerTransactionType =
   | "subscription_expiration"
   | "refund_reversal"
   | "other_reversal"
+  | "infrastructure_purchase"
 
 // ─── Payment States ──────────────────────────────────────────────────────────
 

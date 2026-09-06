@@ -1,8 +1,9 @@
 import { ObjectId } from "mongodb"
-import { referralsCol, usersCol, creditTransactionsCol, buildRunsCol, ensureIndexes } from "@/lib/db/collections"
+import { referralsCol, usersCol, buildRunsCol, ensureIndexes } from "@/lib/db/collections"
 import type { ReferralDoc, UserDoc } from "@/lib/types/db"
 import { cryptoId } from "@/lib/store/id"
 import { logger } from "@/lib/logging/logger"
+import { grantCredits } from "@/lib/billing/credit-service"
 
 /**
  * MirrorSite referral system.
@@ -186,23 +187,17 @@ export async function captureReferral(
   )
   if (!result) return false // Already rewarded (concurrent call won)
 
-  // Grant 500 credits to referrer — direct update, no MongoDB sessions
-  await col.updateOne(
-    { id: referral.referrerUserId },
-    { $inc: { credits: VERIFICATION_REWARD }, $set: { updatedAt: now } },
-  )
-
-  // Record credit transaction
-  const txCol = await creditTransactionsCol()
-  const { ObjectId } = await import("mongodb")
-  await txCol.insertOne({
-    _id: new ObjectId(),
-    id: cryptoId(),
+  // Grant credits via credit-service
+  await grantCredits({
     userId: referral.referrerUserId,
-    type: "grant",
     amount: VERIFICATION_REWARD,
-    reason: "Referral verification reward",
-    createdAt: now,
+    creditType: "permanent",
+    transactionType: "referral_bonus",
+    idempotencyKey: `referral_verification_${referral.id}`,
+    metadata: {
+      reason: "Referral verification reward",
+      referredUserId: userId,
+    },
   })
 
   logger.info("referral.verification_reward", "awarded", {
@@ -262,22 +257,18 @@ export async function processMilestoneCheck(
       return false
     }
 
-    // Award 1500 credits to referrer — direct update, no MongoDB sessions
-    await col.updateOne(
-      { id: referral.referrerUserId },
-      { $inc: { credits: MILESTONE_REWARD }, $set: { updatedAt: now } },
-    )
-
-    const txCol = await creditTransactionsCol()
-    const { ObjectId } = await import("mongodb")
-    await txCol.insertOne({
-      _id: new ObjectId(),
-      id: cryptoId(),
+    // Award 1500 credits to referrer via credit-service
+    await grantCredits({
       userId: referral.referrerUserId,
-      type: "grant",
       amount: MILESTONE_REWARD,
-      reason: "Referral usage milestone (75k)",
-      createdAt: now,
+      creditType: "permanent",
+      transactionType: "referral_bonus",
+      idempotencyKey: `referral_milestone_${referral.id}`,
+      metadata: {
+        reason: "Referral usage milestone (75k)",
+        referredUserId,
+        eligibleUsage: updatedUsage,
+      },
     })
 
     logger.info("referral.milestone_reward", "awarded", {

@@ -46,6 +46,20 @@ export interface CreditBalance {
 /**
  * Get the user's credit balance, broken down by type.
  * Falls back to legacy `credits` field if new fields are not yet populated.
+ * 
+ * @param userId - The unique identifier of the user
+ * @returns Promise resolving to a CreditBalance object with total, subscription, and permanent amounts
+ * 
+ * @remarks
+ * This function handles the transition from legacy single-field credits to the new
+ * dual-field system (subscriptionCredits + permanentCredits). If the new fields are
+ * not yet populated, it falls back to the legacy `credits` field.
+ * 
+ * @example
+ * ```typescript
+ * const balance = await getBalance("user_123");
+ * console.log(`Total: ${balance.total}, Subscription: ${balance.subscription}, Permanent: ${balance.permanent}`);
+ * ```
  */
 export async function getBalance(userId: string): Promise<CreditBalance> {
   const users = await usersCol()
@@ -77,7 +91,22 @@ export async function getBalance(userId: string): Promise<CreditBalance> {
 
 /**
  * Get the total available credits (subscription + permanent).
- * This is what the rest of the app should use.
+ * This is what the rest of the app should use for credit checks.
+ * 
+ * @param userId - The unique identifier of the user
+ * @returns Promise resolving to the total number of available credits
+ * 
+ * @remarks
+ * This is the primary function for checking if a user has sufficient credits
+ * for an operation. It automatically sums subscription and permanent credits.
+ * 
+ * @example
+ * ```typescript
+ * const available = await getAvailableCredits("user_123");
+ * if (available >= 100) {
+ *   // User has enough credits to proceed
+ * }
+ * ```
  */
 export async function getAvailableCredits(userId: string): Promise<number> {
   const balance = await getBalance(userId)
@@ -142,6 +171,58 @@ async function recordLedgerEntry(params: {
 /**
  * Grant credits to a user. Creates a ledger entry and updates the balance.
  * Always use idempotencyKey to prevent duplicate grants.
+ * 
+ * @param params - Grant credits parameters
+ * @param params.userId - The unique identifier of the user
+ * @param params.creditType - Type of credits: 'subscription' or 'permanent'
+ * @param params.amount - Number of credits to grant (must be positive)
+ * @param params.transactionType - Type of transaction (signup_bonus, referral_bonus, topup_grant, etc.)
+ * @param params.idempotencyKey - Unique key to prevent duplicate grants (REQUIRED)
+ * @param params.referenceType - Optional type of reference (e.g., 'payment', 'subscription')
+ * @param params.referenceId - Optional reference identifier
+ * @param params.metadata - Optional additional data (reason, description, etc.)
+ * @returns Promise resolving to success status and the created/existing ledger entry
+ * 
+ * @remarks
+ * **Idempotency:** This function is idempotent. If called multiple times with the same
+ * idempotencyKey, only the first call will grant credits. Subsequent calls will return
+ * the existing ledger entry without modifying the balance.
+ * 
+ * **Double-Entry Ledger:** This function creates a credit (positive) entry in the ledger
+ * and increments both the type-specific balance field and the total credits field.
+ * 
+ * **Transaction Safety:** Uses MongoDB transactions to ensure atomicity. If the database
+ * operation fails, no credits are granted and no ledger entry is created.
+ * 
+ * **Error Handling:** 
+ * - Throws if the user does not exist
+ * - Throws on database errors (except duplicate key for idempotency)
+ * - Never throws on duplicate idempotency key (returns existing entry instead)
+ * 
+ * @example
+ * ```typescript
+ * // Grant signup bonus
+ * const result = await grantCredits({
+ *   userId: "user_123",
+ *   creditType: "permanent",
+ *   amount: 50,
+ *   transactionType: "signup_bonus",
+ *   idempotencyKey: `signup_user_123`,
+ *   metadata: { reason: "Welcome bonus after email verification" }
+ * });
+ * 
+ * // Grant referral reward
+ * const referralResult = await grantCredits({
+ *   userId: "user_456",
+ *   creditType: "permanent",
+ *   amount: 25,
+ *   transactionType: "referral_bonus",
+ *   idempotencyKey: `referral_user_456_from_user_123`,
+ *   referenceType: "referral",
+ *   referenceId: "referral_789",
+ *   metadata: { reason: "Referral bonus", referredBy: "user_123" }
+ * });
+ * ```
  */
 export async function grantCredits(params: {
   userId: string
@@ -226,10 +307,60 @@ export async function grantCredits(params: {
 
 /**
  * Consume credits from a user's balance.
- *
+ * 
+ * @param params - Consume credits parameters
+ * @param params.userId - The unique identifier of the user
+ * @param params.amount - Number of credits to consume (must be positive)
+ * @param params.transactionType - Type of transaction (build_consumption, etc.)
+ * @param params.idempotencyKey - Unique key to prevent duplicate consumptions (REQUIRED)
+ * @param params.referenceType - Optional type of reference (e.g., 'build')
+ * @param params.referenceId - Optional reference identifier (e.g., build ID)
+ * @param params.metadata - Optional additional data
+ * @returns Promise resolving to success status and ledger entry, or failure details
+ * 
+ * @remarks
+ * **Credit Consumption Order:** Credits are consumed in the order defined by CONSUMPTION_ORDER:
+ * 1. Subscription credits (oldest expiring first, based on expiresAt)
+ * 2. Permanent credits
+ * 
+ * This ensures subscription credits are used before they expire, maximizing value for users.
+ * 
+ * **Idempotency:** Like grantCredits, this function is idempotent. Duplicate calls with the
+ * same idempotencyKey will not consume additional credits.
+ * 
+ * **Insufficient Balance:** If the user doesn't have enough credits, the function returns
+ * `{ success: false }` with `insufficientBalance: true`. No partial consumption occurs.
+ * 
+ * **Transaction Safety:** Uses MongoDB transactions to ensure atomicity. Either all credits
+ * are consumed and the ledger entry is created, or nothing happens.
+ * 
+ * **Error Handling:**
+ * - Returns `{ success: false, insufficientBalance: true }` if not enough credits
+ * - Throws on database errors (except duplicate key for idempotency)
+ * - Never throws on duplicate idempotency key
+ * 
+ * @example
+ * ```typescript
+ * // Consume credits for a build
+ * const result = await consumeCredits({
+ *   userId: "user_123",
+ *   amount: 15,
+ *   transactionType: "build_consumption",
+ *   idempotencyKey: `build_consumption_${buildId}`,
+ *   referenceType: "build",
+ *   referenceId: buildId,
+ *   metadata: { complexity: "medium", projectId }
+ * });
+ * 
+ * if (!result.success && result.insufficientBalance) {
+ *   // User doesn't have enough credits
+ *   throw new Error("Insufficient credits");
+ * }
+ * ```
+ */
  * Order:
  * 1. Subscription credit buckets — oldest expiry date consumed first so
- *    credits closest to expiring are used before newer ones.
+  * credits closest to expiring are used before newer ones.
  * 2. Permanent credits — consumed after all subscription buckets are empty.
  *
  * Returns the actual amounts consumed from each type.
@@ -434,6 +565,47 @@ export async function consumeCredits(params: {
 /**
  * Reserve credits before a build. This debits credits atomically.
  * Use releaseReservation to refund if the build doesn't proceed.
+ * 
+ * @param params - Reservation parameters
+ * @param params.userId - The unique identifier of the user
+ * @param params.projectId - The project ID for the build
+ * @param params.buildId - The build ID being reserved for
+ * @param params.complexity - Build complexity level
+ * @param params.creditCost - Number of credits to reserve
+ * @param params.idempotencyKey - Unique key to prevent duplicate reservations
+ * @returns Promise resolving to the created ledger entry
+ * 
+ * @throws {InsufficientCreditsError} If user doesn't have enough credits
+ * @throws {Error} On database errors
+ * 
+ * @remarks
+ * **Purpose:** Reservations prevent race conditions when multiple builds are triggered.
+ * Credits are immediately debited, ensuring they can't be double-spent.
+ * 
+ * **Release:** If the build fails or is cancelled, call `releaseReservation` to refund
+ * the reserved credits. If the build succeeds, the reservation is already accounted for
+ * (no additional action needed).
+ * 
+ * **Idempotency:** Safe to retry on network failures. Duplicate idempotency keys will
+ * return the existing reservation without double-charging.
+ * 
+ * @example
+ * ```typescript
+ * try {
+ *   await reserveCredits({
+ *     userId: "user_123",
+ *     projectId: "project_456",
+ *     buildId: "build_789",
+ *     complexity: "medium",
+ *     creditCost: 15,
+ *     idempotencyKey: `reservation_build_789`
+ *   });
+ * } catch (error) {
+ *   if (error.message.includes("Insufficient credits")) {
+ *     // Handle insufficient balance
+ *   }
+ * }
+ * ```
  */
 export async function reserveCredits(params: {
   userId: string

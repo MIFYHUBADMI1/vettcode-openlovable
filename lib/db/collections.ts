@@ -1,6 +1,6 @@
 import { getDb } from "@/lib/db/mongodb"
 import type { UserDoc, SessionDoc, VerificationTokenDoc, RateLimitDoc, ProjectAssetDoc, ProviderUsageDoc, TopUpDoc, PublishEventDoc, ReferralDoc, DocFeedbackDoc, WebhookEventDoc } from "@/lib/types/db"
-import type { MirrorProject, BuildRun, CreditTransaction } from "@/lib/types/project"
+import type { MirrorProject, BuildRun } from "@/lib/types/project"
 import type { CreditLedgerEntry, BuildAuthorization, PaymentRecord, SubscriptionRecord } from "@/lib/billing/billing-types"
 
 /** Cache the Db reference across hot reloads so we don't re-resolve per call. */
@@ -35,9 +35,6 @@ export async function projectsCol() {
 }
 export async function buildRunsCol() {
   return (await getDbCached()).collection<BuildRun & { _id?: unknown }>("build_runs")
-}
-export async function creditTransactionsCol() {
-  return (await getDbCached()).collection<CreditTransaction & { _id?: unknown }>("credit_transactions")
 }
 export async function projectAssetsCol() {
   return (await getDbCached()).collection<ProjectAssetDoc>("project_assets")
@@ -90,13 +87,12 @@ let legacyIndexesDropped = false
 async function dropLegacyIndexes() {
   if (legacyIndexesDropped) return
   legacyIndexesDropped = true
-  const [projects, buildRuns, creditTx, assets, usage] = await Promise.all([
-    projectsCol(), buildRunsCol(), creditTransactionsCol(), projectAssetsCol(), providerUsageCol(),
+  const [projects, buildRuns, assets, usage] = await Promise.all([
+    projectsCol(), buildRunsCol(), projectAssetsCol(), providerUsageCol(),
   ])
   await Promise.all([
     projects.dropIndex("id_1").catch(() => undefined),
     buildRuns.dropIndex("id_1").catch(() => undefined),
-    creditTx.dropIndex("id_1").catch(() => undefined),
     assets.dropIndex("id_1").catch(() => undefined),
     usage.dropIndex("id_1").catch(() => undefined),
   ])
@@ -109,9 +105,9 @@ async function dropLegacyIndexes() {
  */
 export async function ensureIndexes() {
   if (indexesEnsured) return
-  const [users, sessions, tokens, rateLimits, projects, buildRuns, creditTx, assets, usage] = await Promise.all([
+  const [users, sessions, tokens, rateLimits, projects, buildRuns, assets, usage] = await Promise.all([
     usersCol(), sessionsCol(), verificationTokensCol(), rateLimitsCol(),
-    projectsCol(), buildRunsCol(), creditTransactionsCol(), projectAssetsCol(), providerUsageCol(),
+    projectsCol(), buildRunsCol(), projectAssetsCol(), providerUsageCol(),
   ])
 
   // Drop legacy indexes once, then create all indexes.
@@ -140,8 +136,6 @@ export async function ensureIndexes() {
     projects.createIndex({ userId: 1, updatedAt: -1 }),
     buildRuns.createIndex({ id: 1 }, { unique: true, sparse: true, name: "build_runs_id_unique" }),
     buildRuns.createIndex({ mirrorProjectId: 1, startedAt: -1 }),
-    creditTx.createIndex({ id: 1 }, { unique: true, sparse: true, name: "credit_transactions_id_unique" }),
-    creditTx.createIndex({ userId: 1, createdAt: -1 }),
     assets.createIndex({ id: 1 }, { unique: true, sparse: true, name: "project_assets_id_unique" }),
     assets.createIndex({ userId: 1, createdAt: -1 }),
     usage.createIndex({ id: 1 }, { unique: true, sparse: true, name: "provider_usage_id_unique" }),
@@ -202,12 +196,22 @@ export async function ensureIndexes() {
   // ─── Unified Billing Indexes ────────────────────────────────────────────
   const creditLedger = await creditLedgerCol()
   await Promise.all([
+    // Unique identifier for ledger entries
     creditLedger.createIndex({ id: 1 }, { unique: true, sparse: true, name: "credit_ledger_id_unique" }),
+    // Composite index for user credit history queries (most common query pattern)
     creditLedger.createIndex({ userId: 1, createdAt: -1 }),
+    // Composite index for filtered user queries by credit type
     creditLedger.createIndex({ userId: 1, creditType: 1, createdAt: -1 }),
+    // Unique idempotency key to prevent duplicate operations
     creditLedger.createIndex({ idempotencyKey: 1 }, { unique: true, name: "credit_ledger_idempotency_unique" }),
+    // Index for querying by transaction type (admin reports and analytics)
     creditLedger.createIndex({ transactionType: 1, createdAt: -1 }),
+    // Index for querying ledger entries by reference (e.g., all entries for a build)
     creditLedger.createIndex({ referenceType: 1, referenceId: 1 }),
+    // General time-series index for admin ledger viewer
+    creditLedger.createIndex({ createdAt: -1 }),
+    // Index for filtering by credit type in admin views
+    creditLedger.createIndex({ creditType: 1, createdAt: -1 }),
   ])
 
   const buildAuths = await buildAuthorizationsCol()

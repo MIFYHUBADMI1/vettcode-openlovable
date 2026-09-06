@@ -1,7 +1,8 @@
 import "server-only"
 import { ObjectId } from "mongodb"
-import { topupsCol, usersCol, creditTransactionsCol } from "@/lib/db/collections"
+import { topupsCol, usersCol } from "@/lib/db/collections"
 import { getPackageById } from "./packages"
+import { grantCredits } from "./credit-service"
 
 /** @deprecated Legacy reference expiry — 24 hours. */
 const REFERENCE_EXPIRY_MS = 24 * 60 * 60 * 1000
@@ -149,7 +150,7 @@ export async function uploadEvidence(params: UploadEvidenceParams): Promise<{ fi
 
 /**
  * Atomically award credits for an approved top-up.
- * Uses a database transaction to prevent double-crediting.
+ * Uses credit-service to ensure proper ledger recording.
  */
 export async function awardCredits(topUpId: string, verifiedBy: string): Promise<boolean> {
   const col = await topupsCol()
@@ -165,8 +166,6 @@ export async function awardCredits(topUpId: string, verifiedBy: string): Promise
     return false
   }
 
-  const users = await usersCol()
-  const txCol = await creditTransactionsCol()
   const client = (await import("@/lib/db/mongodb")).getMongoClient
   const mongoClient = await client()
   const session = mongoClient.startSession()
@@ -193,31 +192,26 @@ export async function awardCredits(topUpId: string, verifiedBy: string): Promise
         return
       }
 
-      // Add credits to user
-      await users.updateOne(
-        { id: topUp.userId },
-        { $inc: { credits: topUp.credits }, $set: { updatedAt: Date.now() } },
-        { session },
-      )
-
-      // Record credit transaction
-      await txCol.insertOne(
-        {
-          _id: new ObjectId(),
-          id: cryptoId(),
-          userId: topUp.userId,
-          type: "grant",
-          amount: topUp.credits,
-          reason: `Credit purchase (${topUp.credits.toLocaleString()} credits)`,
-          createdAt: Date.now(),
-        },
-        { session },
-      )
-
       success = true
     })
 
     if (success) {
+      // Grant credits via credit-service (outside the transaction to avoid nested transactions)
+      await grantCredits({
+        userId: topUp.userId,
+        creditType: "permanent",
+        amount: topUp.credits,
+        transactionType: "credit_purchase",
+        idempotencyKey: `topup_grant_${topUpId}`,
+        referenceType: "topup",
+        referenceId: topUpId,
+        metadata: {
+          reason: `Credit purchase (${topUp.credits.toLocaleString()} credits)`,
+          packageId: topUp.packageId,
+          verifiedBy,
+        },
+      })
+
       logger.info("topup.award", "credits awarded", {
         topUpId,
         userId: topUp.userId,

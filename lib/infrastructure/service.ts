@@ -1,8 +1,9 @@
 import "server-only"
-import { store, cryptoId } from "@/lib/store/store"
-import { projectsCol, usersCol, creditTransactionsCol, ensureIndexes } from "@/lib/db/collections"
+import { store } from "@/lib/store/store"
+import { projectsCol, usersCol, ensureIndexes } from "@/lib/db/collections"
 import { getInfrastructurePlan, type InfrastructurePlanId } from "@/lib/infrastructure/plans"
 import { setProjectCreditLimits } from "@/lib/integrations/totalum/service"
+import { consumeCredits } from "@/lib/billing/credit-service"
 import { logger } from "@/lib/logging/logger"
 import type { InfrastructureSubscription, MirrorProject } from "@/lib/types/project"
 
@@ -122,40 +123,35 @@ export async function activatePlan(
 
   // For paid plans, deduct credits
   if (plan.isPaid && plan.mirrorSitePrice > 0) {
-    // Check balance
+    // Check balance for better UX (optional check before attempting consumption)
     const balance = await store.getBalance(userId)
     if (balance < plan.mirrorSitePrice) {
       return { success: false, message: `Insufficient credits. You need ${plan.mirrorSitePrice.toLocaleString()} credits for the ${plan.name} plan.` }
     }
 
-    // Deduct credits directly — bypass MongoDB sessions which fail on standalone instances
-    const txId = cryptoId()
-    const usersCollection = await usersCol()
-    const txCol = await creditTransactionsCol()
-    const { ObjectId } = await import("mongodb")
+    // Consume credits via credit-service
+    try {
+      const consumeResult = await consumeCredits({
+        userId,
+        amount: plan.mirrorSitePrice,
+        transactionType: "infrastructure_purchase",
+        idempotencyKey: `infra_${projectId}_${plan.id}_${now}`,
+        metadata: {
+          reason: `Infrastructure plan: ${plan.name} — ${plan.storageLabel}`,
+          projectId,
+          planId: plan.id
+        }
+      })
 
-    // First: atomically check balance and deduct in one operation
-    const result = await usersCollection.findOneAndUpdate(
-      { id: userId, credits: { $gte: plan.mirrorSitePrice } },
-      { $inc: { credits: -plan.mirrorSitePrice }, $set: { updatedAt: now } },
-      { returnDocument: "after" },
-    )
-    if (!result) {
-      return { success: false, message: `Insufficient credits. You need ${plan.mirrorSitePrice.toLocaleString()} credits for the ${plan.name} plan.` }
+      if (!consumeResult.success) {
+        return { success: false, message: `Insufficient credits. You need ${plan.mirrorSitePrice.toLocaleString()} credits for the ${plan.name} plan.` }
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('Insufficient')) {
+        return { success: false, message: `Insufficient credits. You need ${plan.mirrorSitePrice.toLocaleString()} credits for the ${plan.name} plan.` }
+      }
+      throw error
     }
-
-    // Second: record the transaction (non-critical — if this fails, the money is still deducted)
-    await txCol.insertOne({
-      _id: new ObjectId(),
-      id: txId,
-      userId,
-      type: "deduction",
-      amount: -plan.mirrorSitePrice,
-      reason: `Infrastructure plan: ${plan.name} — ${plan.storageLabel}`,
-      createdAt: now,
-    }).catch((e) => {
-      logger.error("infrastructure.activate", "failed to record transaction", { userId, txId, error: (e as Error).message })
-    })
 
     // Update project infrastructure
     const subscription: InfrastructureSubscription = {

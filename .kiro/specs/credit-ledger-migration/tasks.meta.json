@@ -1,0 +1,505 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Implement `/api/admin/ledger` route handler": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690774172
+      },
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690802967
+      },
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788691245062
+      }
+    ],
+    "1.3 Implement user enrichment logic": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690774572
+      },
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788691253686
+      },
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788692273519
+      }
+    ],
+    "2.1 Create ledger page component structure": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690774822
+      },
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690803624
+      },
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788691245706
+      }
+    ],
+    "2.2 Implement custom hooks for data management": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690775490
+      },
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788691254353
+      },
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788692275515
+      }
+    ],
+    "2.3 Create FilterPanel component": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690775700
+      },
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788691255105
+      },
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788692276566
+      }
+    ],
+    "2.4 Create LedgerTable and LedgerRow components": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690776154
+      },
+      {
+        "executionId": "e0c69adb-158b-45de-bf23-ff0b7151a1e8",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788692433441
+      },
+      {
+        "executionId": "f0981d95-b0ab-4f7c-b3f7-199e964d99ed",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788711553810
+      },
+      {
+        "executionId": "f0981d95-b0ab-4f7c-b3f7-199e964d99ed",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788711571930
+      },
+      {
+        "executionId": "f0981d95-b0ab-4f7c-b3f7-199e964d99ed",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788714874218
+      }
+    ],
+    "2.5 Create SummaryPanel component": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690776586
+      },
+      {
+        "executionId": "e0c69adb-158b-45de-bf23-ff0b7151a1e8",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788692434412
+      },
+      {
+        "executionId": "f0981d95-b0ab-4f7c-b3f7-199e964d99ed",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788711553946
+      },
+      {
+        "executionId": "f0981d95-b0ab-4f7c-b3f7-199e964d99ed",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788711572864
+      },
+      {
+        "executionId": "f0981d95-b0ab-4f7c-b3f7-199e964d99ed",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788714875643
+      }
+    ],
+    "2.6 Create PaginationControls component": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690776807
+      },
+      {
+        "executionId": "e0c69adb-158b-45de-bf23-ff0b7151a1e8",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788692435001
+      },
+      {
+        "executionId": "f0981d95-b0ab-4f7c-b3f7-199e964d99ed",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788711554420
+      },
+      {
+        "executionId": "f0981d95-b0ab-4f7c-b3f7-199e964d99ed",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788711573067
+      },
+      {
+        "executionId": "f0981d95-b0ab-4f7c-b3f7-199e964d99ed",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788714875918
+      }
+    ],
+    "2.7 Implement CSV export functionality": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690777042
+      },
+      {
+        "executionId": "f0981d95-b0ab-4f7c-b3f7-199e964d99ed",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788711573478
+      },
+      {
+        "executionId": "f0981d95-b0ab-4f7c-b3f7-199e964d99ed",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788714878274
+      }
+    ],
+    "2.8 Implement loading and empty states": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690777325
+      },
+      {
+        "executionId": "f0981d95-b0ab-4f7c-b3f7-199e964d99ed",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788711574315
+      },
+      {
+        "executionId": "f0981d95-b0ab-4f7c-b3f7-199e964d99ed",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788714879156
+      }
+    ],
+    "3.1 Refactor `/api/admin/transactions` route handler": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690777664
+      },
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788691256219
+      },
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788692277123
+      }
+    ],
+    "4.1 Enhance transactions page with ledger fields": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690777909
+      },
+      {
+        "executionId": "f0981d95-b0ab-4f7c-b3f7-199e964d99ed",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788714949120
+      }
+    ],
+    "5. Checkpoint - Verify Phase 1 completion": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690778361
+      },
+      {
+        "executionId": "f0981d95-b0ab-4f7c-b3f7-199e964d99ed",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788714949790
+      }
+    ],
+    "6.1 Refactor getBalance method": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690778803
+      }
+    ],
+    "6.2 Refactor listTransactions method": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690779045
+      }
+    ],
+    "6.3 Implement mapLedgerToLegacyTransaction helper": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690779353
+      }
+    ],
+    "6.4 Refactor addTransaction method": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690779637
+      }
+    ],
+    "6.5 Refactor reserveCreditsAtomic method": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690779953
+      }
+    ],
+    "6.6 Update imports in MongoStore": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690780151
+      }
+    ],
+    "7.1 Update lib/auth/users.ts": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690780374
+      }
+    ],
+    "8.1 Update lib/billing/topup-service.ts": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690780607
+      }
+    ],
+    "9. Checkpoint - Verify Phase 2 completion": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690781048
+      }
+    ],
+    "10.1 Update lib/referrals/referrals.ts": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690781475
+      }
+    ],
+    "11.1 Update lib/infrastructure/service.ts": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690781742
+      }
+    ],
+    "12. Checkpoint - Verify Phase 3 completion": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690782356
+      }
+    ],
+    "13.1 Update app/api/admin/users/[id]/route.ts": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690782610
+      }
+    ],
+    "14.1 Update app/api/admin/self-credits/route.ts": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690782925
+      }
+    ],
+    "15.1 Update app/api/admin/billing/user-billing/route.ts": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690783187
+      }
+    ],
+    "15.2 Update app/api/admin/billing/audit-log/route.ts": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690783455
+      }
+    ],
+    "16. Checkpoint - Verify Phase 4 completion": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690783725
+      }
+    ],
+    "17.1 Search for remaining creditTransactionsCol references": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690784168
+      }
+    ],
+    "17.2 Verify no writes to credit_transactions collection": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690784402
+      }
+    ],
+    "17.3 Run complete test suite": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690784716
+      }
+    ],
+    "17.7 Manual smoke testing of admin UI": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690785117
+      }
+    ],
+    "17.8 Manual API endpoint testing": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690785508
+      }
+    ],
+    "17.9 Database integrity verification": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690785976
+      }
+    ],
+    "17.10 Create verification checklist document": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690786174
+      }
+    ],
+    "18. Checkpoint - Verify Phase 5 completion": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690786438
+      }
+    ],
+    "19.1 Create cleanup script": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690786658
+      }
+    ],
+    "19.2 Add cleanup script to package.json": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690786859
+      }
+    ],
+    "20.1 Run cleanup script manually": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690787074
+      }
+    ],
+    "21.1 Remove creditTransactionsCol from collections.ts": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690787489
+      }
+    ],
+    "21.2 Add required indexes for credit_ledger collection": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690787727
+      }
+    ],
+    "22.1 Add JSDoc comments to refactored code": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690787976
+      }
+    ],
+    "22.2 Update README and CHANGELOG": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690788174
+      }
+    ],
+    "22.3 Create migration operator guide": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690788391
+      }
+    ],
+    "23. Final checkpoint - Migration complete": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788690788626
+      }
+    ],
+    "1. Create Admin Ledger Viewer API endpoint": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788692274092
+      }
+    ],
+    "3. Update legacy transactions endpoint to read from ledger": [
+      {
+        "executionId": "503358d9-f796-4475-8f53-d2d4d732d0a2",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788692277983
+      }
+    ],
+    "2. Create Admin Ledger Viewer UI component": [
+      {
+        "executionId": "f0981d95-b0ab-4f7c-b3f7-199e964d99ed",
+        "chatSessionId": "sess_6afa6e8a-1a26-45d2-b755-0804467ce301",
+        "timestamp": 1788714879686
+      }
+    ]
+  }
+}

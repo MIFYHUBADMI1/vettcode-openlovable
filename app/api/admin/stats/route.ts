@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth/session"
 import { ok, handleRouteError } from "@/lib/api/respond"
-import { usersCol, projectsCol, buildRunsCol, creditTransactionsCol, topupsCol, publishEventsCol, referralsCol } from "@/lib/db/collections"
+import { usersCol, projectsCol, buildRunsCol, creditLedgerCol, topupsCol, publishEventsCol, referralsCol } from "@/lib/db/collections"
 
 interface OnboardingBreakdown {
   label: string
@@ -119,11 +119,11 @@ export async function GET(request: NextRequest) {
     const oneDayAgo = now - 24 * 60 * 60 * 1000
     const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000
 
-    const [usersCol_, projectsCol_, buildRunsCol_, txCol_, topupsCol_, publishCol_] = await Promise.all([
+    const [usersCol_, projectsCol_, buildRunsCol_, ledgerCol_, topupsCol_, publishCol_] = await Promise.all([
       usersCol(),
       projectsCol(),
       buildRunsCol(),
-      creditTransactionsCol(),
+      creditLedgerCol(),
       topupsCol(),
       publishEventsCol(),
     ])
@@ -169,19 +169,19 @@ export async function GET(request: NextRequest) {
       topupsCol_.countDocuments({ status: { $in: ["rejected", "amount_mismatch", "duplicate"] } }),
     ])
 
-    // Aggregate credit totals
+    // Aggregate credit totals from ledger (use direction instead of amount sign)
     const [grantAgg, chargeAgg, refundAgg] = await Promise.all([
-      txCol_.aggregate([
-        { $match: { amount: { $gt: 0 } } },
+      ledgerCol_.aggregate([
+        { $match: { direction: "credit" } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]).toArray(),
-      txCol_.aggregate([
-        { $match: { amount: { $lt: 0 } } },
-        { $group: { _id: null, total: { $sum: { $abs: "$amount" } } } },
+      ledgerCol_.aggregate([
+        { $match: { direction: "debit" } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
       ]).toArray(),
-      txCol_.aggregate([
-        { $match: { type: "refund" } },
-        { $group: { _id: null, total: { $sum: { $abs: "$amount" } } } },
+      ledgerCol_.aggregate([
+        { $match: { transactionType: { $in: ["refund", "build_refund"] } } },
+        { $group: { _id: null, total: { $sum: "$amount" } } },
       ]).toArray(),
     ])
 
@@ -347,10 +347,10 @@ export async function GET(request: NextRequest) {
       "infrastructure.expiresAt": { $lt: now },
     })
 
-    // Infrastructure revenue (credit deductions with infrastructure in reason)
-    const infraRevenueAgg = await txCol_.aggregate([
-      { $match: { type: "deduction", reason: { $regex: /Infrastructure plan/i } } },
-      { $group: { _id: null, total: { $sum: { $abs: "$amount" } } } },
+    // Infrastructure revenue (credit deductions with infrastructure in reason from ledger)
+    const infraRevenueAgg = await ledgerCol_.aggregate([
+      { $match: { direction: "debit", "metadata.reason": { $regex: /Infrastructure plan/i } } },
+      { $group: { _id: null, total: { $sum: "$amount" } } },
     ]).toArray()
     const totalInfraRevenue = infraRevenueAgg[0]?.total ?? 0
 

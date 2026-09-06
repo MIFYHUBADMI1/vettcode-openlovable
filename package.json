@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "cleanup:credit-transactions": "tsx scripts/cleanup-credit-transactions.ts"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^3.0.40",

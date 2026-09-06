@@ -1,8 +1,8 @@
 import { requireAdmin } from "@/lib/auth/session"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
-import { usersCol, creditTransactionsCol, sessionsCol } from "@/lib/db/collections"
+import { usersCol, sessionsCol } from "@/lib/db/collections"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
-import { adminAdjustCredits } from "@/lib/billing/credit-service"
+import { adminAdjustCredits, getCreditHistory } from "@/lib/billing/credit-service"
 import { logger } from "@/lib/logging/logger"
 
 /** Admin endpoint: get detailed user info. */
@@ -14,12 +14,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     const user = await col.findOne({ id })
     if (!user) return fail("NOT_FOUND", "User not found.", 404)
 
-    const txCol = await creditTransactionsCol()
-    const transactions = await txCol
-      .find({ userId: id })
-      .sort({ createdAt: -1 })
-      .limit(50)
-      .toArray()
+    // Use credit-service to get transaction history from ledger
+    const transactions = await getCreditHistory(id, 50)
 
     return ok({
       user: {

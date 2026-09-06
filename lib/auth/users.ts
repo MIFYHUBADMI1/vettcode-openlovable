@@ -1,7 +1,8 @@
 import { ObjectId } from "mongodb"
-import { usersCol, creditTransactionsCol, ensureIndexes } from "@/lib/db/collections"
+import { usersCol, ensureIndexes } from "@/lib/db/collections"
 import type { UserDoc } from "@/lib/types/db"
 import { cryptoId, store } from "@/lib/store/store"
+import { grantCredits } from "@/lib/billing/credit-service"
 
 const STARTING_CREDITS = 500
 
@@ -98,23 +99,40 @@ export async function createGoogleUser(params: {
   await ensureIndexes()
   const col = await usersCol()
   const now = Date.now()
+  const userId = `user_${cryptoId()}`
   const doc: UserDoc = {
     _id: new ObjectId(),
-    id: `user_${cryptoId()}`,
+    id: userId,
     email: normalizeEmail(params.email),
     name: params.name,
     authProvider: "google",
     googleId: params.googleId,
     emailVerified: true,
     imageUrl: params.imageUrl,
-    credits: STARTING_CREDITS,
+    credits: 0, // Credits granted via credit-service below
     subscriptionCredits: 0,
-    permanentCredits: STARTING_CREDITS,
+    permanentCredits: 0,
     createdAt: now,
     updatedAt: now,
   }
   await col.insertOne(doc)
-  return doc
+
+  // Grant welcome credits via credit-service
+  await grantCredits({
+    userId,
+    creditType: "permanent",
+    amount: STARTING_CREDITS,
+    transactionType: "signup_bonus",
+    idempotencyKey: `signup_${userId}_google`,
+    metadata: {
+      reason: "Google signup — welcome credits",
+      authProvider: "google",
+    },
+  })
+
+  // Fetch updated user with new balance
+  const updatedUser = await col.findOne({ id: userId })
+  return updatedUser!
 }
 
 /** Link a Google identity onto an existing password-auth account with the
@@ -128,23 +146,24 @@ export async function linkGoogleToUser(userId: string, googleId: string, imageUr
   const wasVerified = user?.emailVerified ?? false
 
   if (!wasVerified) {
-    // Google verified the email — mark it and grant welcome credits in one go.
+    // Google verified the email — mark it verified
     await col.updateOne(
       { id: userId },
       {
         $set: { googleId, imageUrl: imageUrl ?? undefined, emailVerified: true, updatedAt: Date.now() },
-        $inc: { credits: STARTING_CREDITS },
       },
     )
-    const txCol = await creditTransactionsCol()
-    await txCol.insertOne({
-      _id: new ObjectId(),
-      id: cryptoId(),
+    // Grant welcome credits via credit-service
+    await grantCredits({
       userId,
-      type: "grant",
+      creditType: "permanent",
       amount: STARTING_CREDITS,
-      reason: "Google account linked — welcome credits",
-      createdAt: Date.now(),
+      transactionType: "signup_bonus",
+      idempotencyKey: `signup_${userId}_google_link`,
+      metadata: {
+        reason: "Google account linked — welcome credits",
+        authProvider: "google",
+      },
     })
   } else {
     await col.updateOne(
@@ -162,22 +181,21 @@ export async function markEmailVerified(userId: string): Promise<void> {
   if (!wasVerified) {
     // Grant starting credits on first email verification for password-auth users.
     // Google-auth users are pre-verified and already receive credits at creation.
-    // We $inc credits directly on the user document rather than going through
-    // store.addTransaction (which uses session transactions requiring a replica
-    // set) so credit granting works on standalone MongoDB instances too.
     await col.updateOne(
       { id: userId },
-      { $set: { emailVerified: true, updatedAt: Date.now() }, $inc: { credits: STARTING_CREDITS } },
+      { $set: { emailVerified: true, updatedAt: Date.now() } },
     )
-    const txCol = await creditTransactionsCol()
-    await txCol.insertOne({
-      _id: new ObjectId(),
-      id: cryptoId(),
+    // Grant welcome credits via credit-service
+    await grantCredits({
       userId,
-      type: "grant",
+      creditType: "permanent",
       amount: STARTING_CREDITS,
-      reason: "Email verified — welcome credits",
-      createdAt: Date.now(),
+      transactionType: "signup_bonus",
+      idempotencyKey: `signup_${userId}_email_verified`,
+      metadata: {
+        reason: "Email verified — welcome credits",
+        authProvider: "password",
+      },
     })
   } else {
     await col.updateOne({ id: userId }, { $set: { emailVerified: true, updatedAt: Date.now() } })

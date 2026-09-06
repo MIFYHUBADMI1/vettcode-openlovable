@@ -1,8 +1,16 @@
-import type { DataStore } from "@/lib/store/store"
+﻿import type { DataStore } from "@/lib/store/store"
 import { cryptoId } from "@/lib/store/id"
-import { usersCol, projectsCol, buildRunsCol, creditTransactionsCol } from "@/lib/db/collections"
+import { usersCol, projectsCol, buildRunsCol } from "@/lib/db/collections"
 import { logger } from "@/lib/logging/logger"
 import type { MirrorProject, BuildRun, CreditTransaction, ProjectEvent, ConversationMessage, DeploymentHistoryEntry } from "@/lib/types/project"
+import {
+  getAvailableCredits,
+  getCreditHistory,
+  grantCredits,
+  consumeCredits,
+  reserveCredits
+} from "@/lib/billing/credit-service"
+import type { CreditLedgerEntry } from "@/lib/billing/billing-types"
 
 const STARTING_CREDITS = 500
 
@@ -15,7 +23,6 @@ const STARTING_CREDITS = 500
  *
  * In-process LRU caches live on every read-heavy method. They survive across
  * Next.js dev HMR reloads (per process), eliminating the hundreds of
-
  * individual DB round-trips that pile up when SWR re-renders on every route
  * change / page refresh. Entries have a short TTL and are invalidated on any
  * write to the same key so you never serve stale balances or projects.
@@ -61,9 +68,8 @@ export class MongoStore implements DataStore {
     const cached = this.cacheGet<number>(`bal:${userId}`, now)
     if (cached !== undefined) return cached
 
-    const users = await usersCol()
-    const user = await users.findOne({ id: userId })
-    const balance = user?.credits ?? 0
+    // Delegate to credit-service
+    const balance = await getAvailableCredits(userId)
     this.cacheSet(`bal:${userId}`, balance, now)
     return balance
   }
@@ -73,75 +79,86 @@ export class MongoStore implements DataStore {
     const cached = this.cacheGet<CreditTransaction[]>(`tx:${userId}`, now)
     if (cached !== undefined) return cached
 
-    const col = await creditTransactionsCol()
-    const docs = await col.find({ userId }).sort({ createdAt: -1 }).limit(limit).toArray()
-    const result = docs.map(stripMongoId)
+    // Delegate to credit-service, which returns a simplified format
+    // We need to fetch the full ledger entries to get metadata for proper mapping
+    const col = await (await import("@/lib/db/collections")).creditLedgerCol()
+    const entries = await col.find({ userId }).sort({ createdAt: -1 }).limit(limit).toArray()
+    const result = entries.map(mapLedgerToLegacyTransaction)
     this.cacheSet(`tx:${userId}`, result, now)
     return result
   }
 
   async addTransaction(tx: CreditTransaction): Promise<void> {
-    const users = await usersCol()
-    const col = await creditTransactionsCol()
-    // Atomic: increment balance and record the ledger entry together isn't
-    // possible across two collections without a transaction; Mongo supports
-    // multi-document ACID transactions when running as a replica set, which
-    // Atlas always is. We use one here to keep balance and ledger consistent.
-    const client = (await import("@/lib/db/mongodb")).getMongoClient
-    const mongoClient = await client()
-    const session = mongoClient.startSession()
-    try {
-      await session.withTransaction(async () => {
-        await users.updateOne(
-          { id: tx.userId },
-          { $inc: { credits: tx.amount }, $set: { updatedAt: Date.now() } },
-          { session },
-        )
-        await col.insertOne({ ...tx }, { session })
+    // Delegate to credit-service based on transaction type
+    // The credit-service handles the double-entry ledger and balance updates
+
+    const isCredit = tx.amount > 0
+    const absoluteAmount = Math.abs(tx.amount)
+
+    if (isCredit) {
+      // Grant credits through credit-service
+      await grantCredits({
+        userId: tx.userId,
+        amount: absoluteAmount,
+        creditType: 'permanent', // Default for legacy addTransaction calls
+        transactionType: tx.type === 'grant' ? 'promotional_grant' : 'admin_adjustment',
+        idempotencyKey: tx.id, // Use transaction ID as idempotency key
+        metadata: {
+          reason: tx.reason,
+          legacyMigration: true,
+          buildRunId: tx.buildRunId,
+          ...tx.metadata
+        }
       })
-    } finally {
-      await session.endSession()
+    } else {
+      // Consume credits through credit-service
+      await consumeCredits({
+        userId: tx.userId,
+        amount: absoluteAmount,
+        transactionType: tx.type === 'consume' ? 'build_finalization' : 'admin_adjustment',
+        idempotencyKey: tx.id,
+        metadata: {
+          reason: tx.reason,
+          legacyMigration: true,
+          buildRunId: tx.buildRunId,
+          ...tx.metadata
+        }
+      })
     }
-    // The balance and transaction list are now stale — purge them so the next
-    // read fetches fresh values instead of a cached snapshot.
+
+    // Cache invalidation still handled locally
     this.cache.delete(`bal:${tx.userId}`)
     this.cache.delete(`tx:${tx.userId}`)
   }
 
   async reserveCreditsAtomic(userId: string, amount: number, tx: CreditTransaction): Promise<boolean> {
-    const users = await usersCol()
-    const col = await creditTransactionsCol()
-    const client = (await import("@/lib/db/mongodb")).getMongoClient
-    const mongoClient = await client()
-    const session = mongoClient.startSession()
+    // Delegate to credit-service reservation logic
     try {
-      let success = false
-      await session.withTransaction(async () => {
-        // The `credits: { $gte: amount }` filter and the `$inc` decrement
-        // happen as a single atomic document operation, so two concurrent
-        // reservations can never both observe a sufficient balance and both
-        // succeed — the second one's filter simply won't match once the
-        // first has applied.
-        const result = await users.updateOne(
-          { id: userId, credits: { $gte: amount } },
-          { $inc: { credits: -amount }, $set: { updatedAt: Date.now() } },
-          { session },
-        )
-        if (result.modifiedCount === 0) {
-          success = false
-          return
+      await reserveCredits({
+        userId,
+        amount,
+        buildId: tx.buildRunId || 'unknown',
+        reason: tx.reason || 'Build reservation',
+        metadata: {
+          projectId: tx.metadata?.projectId,
+          complexity: tx.metadata?.complexity,
+          ...tx.metadata
         }
-        await col.insertOne({ ...tx }, { session })
-        success = true
       })
-      return success
-    } finally {
-      await session.endSession()
+
+      // Cache invalidation
+      this.cache.delete(`bal:${userId}`)
+      this.cache.delete(`tx:${userId}`)
+
+      return true
+    } catch (error) {
+      // If reservation fails due to insufficient balance, return false
+      if (error instanceof Error && error.message?.includes('Insufficient credits')) {
+        return false
+      }
+      // For other errors, propagate
+      throw error
     }
-    // Success or failure, the balance is no longer representative of what's in
-    // Mongo — invalidate the cached balance and transaction list.
-    this.cache.delete(`bal:${userId}`)
-    this.cache.delete(`tx:${userId}`)
   }
 
   async createProject(project: MirrorProject): Promise<MirrorProject> {
@@ -340,6 +357,38 @@ export class MongoStore implements DataStore {
     } finally {
       await session.endSession()
     }
+  }
+}
+
+/**
+ * Helper function to map ledger entries to legacy CreditTransaction format.
+ * Converts the double-entry ledger structure to the single-entry format
+ * expected by legacy code that still uses the CreditTransaction interface.
+ */
+function mapLedgerToLegacyTransaction(entry: CreditLedgerEntry): CreditTransaction {
+  const signedAmount = entry.direction === 'credit' ? entry.amount : -entry.amount
+
+  // Map ledger transaction types to legacy types
+  let legacyType: CreditTransaction['type'] = 'grant'
+  if (entry.transactionType === 'build_reservation') {
+    legacyType = 'reserve'
+  } else if (entry.transactionType === 'build_finalization') {
+    legacyType = 'consume'
+  } else if (entry.transactionType === 'build_release' || entry.transactionType === 'build_refund') {
+    legacyType = 'refund'
+  } else if (entry.direction === 'debit') {
+    legacyType = 'deduction'
+  }
+
+  return {
+    id: entry.id,
+    userId: entry.userId,
+    type: legacyType,
+    amount: signedAmount,
+    reason: (entry.metadata?.reason as string) || entry.transactionType,
+    buildRunId: entry.referenceType === 'build' ? entry.referenceId : undefined,
+    createdAt: entry.createdAt,
+    metadata: entry.metadata
   }
 }
 
