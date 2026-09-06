@@ -32,7 +32,7 @@ const PRODUCT_CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
 
 // ─── Product Creation ─────────────────────────────────────────────────────────
 
-async function getDodoClient(): Promise<DodoPayments> {
+export async function getDodoClient(): Promise<DodoPayments> {
   const { apiKey, environment } = getDodoConfig()
   return new DodoPayments({
     bearerToken: apiKey,

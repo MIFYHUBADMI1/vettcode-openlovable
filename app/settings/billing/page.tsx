@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 import { ArrowRight, Calendar, Check } from "lucide-react"
 import { CheckoutButton } from "@/components/billing/checkout-button"
 import { PlanCard } from "@/components/billing/plan-card"
+import { CancelSubscriptionButton } from "@/components/billing/cancel-subscription-button"
 
 function formatCredits(amount: number): string {
   const abs = Math.abs(amount)
@@ -140,7 +141,24 @@ export default async function BillingSettingsPage() {
                   </span>
                   {" "}— your credits remain available until then.
                 </p>
-              )}
+                )
+                {activeSubscription && !activeSubscription.cancelAtPeriodEnd && (
+                  <div className="mt-2">
+                    <CancelSubscriptionButton
+                      planName={activePlan.name}
+                      periodEnd={currentPeriodEnd}
+                    />
+                  </div>
+                )}
+                {activeSubscription?.cancelAtPeriodEnd && (
+                  <div className="mt-2 rounded-md bg-amber-500/10 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
+                    <strong>Cancellation scheduled:</strong> Your subscription will end on{" "}
+                    {formatPeriodEnd(currentPeriodEnd)}. You
+'
+ll retain access until then.
+                  </div>
+                )}
+              </>
             </div>
           </div>
         </section>
