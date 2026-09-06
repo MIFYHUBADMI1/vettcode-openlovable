@@ -94,6 +94,38 @@ export interface SubscriptionPlan {
 }
 
 export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
+  // ── Free (default for all new accounts) ────────────────────────────────
+  {
+    id: "free",
+    name: "Free",
+    tagline: "Your starting point. Verify your email and begin building.",
+    priceUSD: 0,
+    mirrorCredits: 0,          // No monthly grant — one-time 500-credit welcome bonus on email verification
+    interval: "monthly",
+    active: true,
+    features: [
+      "500 welcome credits on email verification",
+      "Access to the MirrorSite AI workspace",
+      "All cloning models (crawl & scrape agents)",
+      "Advanced site analysis",
+      "Built-in database & infrastructure (limited)",
+      "Community support",
+    ],
+    notIncluded: [
+      "Monthly credit grants",
+      "Built-in code editor",
+      "AI code fixes & implementations",
+      "Edit code in editor or visually",
+      "Download source code",
+      "Sync with GitHub",
+      "Use your own domain",
+      "Parallel AI agents",
+      "Priority builds",
+      "Direct support",
+    ],
+  },
+
+  // ── Explorer ────────────────────────────────────────────────────────────
   {
     id: "explorer",
     name: "Explorer",
@@ -104,16 +136,14 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     active: true,
     dodoProductId: process.env.DODO_PRODUCT_EXPLORER,
     features: [
+      "Everything in Free, plus:",
       "50,000 MirrorSite Credits / month",
       "Built-in code editor",
       "AI code fixes & implementations",
-      "Advanced site analysis",
-      "All cloning models (crawl & scrape agents)",
       "Limited multi-section code editing",
       "Up to 30 parallel AI agents",
       "Latest powered build models",
       "Incoming API key & deployment access",
-      "Built-in database & infrastructure",
       "Full application builds (no follow-ups needed)",
       "Deployment system — sell & earn on marketplace",
       "Database management & storage",
@@ -128,6 +158,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       "Direct support",
     ],
   },
+
+  // ── Starter ─────────────────────────────────────────────────────────────
   {
     id: "starter",
     name: "Starter",
@@ -138,23 +170,13 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     active: true,
     dodoProductId: process.env.DODO_PRODUCT_STARTER,
     features: [
+      "Everything in Explorer, plus:",
       "300,000 MirrorSite Credits / month",
       "Edit your code — in the editor or visually",
       "Download your source code",
-      "Built-in code editor",
-      "AI code fixes & implementations",
-      "Advanced site analysis",
-      "All cloning models (crawl & scrape agents)",
-      "Full multi-section code editing",
-      "Up to 30 parallel AI agents",
-      "Latest powered build models",
-      "API key & deployment access",
-      "Built-in database & infrastructure",
-      "Full application builds (no follow-ups needed)",
-      "Deployment system — sell & earn on marketplace",
-      "Database management & storage",
       "Sync with GitHub",
       "Use your own domain",
+      "Full multi-section code editing",
       "Standard team support",
     ],
     notIncluded: [
@@ -162,6 +184,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       "Direct support",
     ],
   },
+
+  // ── Business ────────────────────────────────────────────────────────────
   {
     id: "business",
     name: "Business",
@@ -173,23 +197,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     popular: true,
     dodoProductId: process.env.DODO_PRODUCT_BUSINESS,
     features: [
+      "Everything in Starter, plus:",
       "600,000 MirrorSite Credits / month",
-      "Edit your code — in the editor or visually",
-      "Download your source code",
-      "Sync with GitHub",
-      "Use your own domain",
-      "Built-in code editor",
-      "AI code fixes & implementations",
-      "Advanced site analysis",
-      "All cloning models (crawl & scrape agents)",
-      "Full multi-section code editing",
-      "Up to 30 parallel AI agents",
-      "Latest powered build models",
-      "API key & deployment access",
-      "Built-in database & infrastructure",
-      "Full application builds (no follow-ups needed)",
-      "Deployment system — sell & earn on marketplace",
-      "Database management & storage",
       "Priority builds",
       "Team support",
     ],
@@ -197,6 +206,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       "Direct support",
     ],
   },
+
+  // ── Professional ────────────────────────────────────────────────────────
   {
     id: "professional",
     name: "Professional",
@@ -207,28 +218,14 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     active: true,
     dodoProductId: process.env.DODO_PRODUCT_PROFESSIONAL,
     features: [
+      "Everything in Business, plus:",
       "1,400,000 MirrorSite Credits / month",
-      "Edit your code — in the editor or visually",
-      "Download your source code",
-      "Sync with GitHub",
-      "Use your own domain",
-      "Built-in code editor",
-      "AI code fixes & implementations",
-      "Advanced site analysis",
-      "All cloning models (crawl & scrape agents)",
-      "Full multi-section code editing",
-      "Up to 30 parallel AI agents",
-      "Latest powered build models",
-      "API key & deployment access",
-      "Built-in database & infrastructure",
-      "Full application builds (no follow-ups needed)",
-      "Deployment system — sell & earn on marketplace",
-      "Database management & storage",
-      "Priority builds",
       "Direct support",
       "Full team support",
     ],
   },
+
+  // ── Enterprise ──────────────────────────────────────────────────────────
   {
     id: "enterprise",
     name: "Enterprise",
@@ -240,8 +237,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     custom: true,
     dodoProductId: process.env.DODO_PRODUCT_ENTERPRISE,
     features: [
+      "Everything in Professional, plus:",
       "5,000,000+ MirrorSite Credits / month",
-      "Everything in Professional",
       "Custom credit volume",
       "Dedicated infrastructure",
       "SLA-backed uptime",

@@ -158,16 +158,16 @@ export default async function PricingPage() {
       </section>
 
       {/* Subscription Plans */}
-      <section className="mx-auto max-w-6xl px-6 py-20">
+      <section className="mx-auto max-w-7xl px-6 py-20">
         <div className="text-center mb-12">
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">Subscription Plans</p>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight">Choose Your Plan</h2>
           <p className="mt-3 text-muted-foreground">
-            Monthly subscriptions with recurring {CREDIT_UNIT_NAME}. Cancel any time.
+            Start for free — upgrade any time for monthly {CREDIT_UNIT_NAME} and more capabilities.
           </p>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-4">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {SUBSCRIPTION_PLANS.filter((p) => !p.custom).map((plan) => (
             <PlanCard
               key={plan.id}

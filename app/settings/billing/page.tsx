@@ -6,7 +6,7 @@ import { getBalance, getCreditHistory } from "@/lib/billing/credit-service"
 import { subscriptionRecordsCol } from "@/lib/db/collections"
 import { PERMANENT_CREDIT_PACKS, SUBSCRIPTION_PLANS, CREDIT_UNIT_NAME, formatUSD } from "@/lib/billing/config"
 import { cn } from "@/lib/utils"
-import { Plus, CreditCard, ArrowRight } from "lucide-react"
+import { ArrowRight, Calendar, Check } from "lucide-react"
 import { CheckoutButton } from "@/components/billing/checkout-button"
 import { PlanCard } from "@/components/billing/plan-card"
 
@@ -32,6 +32,14 @@ function formatFullDate(timestamp: number): string {
   })
 }
 
+function formatPeriodEnd(timestamp: number): string {
+  return new Date(timestamp).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  })
+}
+
 export default async function BillingSettingsPage() {
   const user = await getCurrentUser()
   if (!user) redirect("/login?next=%2Fsettings%2Fbilling")
@@ -45,9 +53,17 @@ export default async function BillingSettingsPage() {
     })(),
   ])
 
+  // Resolve the active plan — fall back to the Free plan when no paid subscription exists
+  const FREE_PLAN = SUBSCRIPTION_PLANS.find((p) => p.id === "free")!
   const activePlan = activeSubscription
-    ? SUBSCRIPTION_PLANS.find((p) => p.id === activeSubscription.planId)
-    : null
+    ? (SUBSCRIPTION_PLANS.find((p) => p.id === activeSubscription.planId) ?? FREE_PLAN)
+    : FREE_PLAN
+
+  // Unix ms when the current billing period ends (null for free plan)
+  const currentPeriodEnd: number | null = activeSubscription?.currentPeriodEnd ?? null
+
+  // The planId passed to PlanCards — "free" when no paid sub
+  const activePlanId = activeSubscription?.planId ?? "free"
 
   return (
     <main className="min-h-svh bg-background text-foreground">
@@ -66,7 +82,7 @@ export default async function BillingSettingsPage() {
 
         {/* ── Credit Balance Card ── */}
         <section className="border border-border bg-card p-6">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
                 Available {CREDIT_UNIT_NAME}
@@ -85,14 +101,6 @@ export default async function BillingSettingsPage() {
                 </div>
               </div>
             </div>
-            <CheckoutButton
-              type="subscription"
-              productId="business"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="size-4" />
-              Buy Credits (Business)
-            </CheckoutButton>
           </div>
           <p className="mt-4 text-xs text-muted-foreground">
             Subscription credits are consumed first and expire at the end of your billing period.
@@ -105,27 +113,35 @@ export default async function BillingSettingsPage() {
           <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
             Current Plan
           </p>
-          <div className="mt-3 flex items-center justify-between">
-            <div>
-              <p className="text-lg font-medium">
-                {activePlan
-                  ? activePlan.name
-                  : "No Active Subscription"}
-              </p>
-              {activePlan && (
-                <p className="mt-1 text-sm text-muted-foreground">
+          <div className="mt-3 flex items-start justify-between gap-4 flex-wrap">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2">
+                <p className="text-lg font-semibold">{activePlan.name}</p>
+                <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-xs font-medium text-green-600 dark:text-green-400 flex items-center gap-1">
+                  <Check className="size-3" /> Active
+                </span>
+              </div>
+              {activePlan.id === "free" ? (
+                <p className="text-sm text-muted-foreground">
+                  Free plan — upgrade to get monthly credits and more features.
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
                   {formatUSD(activePlan.priceUSD)}/month
-                  · {activePlan.mirrorCredits.toLocaleString()} {CREDIT_UNIT_NAME}/month
+                  {" · "}{activePlan.mirrorCredits.toLocaleString()} {CREDIT_UNIT_NAME}/month
+                </p>
+              )}
+              {currentPeriodEnd && (
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Calendar className="size-3 shrink-0" />
+                  Current period ends{" "}
+                  <span className="font-medium text-foreground">
+                    {formatPeriodEnd(currentPeriodEnd)}
+                  </span>
+                  {" "}— your credits remain available until then.
                 </p>
               )}
             </div>
-            <Link
-              href="/pricing#subscription-plans"
-              className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-2 text-sm font-medium hover:bg-accent transition-colors"
-            >
-              {activePlan ? "Manage Plan" : "Choose Plan"}
-              <ArrowRight className="size-3" />
-            </Link>
           </div>
         </section>
 
@@ -143,8 +159,33 @@ export default async function BillingSettingsPage() {
             </div>
             <div className="flex items-start gap-2">
               <span className="font-mono text-primary">3</span>
-              <span>New users get 500 free permanent credits</span>
+              <span>New users get 500 free permanent credits on email verification</span>
             </div>
+          </div>
+        </section>
+
+        {/* ── Subscription Plans ── */}
+        <section className="border border-border bg-card p-6">
+          <h2 className="text-xl font-medium">Subscription Plans</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {activePlan.id === "free"
+              ? "Choose a plan to unlock monthly credits and more capabilities."
+              : <>Monthly subscriptions with recurring credit grants.{" "}
+                <span className="font-medium text-primary">Business plan recommended</span> for best value.
+              </>
+            }
+          </p>
+          {/* 5 columns: Free + Explorer + Starter + Business + Professional */}
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+            {SUBSCRIPTION_PLANS.filter((p) => !p.custom).map((plan) => (
+              <PlanCard
+                key={plan.id}
+                plan={plan}
+                activePlanId={activePlanId}
+                currentPeriodEnd={currentPeriodEnd}
+                isLoggedIn={true}
+              />
+            ))}
           </div>
         </section>
 
@@ -183,25 +224,6 @@ export default async function BillingSettingsPage() {
                   Buy {pack.label}
                 </CheckoutButton>
               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ── Subscription Plans ── */}
-        <section className="border border-border bg-card p-6">
-          <h2 className="text-xl font-medium">Subscription Plans</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Monthly subscriptions with recurring credit grants.{" "}
-            <span className="font-medium text-primary">Business plan recommended</span> for best value.
-          </p>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {SUBSCRIPTION_PLANS.filter((p) => !p.custom).map((plan) => (
-              <PlanCard
-                key={plan.id}
-                plan={plan}
-                activePlanId={activeSubscription?.planId}
-                isLoggedIn={true}
-              />
             ))}
           </div>
         </section>
