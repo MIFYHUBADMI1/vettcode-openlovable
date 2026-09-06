@@ -471,19 +471,17 @@ async function handleSubscriptionActive(data: Record<string, unknown> | undefine
   const periodEnd = nextBillingDate ? new Date(nextBillingDate).getTime() : now + 30 * 24 * 60 * 60 * 1000
 
   // ── Duplicate-event guard for subscription.active ──────────────────────
-  // If a subscription record already exists for this subscriptionId AND it
-  // already has an active status with a grant in the ledger, skip granting
-  // again. This handles the case where Dodo fires active more than once.
-  const ledgerCheck = await creditLedgerCol()
-  const existingActiveGrant = await ledgerCheck.findOne({
-    idempotencyKey: { $regex: `^sub_grant_${subscriptionId}_` },
-    userId,
-  })
+  // Fast-path: if a grant already exists for this subscriptionId + periodEnd,
+  // skip immediately without hitting the grant function.
+  // (grantSubscriptionCredits also checks idempotency, but this saves the
+  //  extra DB round-trips when the event is clearly a duplicate.)
+  const periodEndDayActive = Math.floor(periodEnd / 86400000)
+  const activeGrantKey = `sub_grant_${subscriptionId}_period_${periodEndDayActive}`
+  const ledgerCheckActive = await creditLedgerCol()
+  const existingActiveGrant = await ledgerCheckActive.findOne({ idempotencyKey: activeGrantKey, userId })
   if (existingActiveGrant) {
-    logger.info("webhook.dodo", "subscription.active: skipping — grant already recorded for this subscription", {
-      userId,
-      subscriptionId,
-      existingKey: existingActiveGrant.idempotencyKey,
+    logger.info("webhook.dodo", "subscription.active: skipping — grant already recorded for this period", {
+      userId, subscriptionId, periodEnd,
     })
     return
   }
@@ -592,37 +590,19 @@ async function handleSubscriptionRenewed(data: Record<string, unknown> | undefin
   const now = Date.now()
   const periodEnd = nextBillingDate ? new Date(nextBillingDate).getTime() : now + 30 * 24 * 60 * 60 * 1000
 
-  // ── Duplicate-event guard ──────────────────────────────────────────────
-  // Dodo can fire subscription.renewed after subscription.active for the
-  // SAME billing period (plan switch, test events, delayed delivery, etc).
-  //
-  // The grant idempotency key written by grantSubscriptionCredits is:
-  //   sub_grant_{subscriptionId}_{periodStart}
-  // We don't know the exact periodStart used by the active handler, but we
-  // DO know the periodEnd (next_billing_date). So we check the subscription
-  // record: if its currentPeriodEnd matches the periodEnd in THIS renewed
-  // event AND a grant ledger entry already exists for this subscriptionId,
-  // this is a duplicate — skip the entire handler.
-  const subColCheck = await subscriptionRecordsCol()
-  const subRecord = await subColCheck.findOne({ dodoSubscriptionId: subscriptionId })
-  if (subRecord?.currentPeriodEnd && Math.abs(subRecord.currentPeriodEnd - periodEnd) < 24 * 60 * 60 * 1000) {
-    // The subscription record already reflects this period — check for an
-    // existing grant in the ledger for this subscription.
-    const ledger = await creditLedgerCol()
-    const existingGrant = await ledger.findOne({
-      idempotencyKey: { $regex: `^sub_grant_${subscriptionId}_` },
-      userId,
+  // ── Duplicate-event guard for subscription.renewed ────────────────────
+  // Check for an existing grant for this subscriptionId + periodEnd.
+  // Both subscription.active and subscription.renewed use the same
+  // periodEnd-based idempotency key so the second event is always skipped.
+  const periodEndDayRenewed = Math.floor(periodEnd / 86400000)
+  const renewedGrantKey = `sub_grant_${subscriptionId}_period_${periodEndDayRenewed}`
+  const ledgerRenewed = await creditLedgerCol()
+  const existingRenewedGrant = await ledgerRenewed.findOne({ idempotencyKey: renewedGrantKey, userId })
+  if (existingRenewedGrant) {
+    logger.info("webhook.dodo", "subscription.renewed: skipping — grant already recorded for this period", {
+      userId, subscriptionId, periodEnd,
     })
-    if (existingGrant) {
-      logger.info("webhook.dodo", "subscription.renewed: skipping — grant already recorded for this period", {
-        userId,
-        subscriptionId,
-        existingKey: existingGrant.idempotencyKey,
-        periodEnd,
-        subRecordPeriodEnd: subRecord.currentPeriodEnd,
-      })
-      return
-    }
+    return
   }
 
   // ── Natural renewal: expire this subscription's bucket, grant fresh credits

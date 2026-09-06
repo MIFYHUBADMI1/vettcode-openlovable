@@ -479,12 +479,13 @@ export async function releaseReservation(params: {
 
 /**
  * Grant subscription credits for a new billing period.
- * Idempotent per subscription per period.
+ * Idempotent per subscription per billing period (keyed on periodEnd).
  *
- * Instead of overwriting a single credit pool, pushes a new CreditBucket so
- * that credits from different plans/periods coexist and can be consumed
- * oldest-expiry-first. The flat subscriptionCredits field is kept in sync
- * for backward-compatibility.
+ * Uses periodEnd (next_billing_date from Dodo) as the idempotency key
+ * component — this is the same value whether the grant comes from
+ * subscription.active or subscription.renewed for the same period,
+ * so duplicate events from Dodo are safely deduplicated regardless of
+ * when they arrive or what periodStart value was used.
  */
 export async function grantSubscriptionCredits(params: {
   userId: string
@@ -495,7 +496,10 @@ export async function grantSubscriptionCredits(params: {
   periodEnd: number
   metadata?: Record<string, unknown>
 }): Promise<boolean> {
-  const idempotencyKey = `sub_grant_${params.subscriptionId}_${params.periodStart}`
+  // Key on periodEnd (day-epoch) so both subscription.active and
+  // subscription.renewed for the same billing period produce the same key.
+  const periodEndDay = Math.floor(params.periodEnd / 86400000)
+  const idempotencyKey = `sub_grant_${params.subscriptionId}_period_${periodEndDay}`
 
   // Idempotency check first — don't double-grant
   const ledger = await creditLedgerCol()
