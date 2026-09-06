@@ -16,32 +16,8 @@ import type { WebhookEventDoc } from "@/lib/types/db"
 import type { PaymentRecord, SubscriptionRecord } from "@/lib/billing/billing-types"
 import type { SubscriptionStatus, PaymentStatus } from "@/lib/billing/config"
 
-/**
- * Dodo Payments webhook endpoint.
- *
- * Handles payment, subscription, and refund events from Dodo Payments.
- * Uses the unified CreditService for all credit operations.
- *
- * Implements:
- * - HMAC SHA-256 signature verification (Standard Webhooks spec)
- * - Idempotent event processing (duplicate webhook-id → skip)
- * - Credit grants via CreditService (subscription vs permanent)
- * - Subscription lifecycle tracking with proper records
- * - Refund/reversal handling
- *
- * Always returns 200 to Dodo on valid webhooks (they retry on non-200).
- * Returns 401 only for invalid signatures.
- *
- * @see https://docs.dodopayments.com/developer-resources/webhooks
- */
-
 export const runtime = "nodejs"
 
-/**
- * GET /api/billing/webhook — health check for the webhook endpoint.
- * Returns configuration status without exposing secret values.
- * Useful for confirming the endpoint is reachable and keys are loaded.
- */
 export async function GET() {
   const webhookKey = process.env.DODO_PAYMENTS_WEBHOOK_KEY ?? ""
   const apiKey = process.env.DODO_PAYMENTS_API_KEY ?? ""
@@ -63,7 +39,6 @@ export async function POST(req: Request) {
   let rawBody = ""
 
   try {
-    // ── 1. Read raw body for signature verification ────────────────────────
     rawBody = await req.text()
     webhookId = req.headers.get("webhook-id") ?? ""
 
@@ -75,7 +50,6 @@ export async function POST(req: Request) {
       webhookKeyConfigured: Boolean(process.env.DODO_PAYMENTS_WEBHOOK_KEY),
     })
 
-    // ── 2. Verify webhook signature ────────────────────────────────────────
     const verification = verifyWebhookSignature(rawBody, {
       "webhook-id": req.headers.get("webhook-id"),
       "webhook-signature": req.headers.get("webhook-signature"),
@@ -94,7 +68,6 @@ export async function POST(req: Request) {
       )
     }
 
-    // ── 3. Parse event payload ─────────────────────────────────────────────
     let payload: Record<string, unknown>
     try {
       payload = JSON.parse(rawBody) as Record<string, unknown>
@@ -111,18 +84,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, data: { received: true } })
     }
 
-    // ── 4. Persist event for idempotency ───────────────────────────────────
+    // Persist event for webhook-id-level idempotency (Dodo may retry same event)
     const col = await webhookEventsCol()
     const payloadHash = createHash("sha256").update(rawBody).digest("hex")
     const now = Date.now()
 
     const existing = await col.findOne({ webhookId })
     if (existing) {
-      logger.info("webhook.dodo", "Duplicate webhook ignored", {
-        webhookId,
-        eventType,
-        existingStatus: existing.status,
-      })
+      logger.info("webhook.dodo", "Duplicate webhook-id ignored", { webhookId, eventType })
       return NextResponse.json({ ok: true, data: { received: true, duplicate: true } })
     }
 
@@ -148,19 +117,9 @@ export async function POST(req: Request) {
       throw err
     }
 
-    // ── 5. Process event synchronously before responding ──────────────────
-    // Awaiting here ensures that if the process is killed or a serverless
-    // function times out after we respond, we haven't already returned 200
-    // and lost the event silently. All handlers are idempotent so Dodo
-    // retries (on non-200) are safe — but we avoid needing them by
-    // completing the work before we acknowledge receipt.
     try {
       await processEvent(eventType, eventData, eventDoc.id)
     } catch (processingError) {
-      // Processing failed but the event is persisted with status "failed".
-      // We still return 200 so Dodo doesn't retry — our own event record
-      // (status="failed") is the recovery mechanism. Retrying would re-hit
-      // the duplicate check and be a no-op anyway.
       logger.error("webhook.dodo", "Event processing failed", {
         webhookId,
         eventType,
@@ -169,7 +128,6 @@ export async function POST(req: Request) {
       })
     }
 
-    // ── 6. Return 200 after processing ────────────────────────────────────
     return NextResponse.json({ ok: true, data: { received: true } })
   } catch (error) {
     logger.error("webhook.dodo", "Unexpected webhook error", {
@@ -179,8 +137,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, data: { received: true } })
   }
 }
-
-// ─── Event Processing ─────────────────────────────────────────────────────────
 
 async function processEvent(
   eventType: string,
@@ -288,22 +244,8 @@ async function handlePaymentSucceeded(data: Record<string, unknown> | undefined)
   const totalAmount = data.total_amount as number
   const currency = data.currency as string
 
-  logger.info("webhook.dodo", "Payment succeeded", {
-    paymentId,
-    customerId,
-    subscriptionId,
-    totalAmount,
-    currency,
-  })
-
-  // For subscription payments, credit grant is handled by subscription.active/renewed
   if (subscriptionId) {
-    logger.info("webhook.dodo", "Subscription payment — handled by subscription events", {
-      paymentId,
-      subscriptionId,
-    })
-
-    // Still record the payment
+    logger.info("webhook.dodo", "Subscription payment — credits handled by subscription events", { paymentId, subscriptionId })
     await recordPayment({
       userId: metadata?.userId as string,
       dodoPaymentId: paymentId,
@@ -319,20 +261,15 @@ async function handlePaymentSucceeded(data: Record<string, unknown> | undefined)
     return
   }
 
-  // For one-time payments (permanent credit packs)
   const userId = metadata?.userId as string | undefined
   const credits = metadata?.credits as number | undefined
   const packageId = metadata?.packageId as string | undefined
 
   if (!userId || !credits) {
-    logger.warn("webhook.dodo", "payment.succeeded: missing userId or credits in metadata", {
-      paymentId,
-      metadata,
-    })
+    logger.warn("webhook.dodo", "payment.succeeded: missing userId or credits", { paymentId, metadata })
     return
   }
 
-  // Grant permanent credits via CreditService
   const result = await grantCredits({
     userId,
     creditType: "permanent",
@@ -341,17 +278,10 @@ async function handlePaymentSucceeded(data: Record<string, unknown> | undefined)
     idempotencyKey: `payment_${paymentId}`,
     referenceType: "payment",
     referenceId: paymentId,
-    metadata: {
-      packageId,
-      dodoPaymentId: paymentId,
-      dodoCustomerId: customerId,
-      totalAmount,
-      currency,
-    },
+    metadata: { packageId, dodoPaymentId: paymentId, dodoCustomerId: customerId, totalAmount, currency },
   })
 
   if (result.success) {
-    // Record payment
     await recordPayment({
       userId,
       dodoPaymentId: paymentId,
@@ -365,13 +295,7 @@ async function handlePaymentSucceeded(data: Record<string, unknown> | undefined)
       packageId,
       createdAt: Date.now(),
     })
-
-    logger.info("webhook.dodo", "Permanent credits granted", {
-      paymentId,
-      userId,
-      credits,
-      packageId,
-    })
+    logger.info("webhook.dodo", "Permanent credits granted", { paymentId, userId, credits })
   }
 }
 
@@ -392,19 +316,13 @@ async function handlePaymentFailed(data: Record<string, unknown> | undefined) {
   })
 
   if (subscriptionId) {
-    // Subscription renewal payment failed — mark the subscription past_due.
-    // Credits are NOT expired yet; the user keeps access while Dodo retries.
-    // If retries also fail, Dodo will fire subscription.on_hold or
-    // subscription.expired, which we handle separately.
     const subCol = await subscriptionRecordsCol()
     await subCol.updateOne(
       { dodoSubscriptionId: subscriptionId },
       { $set: { status: "past_due", updatedAt: Date.now() } },
     )
-    logger.warn("webhook.dodo", "Subscription renewal payment failed — marked past_due (credits kept, Dodo will retry)", {
-      paymentId,
-      subscriptionId,
-      userId,
+    logger.warn("webhook.dodo", "Subscription renewal payment failed — marked past_due, credits kept, Dodo will retry", {
+      paymentId, subscriptionId, userId,
     })
   } else {
     logger.warn("webhook.dodo", "Payment failed", { paymentId, userId })
@@ -414,26 +332,26 @@ async function handlePaymentFailed(data: Record<string, unknown> | undefined) {
 async function handlePaymentCancelled(data: Record<string, unknown> | undefined) {
   if (!data) return
   const paymentId = data.payment_id as string
-
-  await recordPayment({
-    dodoPaymentId: paymentId,
-    amount: 0,
-    currency: "USD",
-    status: "cancelled",
-    paymentType: "unknown",
-    createdAt: Date.now(),
-  })
-
+  await recordPayment({ dodoPaymentId: paymentId, amount: 0, currency: "USD", status: "cancelled", paymentType: "unknown", createdAt: Date.now() })
   logger.info("webhook.dodo", "Payment cancelled", { paymentId })
 }
 
 // ─── Subscription Handlers ─────────────────────────────────────────────────────
 
+/**
+ * subscription.active — fires when a subscription is first created/activated.
+ *
+ * On plan switch: Dodo creates a NEW subscription and fires active for it.
+ * We ADD the new plan's credits on top of whatever the user already has.
+ * We do NOT expire the old plan's credits — the user keeps them until
+ * their natural expiry (handled by subscription.expired).
+ *
+ * Idempotency: keyed on subscriptionId + periodEnd (day-epoch).
+ * Both subscription.active and subscription.renewed for the same billing
+ * cycle carry the same next_billing_date, so duplicates are always blocked.
+ */
 async function handleSubscriptionActive(data: Record<string, unknown> | undefined) {
-  if (!data) {
-    logger.warn("webhook.dodo", "subscription.active: missing data")
-    return
-  }
+  if (!data) { logger.warn("webhook.dodo", "subscription.active: missing data"); return }
 
   const subscriptionId = data.subscription_id as string
   const customer = data.customer as Record<string, unknown> | undefined
@@ -445,99 +363,54 @@ async function handleSubscriptionActive(data: Record<string, unknown> | undefine
 
   const userId = metadata?.userId as string | undefined
   const planId = metadata?.planId as string | undefined
-
-  // Look up plan credits from our config
   const plan = planId ? SUBSCRIPTION_PLANS.find((p) => p.id === planId) : undefined
   const credits = plan?.mirrorCredits ?? (metadata?.credits as number | undefined) ?? 0
 
-  logger.info("webhook.dodo", "Subscription activated", {
-    subscriptionId,
-    customerId,
-    productId,
-    status,
-    userId,
-    planId,
-    credits,
-  })
+  logger.info("webhook.dodo", "subscription.active received", { subscriptionId, userId, planId, credits, status })
 
   if (!userId || !credits) {
-    logger.warn("webhook.dodo", "subscription.active: missing userId or credits", {
-      subscriptionId,
-    })
+    logger.warn("webhook.dodo", "subscription.active: missing userId or credits", { subscriptionId })
     return
   }
 
   const now = Date.now()
   const periodEnd = nextBillingDate ? new Date(nextBillingDate).getTime() : now + 30 * 24 * 60 * 60 * 1000
 
-  // ── Duplicate-event guard for subscription.active ──────────────────────
-  // Fast-path: if a grant already exists for this subscriptionId + periodEnd,
-  // skip immediately without hitting the grant function.
-  // (grantSubscriptionCredits also checks idempotency, but this saves the
-  //  extra DB round-trips when the event is clearly a duplicate.)
-  const periodEndDayActive = Math.floor(periodEnd / 86400000)
-  const activeGrantKey = `sub_grant_${subscriptionId}_period_${periodEndDayActive}`
-  const ledgerCheckActive = await creditLedgerCol()
-  const existingActiveGrant = await ledgerCheckActive.findOne({ idempotencyKey: activeGrantKey, userId })
-  if (existingActiveGrant) {
-    logger.info("webhook.dodo", "subscription.active: skipping — grant already recorded for this period", {
-      userId, subscriptionId, periodEnd,
-    })
+  // ── Idempotency check: has this exact subscription+period already been granted? ──
+  const grantKey = `sub_grant_${subscriptionId}_period_${Math.floor(periodEnd / 86400000)}`
+  const ledger = await creditLedgerCol()
+  const alreadyGranted = await ledger.findOne({ idempotencyKey: grantKey })
+  if (alreadyGranted) {
+    logger.info("webhook.dodo", "subscription.active: duplicate — grant already exists, skipping", { subscriptionId, grantKey })
     return
   }
 
-  // ── Plan switch: ADD credits on top, don't expire old ones ───────────────
-  // When a user switches plans Dodo fires subscription.active for the new
-  // subscription. We do NOT expire the old subscription's credits here —
-  // the user keeps their remaining credits from the previous plan, and the
-  // new plan's credits are added on top as a separate bucket. Credits from
-  // both plans coexist and are consumed oldest-expiry-first by consumeCredits.
-  //
-  // The old subscription's bucket will be naturally expired when that
-  // subscription's expiresAt date arrives and handleSubscriptionExpired
-  // fires, OR when handleSubscriptionRenewed fires for the OLD subscription
-  // (which won't happen since the user switched — Dodo won't renew the
-  // cancelled old subscription).
-  //
-  // We DO mark the old subscription record as cancelled so the UI knows.
-  const subColForSwitch = await subscriptionRecordsCol()
-  const existingSub = await subColForSwitch.findOne({
+  // ── Mark old subscription record as switched-away-from (no credit change) ──
+  const subCol = await subscriptionRecordsCol()
+  const prevSub = await subCol.findOne({
     userId,
     status: { $in: ["active", "trialing"] },
     dodoSubscriptionId: { $ne: subscriptionId },
   })
-  if (existingSub) {
-    logger.info("webhook.dodo", "Plan switch — keeping old credits, adding new on top", {
-      userId,
-      previousSubscriptionId: existingSub.dodoSubscriptionId,
-      previousPlanId: existingSub.planId,
-      newSubscriptionId: subscriptionId,
-      newPlanId: planId,
+  if (prevSub) {
+    logger.info("webhook.dodo", "Plan switch detected — old credits KEPT, new credits ADDED on top", {
+      userId, prevPlan: prevSub.planId, newPlan: planId,
+      prevSubId: prevSub.dodoSubscriptionId, newSubId: subscriptionId,
     })
-    // Mark old subscription as cancelled (user switched away from it)
-    await subColForSwitch.updateOne(
-      { dodoSubscriptionId: existingSub.dodoSubscriptionId },
-      { $set: { status: "cancelled", cancelAtPeriodEnd: true, updatedAt: Date.now() } },
+    await subCol.updateOne(
+      { dodoSubscriptionId: prevSub.dodoSubscriptionId },
+      { $set: { status: "cancelled", cancelAtPeriodEnd: true, updatedAt: now } },
     )
   }
 
-  // Grant subscription credits via CreditService
-  const result = await grantSubscriptionCredits({
-    userId,
-    amount: credits,
-    subscriptionId,
-    planId: planId ?? "unknown",
-    periodStart: now,
-    periodEnd,
-    metadata: {
-      dodoCustomerId: customerId,
-      productId,
-      event: "activation",
-    },
+  // ── Grant new plan credits on top of existing balance ──
+  const granted = await grantSubscriptionCredits({
+    userId, amount: credits, subscriptionId,
+    planId: planId ?? "unknown", periodStart: now, periodEnd,
+    metadata: { dodoCustomerId: customerId, productId, event: "activation" },
   })
 
-  if (result) {
-    // Create/update subscription record
+  if (granted) {
     await recordSubscription({
       userId,
       dodoSubscriptionId: subscriptionId,
@@ -554,21 +427,26 @@ async function handleSubscriptionActive(data: Record<string, unknown> | undefine
       createdAt: now,
       updatedAt: now,
     })
-
-    logger.info("webhook.dodo", "Subscription credits granted", {
-      subscriptionId,
-      userId,
-      credits,
-      planId,
-    })
+    logger.info("webhook.dodo", "subscription.active: credits granted", { subscriptionId, userId, credits, planId })
   }
 }
 
+/**
+ * subscription.renewed — fires every month when Dodo successfully charges
+ * for the next billing period.
+ *
+ * ONLY fires for the SAME subscription renewing (not for plan switches —
+ * those fire subscription.active on a new subscription ID).
+ *
+ * Flow:
+ * 1. Idempotency check — skip if already granted for this period
+ * 2. Expire the CURRENT period's bucket for this subscription
+ * 3. Grant fresh credits for the new period
+ *
+ * We do NOT expire credits from other subscriptions (plan switches) here.
+ */
 async function handleSubscriptionRenewed(data: Record<string, unknown> | undefined) {
-  if (!data) {
-    logger.warn("webhook.dodo", "subscription.renewed: missing data")
-    return
-  }
+  if (!data) { logger.warn("webhook.dodo", "subscription.renewed: missing data"); return }
 
   const subscriptionId = data.subscription_id as string
   const metadata = data.metadata as Record<string, unknown> | undefined
@@ -576,38 +454,29 @@ async function handleSubscriptionRenewed(data: Record<string, unknown> | undefin
 
   const userId = metadata?.userId as string | undefined
   const planId = metadata?.planId as string | undefined
-
   const plan = planId ? SUBSCRIPTION_PLANS.find((p) => p.id === planId) : undefined
   const credits = plan?.mirrorCredits ?? (metadata?.credits as number | undefined) ?? 0
 
   if (!userId || !credits) {
-    logger.warn("webhook.dodo", "subscription.renewed: missing userId or credits", {
-      subscriptionId,
-    })
+    logger.warn("webhook.dodo", "subscription.renewed: missing userId or credits", { subscriptionId })
     return
   }
 
   const now = Date.now()
   const periodEnd = nextBillingDate ? new Date(nextBillingDate).getTime() : now + 30 * 24 * 60 * 60 * 1000
 
-  // ── Duplicate-event guard for subscription.renewed ────────────────────
-  // Check for an existing grant for this subscriptionId + periodEnd.
-  // Both subscription.active and subscription.renewed use the same
-  // periodEnd-based idempotency key so the second event is always skipped.
-  const periodEndDayRenewed = Math.floor(periodEnd / 86400000)
-  const renewedGrantKey = `sub_grant_${subscriptionId}_period_${periodEndDayRenewed}`
-  const ledgerRenewed = await creditLedgerCol()
-  const existingRenewedGrant = await ledgerRenewed.findOne({ idempotencyKey: renewedGrantKey, userId })
-  if (existingRenewedGrant) {
-    logger.info("webhook.dodo", "subscription.renewed: skipping — grant already recorded for this period", {
-      userId, subscriptionId, periodEnd,
-    })
+  // ── Idempotency: skip if this subscription+period already granted ──
+  const grantKey = `sub_grant_${subscriptionId}_period_${Math.floor(periodEnd / 86400000)}`
+  const ledger = await creditLedgerCol()
+  const alreadyGranted = await ledger.findOne({ idempotencyKey: grantKey })
+  if (alreadyGranted) {
+    logger.info("webhook.dodo", "subscription.renewed: duplicate — grant already exists, skipping", { subscriptionId, grantKey })
     return
   }
 
-  // ── Natural renewal: expire this subscription's bucket, grant fresh credits
-  // expireSubscriptionCredits targets only the bucket for this subscriptionId,
-  // so any credits from a previous plan are left untouched.
+  logger.info("webhook.dodo", "subscription.renewed: processing genuine renewal", { subscriptionId, userId, planId, credits })
+
+  // ── Expire only THIS subscription's bucket (not credits from other plans) ──
   await expireSubscriptionCredits({
     userId,
     subscriptionId,
@@ -615,42 +484,20 @@ async function handleSubscriptionRenewed(data: Record<string, unknown> | undefin
     metadata: { event: "renewal", planId },
   })
 
-  // Grant new period's subscription credits
-  const result = await grantSubscriptionCredits({
-    userId,
-    amount: credits,
-    subscriptionId,
-    planId: planId ?? "unknown",
-    periodStart: now,
-    periodEnd,
-    metadata: {
-      event: "renewal",
-      dodoCustomerId: metadata?.customerId as string,
-    },
+  // ── Grant fresh credits for the new period ──
+  const granted = await grantSubscriptionCredits({
+    userId, amount: credits, subscriptionId,
+    planId: planId ?? "unknown", periodStart: now, periodEnd,
+    metadata: { event: "renewal", dodoCustomerId: metadata?.customerId as string },
   })
 
-  if (result) {
-    // Update subscription record
+  if (granted) {
     const subCol = await subscriptionRecordsCol()
     await subCol.updateOne(
       { dodoSubscriptionId: subscriptionId },
-      {
-        $set: {
-          status: "active",
-          currentPeriodStart: now,
-          currentPeriodEnd: periodEnd,
-          nextBillingDate: nextBillingDate ? new Date(nextBillingDate).getTime() : undefined,
-          updatedAt: now,
-        },
-      },
+      { $set: { status: "active", currentPeriodStart: now, currentPeriodEnd: periodEnd, nextBillingDate: nextBillingDate ? new Date(nextBillingDate).getTime() : undefined, updatedAt: now } },
     )
-
-    logger.info("webhook.dodo", "Renewal credits granted", {
-      subscriptionId,
-      userId,
-      credits,
-      planId,
-    })
+    logger.info("webhook.dodo", "subscription.renewed: renewal credits granted", { subscriptionId, userId, credits, planId })
   }
 }
 
@@ -661,50 +508,27 @@ async function handleSubscriptionCancelled(data: Record<string, unknown> | undef
   const userId = metadata?.userId as string | undefined
   const cancelledAt = data.cancelled_at as string | undefined
 
-  // Update subscription record
   const subCol = await subscriptionRecordsCol()
   await subCol.updateOne(
     { dodoSubscriptionId: subscriptionId },
-    {
-      $set: {
-        status: "cancelled",
-        cancelledAt: cancelledAt ? new Date(cancelledAt).getTime() : Date.now(),
-        cancelAtPeriodEnd: true,
-        updatedAt: Date.now(),
-      },
-    },
+    { $set: { status: "cancelled", cancelledAt: cancelledAt ? new Date(cancelledAt).getTime() : Date.now(), cancelAtPeriodEnd: true, updatedAt: Date.now() } },
   )
-
-  logger.info("webhook.dodo", "Subscription cancelled", {
-    subscriptionId,
-    userId,
-    cancelledAt,
-  })
+  logger.info("webhook.dodo", "Subscription cancelled (credits remain until period ends)", { subscriptionId, userId, cancelledAt })
 }
 
 async function handleSubscriptionPastDue(data: Record<string, unknown> | undefined) {
   if (!data) return
   const subscriptionId = data.subscription_id as string
-
   const subCol = await subscriptionRecordsCol()
-  await subCol.updateOne(
-    { dodoSubscriptionId: subscriptionId },
-    { $set: { status: "past_due", updatedAt: Date.now() } },
-  )
-
+  await subCol.updateOne({ dodoSubscriptionId: subscriptionId }, { $set: { status: "past_due", updatedAt: Date.now() } })
   logger.warn("webhook.dodo", "Subscription past due", { subscriptionId })
 }
 
 async function handleSubscriptionOnHold(data: Record<string, unknown> | undefined) {
   if (!data) return
   const subscriptionId = data.subscription_id as string
-
   const subCol = await subscriptionRecordsCol()
-  await subCol.updateOne(
-    { dodoSubscriptionId: subscriptionId },
-    { $set: { status: "paused", updatedAt: Date.now() } },
-  )
-
+  await subCol.updateOne({ dodoSubscriptionId: subscriptionId }, { $set: { status: "paused", updatedAt: Date.now() } })
   logger.warn("webhook.dodo", "Subscription on hold", { subscriptionId })
 }
 
@@ -714,22 +538,12 @@ async function handleSubscriptionExpired(data: Record<string, unknown> | undefin
   const metadata = data.metadata as Record<string, unknown> | undefined
   const userId = metadata?.userId as string | undefined
 
-  // Expire subscription credits
   if (userId) {
-    await expireSubscriptionCredits({
-      userId,
-      subscriptionId,
-      metadata: { event: "expiration" },
-    })
+    await expireSubscriptionCredits({ userId, subscriptionId, metadata: { event: "expiration" } })
   }
 
-  // Update subscription record
   const subCol = await subscriptionRecordsCol()
-  await subCol.updateOne(
-    { dodoSubscriptionId: subscriptionId },
-    { $set: { status: "expired", expiredAt: Date.now(), updatedAt: Date.now() } },
-  )
-
+  await subCol.updateOne({ dodoSubscriptionId: subscriptionId }, { $set: { status: "expired", expiredAt: Date.now(), updatedAt: Date.now() } })
   logger.info("webhook.dodo", "Subscription expired", { subscriptionId, userId })
 }
 
@@ -737,113 +551,50 @@ async function handleSubscriptionUpdated(data: Record<string, unknown> | undefin
   if (!data) return
   const subscriptionId = data.subscription_id as string
   const status = data.status as string
-  const metadata = data.metadata as Record<string, unknown> | undefined
-  const userId = metadata?.userId as string | undefined
-
-  // Map Dodo status to our status
-  const statusMap: Record<string, string> = {
-    active: "active",
-    cancelled: "cancelled",
-    past_due: "past_due",
-    paused: "paused",
-    expired: "expired",
-  }
-
-  const mappedStatus = statusMap[status] ?? status
-
+  const statusMap: Record<string, string> = { active: "active", cancelled: "cancelled", past_due: "past_due", paused: "paused", expired: "expired" }
   const subCol = await subscriptionRecordsCol()
-  await subCol.updateOne(
-    { dodoSubscriptionId: subscriptionId },
-    { $set: { status: mappedStatus as never, updatedAt: Date.now() } },
-  )
-
-  logger.info("webhook.dodo", "Subscription updated", {
-    subscriptionId,
-    userId,
-    status,
-  })
+  await subCol.updateOne({ dodoSubscriptionId: subscriptionId }, { $set: { status: (statusMap[status] ?? status) as never, updatedAt: Date.now() } })
+  logger.info("webhook.dodo", "Subscription updated", { subscriptionId, status })
 }
 
 async function handleSubscriptionPlanChanged(data: Record<string, unknown> | undefined) {
   if (!data) return
   const subscriptionId = data.subscription_id as string
-  const metadata = data.metadata as Record<string, unknown> | undefined
-  const userId = metadata?.userId as string | undefined
   const productId = data.product_id as string
-
-  // Find the new plan by Dodo product ID
   const newPlan = SUBSCRIPTION_PLANS.find((p) => p.dodoProductId === productId)
-
   if (newPlan) {
     const subCol = await subscriptionRecordsCol()
     await subCol.updateOne(
       { dodoSubscriptionId: subscriptionId },
-      {
-        $set: {
-          planId: newPlan.id,
-          planName: newPlan.name,
-          priceUSD: newPlan.priceUSD,
-          mirrorCredits: newPlan.mirrorCredits,
-          updatedAt: Date.now(),
-        },
-      },
+      { $set: { planId: newPlan.id, planName: newPlan.name, priceUSD: newPlan.priceUSD, mirrorCredits: newPlan.mirrorCredits, updatedAt: Date.now() } },
     )
   }
-
-  logger.info("webhook.dodo", "Subscription plan changed", {
-    subscriptionId,
-    userId,
-    productId,
-  })
+  logger.info("webhook.dodo", "Subscription plan changed", { subscriptionId, productId })
 }
 
-// ─── Refund Handlers ──────────────────────────────────────────────────────────
+// ─── Refund Handler ───────────────────────────────────────────────────────────
 
 async function handleRefundSucceeded(data: Record<string, unknown> | undefined) {
-  if (!data) {
-    logger.warn("webhook.dodo", "refund.succeeded: missing data")
-    return
-  }
+  if (!data) { logger.warn("webhook.dodo", "refund.succeeded: missing data"); return }
 
   const refundId = data.refund_id as string
   const paymentId = data.payment_id as string
   const amount = data.amount as number
   const currency = data.currency as string
 
-  logger.info("webhook.dodo", "Refund succeeded", {
-    refundId,
-    paymentId,
-    amount,
-    currency,
-  })
-
-  // Find the original payment record
   const payCol = await paymentRecordsCol()
   const originalPayment = await payCol.findOne({ dodoPaymentId: paymentId })
-
-  if (!originalPayment || !originalPayment.userId) {
-    logger.warn("webhook.dodo", "Refund: no matching payment found", {
-      refundId,
-      paymentId,
-    })
+  if (!originalPayment?.userId) {
+    logger.warn("webhook.dodo", "Refund: no matching payment found", { refundId, paymentId })
     return
   }
 
-  // Check for duplicate refund
   const existingRefund = await payCol.findOne({ dodoPaymentId: refundId })
-  if (existingRefund) {
-    logger.info("webhook.dodo", "Refund already processed", { refundId })
-    return
-  }
+  if (existingRefund) { logger.info("webhook.dodo", "Refund already processed", { refundId }); return }
 
-  // Calculate credits to reverse based on original grant
   const creditsToReverse = originalPayment.creditsGranted ?? 0
-  if (creditsToReverse <= 0) {
-    logger.warn("webhook.dodo", "Refund: no credits to reverse", { refundId, paymentId })
-    return
-  }
+  if (creditsToReverse <= 0) { logger.warn("webhook.dodo", "Refund: no credits to reverse", { refundId }); return }
 
-  // Reverse credits via CreditService (proper debit, not negative grant)
   const result = await reverseCredits({
     userId: originalPayment.userId,
     creditType: originalPayment.creditType ?? "permanent",
@@ -852,37 +603,16 @@ async function handleRefundSucceeded(data: Record<string, unknown> | undefined) 
     idempotencyKey: `refund_${refundId}`,
     referenceType: "refund",
     referenceId: refundId,
-    metadata: {
-      originalPaymentId: paymentId,
-      refundAmount: amount,
-      currency,
-      creditsReversed: creditsToReverse,
-    },
+    metadata: { originalPaymentId: paymentId, refundAmount: amount, currency, creditsReversed: creditsToReverse },
   })
 
   if (result.success) {
-    // Record the refund payment
-    await recordPayment({
-      userId: originalPayment.userId,
-      dodoPaymentId: refundId,
-      amount: -amount,
-      currency,
-      status: "refunded",
-      paymentType: "refund",
-      creditsGranted: -creditsToReverse,
-      createdAt: Date.now(),
-    })
-
-    logger.info("webhook.dodo", "Credits reversed for refund", {
-      refundId,
-      paymentId,
-      userId: originalPayment.userId,
-      creditsReversed: creditsToReverse,
-    })
+    await recordPayment({ userId: originalPayment.userId, dodoPaymentId: refundId, amount: -amount, currency, status: "refunded", paymentType: "refund", creditsGranted: -creditsToReverse, createdAt: Date.now() })
+    logger.info("webhook.dodo", "Credits reversed for refund", { refundId, paymentId, userId: originalPayment.userId, creditsReversed: creditsToReverse })
   }
 }
 
-// ─── Helper: Record Payment ──────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 async function recordPayment(params: {
   userId?: string
@@ -890,7 +620,7 @@ async function recordPayment(params: {
   dodoCustomerId?: string
   amount: number
   currency: string
-  status: import("@/lib/billing/config").PaymentStatus
+  status: PaymentStatus
   paymentType: string
   creditsGranted?: number
   creditType?: string
@@ -902,7 +632,7 @@ async function recordPayment(params: {
   try {
     const col = await paymentRecordsCol()
     const existing = await col.findOne({ dodoPaymentId: params.dodoPaymentId })
-    if (existing) return // Idempotent
+    if (existing) return
 
     const record: PaymentRecord = {
       _id: new ObjectId(),
@@ -922,17 +652,11 @@ async function recordPayment(params: {
       createdAt: params.createdAt,
       updatedAt: Date.now(),
     }
-
     await col.insertOne(record)
   } catch (err) {
-    logger.error("webhook.dodo", "Failed to record payment", {
-      dodoPaymentId: params.dodoPaymentId,
-      error: err instanceof Error ? err.message : String(err),
-    })
+    logger.error("webhook.dodo", "Failed to record payment", { dodoPaymentId: params.dodoPaymentId, error: err instanceof Error ? err.message : String(err) })
   }
 }
-
-// ─── Helper: Record Subscription ─────────────────────────────────────────────
 
 async function recordSubscription(params: {
   userId: string
@@ -942,7 +666,7 @@ async function recordSubscription(params: {
   planName: string
   priceUSD: number
   mirrorCredits: number
-  status: import("@/lib/billing/config").SubscriptionStatus
+  status: SubscriptionStatus
   currentPeriodStart: number
   currentPeriodEnd: number
   nextBillingDate?: number
@@ -954,7 +678,6 @@ async function recordSubscription(params: {
     const col = await subscriptionRecordsCol()
     const existing = await col.findOne({ dodoSubscriptionId: params.dodoSubscriptionId })
     if (existing) {
-      // Update existing record
       await col.updateOne(
         { dodoSubscriptionId: params.dodoSubscriptionId },
         { $set: { userId: params.userId, planId: params.planId, planName: params.planName, priceUSD: params.priceUSD, mirrorCredits: params.mirrorCredits, status: params.status as SubscriptionStatus, currentPeriodStart: params.currentPeriodStart, currentPeriodEnd: params.currentPeriodEnd, nextBillingDate: params.nextBillingDate, cancelAtPeriodEnd: params.cancelAtPeriodEnd, updatedAt: Date.now() } },
@@ -980,12 +703,8 @@ async function recordSubscription(params: {
       createdAt: params.createdAt,
       updatedAt: params.updatedAt,
     }
-
     await col.insertOne(record)
   } catch (err) {
-    logger.error("webhook.dodo", "Failed to record subscription", {
-      dodoSubscriptionId: params.dodoSubscriptionId,
-      error: err instanceof Error ? err.message : String(err),
-    })
+    logger.error("webhook.dodo", "Failed to record subscription", { dodoSubscriptionId: params.dodoSubscriptionId, error: err instanceof Error ? err.message : String(err) })
   }
 }
