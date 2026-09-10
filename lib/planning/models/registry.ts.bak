@@ -1,0 +1,406 @@
+/**
+ * ModelRegistry - Manages AI model selection, fallback strategies, and configuration
+ * 
+ * This component provides centralized configuration for all planning pipeline stages,
+ * allowing different models to be used for each stage with configurable fallbacks.
+ * 
+ * Environment Variables:
+ * - PLANNER_MODEL: Primary model for the planning stage
+ * - PLANNER_FALLBACK_MODEL: Fallback model for the planning stage
+ * - RESEARCH_MODEL: Primary model for the research stage
+ * - RESEARCH_FALLBACK_MODEL: Fallback model for the research stage
+ * - CRITIC_MODEL: Primary model for the critique stage
+ * - CRITIC_FALLBACK_MODEL: Fallback model for the critique stage
+ * - REPAIR_MODEL: Primary model for the repair stage
+ * - REPAIR_FALLBACK_MODEL: Fallback model for the repair stage
+ * - OPENROUTER_MODEL: Default model used when stage-specific model not configured
+ * - PLANNING_STRATEGY: Preset selection (cost_optimized|quality_optimized|speed_optimized)
+ */
+
+/**
+ * Pipeline stages that require AI model configuration
+ */
+export type PipelineStage = 
+  | 'idea_understanding'
+  | 'research'
+  | 'planning'
+  | 'critique'
+  | 'repair'
+
+/**
+ * Configuration for a single AI model including fallbacks and parameters
+ */
+export interface ModelConfig {
+  /** Primary model identifier (e.g., "anthropic/claude-3.5-sonnet") */
+  primary: string
+  /** Array of fallback model identifiers to try if primary fails */
+  fallbacks: string[]
+  /** Maximum tokens for generation */
+  maxTokens: number
+  /** Temperature for generation (0.0 to 1.0) */
+  temperature: number
+}
+
+/**
+ * Complete configuration for all pipeline stages
+ */
+export interface ModelConfiguration {
+  /** Model config for idea understanding stage */
+  ideaUnderstanding: ModelConfig
+  /** Model config for research agent stage */
+  researchAgent: ModelConfig
+  /** Model config for primary planner stage */
+  primaryPlanner: ModelConfig
+  /** Model config for independent critic stage */
+  critic: ModelConfig
+  /** Model config for repair service stage */
+  repairService: ModelConfig
+  /** Strategy preset identifier */
+  strategy: 'cost_optimized' | 'quality_optimized' | 'speed_optimized' | 'default'
+}
+
+/**
+ * Default model configurations for different optimization strategies
+ */
+const STRATEGY_PRESETS: Record<string, Partial<ModelConfiguration>> = {
+  cost_optimized: {
+    ideaUnderstanding: {
+      primary: 'openai/gpt-4o-mini',
+      fallbacks: ['openrouter/auto'],
+      maxTokens: 4000,
+      temperature: 0.7,
+    },
+    researchAgent: {
+      primary: 'openai/gpt-4o-mini',
+      fallbacks: ['openrouter/auto'],
+      maxTokens: 4000,
+      temperature: 0.7,
+    },
+    primaryPlanner: {
+      primary: 'openai/gpt-4o',
+      fallbacks: ['openai/gpt-4o-mini', 'openrouter/auto'],
+      maxTokens: 8000,
+      temperature: 0.7,
+    },
+    critic: {
+      primary: 'openai/gpt-4o-mini',
+      fallbacks: ['openrouter/auto'],
+      maxTokens: 4000,
+      temperature: 0.3,
+    },
+    repairService: {
+      primary: 'openai/gpt-4o',
+      fallbacks: ['openai/gpt-4o-mini', 'openrouter/auto'],
+      maxTokens: 8000,
+      temperature: 0.5,
+    },
+    strategy: 'cost_optimized',
+  },
+  quality_optimized: {
+    ideaUnderstanding: {
+      primary: 'anthropic/claude-3.5-sonnet',
+      fallbacks: ['openai/gpt-4o', 'openrouter/auto'],
+      maxTokens: 8000,
+      temperature: 0.7,
+    },
+    researchAgent: {
+      primary: 'anthropic/claude-3.5-sonnet',
+      fallbacks: ['openai/gpt-4o', 'openrouter/auto'],
+      maxTokens: 8000,
+      temperature: 0.7,
+    },
+    primaryPlanner: {
+      primary: 'anthropic/claude-3.5-sonnet',
+      fallbacks: ['openai/gpt-4o', 'openrouter/auto'],
+      maxTokens: 16000,
+      temperature: 0.7,
+    },
+    critic: {
+      primary: 'anthropic/claude-3.5-sonnet',
+      fallbacks: ['openai/gpt-4o', 'openrouter/auto'],
+      maxTokens: 8000,
+      temperature: 0.3,
+    },
+    repairService: {
+      primary: 'anthropic/claude-3.5-sonnet',
+      fallbacks: ['openai/gpt-4o', 'openrouter/auto'],
+      maxTokens: 16000,
+      temperature: 0.5,
+    },
+    strategy: 'quality_optimized',
+  },
+  speed_optimized: {
+    ideaUnderstanding: {
+      primary: 'openai/gpt-4o-mini',
+      fallbacks: ['openrouter/auto'],
+      maxTokens: 4000,
+      temperature: 0.7,
+    },
+    researchAgent: {
+      primary: 'openai/gpt-4o-mini',
+      fallbacks: ['openrouter/auto'],
+      maxTokens: 4000,
+      temperature: 0.7,
+    },
+    primaryPlanner: {
+      primary: 'openai/gpt-4o-mini',
+      fallbacks: ['openrouter/auto'],
+      maxTokens: 6000,
+      temperature: 0.7,
+    },
+    critic: {
+      primary: 'openai/gpt-4o-mini',
+      fallbacks: ['openrouter/auto'],
+      maxTokens: 4000,
+      temperature: 0.3,
+    },
+    repairService: {
+      primary: 'openai/gpt-4o-mini',
+      fallbacks: ['openrouter/auto'],
+      maxTokens: 6000,
+      temperature: 0.5,
+    },
+    strategy: 'speed_optimized',
+  },
+}
+
+/**
+ * Default configuration when no strategy is specified
+ */
+const DEFAULT_CONFIG: ModelConfiguration = {
+  ideaUnderstanding: {
+    primary: 'openrouter/auto',
+    fallbacks: [],
+    maxTokens: 4000,
+    temperature: 0.7,
+  },
+  researchAgent: {
+    primary: 'openrouter/auto',
+    fallbacks: [],
+    maxTokens: 4000,
+    temperature: 0.7,
+  },
+  primaryPlanner: {
+    primary: 'openrouter/auto',
+    fallbacks: [],
+    maxTokens: 8000,
+    temperature: 0.7,
+  },
+  critic: {
+    primary: 'openrouter/auto',
+    fallbacks: [],
+    maxTokens: 4000,
+    temperature: 0.3,
+  },
+  repairService: {
+    primary: 'openrouter/auto',
+    fallbacks: [],
+    maxTokens: 8000,
+    temperature: 0.5,
+  },
+  strategy: 'default',
+}
+
+/**
+ * ModelRegistry manages AI model configuration and selection for all pipeline stages
+ */
+export class ModelRegistry {
+  private config: ModelConfiguration
+
+  constructor() {
+    this.config = this.loadConfigFromEnv()
+  }
+
+  /**
+   * Get the model configuration for a specific pipeline stage
+   * 
+   * @param stage - The pipeline stage to get configuration for
+   * @returns ModelConfig containing primary model, fallbacks, and parameters
+   */
+  getModelForStage(stage: PipelineStage): ModelConfig {
+    switch (stage) {
+      case 'idea_understanding':
+        return this.config.ideaUnderstanding
+      case 'research':
+        return this.config.researchAgent
+      case 'planning':
+        return this.config.primaryPlanner
+      case 'critique':
+        return this.config.critic
+      case 'repair':
+        return this.config.repairService
+      default:
+        // Should never happen with TypeScript typing, but provide safe fallback
+        console.warn(`[ModelRegistry] Unknown stage: ${stage}, using default config`)
+        return DEFAULT_CONFIG.primaryPlanner
+    }
+  }
+
+  /**
+   * Get the fallback model for a stage after the specified attempt number
+   * 
+   * @param stage - The pipeline stage
+   * @param attempt - The attempt number (0 = primary, 1 = first fallback, etc.)
+   * @returns ModelConfig for the fallback, or null if no more fallbacks available
+   */
+  getFallbackModel(stage: PipelineStage, attempt: number): ModelConfig | null {
+    const stageConfig = this.getModelForStage(stage)
+    
+    // attempt 0 = primary (not a fallback)
+    // attempt 1 = first fallback (index 0)
+    // attempt 2 = second fallback (index 1), etc.
+    const fallbackIndex = attempt - 1
+    
+    if (fallbackIndex < 0 || fallbackIndex >= stageConfig.fallbacks.length) {
+      return null
+    }
+
+    // Return a new ModelConfig with the fallback as primary
+    return {
+      primary: stageConfig.fallbacks[fallbackIndex],
+      fallbacks: stageConfig.fallbacks.slice(fallbackIndex + 1),
+      maxTokens: stageConfig.maxTokens,
+      temperature: stageConfig.temperature,
+    }
+  }
+
+  /**
+   * Get the current strategy preset
+   */
+  getStrategy(): string {
+    return this.config.strategy
+  }
+
+  /**
+   * Load configuration from environment variables.
+   *
+   * Priority (highest → lowest) for each stage's primary model:
+   *   1. Stage-specific env var  (e.g. PLANNER_MODEL)
+   *   2. Strategy preset         (e.g. PLANNING_STRATEGY=quality_optimized)
+   *   3. Global OPENROUTER_MODEL / OPENROUTER_FREE_MODEL
+   *   4. Built-in default        ("openrouter/auto")
+   *
+   * Fallbacks follow the same priority but using the *_FALLBACK_MODEL env vars.
+   * When no fallback env var is set the preset's fallback list is preserved as-is.
+   *
+   * Invalid (empty-string) model names are replaced with "openrouter/auto" and a
+   * warning is logged (Req 19.7).
+   */
+  private loadConfigFromEnv(): ModelConfiguration {
+    const strategy = process.env.PLANNING_STRATEGY?.toLowerCase()
+
+    // Deep-clone the base so mutations never bleed into the shared constants.
+    let baseConfig: ModelConfiguration
+    if (strategy && STRATEGY_PRESETS[strategy]) {
+      const preset = STRATEGY_PRESETS[strategy]
+      baseConfig = {
+        ideaUnderstanding: { ...(preset.ideaUnderstanding ?? DEFAULT_CONFIG.ideaUnderstanding) },
+        researchAgent:     { ...(preset.researchAgent     ?? DEFAULT_CONFIG.researchAgent) },
+        primaryPlanner:    { ...(preset.primaryPlanner    ?? DEFAULT_CONFIG.primaryPlanner) },
+        critic:            { ...(preset.critic            ?? DEFAULT_CONFIG.critic) },
+        repairService:     { ...(preset.repairService     ?? DEFAULT_CONFIG.repairService) },
+        strategy:          (preset.strategy               ?? 'default'),
+      }
+    } else {
+      baseConfig = {
+        ideaUnderstanding: { ...DEFAULT_CONFIG.ideaUnderstanding },
+        researchAgent:     { ...DEFAULT_CONFIG.researchAgent },
+        primaryPlanner:    { ...DEFAULT_CONFIG.primaryPlanner },
+        critic:            { ...DEFAULT_CONFIG.critic },
+        repairService:     { ...DEFAULT_CONFIG.repairService },
+        strategy:          DEFAULT_CONFIG.strategy,
+      }
+      // Warn about unrecognised strategy values so misconfiguration is visible.
+      if (strategy && !STRATEGY_PRESETS[strategy]) {
+        console.warn(
+          `[ModelRegistry] Unknown PLANNING_STRATEGY "${strategy}". ` +
+          `Valid values: ${Object.keys(STRATEGY_PRESETS).join(', ')}. Using default configuration.`
+        )
+      }
+    }
+
+    // Global model is only applied when no stage-specific env var AND no preset
+    // already provides a non-default model.  We record it here for use below.
+    const globalModel = process.env.OPENROUTER_MODEL || process.env.OPENROUTER_FREE_MODEL
+
+    // Helper: validate a model name and fall back to openrouter/auto if empty (Req 19.7).
+    const resolveModel = (model: string, envVarName: string): string => {
+      if (!model || !model.trim()) {
+        console.warn(
+          `[ModelRegistry] ${envVarName} is set but empty. ` +
+          'Falling back to "openrouter/auto".'
+        )
+        return 'openrouter/auto'
+      }
+      return model.trim()
+    }
+
+    // Helper: apply a primary env-var override, falling back to globalModel only
+    // when the preset didn't already supply a meaningful (non-default) value.
+    const applyPrimary = (
+      stageKey: keyof Omit<ModelConfiguration, 'strategy'>,
+      envVar: string | undefined,
+      envVarName: string,
+    ): void => {
+      if (envVar) {
+        // Stage-specific env var wins unconditionally (Req 19.2).
+        baseConfig[stageKey].primary = resolveModel(envVar, envVarName)
+      } else if (globalModel && baseConfig[stageKey].primary === DEFAULT_CONFIG.primaryPlanner.primary) {
+        // Only apply global model when the current value is still the bare default
+        // (i.e. a preset didn't already choose something better) (Req 19.3).
+        baseConfig[stageKey].primary = resolveModel(globalModel, 'OPENROUTER_MODEL')
+      }
+    }
+
+    // Helper: apply a fallback env-var override (Req 19.4).
+    const applyFallback = (
+      stageKey: keyof Omit<ModelConfiguration, 'strategy'>,
+      envVar: string | undefined,
+      envVarName: string,
+    ): void => {
+      if (envVar) {
+        // Env-var fallback replaces the preset's fallback list.
+        baseConfig[stageKey].fallbacks = [
+          resolveModel(envVar, envVarName),
+          'openrouter/auto',
+        ]
+      }
+      // When no fallback env var is provided the preset's list is preserved as-is.
+    }
+
+    // --- Idea Understanding ---
+    applyPrimary('ideaUnderstanding', process.env.IDEA_UNDERSTANDING_MODEL, 'IDEA_UNDERSTANDING_MODEL')
+    applyFallback('ideaUnderstanding', process.env.IDEA_UNDERSTANDING_FALLBACK_MODEL, 'IDEA_UNDERSTANDING_FALLBACK_MODEL')
+
+    // --- Research Agent ---
+    applyPrimary('researchAgent', process.env.RESEARCH_MODEL, 'RESEARCH_MODEL')
+    applyFallback('researchAgent', process.env.RESEARCH_FALLBACK_MODEL, 'RESEARCH_FALLBACK_MODEL')
+
+    // --- Primary Planner ---
+    applyPrimary('primaryPlanner', process.env.PLANNER_MODEL, 'PLANNER_MODEL')
+    applyFallback('primaryPlanner', process.env.PLANNER_FALLBACK_MODEL, 'PLANNER_FALLBACK_MODEL')
+
+    // --- Independent Critic ---
+    applyPrimary('critic', process.env.CRITIC_MODEL, 'CRITIC_MODEL')
+    applyFallback('critic', process.env.CRITIC_FALLBACK_MODEL, 'CRITIC_FALLBACK_MODEL')
+
+    // --- Repair Service ---
+    applyPrimary('repairService', process.env.REPAIR_MODEL, 'REPAIR_MODEL')
+    applyFallback('repairService', process.env.REPAIR_FALLBACK_MODEL, 'REPAIR_FALLBACK_MODEL')
+
+    return baseConfig
+  }
+
+  /**
+   * Log current configuration (useful for debugging)
+   */
+  logConfiguration(): void {
+    console.log('[ModelRegistry] Current configuration:')
+    console.log(`  Strategy: ${this.config.strategy}`)
+    console.log(`  Idea Understanding: ${this.config.ideaUnderstanding.primary} (fallbacks: ${this.config.ideaUnderstanding.fallbacks.join(', ')})`)
+    console.log(`  Research Agent: ${this.config.researchAgent.primary} (fallbacks: ${this.config.researchAgent.fallbacks.join(', ')})`)
+    console.log(`  Primary Planner: ${this.config.primaryPlanner.primary} (fallbacks: ${this.config.primaryPlanner.fallbacks.join(', ')})`)
+    console.log(`  Critic: ${this.config.critic.primary} (fallbacks: ${this.config.critic.fallbacks.join(', ')})`)
+    console.log(`  Repair Service: ${this.config.repairService.primary} (fallbacks: ${this.config.repairService.fallbacks.join(', ')})`)
+  }
+}

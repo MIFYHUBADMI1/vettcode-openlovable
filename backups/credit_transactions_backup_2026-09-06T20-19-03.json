@@ -1,0 +1,11 @@
+[
+  {
+    "_id": "6a96d69d533a165df2049594",
+    "id": "4a3d7e2ee3ce9f18d4e23a85",
+    "userId": "user_7f1efe08341df3c01b3201f4",
+    "type": "grant",
+    "amount": 999999999,
+    "reason": "Admin seed — initial credits",
+    "createdAt": 1788270236641
+  }
+]

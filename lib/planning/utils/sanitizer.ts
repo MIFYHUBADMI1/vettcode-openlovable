@@ -1,0 +1,357 @@
+/**
+ * Sanitizer - Technology stack enforcement through text replacement
+ * 
+ * Scans ApplicationSpecification for unsupported technology references and
+ * replaces them with Totalum SDK equivalents.
+ * 
+ * Requirements: 20.1-20.7
+ * Design: Sanitizer component section
+ * 
+ * @module lib/planning/utils/sanitizer
+ */
+
+import { logger } from "@/lib/logging/logger"
+import type { ApplicationSpecification } from "@/lib/types/specification"
+
+/**
+ * Sanitization result
+ */
+export interface SanitizationResult {
+  specification: ApplicationSpecification
+  sanitized: boolean
+  replacements: SanitizationReplacement[]
+}
+
+/**
+ * Individual replacement record
+ */
+export interface SanitizationReplacement {
+  field: string
+  original: string
+  replacement: string
+  pattern: string
+}
+
+/**
+ * Replacement rule
+ */
+interface ReplacementRule {
+  pattern: RegExp
+  replacement: string
+  description: string
+}
+
+/**
+ * Stack replacement rules
+ * 
+ * Requirements: 20.2, 20.3, 20.4
+ */
+const STACK_REPLACEMENTS: ReplacementRule[] = [
+  // Databases
+  {
+    pattern: /\b(PostgreSQL|Postgres|MySQL|MongoDB|Mongo|SQLite|Redis(?! cache))\b/gi,
+    replacement: "Totalum SDK database",
+    description: "External database → Totalum SDK",
+  },
+  // ORMs
+  {
+    pattern: /\b(Prisma|Mongoose|Sequelize|TypeORM|Drizzle)(?:\s+ORM)?\b/gi,
+    replacement: "Totalum SDK",
+    description: "External ORM → Totalum SDK",
+  },
+  // Backend frameworks
+  {
+    pattern: /\b(Express\.js|Express|Fastify|NestJS|Nest\.js|Koa|Hapi)\b/gi,
+    replacement: "Next.js API routes",
+    description: "External backend framework → Next.js API routes",
+  },
+  // Backend as a Service
+  {
+    pattern: /\b(Firebase|Supabase|AWS Amplify|Parse Server)\b/gi,
+    replacement: "Totalum SDK",
+    description: "External BaaS → Totalum SDK",
+  },
+  // Authentication services
+  {
+    pattern: /\b(Auth0|Clerk|Firebase Auth|Supabase Auth|AWS Cognito)\b/gi,
+    replacement: "Totalum SDK authentication",
+    description: "External auth service → Totalum SDK",
+  },
+  // File storage
+  {
+    pattern: /\b(AWS S3|Amazon S3|Google Cloud Storage|Azure Blob Storage|Cloudinary|Firebase Storage)\b/gi,
+    replacement: "Totalum SDK file storage",
+    description: "External file storage → Totalum SDK",
+  },
+]
+
+/**
+ * Sanitizer enforces Totalum stack constraints through text replacement
+ */
+export class Sanitizer {
+  /**
+   * Sanitize an ApplicationSpecification for stack compliance
+   * 
+   * Scans all text fields and replaces unsupported technology references
+   * with Totalum SDK equivalents.
+   * 
+   * Requirements: 20.1, 20.2, 20.5, 20.6, 20.7
+   * 
+   * @param specification - ApplicationSpecification to sanitize
+   * @returns SanitizationResult with sanitized spec and replacement log
+   */
+  sanitize(specification: ApplicationSpecification): SanitizationResult {
+    logger.info("[Sanitizer] Starting sanitization", "Sanitizing specification", {
+      title: specification.title,
+    })
+
+    const replacements: SanitizationReplacement[] = []
+    let sanitized = false
+
+    // Create a deep copy to avoid mutating the original
+    const spec = JSON.parse(JSON.stringify(specification)) as ApplicationSpecification
+
+    // Sanitize scalar string fields
+    // Requirement 20.5: Scan all relevant text fields
+    if (spec.description) {
+      const result = this.sanitizeText(spec.description)
+      if (result.changed) {
+        replacements.push(...result.replacements.map((r) => ({ ...r, field: "description" })))
+        spec.description = result.text
+        sanitized = true
+      }
+    }
+
+    if (spec.purpose) {
+      const result = this.sanitizeText(spec.purpose)
+      if (result.changed) {
+        replacements.push(...result.replacements.map((r) => ({ ...r, field: "purpose" })))
+        spec.purpose = result.text
+        sanitized = true
+      }
+    }
+
+    if (spec.authenticationRequirements) {
+      const result = this.sanitizeText(spec.authenticationRequirements)
+      if (result.changed) {
+        replacements.push(
+          ...result.replacements.map((r) => ({ ...r, field: "authenticationRequirements" }))
+        )
+        spec.authenticationRequirements = result.text
+        sanitized = true
+      }
+    }
+
+    if (spec.designDirection) {
+      const result = this.sanitizeText(spec.designDirection)
+      if (result.changed) {
+        replacements.push(...result.replacements.map((r) => ({ ...r, field: "designDirection" })))
+        spec.designDirection = result.text
+        sanitized = true
+      }
+    }
+
+    if (spec.responsiveRequirements) {
+      const result = this.sanitizeText(spec.responsiveRequirements)
+      if (result.changed) {
+        replacements.push(
+          ...result.replacements.map((r) => ({ ...r, field: "responsiveRequirements" }))
+        )
+        spec.responsiveRequirements = result.text
+        sanitized = true
+      }
+    }
+
+    if (spec.additionalInstructions) {
+      const result = this.sanitizeText(spec.additionalInstructions)
+      if (result.changed) {
+        replacements.push(
+          ...result.replacements.map((r) => ({ ...r, field: "additionalInstructions" }))
+        )
+        spec.additionalInstructions = result.text
+        sanitized = true
+      }
+    }
+
+    // Sanitize array fields
+    spec.backendRequirements = spec.backendRequirements.map((req, idx) => {
+      const result = this.sanitizeText(req)
+      if (result.changed) {
+        replacements.push(
+          ...result.replacements.map((r) => ({ ...r, field: `backendRequirements[${idx}]` }))
+        )
+        sanitized = true
+        return result.text
+      }
+      return req
+    })
+      .filter((req) => req.trim().length > 0)
+      .filter((req) => req.trim().length > 0)
+
+    spec.integrations = spec.integrations.map((integration, idx) => {
+      const result = this.sanitizeText(integration)
+      if (result.changed) {
+        replacements.push(...result.replacements.map((r) => ({ ...r, field: `integrations[${idx}]` })))
+        sanitized = true
+        return result.text
+      }
+      return integration
+    })
+      .filter((integration) => integration.trim().length > 0)
+
+    // Sanitize suggested features
+    spec.suggestedFeatures = spec.suggestedFeatures.map((feature, idx) => {
+      let changed = false
+      const featureCopy = { ...feature }
+
+      if (feature.label) {
+        const result = this.sanitizeText(feature.label)
+        if (result.changed) {
+          replacements.push(
+            ...result.replacements.map((r) => ({ ...r, field: `suggestedFeatures[${idx}].label` }))
+          )
+          featureCopy.label = result.text
+          changed = true
+        }
+      }
+
+      if (feature.description) {
+        const result = this.sanitizeText(feature.description)
+        if (result.changed) {
+          replacements.push(
+            ...result.replacements.map((r) => ({ ...r, field: `suggestedFeatures[${idx}].description` }))
+          )
+          featureCopy.description = result.text
+          changed = true
+        }
+      }
+
+      if (changed) {
+        sanitized = true
+      }
+
+      return featureCopy
+    })
+
+    // Sanitize data entities
+    spec.dataEntities = spec.dataEntities.map((entity, idx) => {
+      let changed = false
+      const entityCopy = { ...entity }
+
+      if (entity.description) {
+        const result = this.sanitizeText(entity.description)
+        if (result.changed) {
+          replacements.push(
+            ...result.replacements.map((r) => ({ ...r, field: `dataEntities[${idx}].description` }))
+          )
+          entityCopy.description = result.text
+          changed = true
+        }
+      }
+
+      if (changed) {
+        sanitized = true
+      }
+
+      return entityCopy
+    })
+
+    // Sanitize core flows
+    spec.coreFlows = spec.coreFlows.map((flow, idx) => {
+      let changed = false
+      const flowCopy = { ...flow }
+
+      if (flow.description) {
+        const result = this.sanitizeText(flow.description)
+        if (result.changed) {
+          replacements.push(
+            ...result.replacements.map((r) => ({ ...r, field: `coreFlows[${idx}].description` }))
+          )
+          flowCopy.description = result.text
+          changed = true
+        }
+      }
+
+      if (changed) {
+        sanitized = true
+      }
+
+      return flowCopy
+    })
+
+    // Log sanitization results
+    // Requirement 20.6, 20.7: Log every replacement and set sanitized flag
+    if (sanitized) {
+      logger.warn("[Sanitizer] Specification sanitized - unsupported technologies replaced", "Technologies replaced", {
+        title: specification.title,
+        replacements: replacements.length,
+        details: replacements,
+      })
+    } else {
+      logger.info("[Sanitizer] No sanitization needed - specification is compliant", "Specification is compliant", {
+        title: specification.title,
+      })
+    }
+
+    return {
+      specification: spec,
+      sanitized,
+      replacements,
+    }
+  }
+
+  /**
+   * Sanitize a single text string
+   * 
+   * Requirements: 20.2, 20.3, 20.4
+   * 
+   * @param text - Text to sanitize
+   * @returns Sanitized text, change flag, and replacement log
+   */
+  private sanitizeText(text: string): {
+    text: string
+    changed: boolean
+    replacements: Omit<SanitizationReplacement, "field">[]
+  } {
+    let sanitized = text
+    let changed = false
+    const replacements: Omit<SanitizationReplacement, "field">[] = []
+
+    STACK_REPLACEMENTS.forEach((rule) => {
+      const matches = sanitized.match(rule.pattern)
+      if (matches) {
+        const original = sanitized
+        sanitized = sanitized.replace(rule.pattern, rule.replacement)
+
+        if (original !== sanitized) {
+          changed = true
+          matches.forEach((match) => {
+            replacements.push({
+              original: match,
+              replacement: rule.replacement,
+              pattern: match,
+            })
+          })
+        }
+      }
+    })
+
+    return { text: sanitized, changed, replacements }
+  }
+
+  /**
+   * Scan specification for violations without modifying it
+   * 
+   * Useful for pre-validation or reporting.
+   * 
+   * @param specification - Specification to scan
+   * @returns Array of detected violations
+   */
+  scanForViolations(specification: ApplicationSpecification): SanitizationReplacement[] {
+    const result = this.sanitize(specification)
+    return result.replacements
+  }
+}
+
+
+
