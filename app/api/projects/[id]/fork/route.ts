@@ -114,17 +114,27 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       )
     }
 
-    // ── Step 2: Reserve credits ───────────────────────────────────────────────
-    await reserveCredits({
+    // ── Step 2: Deduct credits from forker ───────────────────────────────────
+    // reserveCredits permanently consumes the credits (uses consumeCredits internally).
+    // Unlike builds, forks have no refund period — the credit charge is final here.
+    const charged = await reserveCredits({
       userId: user.id,
       amount: pricing.forkCost,
       buildId: reservationId,
       reason: `Fork of "${original.name}" (${tier} tier)`,
       metadata: { action: "fork_purchase", projectId: id, tier },
     })
+
+    if (!charged) {
+      return fail(
+        "INSUFFICIENT_CREDITS",
+        `Could not charge ${pricing.forkCost.toLocaleString()} credits. Please check your balance.`,
+        402,
+      )
+    }
     reserved = true
 
-    logger.info("api.projects.fork", "credits reserved", {
+    logger.info("api.projects.fork", "credits charged", {
       userId: user.id, projectId: id, tier, amount: pricing.forkCost,
     })
 
@@ -174,24 +184,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       createdAt: now,
     })
 
-    // ── Step 5: Consume the reservation (finalize charge) ─────────────────────
-    // Release = converts reserved → consumed. On failure here, credits stay
-    // reserved (not lost) and we log it — the project is still usable.
-    try {
-      await releaseReservation({
-        userId: user.id,
-        amount: pricing.forkCost,
-        buildId: reservationId,
-        reason: `Fork finalized: "${original.name}" (${tier})`,
-      })
-      reserved = false // consumed, no longer needs cleanup
-    } catch (consumeErr) {
-      logger.error("api.projects.fork", "reservation finalization failed (non-fatal)", {
-        userId: user.id, reservationId, error: (consumeErr as Error).message,
-      })
-    }
-
-    // ── Step 6: Grant royalty to original owner (best-effort) ─────────────────
+    // ── Step 5: Grant royalty to original owner (best-effort) ─────────────────
     try {
       await grantCredits({
         userId: original.userId,
@@ -230,15 +223,19 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     }, { status: 201 })
 
   } catch (e) {
-    // If we reserved credits but something went wrong creating the project, refund
+    // If credits were charged but project creation failed, refund them
     if (reserved) {
       try {
-        await releaseReservation({
-          userId: (await requireUser().catch(() => null))?.id ?? "unknown",
-          amount: 0, // amount is looked up by buildId
-          buildId: reservationId,
-          reason: "Fork failed — refunding reservation",
-        })
+        const user = await requireUser().catch(() => null)
+        if (user) {
+          await releaseReservation({
+            userId: user.id,
+            amount: 0, // not used by releaseReservation — it grants back via grantCredits
+            buildId: reservationId,
+            reason: "Fork failed — credits refunded",
+          })
+          logger.info("api.projects.fork", "credits refunded after failure", { reservationId })
+        }
       } catch (refundErr) {
         logger.error("api.projects.fork", "refund after failure failed", {
           reservationId, error: (refundErr as Error).message,
