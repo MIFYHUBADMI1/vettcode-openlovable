@@ -441,232 +441,233 @@ export function ProjectWorkspace({ projectId, initialState }: ProjectWorkspacePr
           </div>
         </section>
       </div>
-      )
+    </>
+  )
 }
 
-      type Viewport = "desktop" | "tablet" | "mobile"
+type Viewport = "desktop" | "tablet" | "mobile"
 
-      const VIEWPORTS: Record<Viewport, {width: string; defaultHeight: number; label: string; icon: string }> = {
-        desktop: {width: "100%", defaultHeight: 600, label: "Desktop", icon: "🖥" },
-      tablet: {width: "768px", defaultHeight: 600, label: "Tablet", icon: "📱" },
-      mobile: {width: "375px", defaultHeight: 667, label: "Mobile", icon: "📲" },
+const VIEWPORTS: Record<Viewport, { width: string; defaultHeight: number; label: string; icon: string }> = {
+  desktop: { width: "100%", defaultHeight: 600, label: "Desktop", icon: "🖥" },
+  tablet: { width: "768px", defaultHeight: 600, label: "Tablet", icon: "📱" },
+  mobile: { width: "375px", defaultHeight: 667, label: "Mobile", icon: "📲" },
 }
 
-      const MIN_HEIGHT = 200
-      const MAX_HEIGHT = 1200
+const MIN_HEIGHT = 200
+const MAX_HEIGHT = 1200
 
-      function DevPreview({url, name}: {url: string; name: string }) {
+function DevPreview({ url, name }: { url: string; name: string }) {
   const safeUrl = ensureProtocol(url)
-      const [viewport, setViewport] = useState<Viewport>("desktop")
-        const [height, setHeight] = useState(VIEWPORTS.desktop.defaultHeight)
-        const [isDragging, setIsDragging] = useState(false)
+  const [viewport, setViewport] = useState<Viewport>("desktop")
+  const [height, setHeight] = useState(VIEWPORTS.desktop.defaultHeight)
+  const [isDragging, setIsDragging] = useState(false)
 
-        const vp = VIEWPORTS[viewport]
+  const vp = VIEWPORTS[viewport]
 
   // When switching viewport, reset height to that viewport's default.
   const handleViewportChange = (v: Viewport) => {
-          setViewport(v)
+    setViewport(v)
     setHeight(VIEWPORTS[v].defaultHeight)
   }
 
   // Drag-to-resize handlers.
   const handleDragStart = (e: React.MouseEvent | React.TouchEvent) => {
-          e.preventDefault()
+    e.preventDefault()
     setIsDragging(true)
-        const startY = "touches" in e ? e.touches[0].clientY : e.clientY
-        const startHeight = height
+    const startY = "touches" in e ? e.touches[0].clientY : e.clientY
+    const startHeight = height
 
     const onMove = (ev: MouseEvent | TouchEvent) => {
       const currentY = "touches" in ev ? ev.touches[0].clientY : ev.clientY
-        const delta = currentY - startY
-        const newHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, startHeight + delta))
-        setHeight(newHeight)
+      const delta = currentY - startY
+      const newHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, startHeight + delta))
+      setHeight(newHeight)
     }
 
     const onEnd = () => {
-          setIsDragging(false)
+      setIsDragging(false)
       document.removeEventListener("mousemove", onMove)
-        document.removeEventListener("mouseup", onEnd)
-        document.removeEventListener("touchmove", onMove)
-        document.removeEventListener("touchend", onEnd)
+      document.removeEventListener("mouseup", onEnd)
+      document.removeEventListener("touchmove", onMove)
+      document.removeEventListener("touchend", onEnd)
     }
 
-        document.addEventListener("mousemove", onMove)
-        document.addEventListener("mouseup", onEnd)
-        document.addEventListener("touchmove", onMove, {passive: false })
-        document.addEventListener("touchend", onEnd)
+    document.addEventListener("mousemove", onMove)
+    document.addEventListener("mouseup", onEnd)
+    document.addEventListener("touchmove", onMove, { passive: false })
+    document.addEventListener("touchend", onEnd)
   }
 
-        return (
-        <div className="overflow-hidden border border-border bg-card">
-          {/* Browser chrome + viewport toggles */}
-          <div className="flex items-center justify-between border-b border-border bg-muted/60 px-4 py-2.5">
-            <div className="flex items-center gap-2">
-              <span className="flex gap-1.5" aria-hidden>
-                <span className="size-2.5 rounded-full bg-destructive/50" />
-                <span className="size-2.5 rounded-full bg-primary/50" />
-                <span className="size-2.5 rounded-full bg-success/50" />
-              </span>              <span className="ml-2 truncate rounded-sm bg-background/70 px-3 py-1 font-mono text-[11px] text-muted-foreground">
-                {safeUrl}
-              </span>
-            </div>
-            <div className="flex items-center gap-1">
-              {(['desktop', 'tablet', 'mobile'] as Viewport[]).map((v) => (
-                <button
-                  key={v}
-                  onClick={() => handleViewportChange(v)}
-                  className={cn(
-                    "flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
-                    viewport === v
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                  title={VIEWPORTS[v].label}
-                >
-                  <span className="text-xs">{VIEWPORTS[v].icon}</span>
-                  <span className="hidden sm:inline">{VIEWPORTS[v].label}</span>
-                </button>
-              ))}
-              <span className="mx-1.5 h-4 w-px bg-border" />
-              <a
-                href={safeUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="font-mono text-[11px] text-primary hover:underline"
-              >
-                Open ↗
-              </a>
-            </div>
-          </div>
-
-          {/* Iframe container — centers and constrains for tablet/mobile */}
-          <div className="flex justify-center bg-muted/30">
-            <div
-              className="transition-[width] duration-300 ease-in-out overflow-hidden bg-background"
-              style={{
-                width: vp.width,
-                maxWidth: "100%",
-              }}
-            >
-              <iframe
-                src={safeUrl}
-                title={`${name} preview`}
-                className="w-full border-0 bg-background"
-                style={{ height: `${height}px` }}
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-              />
-            </div>
-          </div>
-
-          {/* Drag-to-resize handle */}
-          <div
-            onMouseDown={handleDragStart}
-            onTouchStart={handleDragStart}
-            className={cn(
-              "group flex cursor-row-resize items-center justify-center border-t border-border bg-muted/60 py-2 transition-colors select-none",
-              isDragging ? "bg-primary/10" : "hover:bg-primary/5",
-            )}
-          >
-            <div className="flex items-center gap-2">
-              {/* Grip dots */}
-              <svg width="16" height="8" viewBox="0 0 16 8" className="text-muted-foreground group-hover:text-foreground transition-colors">
-                <circle cx="4" cy="2" r="1.2" fill="currentColor" />
-                <circle cx="8" cy="2" r="1.2" fill="currentColor" />
-                <circle cx="12" cy="2" r="1.2" fill="currentColor" />
-                <circle cx="4" cy="6" r="1.2" fill="currentColor" />
-                <circle cx="8" cy="6" r="1.2" fill="currentColor" />
-                <circle cx="12" cy="6" r="1.2" fill="currentColor" />
-              </svg>
-              <span className="font-mono text-[10px] text-muted-foreground group-hover:text-foreground transition-colors">
-                {height}px
-              </span>
-            </div>
-          </div>
+  return (
+    <div className="overflow-hidden border border-border bg-card">
+      {/* Browser chrome + viewport toggles */}
+      <div className="flex items-center justify-between border-b border-border bg-muted/60 px-4 py-2.5">
+        <div className="flex items-center gap-2">
+          <span className="flex gap-1.5" aria-hidden>
+            <span className="size-2.5 rounded-full bg-destructive/50" />
+            <span className="size-2.5 rounded-full bg-primary/50" />
+            <span className="size-2.5 rounded-full bg-success/50" />
+          </span>              <span className="ml-2 truncate rounded-sm bg-background/70 px-3 py-1 font-mono text-[11px] text-muted-foreground">
+            {safeUrl}
+          </span>
         </div>
-        )
+        <div className="flex items-center gap-1">
+          {(['desktop', 'tablet', 'mobile'] as Viewport[]).map((v) => (
+            <button
+              key={v}
+              onClick={() => handleViewportChange(v)}
+              className={cn(
+                "flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
+                viewport === v
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              title={VIEWPORTS[v].label}
+            >
+              <span className="text-xs">{VIEWPORTS[v].icon}</span>
+              <span className="hidden sm:inline">{VIEWPORTS[v].label}</span>
+            </button>
+          ))}
+          <span className="mx-1.5 h-4 w-px bg-border" />
+          <a
+            href={safeUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="font-mono text-[11px] text-primary hover:underline"
+          >
+            Open ↗
+          </a>
+        </div>
+      </div>
+
+      {/* Iframe container — centers and constrains for tablet/mobile */}
+      <div className="flex justify-center bg-muted/30">
+        <div
+          className="transition-[width] duration-300 ease-in-out overflow-hidden bg-background"
+          style={{
+            width: vp.width,
+            maxWidth: "100%",
+          }}
+        >
+          <iframe
+            src={safeUrl}
+            title={`${name} preview`}
+            className="w-full border-0 bg-background"
+            style={{ height: `${height}px` }}
+            sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+          />
+        </div>
+      </div>
+
+      {/* Drag-to-resize handle */}
+      <div
+        onMouseDown={handleDragStart}
+        onTouchStart={handleDragStart}
+        className={cn(
+          "group flex cursor-row-resize items-center justify-center border-t border-border bg-muted/60 py-2 transition-colors select-none",
+          isDragging ? "bg-primary/10" : "hover:bg-primary/5",
+        )}
+      >
+        <div className="flex items-center gap-2">
+          {/* Grip dots */}
+          <svg width="16" height="8" viewBox="0 0 16 8" className="text-muted-foreground group-hover:text-foreground transition-colors">
+            <circle cx="4" cy="2" r="1.2" fill="currentColor" />
+            <circle cx="8" cy="2" r="1.2" fill="currentColor" />
+            <circle cx="12" cy="2" r="1.2" fill="currentColor" />
+            <circle cx="4" cy="6" r="1.2" fill="currentColor" />
+            <circle cx="8" cy="6" r="1.2" fill="currentColor" />
+            <circle cx="12" cy="6" r="1.2" fill="currentColor" />
+          </svg>
+          <span className="font-mono text-[10px] text-muted-foreground group-hover:text-foreground transition-colors">
+            {height}px
+          </span>
+        </div>
+      </div>
+    </div>
+  )
 }
 
-        /** Displays the AI agent's post-build summary — critical info like
-         * login credentials, what's included, and next steps. This data comes
-         * from Totalum's realtimeConversation "finished" messages.
-         * Renders markdown with styled components for a polished reading experience. */
-        function BuildSummaryCard({summary}: {summary: NonNullable<Project["buildSummary"]> }) {
+/** Displays the AI agent's post-build summary — critical info like
+ * login credentials, what's included, and next steps. This data comes
+ * from Totalum's realtimeConversation "finished" messages.
+ * Renders markdown with styled components for a polished reading experience. */
+function BuildSummaryCard({ summary }: { summary: NonNullable<Project["buildSummary"]> }) {
   const [expanded, setExpanded] = useState(true)
   const hasSecrets = summary.secretKeysNeeded && Object.keys(summary.secretKeysNeeded).length > 0
 
-        return (
-        <div className="overflow-hidden rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/5 via-background to-background">
-          {/* Header */}
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left transition-colors hover:bg-amber-500/10"
-          >
-            <div className="flex items-center gap-3">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 text-lg shadow-sm">
-                📋
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
-                  Important — Your app is ready
-                </p>
-                <p className="text-xs text-amber-600/70 dark:text-amber-400/70">
-                  Read this carefully — it includes credentials and setup info
-                </p>
+  return (
+    <div className="overflow-hidden rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/5 via-background to-background">
+      {/* Header */}
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left transition-colors hover:bg-amber-500/10"
+      >
+        <div className="flex items-center gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 text-lg shadow-sm">
+            📋
+          </span>
+          <div>
+            <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+              Important — Your app is ready
+            </p>
+            <p className="text-xs text-amber-600/70 dark:text-amber-400/70">
+              Read this carefully — it includes credentials and setup info
+            </p>
+          </div>
+        </div>
+        <svg
+          className={cn(
+            "size-4 shrink-0 text-amber-600/70 transition-transform duration-200",
+            expanded && "rotate-180",
+          )}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {/* Content */}
+      {expanded ? (
+        <div className="border-t border-amber-500/20 px-5 py-5">
+          {/* Secret keys needed warning */}
+          {hasSecrets ? (
+            <div className="mb-5 overflow-hidden rounded-xl border border-red-200 bg-gradient-to-r from-red-50 to-red-500/5 p-5 dark:border-red-800 dark:from-red-950/50 dark:to-red-950/20">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-red-500/15 text-sm">
+                  🔑
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-red-700 dark:text-red-300">
+                    API keys needed
+                  </p>
+                  <p className="mt-1 text-xs leading-relaxed text-red-600/80 dark:text-red-400/80">
+                    The following secrets are required for full functionality. Add them via
+                    <span className="font-medium"> Workspace controls → Secrets</span>.
+                  </p>
+                  <ul className="mt-3 space-y-1.5">
+                    {Object.entries(summary.secretKeysNeeded!).map(([key, info]) => (
+                      <li key={key} className="flex items-center gap-2.5 rounded-lg bg-white/50 px-3 py-1.5 text-xs dark:bg-white/5">
+                        <span className={cn(
+                          "size-2 shrink-0 rounded-full",
+                          info.isProvided ? "bg-green-500" : "bg-red-500",
+                        )} />
+                        <code className="font-mono font-medium text-red-700 dark:text-red-300">{key}</code>
+                        {!info.isProvided && info.description ? (
+                          <span className="text-red-500/60 dark:text-red-400/60">— {info.description}</span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </div>
-            <svg
-              className={cn(
-                "size-4 shrink-0 text-amber-600/70 transition-transform duration-200",
-                expanded && "rotate-180",
-              )}
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
+          ) : null}
 
-          {/* Content */}
-          {expanded ? (
-            <div className="border-t border-amber-500/20 px-5 py-5">
-              {/* Secret keys needed warning */}
-              {hasSecrets ? (
-                <div className="mb-5 overflow-hidden rounded-xl border border-red-200 bg-gradient-to-r from-red-50 to-red-500/5 p-5 dark:border-red-800 dark:from-red-950/50 dark:to-red-950/20">
-                  <div className="flex items-start gap-3">
-                    <span className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-red-500/15 text-sm">
-                      🔑
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-red-700 dark:text-red-300">
-                        API keys needed
-                      </p>
-                      <p className="mt-1 text-xs leading-relaxed text-red-600/80 dark:text-red-400/80">
-                        The following secrets are required for full functionality. Add them via
-                        <span className="font-medium"> Workspace controls → Secrets</span>.
-                      </p>
-                      <ul className="mt-3 space-y-1.5">
-                        {Object.entries(summary.secretKeysNeeded!).map(([key, info]) => (
-                          <li key={key} className="flex items-center gap-2.5 rounded-lg bg-white/50 px-3 py-1.5 text-xs dark:bg-white/5">
-                            <span className={cn(
-                              "size-2 shrink-0 rounded-full",
-                              info.isProvided ? "bg-green-500" : "bg-red-500",
-                            )} />
-                            <code className="font-mono font-medium text-red-700 dark:text-red-300">{key}</code>
-                            {!info.isProvided && info.description ? (
-                              <span className="text-red-500/60 dark:text-red-400/60">— {info.description}</span>
-                            ) : null}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Main message — full markdown rendering */}
-              <div className="markdown-body prose prose-sm prose-amber max-w-none dark:prose-invert
+          {/* Main message — full markdown rendering */}
+          <div className="markdown-body prose prose-sm prose-amber max-w-none dark:prose-invert
             prose-headings:mt-6 prose-headings:mb-3 prose-headings:font-semibold prose-headings:text-foreground
             prose-h1:text-xl prose-h1:mt-0 prose-h1:mb-4 prose-h1:pb-3 prose-h1:border-b prose-h1:border-border
             prose-h2:text-lg prose-h2:text-amber-800 dark:prose-h2:text-amber-200
@@ -686,104 +687,104 @@ export function ProjectWorkspace({ projectId, initialState }: ProjectWorkspacePr
             prose-th:text-foreground prose-th:font-semibold
             prose-td:text-muted-foreground
           ">
-                <Markdown
-                  components={{
-                    /* Override ul/li to add amber-tinted bullet styling */
-                    ul: ({ children, ...props }) => (
-                      <ul className="my-3 space-y-2 pl-1" {...props}>{children}</ul>
-                    ),
-                    li: ({ children, ...props }) => (
-                      <li className="flex gap-2.5 leading-relaxed" {...props}>
-                        <span className="mt-2 size-1.5 shrink-0 rounded-full bg-amber-500/50" />
-                        <span>{children}</span>
-                      </li>
-                    ),
-                    /* Note / warning blocks */
-                    blockquote: ({ children, ...props }) => (
-                      <blockquote
-                        className="my-4 rounded-r-xl border-l-4 border-amber-500/40 bg-amber-500/5 py-3 pr-4 pl-5 text-sm italic text-muted-foreground"
+            <Markdown
+              components={{
+                /* Override ul/li to add amber-tinted bullet styling */
+                ul: ({ children, ...props }) => (
+                  <ul className="my-3 space-y-2 pl-1" {...props}>{children}</ul>
+                ),
+                li: ({ children, ...props }) => (
+                  <li className="flex gap-2.5 leading-relaxed" {...props}>
+                    <span className="mt-2 size-1.5 shrink-0 rounded-full bg-amber-500/50" />
+                    <span>{children}</span>
+                  </li>
+                ),
+                /* Note / warning blocks */
+                blockquote: ({ children, ...props }) => (
+                  <blockquote
+                    className="my-4 rounded-r-xl border-l-4 border-amber-500/40 bg-amber-500/5 py-3 pr-4 pl-5 text-sm italic text-muted-foreground"
+                    {...props}
+                  >
+                    {children}
+                  </blockquote>
+                ),
+                /* Inline code gets a distinct credential/code look */
+                code: ({ className: cls, children, ...props }) => {
+                  const isInline = !cls?.includes("language-")
+                  if (isInline) {
+                    return (
+                      <code
+                        className="rounded-md border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 font-mono text-[13px] font-medium text-amber-700 dark:text-amber-300"
                         {...props}
                       >
                         {children}
-                      </blockquote>
-                    ),
-                    /* Inline code gets a distinct credential/code look */
-                    code: ({ className: cls, children, ...props }) => {
-                      const isInline = !cls?.includes("language-")
-                      if (isInline) {
-                        return (
-                          <code
-                            className="rounded-md border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 font-mono text-[13px] font-medium text-amber-700 dark:text-amber-300"
-                            {...props}
-                          >
-                            {children}
-                          </code>
-                        )
-                      }
-                      return (
-                        <code className={cls} {...props}>{children}</code>
-                      )
-                    },
-                    /* Code blocks with copy-friendly look */
-                    pre: ({ children, ...props }) => (
-                      <pre
-                        className="my-4 overflow-x-auto rounded-xl border border-border bg-muted/50 p-4 font-mono text-[13px] leading-relaxed"
-                        {...props}
-                      >
-                        {children}
-                      </pre>
-                    ),
-                    /* Bold text gets a subtle highlight */
-                    strong: ({ children, ...props }) => (
-                      <strong className="font-semibold text-foreground" {...props}>{children}</strong>
-                    ),
-                    /* Links styled to match the amber theme */
-                    a: ({ href, children, ...props }) => (
-                      <a
-                        href={href}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-amber-600 underline decoration-amber-500/30 decoration-1 underline-offset-2 transition-colors hover:text-amber-700 hover:decoration-amber-500/60 dark:text-amber-400"
-                        {...props}
-                      >
-                        {children}
-                      </a>
-                    ),
-                    /* Horizontal rules */
-                    hr: (props) => (
-                      <hr className="my-6 border-amber-500/20" {...props} />
-                    ),
-                    /* Tables */
-                    table: ({ children, ...props }) => (
-                      <div className="my-4 overflow-x-auto rounded-xl border border-border">
-                        <table className="w-full text-sm" {...props}>{children}</table>
-                      </div>
-                    ),
-                    th: ({ children, ...props }) => (
-                      <th className="border-b border-border bg-muted/50 px-4 py-2.5 text-left font-semibold text-foreground" {...props}>{children}</th>
-                    ),
-                    td: ({ children, ...props }) => (
-                      <td className="border-b border-border/50 px-4 py-2.5 text-muted-foreground last:border-b-0" {...props}>{children}</td>
-                    ),
-                  }}
-                >
-                  {summary.message}
-                </Markdown>
-              </div>
+                      </code>
+                    )
+                  }
+                  return (
+                    <code className={cls} {...props}>{children}</code>
+                  )
+                },
+                /* Code blocks with copy-friendly look */
+                pre: ({ children, ...props }) => (
+                  <pre
+                    className="my-4 overflow-x-auto rounded-xl border border-border bg-muted/50 p-4 font-mono text-[13px] leading-relaxed"
+                    {...props}
+                  >
+                    {children}
+                  </pre>
+                ),
+                /* Bold text gets a subtle highlight */
+                strong: ({ children, ...props }) => (
+                  <strong className="font-semibold text-foreground" {...props}>{children}</strong>
+                ),
+                /* Links styled to match the amber theme */
+                a: ({ href, children, ...props }) => (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-amber-600 underline decoration-amber-500/30 decoration-1 underline-offset-2 transition-colors hover:text-amber-700 hover:decoration-amber-500/60 dark:text-amber-400"
+                    {...props}
+                  >
+                    {children}
+                  </a>
+                ),
+                /* Horizontal rules */
+                hr: (props) => (
+                  <hr className="my-6 border-amber-500/20" {...props} />
+                ),
+                /* Tables */
+                table: ({ children, ...props }) => (
+                  <div className="my-4 overflow-x-auto rounded-xl border border-border">
+                    <table className="w-full text-sm" {...props}>{children}</table>
+                  </div>
+                ),
+                th: ({ children, ...props }) => (
+                  <th className="border-b border-border bg-muted/50 px-4 py-2.5 text-left font-semibold text-foreground" {...props}>{children}</th>
+                ),
+                td: ({ children, ...props }) => (
+                  <td className="border-b border-border/50 px-4 py-2.5 text-muted-foreground last:border-b-0" {...props}>{children}</td>
+                ),
+              }}
+            >
+              {summary.message}
+            </Markdown>
+          </div>
 
-              {/* Version info */}
-              {summary.versionId ? (
-                <div className="mt-5 flex items-center gap-3 border-t border-amber-500/10 pt-4">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 font-mono text-[11px] text-muted-foreground">
-                    <span className="size-1.5 rounded-full bg-green-500" />
-                    Version {summary.versionId}
-                  </span>
-                </div>
-              ) : null}
+          {/* Version info */}
+          {summary.versionId ? (
+            <div className="mt-5 flex items-center gap-3 border-t border-amber-500/10 pt-4">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/50 px-3 py-1 font-mono text-[11px] text-muted-foreground">
+                <span className="size-1.5 rounded-full bg-green-500" />
+                Version {summary.versionId}
+              </span>
             </div>
           ) : null}
         </div>
-      </section>
+      ) : null}
+    </div>
+      </section >
     </div >
     </>
   )
