@@ -10,10 +10,57 @@ import {
 } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { useSession, usePublicStats } from "@/lib/client/api"
-import { HeroPreviewCard } from "@/components/hero-preview-card"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { cn } from "@/lib/utils"
+
+// ─── Hero Video ───────────────────────────────────────────────────────────────
+
+function HeroVideo() {
+  return (
+    <div className="relative w-full">
+      {/* Ambient glow behind the video */}
+      <div
+        className="pointer-events-none absolute -inset-4 rounded-[2rem] opacity-25"
+        style={{
+          background: "radial-gradient(ellipse 80% 60% at 50% 50%, oklch(0.65 0.22 260 / 0.4) 0%, transparent 70%)",
+          filter: "blur(28px)",
+        }}
+        aria-hidden
+      />
+
+      {/* Gradient border wrapper */}
+      <div
+        className="relative rounded-2xl p-[1px]"
+        style={{
+          background: "linear-gradient(135deg, oklch(0.65 0.22 260 / 0.5) 0%, transparent 40%, oklch(0.68 0.15 152 / 0.4) 70%, transparent 100%)",
+        }}
+      >
+        {/* Video container */}
+        <div className="overflow-hidden rounded-2xl bg-card/90 backdrop-blur-xl">
+          {/* Browser chrome bar */}
+          <div className="flex items-center gap-2 border-b border-border/50 bg-muted/20 px-4 py-2.5">
+            <span className="size-2.5 rounded-full bg-red-400/60" />
+            <span className="size-2.5 rounded-full bg-yellow-400/60" />
+            <span className="size-2.5 rounded-full bg-green-400/60" />
+            <span className="ml-2 font-mono text-[10px] text-muted-foreground">mirrorsite.ai — demo</span>
+          </div>
+
+          {/* The video */}
+          <video
+            src="/hero-videos/hero-intro.mp4"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full"
+            style={{ display: "block" }}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // ─── Community Showcase ───────────────────────────────────────────────────────
 
@@ -589,9 +636,9 @@ export default function Page() {
             )}
           </div>
 
-          {/* Hero card */}
+          {/* Hero video */}
           <div className="relative z-10">
-            <HeroPreviewCard />
+            <HeroVideo />
           </div>
         </section>
 
