@@ -25,7 +25,18 @@ export function handleRouteError(stage: string, error: unknown) {
     return fail(error.code, error.message, error.status)
   }
   if (error instanceof TotalumError) {
-    const status = error.code === "PROVIDER_NOT_CONFIGURED" ? 503 : error.status ?? 400
+    // Map Totalum error codes to safe HTTP status codes — never leak raw provider statuses
+    const statusMap: Partial<Record<string, number>> = {
+      PROVIDER_NOT_CONFIGURED: 503,
+      RATE_LIMIT_EXCEEDED: 429,
+      INSUFFICIENT_CREDITS: 402,
+      PROJECT_NOT_FOUND: 404,
+      UNAUTHORIZED_PROJECT_ACCESS: 403,
+      SERVER_NOT_READY: 503,
+      AGENT_RUNNING: 409,
+      DEPLOYMENT_RUNNING: 409,
+    }
+    const status = statusMap[error.code] ?? 400
     return fail(error.code, error.friendlyMessage, status)
   }
   if (error instanceof ProviderNotConfiguredError) {

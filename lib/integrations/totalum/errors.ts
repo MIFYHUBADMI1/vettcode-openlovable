@@ -67,6 +67,7 @@ export function mapTotalumError(status: number, body: string): TotalumError {
   if (found) return new TotalumError(found, body, status)
   if (status === 429) return new TotalumError("RATE_LIMIT_EXCEEDED", body, status)
   if (status === 404) return new TotalumError("PROJECT_NOT_FOUND", body, status)
+  if (status === 403) return new TotalumError("UNAUTHORIZED_PROJECT_ACCESS", body, status)
   if (status === 402) return new TotalumError("INSUFFICIENT_CREDITS", body, status)
   return new TotalumError("UNKNOWN", body, status)
 }
