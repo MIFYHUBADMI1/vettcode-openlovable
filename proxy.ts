@@ -32,6 +32,7 @@ const PUBLIC_API_PREFIXES = [
   "/api/auth/confirm-email-change",
   "/api/auth/google",
   "/api/billing/webhook",
+  "/api/internal/", // Internal server-to-server APIs (authenticated via x-internal-key header)
 ]
 
 export function proxy(request: NextRequest) {
