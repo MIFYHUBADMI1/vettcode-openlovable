@@ -41,22 +41,8 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    // Log for debugging
-    console.log('[credits-api] User found:', {
-      email,
-      userId: user.id,
-      userSubscriptionCredits: user.subscriptionCredits,
-      userPermanentCredits: user.permanentCredits,
-      userLegacyCredits: user.credits,
-    })
-
     // Get credit balance
     const balance = await getAvailableCredits(user.id)
-
-    console.log('[credits-api] Balance from getAvailableCredits:', {
-      userId: user.id,
-      balance,
-    })
 
     return ok({
       hasAccount: true,
