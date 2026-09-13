@@ -348,6 +348,11 @@ export function ProjectWorkspace({ projectId, initialState }: ProjectWorkspacePr
             </p>
           </div>
 
+          {/* Ready to build — prominent CTA for specification_ready state (forked or auto-build failed) */}
+          {(state === "specification_ready" || state === "awaiting_build_confirmation" || state === "analysis_complete") && project?.specification ? (
+            <ReadyToBuildCTA projectId={projectId} project={project} onBuilding={() => refreshProject(undefined, { revalidate: true })} />
+          ) : null}
+
           {/* Build failed alert — show retry button */}
           {state === "build_failed" ? (
             <div className="rounded-lg border-2 border-destructive/50 bg-destructive/10 p-6">
@@ -575,6 +580,86 @@ const VIEWPORTS: Record<Viewport, { width: string; defaultHeight: number; label:
 
 const MIN_HEIGHT = 200
 const MAX_HEIGHT = 1200
+
+function ReadyToBuildCTA({ projectId, project, onBuilding }: {
+  projectId: string
+  project: Project
+  onBuilding: () => void
+}) {
+  const [building, setBuilding] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const spec = project.specification
+  const tier = spec?.complexity ?? "medium"
+  const tierCosts: Record<string, number> = { simple: 25_000, medium: 50_000, complex: 75_000 }
+  const buildCost = tierCosts[tier] ?? tierCosts.medium
+  const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1)
+  const isFork = project.events?.some(e => e.stage === "fork")
+
+  async function handleBuild() {
+    setBuilding(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/projects/${projectId}/build`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) })
+      const data = await res.json()
+      if (!res.ok) { setError(data.message || "Failed to start build"); return }
+      toast.success("Build started! Watch the progress below.")
+      onBuilding()
+    } catch (e) {
+      setError((e as Error).message || "Failed to start build")
+    } finally {
+      setBuilding(false)
+    }
+  }
+
+  return (
+    <div className="overflow-hidden rounded-xl border-2 border-primary/30 bg-primary/5 p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-4">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary/15">
+            <span className="text-xl">🚀</span>
+          </div>
+          <div>
+            <h3 className="font-semibold text-foreground">
+              {isFork ? "Your forked project is ready to build" : "Your plan is ready — start the build"}
+            </h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {isFork
+                ? "This project was forked with the full spec and design plan. Hit Build to generate the complete application."
+                : "The application plan is complete. Start the build to generate your full-stack application."}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${tier === "complex" ? "bg-purple-500/10 text-purple-600 dark:text-purple-400"
+                  : tier === "medium" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                    : "bg-green-500/10 text-green-600 dark:text-green-400"
+                }`}>
+                {tierLabel} tier
+              </span>
+              <span className="font-mono text-xs text-muted-foreground">
+                {buildCost.toLocaleString()} credits
+              </span>
+            </div>
+            {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+          </div>
+        </div>
+        <button
+          onClick={handleBuild}
+          disabled={building}
+          className="shrink-0 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {building ? (
+            <>
+              <span className="size-4 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
+              Starting…
+            </>
+          ) : (
+            <>🔨 Build now</>
+          )}
+        </button>
+      </div>
+    </div>
+  )
+}
 
 function CapturePreviewButton({ projectId, onCaptured }: { projectId: string; onCaptured: () => void }) {
   const [loading, setLoading] = useState(false)
