@@ -338,3 +338,65 @@ export interface PlanningRunDoc {
 // Re-exported for convenience so Mongo-aware modules can import model +
 // persistence types from a single place.
 export type { MirrorProject, BuildRun, CreditTransaction }
+
+// ─── Explore / Social Document Types ─────────────────────────────────────────
+
+/** A user liking a public project */
+export interface ProjectLikeDoc {
+  _id: ObjectId
+  id: string
+  userId: string      // who liked
+  projectId: string   // which project
+  createdAt: number
+}
+
+/** A user following another user */
+export interface UserFollowDoc {
+  _id: ObjectId
+  id: string
+  followerId: string  // who is following
+  followingId: string // who is being followed
+  createdAt: number
+}
+
+/** A user forking a public project (creates a new project for them) */
+export interface ProjectForkDoc {
+  _id: ObjectId
+  id: string
+  originalProjectId: string   // the source project
+  originalUserId: string      // original owner
+  forkedProjectId: string     // new project created for the fork
+  forkedByUserId: string      // who forked it
+  createdAt: number
+}
+
+// ─── Explore / Social Document Types ─────────────────────────────────────────
+
+/** A user liking a public project */
+export interface ProjectLikeDoc {
+  _id: ObjectId
+  id: string
+  userId: string
+  projectId: string
+  createdAt: number
+}
+
+/** A user following another user */
+export interface UserFollowDoc {
+  _id: ObjectId
+  id: string
+  followerId: string
+  followingId: string
+  createdAt: number
+}
+
+/** A fork record — tracks who forked what into which new project */
+export interface ProjectForkDoc {
+  _id: ObjectId
+  id: string
+  originalProjectId: string
+  originalUserId: string
+  forkedProjectId: string
+  forkedByUserId: string
+  createdAt: number
+}

@@ -1,5 +1,5 @@
 import { getDb } from "@/lib/db/mongodb"
-import type { UserDoc, SessionDoc, VerificationTokenDoc, RateLimitDoc, ProjectAssetDoc, ProviderUsageDoc, TopUpDoc, PublishEventDoc, ReferralDoc, DocFeedbackDoc, WebhookEventDoc, PlanningRunDoc } from "@/lib/types/db"
+import type { UserDoc, SessionDoc, VerificationTokenDoc, RateLimitDoc, ProjectAssetDoc, ProviderUsageDoc, TopUpDoc, PublishEventDoc, ReferralDoc, DocFeedbackDoc, WebhookEventDoc, PlanningRunDoc, ProjectLikeDoc, UserFollowDoc, ProjectForkDoc } from "@/lib/types/db"
 import type { MirrorProject, BuildRun } from "@/lib/types/project"
 import type { CreditLedgerEntry, BuildAuthorization, PaymentRecord, SubscriptionRecord } from "@/lib/billing/billing-types"
 
@@ -82,6 +82,18 @@ export async function planningRunsCol() {
 
 export async function firecrawlCacheCol() {
   return (await getDbCached()).collection<FirecrawlCacheDoc & { _id?: unknown }>("firecrawl_cache")
+}
+
+export async function projectLikesCol() {
+  return (await getDbCached()).collection<ProjectLikeDoc & { _id?: unknown }>("project_likes")
+}
+
+export async function userFollowsCol() {
+  return (await getDbCached()).collection<UserFollowDoc & { _id?: unknown }>("user_follows")
+}
+
+export async function projectForksCol() {
+  return (await getDbCached()).collection<ProjectForkDoc & { _id?: unknown }>("project_forks")
 }
 
 // ─── Type Definitions for Firecrawl Cache ────────────────────────────────────
@@ -275,6 +287,26 @@ export async function ensureIndexes() {
     firecrawlCache.createIndex({ url: 1, crawlMode: 1 }, { unique: true, name: "firecrawl_cache_url_mode_unique" }),
     // TTL index for automatic cache expiration (7 days)
     firecrawlCache.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+  ])
+
+  // Social / explore indexes
+  const projectLikes = await projectLikesCol()
+  await Promise.all([
+    projectLikes.createIndex({ userId: 1, projectId: 1 }, { unique: true, name: "project_likes_unique" }),
+    projectLikes.createIndex({ projectId: 1 }),
+    projectLikes.createIndex({ userId: 1 }),
+  ])
+  const userFollows = await userFollowsCol()
+  await Promise.all([
+    userFollows.createIndex({ followerId: 1, followingId: 1 }, { unique: true, name: "user_follows_unique" }),
+    userFollows.createIndex({ followerId: 1 }),
+    userFollows.createIndex({ followingId: 1 }),
+  ])
+  const projectForks = await projectForksCol()
+  await Promise.all([
+    projectForks.createIndex({ forkedByUserId: 1, originalProjectId: 1 }, { unique: true, name: "project_forks_unique" }),
+    projectForks.createIndex({ originalProjectId: 1 }),
+    projectForks.createIndex({ forkedByUserId: 1 }),
   ])
 
   indexesEnsured = true

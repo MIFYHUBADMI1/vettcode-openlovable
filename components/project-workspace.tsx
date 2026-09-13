@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef } from "react"
+import Link from "next/link"
 import useSWR from "swr"
 import toast, { Toaster } from "react-hot-toast"
 import { cn, ensureProtocol } from "@/lib/utils"
@@ -11,6 +12,7 @@ import { ProjectAssets } from "@/components/project-assets"
 import { BuildLoading } from "@/components/build-loading"
 import { PublishMenu } from "@/components/publish-menu"
 import { DeploymentHistory } from "@/components/deployment-history"
+import { ProjectVisibilityToggle } from "@/components/project-visibility-toggle"
 import Markdown from "react-markdown"
 import type { Project, ProjectState } from "@/lib/types/project"
 
@@ -70,11 +72,14 @@ export function ProjectWorkspace({ projectId, initialState }: ProjectWorkspacePr
     {
       refreshInterval: (latest) => {
         const s = latest?.data?.project?.state ?? initialState
-        if (s === "deploying" || s === "building" || s === "analyzing") return 5000
-        return 15000
+        // Active builds: poll every 10 seconds (reduced from 5s)
+        if (s === "deploying" || s === "building" || s === "analyzing") return 10000
+        // Completed states: poll every 60 seconds (reduced from 15s)
+        return 60000
       },
       revalidateOnFocus: true,
       keepPreviousData: true,
+      dedupingInterval: 5000, // Prevent duplicate requests within 5 seconds
     },
   )
 
@@ -83,8 +88,16 @@ export function ProjectWorkspace({ projectId, initialState }: ProjectWorkspacePr
     `/api/projects/${projectId}/activity`,
     jsonFetcher,
     {
-      refreshInterval: 3000,
+      refreshInterval: (latest) => {
+        const s = projectData?.data?.project?.state ?? initialState
+        // Active builds: poll every 10 seconds
+        if (s === "deploying" || s === "building" || s === "analyzing") return 10000
+        // Otherwise: only poll every 60 seconds
+        return 60000
+      },
       revalidateOnFocus: true,
+      keepPreviousData: true,
+      dedupingInterval: 5000,
     },
   )
 
@@ -100,10 +113,11 @@ export function ProjectWorkspace({ projectId, initialState }: ProjectWorkspacePr
     shouldPollStatus ? `/api/projects/${projectId}/status` : null,
     jsonFetcher,
     {
-      refreshInterval: 3000,
+      refreshInterval: 10000, // Poll every 10 seconds during active builds (reduced from 3s)
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
       keepPreviousData: true,
+      dedupingInterval: 5000,
     },
   )
 
@@ -334,9 +348,103 @@ export function ProjectWorkspace({ projectId, initialState }: ProjectWorkspacePr
             </p>
           </div>
 
+          {/* Build failed alert — show retry button */}
+          {state === "build_failed" ? (
+            <div className="rounded-lg border-2 border-destructive/50 bg-destructive/10 p-6">
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/20">
+                  <span className="text-xl">⚠️</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-destructive">Build failed</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    The application build encountered an error. This could be due to an invalid project name, missing configuration, or a temporary issue with the build service. Check the activity log below for details.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      onClick={async () => {
+                        try {
+                          toast.loading("Starting build...", { id: "retry-build" })
+                          const res = await fetch(`/api/projects/${projectId}/build`, { method: "POST" })
+                          const data = await res.json()
+                          if (!res.ok) {
+                            toast.error(data.message || "Failed to start build", { id: "retry-build" })
+                            return
+                          }
+                          toast.success("Build started! Watch the progress below.", { id: "retry-build" })
+                          // Refresh the page data
+                          refreshProject(undefined, { revalidate: true })
+                        } catch (e) {
+                          toast.error((e as Error).message || "Failed to start build", { id: "retry-build" })
+                        }
+                      }}
+                      className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                    >
+                      <span>🔄</span>
+                      Retry build
+                    </button>
+                    <Link
+                      href={`/project/${projectId}/edit`}
+                      className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
+                    >
+                      Edit project settings
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Deployment failed alert — show retry button */}
+          {state === "deployment_failed" ? (
+            <div className="rounded-lg border-2 border-destructive/50 bg-destructive/10 p-6">
+              <div className="flex items-start gap-4">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/20">
+                  <span className="text-xl">⚠️</span>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-destructive">Deployment failed</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    The deployment to production encountered an error. Your application is still available in development mode. Check the activity log below for details.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      onClick={async () => {
+                        try {
+                          toast.loading("Starting deployment...", { id: "retry-deploy" })
+                          const res = await fetch(`/api/projects/${projectId}/deploy`, { method: "POST" })
+                          const data = await res.json()
+                          if (!res.ok) {
+                            toast.error(data.message || "Failed to start deployment", { id: "retry-deploy" })
+                            return
+                          }
+                          toast.success("Deployment started! This typically takes 3-5 minutes.", { id: "retry-deploy" })
+                          // Refresh the page data
+                          refreshProject(undefined, { revalidate: true })
+                        } catch (e) {
+                          toast.error((e as Error).message || "Failed to start deployment", { id: "retry-deploy" })
+                        }
+                      }}
+                      className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                    >
+                      <span>🔄</span>
+                      Retry deployment
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : null}
+
           {/* Build loading — driven by live state */}
           {state === "building" || state === "deploying" ? (
-            <BuildLoading projectId={projectId} state={state} />
+            <BuildLoading
+              projectId={projectId}
+              state={state}
+              projectName={project?.name}
+              projectPurpose={project?.understanding?.purpose}
+              sourceUrl={project?.sourceUrl}
+            />
           ) : null}
 
           {/* Live URL — prominent banner when deployed to production */}
@@ -374,6 +482,13 @@ export function ProjectWorkspace({ projectId, initialState }: ProjectWorkspacePr
             <DevPreview url={project.developmentUrl} name={project.name} />
           ) : null}
 
+          {/* Capture preview button — shown when there's a live URL but no thumbnail yet */}
+          {(state === "ready" || state === "build_complete") &&
+            project?.developmentUrl &&
+            !project?.understanding?.screenshots?.[0] ? (
+            <CapturePreviewButton projectId={projectId} onCaptured={() => refreshProject(undefined, { revalidate: true })} />
+          ) : null}
+
           {/* Build summary — AI's important post-build instructions */}
           {project?.buildSummary ? (
             <BuildSummaryCard summary={project.buildSummary} />
@@ -406,6 +521,11 @@ export function ProjectWorkspace({ projectId, initialState }: ProjectWorkspacePr
                 <DeploymentHistory projectId={projectId} />
               </div>
             </div>
+          ) : null}
+
+          {/* Project Visibility Toggle — shown when project is ready */}
+          {(state === "ready" || state === "build_complete") && project ? (
+            <ProjectVisibilityToggle project={project} />
           ) : null}
 
           {/* Workspace controls — always shown when not building */}
@@ -455,6 +575,57 @@ const VIEWPORTS: Record<Viewport, { width: string; defaultHeight: number; label:
 
 const MIN_HEIGHT = 200
 const MAX_HEIGHT = 1200
+
+function CapturePreviewButton({ projectId, onCaptured }: { projectId: string; onCaptured: () => void }) {
+  const [loading, setLoading] = useState(false)
+
+  async function handleCapture() {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/projects/${projectId}/capture-preview`, { method: "POST" })
+      const data = await res.json()
+      if (!res.ok) {
+        toast.error(data.message || "Failed to capture preview")
+        return
+      }
+      if (data.data?.thumbnailUrl) {
+        toast.success("Preview screenshot captured!")
+        onCaptured()
+      } else {
+        toast.error(data.data?.message || "Could not capture screenshot — make sure your app is live and accessible")
+      }
+    } catch (e) {
+      toast.error((e as Error).message || "Failed to capture preview")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-lg border border-dashed border-border bg-muted/20 px-5 py-4">
+      <div>
+        <p className="text-sm font-medium text-foreground">No preview image yet</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Capture a screenshot of your live app to use as the project banner
+        </p>
+      </div>
+      <button
+        onClick={handleCapture}
+        disabled={loading}
+        className="shrink-0 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {loading ? (
+          <>
+            <span className="size-3.5 animate-spin rounded-full border-2 border-primary-foreground/30 border-t-primary-foreground" />
+            Capturing…
+          </>
+        ) : (
+          <>📸 Capture preview</>
+        )}
+      </button>
+    </div>
+  )
+}
 
 function DevPreview({ url, name }: { url: string; name: string }) {
   const safeUrl = ensureProtocol(url)

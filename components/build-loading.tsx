@@ -5,6 +5,7 @@ import useSWR from "swr"
 import { useRouter } from "next/navigation"
 import { cn, ensureProtocol } from "@/lib/utils"
 import { postJson } from "@/lib/client/api"
+import { getBuildMessage, getBuildMessages } from "@/lib/build-messages"
 
 const ENCOURAGEMENTS = [
   "Rome wasn't built in a day. But your app will be. ⏳",
@@ -58,14 +59,19 @@ interface BuildLoadingProps {
   projectId: string
   state?: string
   className?: string
+  projectName?: string
+  projectPurpose?: string
+  sourceUrl?: string
 }
 
-export function BuildLoading({ projectId, state, className }: BuildLoadingProps) {
+export function BuildLoading({ projectId, state, className, projectName, projectPurpose, sourceUrl }: BuildLoadingProps) {
   const router = useRouter()
   const [elapsed, setElapsed] = useState(0)
   const [currentEncouragement, setCurrentEncouragement] = useState(0)
   const [showFunFact, setShowFunFact] = useState(false)
   const [optimisticState, setOptimisticState] = useState<"idle" | "success" | "failed">("idle")
+  const [messageIndex, setMessageIndex] = useState(0)
+  const [fadeClass, setFadeClass] = useState("animate-fade-in")
 
   // Poll /status every 3s — this endpoint polls Totalum server-side,
   // handles state transitions (done→ready, failed→build_failed),
@@ -138,6 +144,26 @@ export function BuildLoading({ projectId, state, className }: BuildLoadingProps)
     }, 8000)
     return () => clearInterval(interval)
   }, [optimisticState])
+
+  // Rotate main build message every 10 seconds with fade animation
+  useEffect(() => {
+    if (optimisticState !== "idle") return
+
+    const total = getBuildMessages({ projectName, projectPurpose, sourceUrl }).length
+
+    const interval = setInterval(() => {
+      // Fade out
+      setFadeClass("animate-fade-out")
+
+      // Wait for fade out, then change message and fade in
+      setTimeout(() => {
+        setMessageIndex((prev) => (prev + 1) % total)
+        setFadeClass("animate-fade-in")
+      }, 300)
+    }, 10000) // Change every 10 seconds
+
+    return () => clearInterval(interval)
+  }, [optimisticState, projectName, projectPurpose, sourceUrl])
 
   // Recent build events from the server.
   const recentEvents = useMemo(() => {
@@ -299,9 +325,12 @@ export function BuildLoading({ projectId, state, className }: BuildLoadingProps)
           {/* Spinner */}
           <div className="mb-5 size-14 animate-spin rounded-full border-4 border-muted border-t-primary" />
 
-          {/* Status heading */}
-          <h2 className="text-lg font-semibold text-foreground">
-            {isDeploying ? "Deploying your app…" : "Building your application…"}
+          {/* Status heading with rotating project-specific message */}
+          <h2 className={cn(
+            "text-lg font-semibold text-foreground transition-opacity duration-500 text-balance text-center max-w-md",
+            fadeClass
+          )}>
+            {getBuildMessage(messageIndex, { projectName, projectPurpose, sourceUrl })}
           </h2>
 
           {/* Agent status badge */}

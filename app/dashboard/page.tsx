@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { ArrowRight, Globe, Lightbulb, Users } from "lucide-react"
+import { ArrowRight, Globe, Lightbulb, Users, FolderOpen, Compass } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
 import { ProjectList } from "@/components/project-list"
 import { OnboardingTour } from "@/components/onboarding-tour"
@@ -24,6 +24,14 @@ export default async function DashboardPage() {
             <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-6xl">Good to see you, {firstName}.</h1>
             <p className="max-w-2xl text-pretty text-lg leading-8 text-muted-foreground">Your projects, analysis runs, build states, and next actions—kept in one place.</p>
           </div>
+          <Link
+            href="/projects"
+            className="group inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:bg-accent hover:text-foreground"
+          >
+            <FolderOpen className="size-4" />
+            All projects
+            <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+          </Link>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           <Link
@@ -67,6 +75,51 @@ export default async function DashboardPage() {
           <OnboardingChecklist />
         </div>
         <ProjectList />
+
+        {/* Explore public projects */}
+        <div className="flex flex-col gap-5 border border-border bg-card p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-primary/10 p-2.5">
+                <Compass className="size-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-medium">Explore public projects</h3>
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  Browse apps built by the community — like, follow creators, or fork a project into your workspace
+                </p>
+              </div>
+            </div>
+            <Link
+              href="/explore"
+              className="group hidden shrink-0 items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:bg-accent hover:text-foreground sm:inline-flex"
+            >
+              Browse library
+              <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="flex flex-col gap-1 rounded-lg border border-border bg-background px-4 py-3">
+              <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Discover</span>
+              <p className="text-sm text-foreground">Browse apps built by creators using MirrorSite AI</p>
+            </div>
+            <div className="flex flex-col gap-1 rounded-lg border border-border bg-background px-4 py-3">
+              <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Fork</span>
+              <p className="text-sm text-foreground">Clone any public project straight into your workspace</p>
+            </div>
+            <div className="flex flex-col gap-1 rounded-lg border border-border bg-background px-4 py-3">
+              <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Connect</span>
+              <p className="text-sm text-foreground">Like projects and follow creators you find interesting</p>
+            </div>
+          </div>
+          <Link
+            href="/explore"
+            className="group inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:hidden"
+          >
+            Browse public library
+            <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        </div>
 
         {/* Referral Card */}
         <Link

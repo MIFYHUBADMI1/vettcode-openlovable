@@ -49,8 +49,12 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     try {
       const deployStatus = await getDeploymentStatus(project.totalumProjectId)
       if (deployStatus.status === "deploying") return fail("DEPLOYMENT_RUNNING", "A deployment is already in progress.", 409)
-    } catch {
-      // If we can't check status, proceed with deploy
+    } catch (err) {
+      // If project not found in Totalum, the build may have failed or the project ID is invalid
+      if (err instanceof Error && err.message.includes("PROJECT_NOT_FOUND")) {
+        return fail("TOTALUM_PROJECT_NOT_FOUND", "This project wasn't found in the deployment service. Try rebuilding the project first.", 404)
+      }
+      // If we can't check status for other reasons, proceed with deploy
     }
 
     // Reserve credits
@@ -107,9 +111,17 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     } catch (providerError) {
       // Refund on failure
       await releaseReservation({ userId: user.id, amount: DEPLOY_CREDITS, buildId: runId, reason: "Deployment failure" })
+
+      // Better error message for project not found
+      const errorMessage = providerError instanceof Error ? providerError.message : "Deployment failed"
+      const isProjectNotFound = errorMessage.includes("PROJECT_NOT_FOUND") || errorMessage.includes("404")
+      const userMessage = isProjectNotFound
+        ? "This project wasn't found in the deployment service. The build may have failed or been deleted. Try rebuilding the project first."
+        : errorMessage
+
       // Update history/analytics (best-effort)
       try {
-        await store.updateDeploymentRecord(id, runId, { status: "failed", completedAt: Date.now(), error: providerError instanceof Error ? providerError.message : "Deployment failed" })
+        await store.updateDeploymentRecord(id, runId, { status: "failed", completedAt: Date.now(), error: userMessage })
       } catch (err) {
         console.error("[deploy] failed to update deployment history (non-fatal)", err)
       }
@@ -117,14 +129,15 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
         const peCol = await publishEventsCol()
         await peCol.updateOne(
           { id: runId },
-          { $set: { status: "failed", error: providerError instanceof Error ? providerError.message : "Deployment failed", durationMs: Date.now() - deployStartTime } },
+          { $set: { status: "failed", error: userMessage, durationMs: Date.now() - deployStartTime } },
         )
       } catch (err) {
         console.error("[deploy] failed to update publish analytics (non-fatal)", err)
       }
       await store.updateProject(id, { state: "ready" })
-      await store.appendEvent(id, event("deploy", "Deployment failed. Credits were refunded.", "error"))
-      throw providerError
+      await store.appendEvent(id, event("deploy", `Deployment failed: ${userMessage}`, "error"))
+
+      throw new Error(userMessage)
     }
   } catch (e) {
     return handleRouteError("api.projects.deploy", e)
@@ -146,75 +159,88 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
     if (!isTotalumConfigured()) return fail("PROVIDER_NOT_CONFIGURED", "Deployment service is not connected.", 503)
 
-    const [deployStatus, totalumProject] = await Promise.all([
-      getDeploymentStatus(project.totalumProjectId),
-      getProject(project.totalumProjectId),
-    ])
+    try {
+      const [deployStatus, totalumProject] = await Promise.all([
+        getDeploymentStatus(project.totalumProjectId),
+        getProject(project.totalumProjectId),
+      ])
 
-    // Sync deployment state back to MirrorSite
-    if (deployStatus.status === "success" && project.state === "deploying") {
-      const productionUrl = totalumProject.productionProjectUrl
-      // Update deployment history (best-effort)
-      const latestDeploy = [...(project.deploymentHistory || [])].reverse().find(d => d.status === "deploying")
-      if (latestDeploy) {
-        try {
-          await store.updateDeploymentRecord(id, latestDeploy.id, {
-            status: "success",
-            completedAt: Date.now(),
-            productionUrl,
-            customDomain: totalumProject.customDomain?.hostname,
-          })
-        } catch (err) {
-          console.error("[deploy] failed to update deployment history (non-fatal)", err)
+      // Sync deployment state back to MirrorSite
+      if (deployStatus.status === "success" && project.state === "deploying") {
+        const productionUrl = totalumProject.productionProjectUrl
+        // Update deployment history (best-effort)
+        const latestDeploy = [...(project.deploymentHistory || [])].reverse().find(d => d.status === "deploying")
+        if (latestDeploy) {
+          try {
+            await store.updateDeploymentRecord(id, latestDeploy.id, {
+              status: "success",
+              completedAt: Date.now(),
+              productionUrl,
+              customDomain: totalumProject.customDomain?.hostname,
+            })
+          } catch (err) {
+            console.error("[deploy] failed to update deployment history (non-fatal)", err)
+          }
+          try {
+            const peCol = await publishEventsCol()
+            await peCol.updateOne(
+              { id: latestDeploy.id },
+              { $set: { status: "success", productionUrl, customDomain: totalumProject.customDomain?.hostname, durationMs: Date.now() - latestDeploy.startedAt } },
+            )
+          } catch (err) {
+            console.error("[deploy] failed to update publish analytics (non-fatal)", err)
+          }
         }
-        try {
-          const peCol = await publishEventsCol()
-          await peCol.updateOne(
-            { id: latestDeploy.id },
-            { $set: { status: "success", productionUrl, customDomain: totalumProject.customDomain?.hostname, durationMs: Date.now() - latestDeploy.startedAt } },
-          )
-        } catch (err) {
-          console.error("[deploy] failed to update publish analytics (non-fatal)", err)
+        await store.updateProject(id, {
+          state: "ready",
+          developmentUrl: productionUrl || project.developmentUrl,
+        })
+        await store.appendEvent(id, event("deploy", `Deployed to production${productionUrl ? `: ${productionUrl}` : ""}`))
+      } else if (deployStatus.status === "error" && project.state === "deploying") {
+        const latestDeploy = [...(project.deploymentHistory || [])].reverse().find(d => d.status === "deploying")
+        if (latestDeploy) {
+          try {
+            await store.updateDeploymentRecord(id, latestDeploy.id, {
+              status: "failed",
+              completedAt: Date.now(),
+              error: "Deployment failed",
+            })
+          } catch (err) {
+            console.error("[deploy] failed to update deployment history (non-fatal)", err)
+          }
+          try {
+            const peCol = await publishEventsCol()
+            await peCol.updateOne(
+              { id: latestDeploy.id },
+              { $set: { status: "failed", error: "Deployment failed", durationMs: Date.now() - latestDeploy.startedAt } },
+            )
+          } catch (err) {
+            console.error("[deploy] failed to update publish analytics (non-fatal)", err)
+          }
         }
+        await store.updateProject(id, { state: "ready" })
+        await store.appendEvent(id, event("deploy", "Deployment failed.", "error"))
       }
-      await store.updateProject(id, {
-        state: "ready",
-        developmentUrl: productionUrl || project.developmentUrl,
+
+      return ok({
+        status: deployStatus.status,
+        createdAt: deployStatus.createdAt,
+        versionId: deployStatus.versionId,
+        productionUrl: totalumProject.productionProjectUrl,
+        customDomain: totalumProject.customDomain,
       })
-      await store.appendEvent(id, event("deploy", `Deployed to production${productionUrl ? `: ${productionUrl}` : ""}`))
-    } else if (deployStatus.status === "error" && project.state === "deploying") {
-      const latestDeploy = [...(project.deploymentHistory || [])].reverse().find(d => d.status === "deploying")
-      if (latestDeploy) {
-        try {
-          await store.updateDeploymentRecord(id, latestDeploy.id, {
-            status: "failed",
-            completedAt: Date.now(),
-            error: "Deployment failed",
-          })
-        } catch (err) {
-          console.error("[deploy] failed to update deployment history (non-fatal)", err)
+    } catch (err) {
+      // Handle project not found - reset state to ready
+      if (err instanceof Error && (err.message.includes("PROJECT_NOT_FOUND") || err.message.includes("404"))) {
+        // If the project was in deploying state, reset it
+        if (project.state === "deploying") {
+          await store.updateProject(id, { state: "ready" })
+          await store.appendEvent(id, event("deploy", "Deployment failed: Project not found in deployment service.", "error"))
         }
-        try {
-          const peCol = await publishEventsCol()
-          await peCol.updateOne(
-            { id: latestDeploy.id },
-            { $set: { status: "failed", error: "Deployment failed", durationMs: Date.now() - latestDeploy.startedAt } },
-          )
-        } catch (err) {
-          console.error("[deploy] failed to update publish analytics (non-fatal)", err)
-        }
+        return fail("TOTALUM_PROJECT_NOT_FOUND", "This project wasn't found in the deployment service. Try rebuilding the project first.", 404)
       }
-      await store.updateProject(id, { state: "ready" })
-      await store.appendEvent(id, event("deploy", "Deployment failed.", "error"))
+      return handleRouteError("api.projects.deploy.status", err)
     }
-
-    return ok({
-      status: deployStatus.status,
-      createdAt: deployStatus.createdAt,
-      versionId: deployStatus.versionId,
-      productionUrl: totalumProject.productionProjectUrl,
-      customDomain: totalumProject.customDomain,
-    })
   } catch (e) {
     return handleRouteError("api.projects.deploy.status", e)
   }

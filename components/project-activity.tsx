@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import useSWR from "swr"
 import { cn } from "@/lib/utils"
 
@@ -48,14 +49,38 @@ function isUserFacing(event: ActivityEvent): boolean {
 }
 
 export function ProjectActivity({ projectId }: { projectId: string }) {
-  const { data, error } = useSWR(`/api/projects/${projectId}/activity`, fetcher, { refreshInterval: 5000 })
+  const { data, error } = useSWR(`/api/projects/${projectId}/activity`, fetcher, {
+    refreshInterval: 10000, // Poll every 10 seconds (reduced from 5s)
+    keepPreviousData: true,
+    dedupingInterval: 5000, // Prevent duplicate requests within 5 seconds
+  })
+
+  // Keep stable events in state - never show empty if we've already shown events
+  const [stableEvents, setStableEvents] = useState<ActivityEvent[]>([])
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
+
+  useEffect(() => {
+    if (data?.events && data.events.length > 0) {
+      setStableEvents(data.events)
+      setHasLoadedOnce(true)
+    }
+  }, [data?.events])
 
   if (error) return <p className="text-sm text-destructive">{error.message}</p>
-  if (!data) return <p className="text-sm text-muted-foreground">Loading activity…</p>
-  if (!data.events.length)
+
+  // Show loading only on first load
+  if (!data && !hasLoadedOnce) return <p className="text-sm text-muted-foreground">Loading activity…</p>
+
+  // Use stable events if available, otherwise show empty state (but only if we've never loaded)
+  const eventsToShow = stableEvents.length > 0 ? stableEvents : (data?.events || [])
+
+  if (eventsToShow.length === 0 && !hasLoadedOnce)
     return <p className="text-sm text-muted-foreground">Nothing has happened yet — this fills in as soon as work starts.</p>
 
-  const events = data.events.slice().filter(isUserFacing).reverse()
+  if (eventsToShow.length === 0 && hasLoadedOnce)
+    return <p className="text-sm text-muted-foreground">Loading updates…</p>
+
+  const events = eventsToShow.slice().filter(isUserFacing).reverse()
 
   return (
     <ol className="flex flex-col gap-4">

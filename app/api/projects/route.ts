@@ -29,6 +29,7 @@ export async function GET() {
           state: p.state,
           sourceUrl: p.sourceUrl,
           updatedAt: p.updatedAt,
+          thumbnailUrl: p.understanding?.screenshots?.[0] ?? null,
         })),
       })
     })

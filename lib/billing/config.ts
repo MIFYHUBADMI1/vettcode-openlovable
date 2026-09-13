@@ -287,6 +287,28 @@ export const REFERRAL_VERIFICATION_REWARD = 500
 export const REFERRAL_MILESTONE_REWARD = 1_500
 export const REFERRAL_MILESTONE_THRESHOLD = 75_000
 
+// ─── Fork Pricing ─────────────────────────────────────────────────────────────
+
+export const FORK_PRICING = {
+  simple: {
+    forkCost: 15_000,       // credits charged to forker
+    ownerRoyalty: 5_000,    // credits awarded to project owner
+    savingsPct: 45,         // "saves you X% of credits to build"
+  },
+  medium: {
+    forkCost: 45_000,
+    ownerRoyalty: 10_000,
+    savingsPct: 25,
+  },
+  complex: {
+    forkCost: 50_000,
+    ownerRoyalty: 15_000,
+    savingsPct: 35,
+  },
+} as const
+
+export type ForkTier = keyof typeof FORK_PRICING
+
 // ─── Credit Types ────────────────────────────────────────────────────────────
 
 export type CreditType = "subscription" | "permanent"
@@ -328,6 +350,8 @@ export type LedgerTransactionType =
   | "refund_reversal"
   | "other_reversal"
   | "infrastructure_purchase"
+  | "fork_purchase"
+  | "fork_royalty"
 
 // ─── Payment States ──────────────────────────────────────────────────────────
 

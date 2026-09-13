@@ -111,8 +111,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       const defaultPlan = getInfrastructurePlan(project.infrastructure?.planId ?? "testing")
       const infraCap = defaultPlan?.totalumInfrastructureCredits ?? 5
 
+      // Create a memorable project name: mirror-{projectName}-{shortId}
+      // e.g., mirror-myapp-a1b2c3 or mirror-example-com-x9y8z7
+      const sanitizedName = project.name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
+        .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
+        .slice(0, 20) // Limit to 20 chars for the name part
+      const shortId = id.replace(/-/g, '').slice(0, 6) // 6 char unique suffix
+      const totalumProjectName = `mirror-${sanitizedName}-${shortId}` // e.g., mirror-myapp-a1b2c3
+
       const launch = await launchProject({
-        projectId: `mirror-${id.slice(0, 12)}`,
+        projectId: totalumProjectName,
         prompt: run.prompt,
         maxInfrastructureCreditsPerMonth: infraCap,
       })

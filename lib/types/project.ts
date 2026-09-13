@@ -188,6 +188,8 @@ export interface MirrorProject {
   infrastructure?: InfrastructureSubscription
   /** User preferences collected during project creation. */
   preferences?: ProjectPreferences
+  /** Project visibility: private (default) or public. Can only be public if deployed. */
+  visibility?: "private" | "public"
 }
 
 /** Alias used throughout the frontend; kept distinct from `MirrorProject` so
@@ -202,6 +204,8 @@ export interface ProjectSummary {
   state: ProjectState
   sourceUrl?: string
   updatedAt: number
+  thumbnailUrl?: string | null
+  visibility?: "private" | "public"
 }
 
 /** User-facing labels for lifecycle states. */

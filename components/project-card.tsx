@@ -45,6 +45,7 @@ export function ProjectCard({ project, onDeleted }: { project: ProjectSummary; o
   const [dialogOpen, setDialogOpen] = useState(false)
   const title = project.sourceUrl ? hostOf(String(project.sourceUrl)) : project.name
   const subtitle = project.sourceUrl ?? "Built from scratch"
+  const hasThumbnail = Boolean(project.thumbnailUrl)
 
   async function handleDelete() {
     setDeleting(true)
@@ -64,11 +65,11 @@ export function ProjectCard({ project, onDeleted }: { project: ProjectSummary; o
   }
 
   return (
-    <div className="group relative flex flex-col gap-4 rounded-lg border border-border bg-card p-4 transition-colors hover:border-accent/50">
+    <div className="group relative flex flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-accent/50">
       <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <AlertDialogTrigger
           aria-label="Delete project"
-          className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+          className="absolute right-3 top-3 z-10 inline-flex h-7 w-7 items-center justify-center rounded-md bg-card/80 text-muted-foreground opacity-0 backdrop-blur-sm transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
           onClick={(e) => {
             e.preventDefault()
             e.stopPropagation()
@@ -100,19 +101,32 @@ export function ProjectCard({ project, onDeleted }: { project: ProjectSummary; o
         </AlertDialogContent>
       </AlertDialog>
 
-      <Link href={`/project/${project.id}`} className="flex flex-col gap-4">
-        <div className="flex items-start justify-between gap-3 pr-8">
-          <div className="flex min-w-0 flex-col gap-1">
-            <span className="truncate font-mono text-sm font-medium text-foreground">{title}</span>
-            <span className="truncate text-xs text-muted-foreground">{subtitle}</span>
+      <Link href={`/project/${project.id}`} className="flex flex-col">
+        {hasThumbnail && (
+          <div className="relative aspect-[16/7] w-full overflow-hidden bg-muted">
+            <img
+              src={project.thumbnailUrl!}
+              alt={`Screenshot of ${title}`}
+              className="h-full w-full object-cover object-top"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-card/90" />
           </div>
-          <StateBadge state={project.state} />
-        </div>
-        <div className="flex items-center justify-between border-t border-border pt-3">
-          <span className="font-mono text-xs text-muted-foreground">{relativeTime(project.updatedAt)}</span>
-          <span className="font-mono text-xs text-accent opacity-0 transition-opacity group-hover:opacity-100">
-            Open &rarr;
-          </span>
+        )}
+
+        <div className={hasThumbnail ? "flex flex-col gap-3 p-4" : "flex flex-col gap-4 p-4"}>
+          <div className="flex items-start justify-between gap-3 pr-8">
+            <div className="flex min-w-0 flex-col gap-1">
+              <span className="truncate font-mono text-sm font-medium text-foreground">{title}</span>
+              {!hasThumbnail && <span className="truncate text-xs text-muted-foreground">{subtitle}</span>}
+            </div>
+            <StateBadge state={project.state} />
+          </div>
+          <div className={`flex items-center justify-between border-t border-border ${hasThumbnail ? "pt-2.5" : "pt-3"}`}>
+            <span className="font-mono text-xs text-muted-foreground">{relativeTime(project.updatedAt)}</span>
+            <span className="font-mono text-xs text-accent opacity-0 transition-opacity group-hover:opacity-100">
+              Open &rarr;
+            </span>
+          </div>
         </div>
       </Link>
     </div>
