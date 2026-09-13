@@ -64,6 +64,17 @@ export interface CreditBalance {
 export async function getBalance(userId: string): Promise<CreditBalance> {
   const users = await usersCol()
   const user = await users.findOne({ id: userId })
+
+  console.log('[getBalance] Query result:', {
+    userId,
+    userFound: !!user,
+    userIdFromDb: user?.id,
+    userEmail: user?.email,
+    subscriptionCredits: user?.subscriptionCredits,
+    permanentCredits: user?.permanentCredits,
+    legacyCredits: user?.credits,
+  })
+
   if (!user) return { total: 0, subscription: 0, permanent: 0 }
 
   // Use new fields if available, otherwise fall back to legacy credits
@@ -85,6 +96,13 @@ export async function getBalance(userId: string): Promise<CreditBalance> {
       permanent,
     })
   }
+
+  console.log('[getBalance] Computed balance:', {
+    userId,
+    total,
+    subscription,
+    permanent,
+  })
 
   return { total, subscription, permanent }
 }
