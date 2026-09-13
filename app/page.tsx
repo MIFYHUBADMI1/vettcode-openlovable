@@ -648,6 +648,11 @@ export default function Page() {
         </section>
 
         {/* ══════════════════════════════════════════════════════════
+            COMMUNITY SHOWCASE
+        ══════════════════════════════════════════════════════════ */}
+        <CommunityShowcase />
+
+        {/* ══════════════════════════════════════════════════════════
             BENTO GRID — Why MirrorSite
         ══════════════════════════════════════════════════════════ */}
         <section id="principles" className="border-y border-border/60 bg-card/20 py-28">
@@ -794,11 +799,6 @@ export default function Page() {
             </div>
           </div>
         </section>
-
-        {/* ══════════════════════════════════════════════════════════
-            COMMUNITY SHOWCASE
-        ══════════════════════════════════════════════════════════ */}
-        <CommunityShowcase />
 
         {/* ══════════════════════════════════════════════════════════
             FINAL CTA
