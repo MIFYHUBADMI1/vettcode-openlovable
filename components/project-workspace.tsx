@@ -784,8 +784,5 @@ function BuildSummaryCard({ summary }: { summary: NonNullable<Project["buildSumm
         </div>
       ) : null}
     </div>
-      </section>
-    </div>
-    </>
   )
 }
