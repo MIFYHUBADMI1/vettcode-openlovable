@@ -5,6 +5,7 @@ import { projectForksCol } from "@/lib/db/collections"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { getAvailableCredits, reserveCredits, releaseReservation, grantCredits } from "@/lib/billing/credit-service"
 import { FORK_PRICING, type ForkTier } from "@/lib/billing/config"
+import { autoLaunchBuild } from "@/lib/analysis/pipeline"
 import { logger } from "@/lib/logging/logger"
 import { ObjectId } from "mongodb"
 import type { MirrorProject } from "@/lib/types/project"
@@ -162,7 +163,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
         at: now,
         level: "info",
         stage: "fork",
-        message: `Forked from "${original.name}" (${tier} tier) — ${pricing.forkCost.toLocaleString()} credits, saves you ${pricing.savingsPct}% vs building from scratch`,
+        message: `Forked from "${original.name}" (${tier} tier) — ${pricing.forkCost.toLocaleString()} credits charged. Auto-launching build now…`,
       }],
       conversation: [],
       deployment: { id: cryptoId(), status: "idle", updatedAt: now },
@@ -212,6 +213,18 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       })
     }
 
+    // ── Step 6: Auto-launch the build for the forked project ──────────────────
+    // Fire-and-forget — mirrors exactly how the analysis pipeline auto-builds.
+    // autoLaunchBuild checks credits, claims the build slot, launches Totalum,
+    // and sets the project to "building" — the user gets a fully live app copy,
+    // not just the spec. If the user can't afford the build credits it will emit
+    // a warning event and the user can trigger it manually from their workspace.
+    void autoLaunchBuild(forkedProjectId).catch((e) => {
+      logger.error("api.projects.fork", "auto-build launch failed (non-fatal)", {
+        forkedProjectId, error: (e as Error).message,
+      })
+    })
+
     return ok({
       project: { id: forkedProjectId, name: forked.name },
       alreadyForked: false,
@@ -219,7 +232,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       forkCost: pricing.forkCost,
       ownerRoyalty: pricing.ownerRoyalty,
       savingsPct: pricing.savingsPct,
-      message: `Forked! ${pricing.forkCost.toLocaleString()} credits charged. Saves you ${pricing.savingsPct}% vs building from scratch.`,
+      message: `Forked and building! ${pricing.forkCost.toLocaleString()} credits charged. Your copy is being built now — check your workspace.`,
     }, { status: 201 })
 
   } catch (e) {

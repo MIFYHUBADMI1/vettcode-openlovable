@@ -19,7 +19,7 @@ function event(stage: string, message: string, level: ProjectEvent["level"] = "i
  * Automatically launch the Totalum build after analysis completes.
  * Called fire-and-forget from both website and scratch pipelines.
  */
-async function autoLaunchBuild(projectId: string) {
+export async function autoLaunchBuild(projectId: string) {
   console.log("[v0] pipeline.autoBuild: checking readiness", { projectId })
   const project = await store.getProject(projectId)
   if (!project || !project.specification) {
