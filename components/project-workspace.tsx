@@ -630,8 +630,8 @@ function ReadyToBuildCTA({ projectId, project, onBuilding }: {
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
               <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${tier === "complex" ? "bg-purple-500/10 text-purple-600 dark:text-purple-400"
-                  : tier === "medium" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                    : "bg-green-500/10 text-green-600 dark:text-green-400"
+                : tier === "medium" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                  : "bg-green-500/10 text-green-600 dark:text-green-400"
                 }`}>
                 {tierLabel} tier
               </span>
@@ -900,8 +900,7 @@ function BuildSummaryCard({ summary }: { summary: NonNullable<Project["buildSumm
                     API keys needed
                   </p>
                   <p className="mt-1 text-xs leading-relaxed text-red-600/80 dark:text-red-400/80">
-                    The following secrets are required for full functionality. Add them via
-                    <span className="font-medium"> Workspace controls → Secrets</span>.
+                    The following secrets are required for full functionality.
                   </p>
                   <ul className="mt-3 space-y-1.5">
                     {Object.entries(summary.secretKeysNeeded!).map(([key, info]) => (
@@ -917,6 +916,12 @@ function BuildSummaryCard({ summary }: { summary: NonNullable<Project["buildSumm
                       </li>
                     ))}
                   </ul>
+                  <Link
+                    href={`/project/${(summary as unknown as { projectId?: string }).projectId ?? ""}/env`}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-red-700"
+                  >
+                    🔑 Add environment variables →
+                  </Link>
                 </div>
               </div>
             </div>

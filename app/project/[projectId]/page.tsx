@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/lib/auth/session"
 import { store } from "@/lib/store/store"
 import {
   LayoutDashboard, Code2, ScrollText, PenLine,
-  Database, Download, ExternalLink,
+  Database, Download, ExternalLink, KeyRound,
 } from "lucide-react"
 
 export default async function ProjectWorkspacePage({ params }: { params: Promise<{ projectId: string }> }) {
@@ -83,6 +83,17 @@ export default async function ProjectWorkspacePage({ params }: { params: Promise
                 >
                   <Database className="size-3.5" />
                   Database
+                </Link>
+              )}
+
+              {/* Environment variables — only when built */}
+              {isBuilt && (
+                <Link
+                  href={`/project/${project.id}/env`}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-600 transition-all hover:bg-amber-500/20 dark:text-amber-400"
+                >
+                  <KeyRound className="size-3.5" />
+                  .env
                 </Link>
               )}
 
