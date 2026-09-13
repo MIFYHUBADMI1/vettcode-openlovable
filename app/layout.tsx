@@ -20,11 +20,11 @@ export const metadata: Metadata = {
   applicationName: "MirrorSite AI",
 
   keywords: ["AI website builder", "AI application builder", "full-stack app builder", "AI code generator", "website to app", "design to code", "rapid application development", "MVP builder", "AI-powered web development"],
-  verification: { 
+  verification: {
     google: "fVuc4AOfzEAxCg2a5vgQ967z_AGcs2MbUn6QUjl70b4",
     other: {
       "pressplaced-verification": "fc52a89ec5ab0207",
-      
+
     },
   },
   alternates: { canonical: "/" },
@@ -68,6 +68,15 @@ export default function RootLayout({
 }>) {
   return (
     <html suppressHydrationWarning lang="en" className={`dark bg-background ${jakarta.variable} ${geistMono.variable}`}>
+      {/* Font Awesome — required for database UI icons */}
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+          crossOrigin="anonymous"
+          referrerPolicy="no-referrer"
+        />
+      </head>
       <body className="font-sans antialiased">
         <ThemeProvider>
           <script
