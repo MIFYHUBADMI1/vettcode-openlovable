@@ -28,7 +28,7 @@ async function autoLaunchBuild(projectId: string) {
   }
   if (!isTotalumConfigured()) {
     console.log("[v0] pipeline.autoBuild: Totalum not configured, skipping", { projectId })
-    await store.appendEvent(projectId, event("build", "Build service not connected — click Build when ready.", "warn"))
+    await store.appendEvent(projectId, event("build", "⚙️ Build engine needs a tune-up. Click Build when you're ready!", "warn"))
     return
   }
 
@@ -38,11 +38,12 @@ async function autoLaunchBuild(projectId: string) {
   const canAfford = await hasSufficientCredits(project.userId, creditsNeeded)
   if (!canAfford) {
     console.log("[v0] pipeline.autoBuild: insufficient credits", { projectId })
-    await store.appendEvent(projectId, event("build", "Not enough credits to start the build automatically. Click Build when ready.", "warn"))
+    await store.appendEvent(projectId, event("build", "💰 Need more credits to fuel the build rocket! Top up and click Build when ready.", "warn"))
     return
   }
 
   try {
+    await store.appendEvent(projectId, event("build", "🎪 Setting up the build circus... Juggling code, APIs, and databases!"))
     const prompt = buildInitialBuildPrompt(project.specification, project.understanding, project.preferences)
     const run: BuildRun = {
       id: cryptoId(),
@@ -71,10 +72,13 @@ async function autoLaunchBuild(projectId: string) {
       return
     }
 
+    await store.appendEvent(projectId, event("build", `💎 Reserved ${creditsNeeded} credits. Time to build something amazing!`))
+
     // Determine infrastructure cap for the Totalum project
     const defaultPlan = getInfrastructurePlan("testing")
     const infraCap = defaultPlan?.totalumInfrastructureCredits ?? 5
 
+    await store.appendEvent(projectId, event("build", "🏗️ Assembling the construction crew (AI agents, APIs, databases)..."))
     const launch = await launchProject({
       projectId: `mirror-${projectId.slice(0, 12)}`,
       prompt,
@@ -91,13 +95,13 @@ async function autoLaunchBuild(projectId: string) {
       console.error("[v0] pipeline.autoBuild: infrastructure init failed", e)
     })
 
-    await store.appendEvent(projectId, event("build", "Build started automatically"))
+    await store.appendEvent(projectId, event("build", "🎉 Build is LIVE! Grab some popcorn and watch the progress. This might take a few minutes!"))
     console.log("[v0] pipeline.autoBuild: launched", { projectId, totalumProjectId: launch.projectId })
   } catch (e) {
     console.log("[v0] pipeline.autoBuild: FAILED", { projectId, message: (e as Error).message })
     logger.error("pipeline.autoBuild", "auto-build failed", { projectId, message: (e as Error).message })
     await store.updateProject(projectId, { state: "specification_ready" })
-    await store.appendEvent(projectId, event("build", "Auto-build failed — click Build to retry.", "error"))
+    await store.appendEvent(projectId, event("build", "🛠️ Auto-build tripped over a cable. No worries—click Build to give it another go!", "error"))
   }
 }
 
@@ -117,7 +121,7 @@ export async function runWebsiteAnalysis(projectId: string, pipelineMode?: "lega
 
   try {
     await store.updateProject(projectId, { state: "analyzing" })
-    await store.appendEvent(projectId, event("analyze", `Collecting evidence from ${project.sourceUrl}`))
+    await store.appendEvent(projectId, event("analyze", `🔍 Putting on detective hat... Time to stalk ${project.sourceUrl} (legally!)`))
     console.log("[v0] pipeline.website: state -> analyzing", { projectId, sourceUrl: project.sourceUrl })
 
     if (!isFirecrawlConfigured()) {
@@ -125,7 +129,7 @@ export async function runWebsiteAnalysis(projectId: string, pipelineMode?: "lega
       await store.updateProject(projectId, { state: "build_failed", error: "Firecrawl is not configured." })
       await store.appendEvent(
         projectId,
-        event("analyze", "Website analyzer (Firecrawl) is not connected. Add FIRECRAWL_API_KEY to enable analysis.", "error"),
+        event("analyze", "🚫 Our web crawler took a day off. Add FIRECRAWL_API_KEY to wake it up!", "error"),
       )
       return
     }
@@ -136,10 +140,11 @@ export async function runWebsiteAnalysis(projectId: string, pipelineMode?: "lega
     if (!canAfford) {
       console.log("[v0] pipeline.website: insufficient credits, aborting", { projectId, userId: project.userId, required: scrapeCost })
       await store.updateProject(projectId, { state: "build_failed", error: "Not enough credits for website analysis." })
-      await store.appendEvent(projectId, event("analyze", "Not enough credits for website analysis.", "error"))
+      await store.appendEvent(projectId, event("analyze", "💳 Oops! Your credit card is doing cardio elsewhere. Need more credits to continue!", "error"))
       return
     }
 
+    await store.appendEvent(projectId, event("analyze", `🕷️ Releasing the web spiders... They're crawling through ${project.sourceUrl} looking for treasures!`))
     console.log("[v0] pipeline.website: step 1/3 crawlWebsite starting", { projectId })
     const evidence = await crawlWebsite(project.sourceUrl)
     console.log("[v0] pipeline.website: step 1/3 crawlWebsite done", {
@@ -149,7 +154,7 @@ export async function runWebsiteAnalysis(projectId: string, pipelineMode?: "lega
     })
     await store.appendEvent(
       projectId,
-      event("analyze", `Collected ${evidence.pages.length} pages, ${evidence.screenshots.length} screenshots`),
+      event("analyze", `✨ Jackpot! Found ${evidence.pages.length} pages and ${evidence.screenshots.length} screenshots. Our spiders are happy!`),
     )
 
     // Store screenshots and assets immediately so they appear in the UI
@@ -173,18 +178,20 @@ export async function runWebsiteAnalysis(projectId: string, pipelineMode?: "lega
     try {
       await chargeScrapeCredits(project.userId, projectId, pipelineMode)
       const modeLabel = pipelineMode === "heavy" ? "Heavy mode" : "Legacy"
-      await store.appendEvent(projectId, event("analyze", `Scrape credits charged (${modeLabel})`))
+      await store.appendEvent(projectId, event("analyze", `💰 Ka-ching! Charged ${scrapeCost} credits for the web crawl (${modeLabel}). Worth every penny!`))
     } catch (e) {
       console.log("[v0] pipeline.website: scrape credit charge failed", { projectId, message: (e as Error).message })
       logger.error("pipeline.scrape", "credit charge failed", { projectId, message: (e as Error).message })
     }
 
+    await store.appendEvent(projectId, event("analyze", `🧠 Feeding everything to our AI... It's speed-reading like it's cramming for finals!`))
     console.log("[v0] pipeline.website: step 2/3 analyzeWebsite (generateText) starting", { projectId })
     const understanding = await analyzeWebsite(evidence)
     console.log("[v0] pipeline.website: step 2/3 analyzeWebsite done", { projectId })
     await store.updateProject(projectId, { state: "analysis_complete", understanding })
-    await store.appendEvent(projectId, event("understand", "Website understanding generated"))
+    await store.appendEvent(projectId, event("understand", "🎓 Aha! The AI just had its 'eureka' moment. We understand your website now!"))
 
+    await store.appendEvent(projectId, event("specify", `📝 Time to write the master plan... Think of this as your app's blueprint, but cooler!`))
     console.log("[v0] pipeline.website: step 3/3 generateSpecificationFromUnderstanding starting", { projectId, pipelineMode })
     const specification = await generateSpecificationFromUnderstanding(understanding, project.userId, projectId, pipelineMode)
     // Classify complexity for customer-facing tier pricing.
@@ -199,20 +206,21 @@ export async function runWebsiteAnalysis(projectId: string, pipelineMode?: "lega
       ...(wasSanitized ? { specSanitized: true } : {}),
     })
     if (wasSanitized) {
-      await store.appendEvent(projectId, event("specify", "Some unsupported technologies were automatically replaced with Totalum SDK equivalents.", "warn"))
+      await store.appendEvent(projectId, event("specify", "⚙️ Pro tip: We swapped some tech for Totalum SDK. Think of it as upgrading from a bicycle to a Tesla!", "warn"))
     }
-    await store.appendEvent(projectId, event("specify", `Application plan ready — ${specification.complexity} tier`))
+    await store.appendEvent(projectId, event("specify", `🎯 Blueprint complete! Your app is classified as ${specification.complexity.toUpperCase()} tier. Let's build this!`))
 
     // Charge credits for the plan generation.
     try {
       await chargePlanCredits(project.userId, projectId, pipelineMode)
       const modeLabel = pipelineMode === "heavy" ? "Heavy mode" : "Legacy"
-      await store.appendEvent(projectId, event("specify", `Plan credits charged (${modeLabel})`))
+      await store.appendEvent(projectId, event("specify", `💸 Plan credits charged (${modeLabel}). Your wallet is lighter, but your app is getting closer!`))
     } catch (e) {
       console.log("[v0] pipeline.website: plan credit charge failed", { projectId, message: (e as Error).message })
       logger.error("pipeline.plan", "credit charge failed", { projectId, message: (e as Error).message })
     }
 
+    await store.appendEvent(projectId, event("build", `🚀 Hold tight! Auto-launching your build... This is where the magic happens!`))
     console.log("[v0] pipeline.website: analysis complete, auto-launching build", { projectId })
     logger.info("pipeline.website", "analysis complete", { projectId })
 
@@ -226,7 +234,7 @@ export async function runWebsiteAnalysis(projectId: string, pipelineMode?: "lega
     })
     logger.error("pipeline.website", "analysis failed", { projectId, message: (e as Error).message })
     await store.updateProject(projectId, { state: "build_failed", error: "We couldn't finish analyzing this website." })
-    await store.appendEvent(projectId, event("analyze", "Analysis failed. Please try again.", "error"))
+    await store.appendEvent(projectId, event("analyze", "😢 Oops! Something went wrong. Even robots have bad days. Try again?", "error"))
   }
 }
 
@@ -240,8 +248,9 @@ export async function runScratchAnalysis(projectId: string, pipelineMode?: "lega
   }
   try {
     await store.updateProject(projectId, { state: "analyzing" })
-    await store.appendEvent(projectId, event("specify", "Turning your idea into an application plan"))
+    await store.appendEvent(projectId, event("specify", "💡 Your idea is brilliant! Let's turn those brain waves into code..."))
     console.log("[v0] pipeline.scratch: state -> analyzing, calling generateSpecificationFromIdea", { projectId, pipelineMode })
+    await store.appendEvent(projectId, event("specify", "🤖 AI is brainstorming... Imagine a room full of engineers, but faster!"))
     const specification = await generateSpecificationFromIdea(project.idea, project.userId, projectId, pipelineMode)
     // Classify complexity for customer-facing tier pricing.
     specification.complexity = classifyComplexity(specification)
@@ -255,20 +264,21 @@ export async function runScratchAnalysis(projectId: string, pipelineMode?: "lega
       ...(wasSanitized ? { specSanitized: true } : {}),
     })
     if (wasSanitized) {
-      await store.appendEvent(projectId, event("specify", "Some unsupported technologies were automatically replaced with Totalum SDK equivalents.", "warn"))
+      await store.appendEvent(projectId, event("specify", "🔧 Heads up! We upgraded your tech stack to Totalum SDK. It's like swapping dial-up for fiber!", "warn"))
     }
-    await store.appendEvent(projectId, event("specify", `Application plan ready — ${specification.complexity} tier`))
+    await store.appendEvent(projectId, event("specify", `🎨 Ta-da! Your app blueprint is ready. Complexity level: ${specification.complexity.toUpperCase()}. Let's make it real!`))
 
     // Charge credits for the plan generation.
     try {
       await chargePlanCredits(project.userId, projectId, pipelineMode)
       const modeLabel = pipelineMode === "heavy" ? "Heavy mode" : "Legacy"
-      await store.appendEvent(projectId, event("specify", `Plan credits charged (${modeLabel})`))
+      await store.appendEvent(projectId, event("specify", `💳 Credits charged (${modeLabel}). Investing in your dream app!`))
     } catch (e) {
       console.log("[v0] pipeline.scratch: plan credit charge failed", { projectId, message: (e as Error).message })
       logger.error("pipeline.plan", "credit charge failed", { projectId, message: (e as Error).message })
     }
 
+    await store.appendEvent(projectId, event("build", "🎬 Lights, camera, action! Starting your build now..."))
     console.log("[v0] pipeline.scratch: analysis complete, auto-launching build", { projectId })
 
     // Auto-launch the Totalum build.
@@ -281,7 +291,7 @@ export async function runScratchAnalysis(projectId: string, pipelineMode?: "lega
     })
     logger.error("pipeline.scratch", "failed", { projectId, message: (e as Error).message })
     await store.updateProject(projectId, { state: "build_failed", error: "We couldn't generate a plan from your idea." })
-    await store.appendEvent(projectId, event("specify", "Planning failed. Please try again.", "error"))
+    await store.appendEvent(projectId, event("specify", "💔 The plan hit a snag. Even great ideas need a second shot. Try again!", "error"))
   }
 }
 
