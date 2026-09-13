@@ -78,6 +78,16 @@ export function ProjectWorkspace({ projectId, initialState }: ProjectWorkspacePr
     },
   )
 
+  // Also poll activity for toast notifications
+  const { data: activityData } = useSWR<{ ok: boolean; data: { events: Array<{ id: string; at: number; level: string; stage: string; message: string }> } }>(
+    `/api/projects/${projectId}/activity`,
+    jsonFetcher,
+    {
+      refreshInterval: 3000,
+      revalidateOnFocus: true,
+    },
+  )
+
   // Determine if we should poll /status based on the project endpoint data
   // (or initial SSR state). This controls whether the /status SWR is active.
   const projectState = (projectData?.data?.project?.state ?? initialState) as ProjectState
@@ -136,12 +146,13 @@ export function ProjectWorkspace({ projectId, initialState }: ProjectWorkspacePr
     }
   }, [projectData?.data?.project?.state, projectData?.data?.project?.buildSummary])
 
-  // Toast notifications for planning progress with custom styling
+  // Toast notifications for ALL events with custom styling
   // Track the last seen event to avoid duplicate toasts
   const lastSeenEventId = useRef<string | null>(null)
 
   useEffect(() => {
-    const events = statusData?.data?.events
+    // Try to get events from either status data or activity data
+    const events = statusData?.data?.events || activityData?.data?.events
     if (!events || events.length === 0) return
 
     // Get the most recent event (any stage)
@@ -150,6 +161,8 @@ export function ProjectWorkspace({ projectId, initialState }: ProjectWorkspacePr
     // Only show toast if this is a new event we haven't seen yet
     if (latestEvent && latestEvent.id !== lastSeenEventId.current) {
       lastSeenEventId.current = latestEvent.id
+
+      console.log("[toast] Showing notification:", latestEvent.message)
 
       // Show toast based on event level with custom styling
       if (latestEvent.level === "error") {
@@ -206,7 +219,7 @@ export function ProjectWorkspace({ projectId, initialState }: ProjectWorkspacePr
         })
       }
     }
-  }, [statusData?.data?.events])
+  }, [statusData?.data?.events, activityData?.data?.events])
 
   // The displayed state: prefer the live Totalum-synced state from /status,
   // fall back to the project endpoint data (which may be stale during builds).
