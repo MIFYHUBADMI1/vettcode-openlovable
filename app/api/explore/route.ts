@@ -30,12 +30,12 @@ export async function GET(req: Request) {
       ]
     }
 
-    const sortMap: Record<string, Record<string, number>> = {
-      recent: { updatedAt: -1 },
-      popular: { likeCount: -1, updatedAt: -1 },
-      forked: { forkCount: -1, updatedAt: -1 },
+    const sortMap = {
+      recent: { updatedAt: -1 as const },
+      popular: { likeCount: -1 as const, updatedAt: -1 as const },
+      forked: { forkCount: -1 as const, updatedAt: -1 as const },
     }
-    const sortQuery = sortMap[sort] ?? sortMap.recent
+    const sortQuery = sortMap[sort as keyof typeof sortMap] ?? sortMap.recent
 
     const [projects, total] = await Promise.all([
       col.find(filter).sort(sortQuery).skip(skip).limit(limit).toArray(),
