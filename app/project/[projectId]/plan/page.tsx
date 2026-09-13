@@ -86,23 +86,25 @@ export default async function ProjectPlanPage({ params }: { params: Promise<{ pr
   return (
     <main className="min-h-svh bg-background text-foreground">
       <AppHeader />
-      <div className="mx-auto max-w-5xl px-6 py-10 lg:px-10">
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-10">
 
         {/* ── Page header ─────────────────────────────────────── */}
-        <div className="mb-8 flex flex-col gap-4 border-b border-border pb-8 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex flex-col gap-3">
-            <Link href={`/project/${projectId}`} className="font-mono text-xs text-primary hover:underline">← Back to workspace</Link>
-            <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
-            <div className="flex flex-wrap items-center gap-2">
-              {s?.complexity && <Badge color={complexityColor}>{s.complexity} complexity</Badge>}
-              <Badge color="blue">{project.mode} mode</Badge>
-              {s?.applicationType && <Badge>{s.applicationType}</Badge>}
-              {project.state && <Badge color={project.state === "ready" ? "green" : "default"}>{project.state.replace(/_/g, " ")}</Badge>}
+        <div className="mb-8 flex flex-col gap-4 border-b border-border pb-8">
+          <Link href={`/project/${projectId}`} className="font-mono text-xs text-primary hover:underline w-fit">← Back to workspace</Link>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-3 min-w-0">
+              <h1 className="text-2xl font-bold tracking-tight text-balance sm:text-3xl">{project.name}</h1>
+              <div className="flex flex-wrap items-center gap-2">
+                {s?.complexity && <Badge color={complexityColor}>{s.complexity} complexity</Badge>}
+                <Badge color="blue">{project.mode} mode</Badge>
+                {s?.applicationType && <Badge>{s.applicationType}</Badge>}
+                {project.state && <Badge color={project.state === "ready" ? "green" : "default"}>{project.state.replace(/_/g, " ")}</Badge>}
+              </div>
             </div>
+            <Link href={`/project/${projectId}`} className="shrink-0 self-start inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent transition-colors whitespace-nowrap">
+              Open workspace →
+            </Link>
           </div>
-          <Link href={`/project/${projectId}`} className="shrink-0 inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent transition-colors">
-            Open workspace →
-          </Link>
         </div>
 
         <div className="flex flex-col gap-6">
@@ -117,7 +119,7 @@ export default async function ProjectPlanPage({ params }: { params: Promise<{ pr
           {/* ══ BUILD SUMMARY (post-build AI report) ══════════════════ */}
           {bs && (
             <Card title="AI Build Report" icon="🤖">
-              <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
+              <div className="prose prose-sm dark:prose-invert max-w-none break-words text-muted-foreground [&_pre]:overflow-x-auto [&_code]:break-all [&_a]:break-all">
                 <Markdown>{bs.message}</Markdown>
               </div>
               {bs.secretKeysNeeded && Object.keys(bs.secretKeysNeeded).length > 0 && (
@@ -163,7 +165,7 @@ export default async function ProjectPlanPage({ params }: { params: Promise<{ pr
               </Card>
 
               {(s.targetUsers.length > 0 || s.userRoles.length > 0) && (
-                <div className="grid gap-6 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                   {s.targetUsers.length > 0 && (
                     <Card title="Target Users" icon="👥">
                       <div className="flex flex-wrap gap-2">{s.targetUsers.map(u => <Chip key={u} label={u} />)}</div>
@@ -182,9 +184,9 @@ export default async function ProjectPlanPage({ params }: { params: Promise<{ pr
                   <div className="grid gap-3 sm:grid-cols-2">
                     {s.coreFlows.map((flow, i) => (
                       <div key={i} className="flex flex-col gap-1.5 rounded-lg border border-border bg-background p-4">
-                        <div className="flex items-center gap-2">
-                          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 font-mono text-[11px] font-bold text-primary">{i + 1}</span>
-                          <p className="font-semibold text-sm text-foreground">{flow.name}</p>
+                        <div className="flex items-start gap-2">
+                          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 font-mono text-[11px] font-bold text-primary mt-0.5">{i + 1}</span>
+                          <p className="font-semibold text-sm text-foreground leading-snug">{flow.name}</p>
                         </div>
                         {flow.description && <p className="pl-8 text-xs leading-5 text-muted-foreground">{flow.description}</p>}
                       </div>
@@ -197,11 +199,11 @@ export default async function ProjectPlanPage({ params }: { params: Promise<{ pr
                 <Card title="Features" icon="⚡">
                   <div className="grid gap-2.5 sm:grid-cols-2">
                     {s.suggestedFeatures.map(f => (
-                      <div key={f.key} className={`flex items-start gap-3 rounded-lg border p-3.5 transition-colors ${f.enabled ? "border-primary/25 bg-primary/5" : "border-border bg-muted/20 opacity-55"}`}>
+                      <div key={f.key} className={`flex items-start gap-3 rounded-lg border p-3 transition-colors ${f.enabled ? "border-primary/25 bg-primary/5" : "border-border bg-muted/20 opacity-60"}`}>
                         <span className={`mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${f.enabled ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
                           {f.enabled ? "✓" : "○"}
                         </span>
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-sm font-semibold text-foreground">{f.label}</p>
                           {f.description && <p className="mt-0.5 text-xs text-muted-foreground">{f.description}</p>}
                         </div>
@@ -230,7 +232,7 @@ export default async function ProjectPlanPage({ params }: { params: Promise<{ pr
               )}
 
               {(s.backendRequirements.length > 0 || s.integrations.length > 0 || s.authenticationRequirements) && (
-                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2">
                   {s.authenticationRequirements && (
                     <Card title="Authentication" icon="🔐">
                       <p className="text-sm leading-6 text-muted-foreground">{s.authenticationRequirements}</p>
@@ -257,7 +259,7 @@ export default async function ProjectPlanPage({ params }: { params: Promise<{ pr
               )}
 
               {(s.designDirection || s.responsiveRequirements) && (
-                <div className="grid gap-6 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                   {s.designDirection && (
                     <Card title="Design Direction" icon="🎨">
                       <p className="text-sm leading-6 text-muted-foreground">{s.designDirection}</p>
@@ -348,28 +350,40 @@ export default async function ProjectPlanPage({ params }: { params: Promise<{ pr
 
               {(u.observedFunctionality.length > 0 || u.inferredFunctionality.length > 0 || u.suggestedFeatures.length > 0) && (
                 <Card title="Functionality" icon="🧠">
-                  <div className="grid gap-6 sm:grid-cols-3">
+                  <div className="flex flex-col gap-5 sm:grid sm:grid-cols-3">
                     {u.observedFunctionality.length > 0 && (
                       <div>
                         <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-widest text-green-600 dark:text-green-400">✓ Observed</p>
-                        <ul className="flex flex-col gap-1">
-                          {u.observedFunctionality.map(f => <li key={f} className="text-xs leading-5 text-muted-foreground">{f}</li>)}
+                        <ul className="flex flex-col gap-1.5">
+                          {u.observedFunctionality.map(f => (
+                            <li key={f} className="flex items-start gap-2 text-xs text-muted-foreground">
+                              <span className="mt-1.5 size-1 shrink-0 rounded-full bg-green-500" />{f}
+                            </li>
+                          ))}
                         </ul>
                       </div>
                     )}
                     {u.inferredFunctionality.length > 0 && (
                       <div>
                         <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-widest text-blue-600 dark:text-blue-400">~ Inferred</p>
-                        <ul className="flex flex-col gap-1">
-                          {u.inferredFunctionality.map(f => <li key={f} className="text-xs leading-5 text-muted-foreground">{f}</li>)}
+                        <ul className="flex flex-col gap-1.5">
+                          {u.inferredFunctionality.map(f => (
+                            <li key={f} className="flex items-start gap-2 text-xs text-muted-foreground">
+                              <span className="mt-1.5 size-1 shrink-0 rounded-full bg-blue-500" />{f}
+                            </li>
+                          ))}
                         </ul>
                       </div>
                     )}
                     {u.suggestedFeatures.length > 0 && (
                       <div>
                         <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-400">+ Suggested</p>
-                        <ul className="flex flex-col gap-1">
-                          {u.suggestedFeatures.map(f => <li key={f} className="text-xs leading-5 text-muted-foreground">{f}</li>)}
+                        <ul className="flex flex-col gap-1.5">
+                          {u.suggestedFeatures.map(f => (
+                            <li key={f} className="flex items-start gap-2 text-xs text-muted-foreground">
+                              <span className="mt-1.5 size-1 shrink-0 rounded-full bg-amber-500" />{f}
+                            </li>
+                          ))}
                         </ul>
                       </div>
                     )}
@@ -404,16 +418,14 @@ export default async function ProjectPlanPage({ params }: { params: Promise<{ pr
 
               {u.components.length > 0 && (
                 <Card title="UI Components Detected" icon="🧩">
-                  <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {u.components.map((c, i) => (
-                      <div key={i} className="flex items-start gap-2 rounded-lg border border-border bg-background p-3">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-sm font-medium text-foreground">{c.name}</p>
-                            <Badge color={c.confidence === "observed" ? "green" : c.confidence === "inferred" ? "blue" : "amber"}>{c.confidence}</Badge>
-                          </div>
-                          {c.description && <p className="mt-0.5 text-xs text-muted-foreground">{c.description}</p>}
+                      <div key={i} className="rounded-lg border border-border bg-background p-3">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <p className="text-sm font-medium text-foreground">{c.name}</p>
+                          <Badge color={c.confidence === "observed" ? "green" : c.confidence === "inferred" ? "blue" : "amber"}>{c.confidence}</Badge>
                         </div>
+                        {c.description && <p className="mt-1 text-xs text-muted-foreground">{c.description}</p>}
                       </div>
                     ))}
                   </div>
@@ -468,18 +480,28 @@ export default async function ProjectPlanPage({ params }: { params: Promise<{ pr
               )}
 
               {(u.backendRequirements.length > 0 || u.authenticationRequirements.length > 0) && (
-                <div className="grid gap-6 sm:grid-cols-2">
+                <div className="grid gap-4 sm:grid-cols-2">
                   {u.backendRequirements.length > 0 && (
                     <Card title="Backend Requirements" icon="⚙️">
                       <ul className="flex flex-col gap-1.5">
-                        {u.backendRequirements.map(r => <li key={r} className="flex items-start gap-2 text-sm"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" /><span className="text-muted-foreground">{r}</span></li>)}
+                        {u.backendRequirements.map(r => (
+                          <li key={r} className="flex items-start gap-2 text-sm">
+                            <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
+                            <span className="text-muted-foreground">{r}</span>
+                          </li>
+                        ))}
                       </ul>
                     </Card>
                   )}
                   {u.authenticationRequirements.length > 0 && (
                     <Card title="Auth Requirements" icon="🔐">
                       <ul className="flex flex-col gap-1.5">
-                        {u.authenticationRequirements.map(r => <li key={r} className="flex items-start gap-2 text-sm"><span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" /><span className="text-muted-foreground">{r}</span></li>)}
+                        {u.authenticationRequirements.map(r => (
+                          <li key={r} className="flex items-start gap-2 text-sm">
+                            <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
+                            <span className="text-muted-foreground">{r}</span>
+                          </li>
+                        ))}
                       </ul>
                     </Card>
                   )}
@@ -487,25 +509,37 @@ export default async function ProjectPlanPage({ params }: { params: Promise<{ pr
               )}
 
               {(u.navigation.length > 0 || u.interactions.length > 0 || u.contentStructure.length > 0) && (
-                <div className="grid gap-6 sm:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {u.navigation.length > 0 && (
                     <Card title="Navigation" icon="🗺️">
-                      <ul className="flex flex-col gap-1">
-                        {u.navigation.map(n => <li key={n} className="text-xs text-muted-foreground">{n}</li>)}
+                      <ul className="flex flex-col gap-1.5">
+                        {u.navigation.map(n => (
+                          <li key={n} className="flex items-start gap-2 text-xs text-muted-foreground">
+                            <span className="mt-1.5 size-1 shrink-0 rounded-full bg-muted-foreground/40" />{n}
+                          </li>
+                        ))}
                       </ul>
                     </Card>
                   )}
                   {u.interactions.length > 0 && (
                     <Card title="Interactions" icon="🖱️">
-                      <ul className="flex flex-col gap-1">
-                        {u.interactions.map(i => <li key={i} className="text-xs text-muted-foreground">{i}</li>)}
+                      <ul className="flex flex-col gap-1.5">
+                        {u.interactions.map(i => (
+                          <li key={i} className="flex items-start gap-2 text-xs text-muted-foreground">
+                            <span className="mt-1.5 size-1 shrink-0 rounded-full bg-muted-foreground/40" />{i}
+                          </li>
+                        ))}
                       </ul>
                     </Card>
                   )}
                   {u.contentStructure.length > 0 && (
                     <Card title="Content Structure" icon="📄">
-                      <ul className="flex flex-col gap-1">
-                        {u.contentStructure.map(c => <li key={c} className="text-xs text-muted-foreground">{c}</li>)}
+                      <ul className="flex flex-col gap-1.5">
+                        {u.contentStructure.map(c => (
+                          <li key={c} className="flex items-start gap-2 text-xs text-muted-foreground">
+                            <span className="mt-1.5 size-1 shrink-0 rounded-full bg-muted-foreground/40" />{c}
+                          </li>
+                        ))}
                       </ul>
                     </Card>
                   )}
@@ -516,14 +550,16 @@ export default async function ProjectPlanPage({ params }: { params: Promise<{ pr
                 <Card title="Pages Discovered" icon="📑">
                   <div className="flex flex-col gap-2">
                     {u.pages.map((page, i) => (
-                      <div key={i} className={`flex items-start justify-between gap-3 rounded-lg border p-3 ${page.importance === "primary" ? "border-primary/20 bg-primary/5" : "border-border bg-background"}`}>
-                        <div className="min-w-0">
-                          <p className="truncate font-mono text-xs text-muted-foreground">{page.url}</p>
+                      <div key={i} className={`flex flex-col gap-1.5 rounded-lg border p-3 sm:flex-row sm:items-start sm:justify-between sm:gap-3 ${page.importance === "primary" ? "border-primary/20 bg-primary/5" : "border-border bg-background"}`}>
+                        <div className="min-w-0 flex-1">
+                          <p className="break-all font-mono text-[11px] text-muted-foreground">{page.url}</p>
                           {page.title && <p className="mt-0.5 text-sm font-medium text-foreground">{page.title}</p>}
                           {page.role && <p className="mt-0.5 text-xs text-muted-foreground/70">{page.role}</p>}
                           {page.summary && <p className="mt-0.5 text-xs text-muted-foreground">{page.summary}</p>}
                         </div>
-                        <Badge color={page.importance === "primary" ? "blue" : "default"}>{page.importance}</Badge>
+                        <div className="shrink-0">
+                          <Badge color={page.importance === "primary" ? "blue" : "default"}>{page.importance}</Badge>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -544,9 +580,9 @@ export default async function ProjectPlanPage({ params }: { params: Promise<{ pr
 
               {u.screenshots.length > 0 && (
                 <Card title="Captured Screenshots" icon="📸">
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                     {u.screenshots.map((src, i) => (
-                      <a key={i} href={src} target="_blank" rel="noreferrer" className="group overflow-hidden rounded-lg border border-border bg-background">
+                      <a key={i} href={src} target="_blank" rel="noreferrer" className="group overflow-hidden rounded-lg border border-border bg-background block">
                         <img src={src} alt={`Screenshot ${i + 1}`} className="aspect-video w-full object-cover object-top transition-transform duration-300 group-hover:scale-105" />
                       </a>
                     ))}
@@ -563,11 +599,11 @@ export default async function ProjectPlanPage({ params }: { params: Promise<{ pr
               <Card title="Builder AI Messages" icon="💬">
                 <div className="flex flex-col gap-4">
                   {conv.slice(0, 20).map((msg, i) => (
-                    <div key={msg.id ?? i} className="rounded-lg border border-border bg-background p-4">
-                      <p className="mb-1 font-mono text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    <div key={msg.id ?? i} className="rounded-lg border border-border bg-background p-4 overflow-hidden">
+                      <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                         {new Date(msg.at).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
                       </p>
-                      <div className="prose prose-sm dark:prose-invert max-w-none text-muted-foreground">
+                      <div className="prose prose-sm dark:prose-invert max-w-none break-words text-muted-foreground [&_pre]:overflow-x-auto [&_code]:break-all [&_a]:break-all">
                         <Markdown>{msg.content}</Markdown>
                       </div>
                     </div>
