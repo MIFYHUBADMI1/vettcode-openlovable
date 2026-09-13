@@ -34,6 +34,12 @@ export default async function ProjectWorkspacePage({ params }: { params: Promise
                 Source code
               </Link>
               <Link
+                href={`/project/${project.id}/plan`}
+                className="inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              >
+                📋 View plan
+              </Link>
+              <Link
                 href={`/project/${project.id}/edit`}
                 className="inline-flex items-center gap-1.5 rounded-md bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
               >
