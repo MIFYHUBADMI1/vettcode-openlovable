@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
       return fail("PROVIDER_NOT_CONFIGURED", "Internal API key is not configured.", 503)
     }
 
-    const providedKey = req.headers.get("x-internal-key")
+    const providedKey = req.headers.get("x-internal-key") || req.headers.get("X-Internal-Key")
     console.log('[internal-api] Provided key:', !!providedKey, providedKey?.substring(0, 10) + '...')
     console.log('[internal-api] Keys match:', providedKey === internalKey)
 

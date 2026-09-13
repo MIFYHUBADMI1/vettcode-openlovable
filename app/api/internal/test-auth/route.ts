@@ -6,8 +6,8 @@ import { NextRequest, NextResponse } from "next/server"
 
 export async function GET(req: NextRequest) {
   const internalKey = process.env.ATAI_INTERNAL_KEY
-  const providedKey = req.headers.get("x-internal-key")
-  
+  const providedKey = req.headers.get("x-internal-key") || req.headers.get("X-Internal-Key")
+
   return NextResponse.json({
     status: "debug",
     env: {
@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
       hasProvidedKey: !!providedKey,
       providedKeyPartial: providedKey?.substring(0, 15) + "...",
       providedKeyLength: providedKey?.length,
+      allHeaders: Object.fromEntries(req.headers.entries()),
     },
     match: providedKey === internalKey,
     exactComparison: {
