@@ -13,12 +13,14 @@ export type TotalumErrorCode =
   | "DEPLOYMENT_RUNNING"
   | "NO_PROCESS_RUNNING"
   | "PROVIDER_NOT_CONFIGURED"
+  | "UNAUTHORIZED_PROJECT_ACCESS"
   | "UNKNOWN"
 
 const FRIENDLY: Record<TotalumErrorCode, string> = {
   MISSING_PROJECT_ID: "Something went wrong starting this build. Please try again.",
   PROJECT_NOT_FOUND: "We couldn't find this project. It may have been removed.",
   INSUFFICIENT_CREDITS: "You don't have enough credits for this build. Please top up and try again.",
+  UNAUTHORIZED_PROJECT_ACCESS: "You don't have permission to perform this action on this project.",
   MAX_PROJECTS_REACHED: "You've reached your project limit. Please remove a project or upgrade.",
   RATE_LIMIT_EXCEEDED: "Too many requests right now. Please wait a moment and try again.",
   SERVER_NOT_READY: "Your project is still starting up. Please try again in a few seconds.",

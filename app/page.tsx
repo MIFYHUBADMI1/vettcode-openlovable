@@ -17,45 +17,147 @@ import { cn } from "@/lib/utils"
 // ─── Hero Video ───────────────────────────────────────────────────────────────
 
 function HeroVideo() {
+  const videoRef = useRef<HTMLVideoElement>(null)
+  const [muted, setMuted] = useState(true)
+  const [playing, setPlaying] = useState(true)
+  const [hovered, setHovered] = useState(false)
+
+  function toggleMute() {
+    if (!videoRef.current) return
+    videoRef.current.muted = !videoRef.current.muted
+    setMuted(v => !v)
+  }
+
+  function togglePlay() {
+    if (!videoRef.current) return
+    if (videoRef.current.paused) { videoRef.current.play(); setPlaying(true) }
+    else { videoRef.current.pause(); setPlaying(false) }
+  }
+
   return (
-    <div className="relative w-full">
-      {/* Ambient glow behind the video */}
+    <div
+      className="relative w-full"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {/* Ambient glow */}
       <div
-        className="pointer-events-none absolute -inset-4 rounded-[2rem] opacity-25"
+        className="pointer-events-none absolute -inset-6 rounded-[2.5rem] opacity-30 transition-opacity duration-500"
         style={{
-          background: "radial-gradient(ellipse 80% 60% at 50% 50%, oklch(0.65 0.22 260 / 0.4) 0%, transparent 70%)",
-          filter: "blur(28px)",
+          background: "radial-gradient(ellipse 90% 70% at 50% 50%, oklch(0.65 0.22 260 / 0.5) 0%, transparent 70%)",
+          filter: "blur(36px)",
+          opacity: hovered ? 0.45 : 0.25,
         }}
         aria-hidden
       />
 
       {/* Gradient border wrapper */}
       <div
-        className="relative rounded-2xl p-[1px]"
+        className="relative rounded-2xl p-[1.5px] shadow-2xl shadow-primary/10"
         style={{
-          background: "linear-gradient(135deg, oklch(0.65 0.22 260 / 0.5) 0%, transparent 40%, oklch(0.68 0.15 152 / 0.4) 70%, transparent 100%)",
+          background: "linear-gradient(135deg, oklch(0.65 0.22 260 / 0.7) 0%, oklch(0.5 0.1 260 / 0.2) 40%, oklch(0.68 0.15 152 / 0.6) 70%, transparent 100%)",
         }}
       >
         {/* Video container */}
-        <div className="overflow-hidden rounded-2xl bg-card/90 backdrop-blur-xl">
+        <div className="overflow-hidden rounded-2xl bg-[#0d0d0f]">
+
           {/* Browser chrome bar */}
-          <div className="flex items-center gap-2 border-b border-border/50 bg-muted/20 px-4 py-2.5">
-            <span className="size-2.5 rounded-full bg-red-400/60" />
-            <span className="size-2.5 rounded-full bg-yellow-400/60" />
-            <span className="size-2.5 rounded-full bg-green-400/60" />
-            <span className="ml-2 font-mono text-[10px] text-muted-foreground">mirrorsite.ai — demo</span>
+          <div className="flex items-center justify-between border-b border-white/5 bg-white/[0.03] px-4 py-2.5">
+            <div className="flex items-center gap-2">
+              <span className="size-3 rounded-full bg-red-500/70" />
+              <span className="size-3 rounded-full bg-amber-500/70" />
+              <span className="size-3 rounded-full bg-green-500/70" />
+              <span className="ml-3 font-mono text-[11px] text-white/30">mirrorsite.ai — live demo</span>
+            </div>
+            {/* Live badge */}
+            <span className="flex items-center gap-1.5 rounded-full bg-green-500/15 px-2.5 py-0.5 font-mono text-[10px] text-green-400">
+              <span className="size-1.5 animate-pulse rounded-full bg-green-400" />
+              LIVE
+            </span>
           </div>
 
-          {/* The video */}
-          <video
-            src="/hero-videos/hero-intro.mp4"
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full"
-            style={{ display: "block" }}
-          />
+          {/* Video */}
+          <div className="relative">
+            <video
+              ref={videoRef}
+              src="/hero-videos/hero-intro.mp4"
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full"
+              style={{ display: "block", maxHeight: "560px", objectFit: "cover" }}
+            />
+
+            {/* Overlay controls — visible on hover */}
+            <div className={`absolute inset-0 flex items-end justify-between p-4 transition-opacity duration-300 ${hovered ? "opacity-100" : "opacity-0"}`}>
+              {/* Gradient fade at bottom */}
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent" />
+
+              {/* Play/pause */}
+              <button
+                onClick={togglePlay}
+                className="relative z-10 flex size-9 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm transition-all hover:bg-white/25 hover:scale-105"
+                aria-label={playing ? "Pause" : "Play"}
+              >
+                {playing ? (
+                  <svg className="size-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" />
+                  </svg>
+                ) : (
+                  <svg className="size-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
+              </button>
+
+              {/* Mute/unmute */}
+              <button
+                onClick={toggleMute}
+                className="relative z-10 flex items-center gap-2 rounded-full bg-white/15 px-3 py-2 backdrop-blur-sm transition-all hover:bg-white/25 hover:scale-105"
+                aria-label={muted ? "Unmute" : "Mute"}
+              >
+                {muted ? (
+                  <>
+                    <svg className="size-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M11 5L6 9H2v6h4l5 4V5z" opacity={0.5} />
+                      <line x1="23" y1="9" x2="17" y2="15" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                      <line x1="17" y1="9" x2="23" y2="15" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    <span className="font-mono text-[10px] text-white/70">Unmute</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="size-4 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M11 5L6 9H2v6h4l5 4V5z" />
+                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                    <span className="font-mono text-[10px] text-white/70">Mute</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* "Built for people who ship fast" tag below */}
+      <div className="relative mt-4 overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.03] px-5 py-4 backdrop-blur-md">
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+              <svg className="size-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+              </svg>
+            </div>
+            <p className="text-sm font-semibold text-white/80">From idea to live app — in minutes</p>
+          </div>
+          <div className="flex flex-wrap gap-4 font-mono text-[10px] text-white/40">
+            <span className="flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-primary/60" />Real Next.js codebase</span>
+            <span className="flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-green-400/60" />Auth + DB included</span>
+            <span className="flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-amber-400/60" />Zero lock-in</span>
+          </div>
         </div>
       </div>
     </div>
@@ -540,7 +642,7 @@ export default function Page() {
         {/* ══════════════════════════════════════════════════════════
             HERO
         ══════════════════════════════════════════════════════════ */}
-        <section className="relative mx-auto grid w-full max-w-7xl gap-16 px-6 pb-24 pt-12 lg:grid-cols-[1fr_0.9fr] lg:items-center lg:px-10 lg:pb-32 lg:pt-20">
+        <section className="relative mx-auto grid w-full max-w-7xl gap-12 px-6 pb-24 pt-12 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:px-10 lg:pb-32 lg:pt-20">
 
           <div className="relative z-10 max-w-2xl">
 
