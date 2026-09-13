@@ -21,12 +21,19 @@ export async function GET(req: NextRequest) {
   try {
     // ── Auth ────────────────────────────────────────────────────────────────
     const internalKey = process.env.ATAI_INTERNAL_KEY
+    console.log('[internal-api] ATAI_INTERNAL_KEY configured:', !!internalKey, internalKey?.substring(0, 10) + '...')
+
     if (!internalKey) {
+      console.error('[internal-api] ATAI_INTERNAL_KEY not configured in environment')
       return fail("PROVIDER_NOT_CONFIGURED", "Internal API key is not configured.", 503)
     }
 
     const providedKey = req.headers.get("x-internal-key")
+    console.log('[internal-api] Provided key:', !!providedKey, providedKey?.substring(0, 10) + '...')
+    console.log('[internal-api] Keys match:', providedKey === internalKey)
+
     if (!providedKey || providedKey !== internalKey) {
+      console.error('[internal-api] Auth failed - provided:', providedKey?.substring(0, 20), 'expected:', internalKey?.substring(0, 20))
       return fail("UNAUTHORIZED", "Invalid or missing internal API key.", 401)
     }
 
