@@ -68,7 +68,7 @@ export default async function ProjectPlanPage({ params }: { params: Promise<{ pr
       <main className="min-h-svh bg-background text-foreground">
         <AppHeader />
         <div className="mx-auto max-w-4xl px-6 py-10">
-          <Link href={`/project/${projectId}`} className="font-mono text-xs text-primary hover:underline">← Back to workspace</Link>
+          <Link href={`/project/${projectId}`} className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-accent hover:text-foreground">← Back to workspace</Link>
           <div className="mt-16 flex flex-col items-center gap-4 text-center">
             <div className="flex size-16 items-center justify-center rounded-full bg-muted text-3xl">🔬</div>
             <h1 className="text-2xl font-semibold">No plan yet</h1>

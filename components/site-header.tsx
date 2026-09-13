@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, Compass } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { AccountMenu } from "@/components/account-menu"
 import { useSession } from "@/lib/client/api"
@@ -35,15 +35,15 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
 
   const Wrapper = variant === "bordered"
     ? ({ children }: { children: React.ReactNode }) => (
-        <header className="border-b border-border">
-          <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-4">{children}</div>
-        </header>
-      )
+      <header className="border-b border-border">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between px-6 py-4">{children}</div>
+      </header>
+    )
     : ({ children }: { children: React.ReactNode }) => (
-        <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6 lg:px-10">
-          {children}
-        </header>
-      )
+      <header className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-6 lg:px-10">
+        {children}
+      </header>
+    )
 
   return (
     <Wrapper>
@@ -62,6 +62,13 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
             <Link href="/docs" className="transition-colors hover:text-foreground">Docs</Link>
             {session ? <Link href="/dashboard" className="text-foreground transition-colors hover:text-primary">Dashboard</Link> : null}
             <Link href="/pricing" className="transition-colors hover:text-foreground">Pricing</Link>
+            <Link
+              href="/explore"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-accent hover:text-foreground"
+            >
+              <Compass className="size-3.5" />
+              Explore
+            </Link>
             {session ? <AccountMenu /> : null}
             {!session && !sessionLoading ? (
               <>

@@ -70,7 +70,7 @@ export default async function BillingSettingsPage() {
     <main className="min-h-svh bg-background text-foreground">
       <AppHeader />
       <div className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-10">
-        <Link href="/settings" className="font-mono text-xs text-primary hover:underline">
+        <Link href="/settings" className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-accent hover:text-foreground">
           ← Settings
         </Link>
 
@@ -159,8 +159,8 @@ export default async function BillingSettingsPage() {
                       {formatPeriodEnd(currentPeriodEnd)}. You'll retain access until then.
                     </div>
                   )}
-              </>
-            )}
+                </>
+              )}
             </div>
           </div>
         </section>

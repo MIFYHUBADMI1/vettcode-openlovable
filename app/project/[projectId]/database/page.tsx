@@ -23,25 +23,19 @@ export default async function DatabasePage({ params }: { params: Promise<{ proje
           {/* Header */}
           <div className="flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">
             <div>
-              <div className="flex flex-wrap items-center gap-3">
-                <Link href={`/project/${project.id}`} className="font-mono text-xs text-primary hover:underline">
+              <div className="flex flex-wrap items-center gap-2">
+                <Link href={`/project/${project.id}`} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-accent hover:text-foreground">
                   ← Workspace
                 </Link>
-                <Link href="/dashboard" className="font-mono text-xs text-muted-foreground hover:text-foreground">
+                <Link href="/dashboard" className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-accent hover:text-foreground">
                   Dashboard
                 </Link>
                 {project.totalumProjectId && (
                   <>
-                    <Link
-                      href={`/project/${project.id}/source`}
-                      className="font-mono text-xs text-muted-foreground hover:text-foreground"
-                    >
+                    <Link href={`/project/${project.id}/source`} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-accent hover:text-foreground">
                       Source code
                     </Link>
-                    <Link
-                      href={`/project/${project.id}/edit`}
-                      className="font-mono text-xs text-muted-foreground hover:text-foreground"
-                    >
+                    <Link href={`/project/${project.id}/edit`} className="inline-flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-all hover:bg-primary/20">
                       Edit application
                     </Link>
                   </>

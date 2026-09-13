@@ -29,25 +29,19 @@ export default async function EditProjectPage({ params }: { params: Promise<{ pr
         {/* Header */}
         <div className="flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-end md:justify-between">
           <div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Link href={`/project/${project.id}`} className="font-mono text-xs text-primary hover:underline">
+            <div className="flex flex-wrap items-center gap-2">
+              <Link href={`/project/${project.id}`} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-accent hover:text-foreground">
                 ← Workspace
               </Link>
-              <Link href="/dashboard" className="font-mono text-xs text-muted-foreground hover:text-foreground">
+              <Link href="/dashboard" className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-accent hover:text-foreground">
                 Dashboard
               </Link>
               {project.totalumProjectId && (
                 <>
-                  <Link
-                    href={`/project/${project.id}/source`}
-                    className="font-mono text-xs text-muted-foreground hover:text-foreground"
-                  >
+                  <Link href={`/project/${project.id}/source`} className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-accent hover:text-foreground">
                     Source code
                   </Link>
-                  <Link
-                    href={`/project/${project.id}/database`}
-                    className="font-mono text-xs text-muted-foreground hover:text-foreground"
-                  >
+                  <Link href={`/project/${project.id}/database`} className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-600 transition-all hover:bg-emerald-500/20 dark:text-emerald-400">
                     Database
                   </Link>
                 </>
