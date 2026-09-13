@@ -6,7 +6,7 @@ import {
   ArrowRight, Check, Code2, GitBranch, Globe2, Layers3,
   Sparkles, TerminalSquare, Zap, Database, Shield, Server,
   HardDrive, BarChart3, Lock, GitMerge, Boxes, Cpu, MousePointerClick,
-  Timer, Package, Rocket, ChevronRight,
+  Timer, Package, Rocket, ChevronRight, ExternalLink,
 } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { useSession, usePublicStats } from "@/lib/client/api"
@@ -14,6 +14,148 @@ import { HeroPreviewCard } from "@/components/hero-preview-card"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { cn } from "@/lib/utils"
+
+// ─── Community Showcase ───────────────────────────────────────────────────────
+
+interface ShowcaseProject {
+  id: string
+  name: string
+  purpose: string | null
+  thumbnailUrl: string | null
+  productionUrl: string | null
+  mode: string
+  author: { name: string } | null
+}
+
+function CommunityShowcase() {
+  const [projects, setProjects] = useState<ShowcaseProject[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch("/api/explore?sort=popular&page=1")
+      .then(r => r.json())
+      .then(d => {
+        if (d.ok) setProjects((d.data.projects ?? []).slice(0, 6))
+      })
+      .catch(() => { })
+      .finally(() => setLoading(false))
+  }, [])
+
+  // Don't render the section at all if no public projects exist yet
+  if (!loading && projects.length === 0) return null
+
+  return (
+    <section className="border-y border-border/60 bg-card/20 py-24">
+      <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
+
+        {/* Header */}
+        <div className="mb-12 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="mb-3 font-mono text-xs font-medium uppercase tracking-[0.2em] text-primary">
+              Built by the community
+            </p>
+            <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
+              See what builders are shipping
+            </h2>
+            <p className="mt-3 max-w-lg text-sm leading-7 text-muted-foreground">
+              Real apps built by real people using MirrorSite AI — each one live and shareable in minutes.
+            </p>
+          </div>
+          <Link
+            href="/explore"
+            className="group inline-flex shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent hover:text-foreground"
+          >
+            Browse all projects
+            <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+          </Link>
+        </div>
+
+        {/* Grid */}
+        {loading ? (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card">
+                <div className="aspect-[16/9] w-full animate-pulse bg-muted" />
+                <div className="flex flex-col gap-2 p-4">
+                  <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+                  <div className="h-3 w-full animate-pulse rounded bg-muted" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {projects.map(p => (
+              <Link
+                key={p.id}
+                href={`/public/${p.id}`}
+                className="group flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
+              >
+                {/* Thumbnail */}
+                <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
+                  {p.thumbnailUrl ? (
+                    <img
+                      src={p.thumbnailUrl}
+                      alt={p.name}
+                      className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-muted to-accent/20">
+                      <span className="font-mono text-3xl text-muted-foreground/20">
+                        {p.mode === "scratch" ? "✦" : "⬡"}
+                      </span>
+                    </div>
+                  )}
+                  {/* Live badge */}
+                  {p.productionUrl && (
+                    <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-green-500/90 px-2.5 py-1 font-mono text-[10px] font-medium text-white backdrop-blur">
+                      <span className="size-1.5 rounded-full bg-white animate-pulse" />
+                      Live
+                    </span>
+                  )}
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/25 group-hover:opacity-100">
+                    <span className="flex items-center gap-1.5 rounded-lg bg-white/90 px-4 py-2 text-xs font-semibold text-gray-900 shadow backdrop-blur">
+                      View project <ExternalLink className="size-3" />
+                    </span>
+                  </div>
+                </div>
+
+                {/* Info */}
+                <div className="flex flex-1 flex-col gap-2 p-4">
+                  <p className="truncate font-mono text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
+                    {p.name}
+                  </p>
+                  {p.purpose && (
+                    <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                      {p.purpose}
+                    </p>
+                  )}
+                  {p.author && (
+                    <p className="mt-auto pt-2 font-mono text-[10px] text-muted-foreground/60">
+                      by {p.author.name}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* Bottom CTA */}
+        <div className="mt-10 text-center">
+          <Link
+            href="/explore"
+            className={cn(buttonVariants({ variant: "outline", size: "lg" }), "gap-2")}
+          >
+            Explore all community projects
+            <ArrowRight className="size-4" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  )
+}
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
@@ -652,6 +794,11 @@ export default function Page() {
             </div>
           </div>
         </section>
+
+        {/* ══════════════════════════════════════════════════════════
+            COMMUNITY SHOWCASE
+        ══════════════════════════════════════════════════════════ */}
+        <CommunityShowcase />
 
         {/* ══════════════════════════════════════════════════════════
             FINAL CTA
