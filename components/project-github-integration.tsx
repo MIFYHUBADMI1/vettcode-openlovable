@@ -13,13 +13,15 @@ function GitHubIcon({ className }: { className?: string }) {
     </svg>
   )
 }
-id: number
-fullName: string
-name: string
-owner: string
-defaultBranch: string
-private: boolean
-canPush: boolean
+
+interface GitHubRepo {
+  id: number
+  fullName: string
+  name: string
+  owner: string
+  defaultBranch: string
+  private: boolean
+  canPush: boolean
 }
 
 interface GitHubIntegration {
