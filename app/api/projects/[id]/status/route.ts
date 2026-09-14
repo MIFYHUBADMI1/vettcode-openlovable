@@ -8,6 +8,8 @@ import { publishEventsCol } from "@/lib/db/collections"
 import { logger } from "@/lib/logging/logger"
 import { singleFlight } from "@/lib/cache/single-flight"
 import { captureAppPreview } from "@/lib/screenshots/capture-app-preview"
+import { projectGitHubCol, usersCol } from "@/lib/db/collections"
+import { pushProjectToGitHub } from "@/lib/integrations/github/push"
 import type { ConversationMessage, ProjectEvent, BuildSummary } from "@/lib/types/project"
 
 /**
@@ -333,6 +335,30 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
             if (devUrl) {
               void captureAppPreview(id, devUrl)
             }
+
+            // Fire-and-forget: auto-push to GitHub if user has a push integration
+            void (async () => {
+              try {
+                const ghCol = await projectGitHubCol()
+                const ghDoc = await ghCol.findOne({ projectId: id, mode: "push" })
+                if (ghDoc) {
+                  const userDoc = await (await usersCol()).findOne({ id: userId })
+                  if (userDoc?.githubAccessToken && project.totalumProjectId) {
+                    await pushProjectToGitHub({
+                      projectId: id,
+                      totalumProjectId: project.totalumProjectId,
+                      accessToken: userDoc.githubAccessToken,
+                      repoOwner: ghDoc.repoOwner,
+                      repoName: ghDoc.repoName,
+                      branch: ghDoc.branch,
+                      commitMessage: `chore: build sync — ${new Date().toISOString().slice(0, 10)}`,
+                    })
+                  }
+                }
+              } catch (e) {
+                logger.error("api.projects.status", "auto github push failed (non-fatal)", { id, error: (e as Error).message })
+              }
+            })()
 
             // Reconcile credits against actual provider usage when available.
             // Query only running runs for this project to avoid loading all build history.

@@ -10,9 +10,10 @@ export interface PublicUser {
   id: string
   email: string
   name: string
-  authProvider: "password" | "google"
+  authProvider: "password" | "google" | "github"
   emailVerified: boolean
   imageUrl?: string
+  githubUsername?: string
   credits: number
   isAdmin?: boolean
   onboarding?: { source?: string; role?: string; signalType?: string; completedAt: number }
@@ -238,3 +239,71 @@ export async function softDeleteUser(userId: string): Promise<void> {
 
 export { toPublicUser, STARTING_CREDITS }
 export type { UserDoc }
+
+// ─── GitHub auth helpers ──────────────────────────────────────────────────────
+
+export async function findUserByGitHubId(githubId: string): Promise<UserDoc | null> {
+  const col = await usersCol()
+  return col.findOne({ githubId, deletedAt: { $exists: false } })
+}
+
+export async function createGitHubUser(params: {
+  email: string
+  name: string
+  githubId: string
+  githubUsername: string
+  githubAccessToken: string
+  imageUrl?: string
+}): Promise<UserDoc> {
+  await ensureIndexes()
+  const col = await usersCol()
+  const now = Date.now()
+  const userId = `user_${cryptoId()}`
+  const doc: UserDoc = {
+    _id: new ObjectId(),
+    id: userId,
+    email: normalizeEmail(params.email),
+    name: params.name,
+    authProvider: "github",
+    githubId: params.githubId,
+    githubUsername: params.githubUsername,
+    githubAccessToken: params.githubAccessToken,
+    emailVerified: true,
+    imageUrl: params.imageUrl,
+    credits: 0,
+    subscriptionCredits: 0,
+    permanentCredits: 0,
+    createdAt: now,
+    updatedAt: now,
+  }
+  await col.insertOne(doc)
+  await grantCredits({
+    userId,
+    creditType: "permanent",
+    amount: STARTING_CREDITS,
+    transactionType: "signup_bonus",
+    idempotencyKey: `signup_${userId}_github`,
+    metadata: { reason: "GitHub signup — welcome credits", authProvider: "github" },
+  })
+  const updated = await col.findOne({ id: userId })
+  return updated!
+}
+
+export async function linkGitHubToUser(
+  userId: string,
+  githubId: string,
+  githubUsername: string,
+  githubAccessToken: string,
+  imageUrl?: string,
+): Promise<void> {
+  const col = await usersCol()
+  await col.updateOne(
+    { id: userId },
+    { $set: { githubId, githubUsername, githubAccessToken, imageUrl: imageUrl ?? undefined, emailVerified: true, updatedAt: Date.now() } },
+  )
+}
+
+export async function updateGitHubToken(userId: string, githubAccessToken: string): Promise<void> {
+  const col = await usersCol()
+  await col.updateOne({ id: userId }, { $set: { githubAccessToken, updatedAt: Date.now() } })
+}

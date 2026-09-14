@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { GoogleButton } from "@/components/auth/google-button"
+import { GitHubButton } from "@/components/auth/github-button"
 import { postJson } from "@/lib/client/api"
 
 export function RegisterForm() {
@@ -55,7 +56,10 @@ export function RegisterForm() {
 
   return (
     <div className="flex flex-col gap-5">
-      <GoogleButton />
+      <div className="flex flex-col gap-2">
+        <GoogleButton />
+        <GitHubButton />
+      </div>
 
       <div className="flex items-center gap-3">
         <Separator className="flex-1" />

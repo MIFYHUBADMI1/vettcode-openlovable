@@ -1,5 +1,5 @@
 import { getDb } from "@/lib/db/mongodb"
-import type { UserDoc, SessionDoc, VerificationTokenDoc, RateLimitDoc, ProjectAssetDoc, ProviderUsageDoc, TopUpDoc, PublishEventDoc, ReferralDoc, DocFeedbackDoc, WebhookEventDoc, PlanningRunDoc, ProjectLikeDoc, UserFollowDoc, ProjectForkDoc } from "@/lib/types/db"
+import type { UserDoc, SessionDoc, VerificationTokenDoc, RateLimitDoc, ProjectAssetDoc, ProviderUsageDoc, TopUpDoc, PublishEventDoc, ReferralDoc, DocFeedbackDoc, WebhookEventDoc, PlanningRunDoc, ProjectLikeDoc, UserFollowDoc, ProjectForkDoc, ProjectGitHubDoc } from "@/lib/types/db"
 import type { MirrorProject, BuildRun } from "@/lib/types/project"
 import type { CreditLedgerEntry, BuildAuthorization, PaymentRecord, SubscriptionRecord } from "@/lib/billing/billing-types"
 
@@ -96,6 +96,10 @@ export async function projectForksCol() {
   return (await getDbCached()).collection<ProjectForkDoc & { _id?: unknown }>("project_forks")
 }
 
+export async function projectGitHubCol() {
+  return (await getDbCached()).collection<ProjectGitHubDoc & { _id?: unknown }>("project_github")
+}
+
 // ─── Type Definitions for Firecrawl Cache ────────────────────────────────────
 
 export interface FirecrawlCacheDoc {
@@ -147,6 +151,7 @@ export async function ensureIndexes() {
   await Promise.all([
     users.createIndex({ email: 1 }, { unique: true }),
     users.createIndex({ googleId: 1 }, { sparse: true }),
+    users.createIndex({ githubId: 1 }, { sparse: true }),
     users.createIndex({ referralCode: 1 }, { sparse: true }),
     // Supports lookups and expiry queries on individual credit buckets
     users.createIndex({ "creditBuckets.subscriptionId": 1 }, { sparse: true }),
@@ -307,6 +312,13 @@ export async function ensureIndexes() {
     projectForks.createIndex({ forkedByUserId: 1, originalProjectId: 1 }, { unique: true, name: "project_forks_unique" }),
     projectForks.createIndex({ originalProjectId: 1 }),
     projectForks.createIndex({ forkedByUserId: 1 }),
+  ])
+
+  // GitHub integration indexes
+  const projectGitHub = await projectGitHubCol()
+  await Promise.all([
+    projectGitHub.createIndex({ projectId: 1 }, { unique: true, name: "project_github_project_unique" }),
+    projectGitHub.createIndex({ userId: 1 }),
   ])
 
   indexesEnsured = true

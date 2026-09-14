@@ -3,6 +3,7 @@ import { store, cryptoId } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { runWebsiteAnalysis, runScratchAnalysis, runDeepCrawlAnalysis } from "@/lib/analysis/pipeline"
+import { runGitHubAnalysis } from "@/lib/analysis/github-pipeline"
 import { normalizeUrl } from "@/lib/integrations/firecrawl/service"
 import type { MirrorProject, ProjectPreferences } from "@/lib/types/project"
 import { singleFlight } from "@/lib/cache/single-flight"
@@ -57,10 +58,41 @@ export async function POST(req: Request) {
       crawlMode?: string;
       preferences?: ProjectPreferences;
       pipelineMode?: "legacy" | "heavy";
+      githubRepoOwner?: string;
+      githubRepoName?: string;
+      githubBranch?: string;
     }
-    const mode = body.mode === "scratch" ? "scratch" : "website"
+    const mode = body.mode === "scratch" ? "scratch" : body.mode === "github" ? "github" : "website"
     const crawlMode = body.crawlMode === "deep" ? "deep" : "relevant"
     const pipelineMode = body.pipelineMode ?? "legacy"
+
+    if (mode === "github") {
+      if (!body.githubRepoOwner || !body.githubRepoName)
+        return fail("VALIDATION", "GitHub repo owner and name are required.", 422)
+      const preferences = body.preferences as ProjectPreferences | undefined
+      const projectName = preferences?.appName || `${body.githubRepoOwner}/${body.githubRepoName}`
+      const project = newProject(user.id, { mode, name: projectName, preferences, pipelineMode })
+      await store.createProject(project)
+      // Store GitHub connection doc
+      const { projectGitHubCol } = await import("@/lib/db/collections")
+      const { cryptoId: cid } = await import("@/lib/store/store")
+      const { ObjectId } = await import("mongodb")
+      const ghCol = await projectGitHubCol()
+      await ghCol.insertOne({
+        _id: new ObjectId(),
+        id: cid(),
+        projectId: project.id,
+        userId: user.id,
+        mode: "build-from",
+        repoOwner: body.githubRepoOwner,
+        repoName: body.githubRepoName,
+        branch: body.githubBranch || "main",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      })
+      void runGitHubAnalysis(project.id)
+      return ok({ project }, { status: 201 })
+    }
 
     if (mode === "website") {
       if (!body.url || typeof body.url !== "string") return fail("VALIDATION", "A website URL is required.", 422)

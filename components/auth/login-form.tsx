@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { GoogleButton } from "@/components/auth/google-button"
+import { GitHubButton } from "@/components/auth/github-button"
 import { postJson } from "@/lib/client/api"
 
-const OAUTH_ERROR_MESSAGE = "We couldn't sign you in with Google. Please try again."
+const OAUTH_ERROR_MESSAGE = "We couldn't sign you in. Please try again."
 
 export function LoginForm({
   searchParams,
@@ -24,7 +25,8 @@ export function LoginForm({
 
   useEffect(() => {
     searchParams.then((params) => {
-      if (params.error === "google_auth_failed") setError(OAUTH_ERROR_MESSAGE)
+      if (params.error === "google_auth_failed" || params.error === "github_auth_failed") setError(OAUTH_ERROR_MESSAGE)
+      if (params.error === "github_no_email") setError("Your GitHub account has no public email. Please add a public email in GitHub settings and try again.")
     })
   }, [searchParams])
 
@@ -47,7 +49,10 @@ export function LoginForm({
 
   return (
     <div className="flex flex-col gap-5">
-      <GoogleButton />
+      <div className="flex flex-col gap-2">
+        <GoogleButton />
+        <GitHubButton />
+      </div>
 
       <div className="flex items-center gap-3">
         <Separator className="flex-1" />

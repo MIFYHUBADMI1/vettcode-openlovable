@@ -8,7 +8,7 @@
 import type { ObjectId } from "mongodb"
 import type { MirrorProject, BuildRun, CreditTransaction } from "@/lib/types/project"
 
-export type AuthProvider = "password" | "google"
+export type AuthProvider = "password" | "google" | "github"
 
 export interface UserOnboarding {
   source?: string
@@ -44,6 +44,9 @@ export interface UserDoc {
   passwordHash?: string
   authProvider: AuthProvider
   googleId?: string
+  githubId?: string
+  githubUsername?: string
+  githubAccessToken?: string
   emailVerified: boolean
   imageUrl?: string
   imageFileId?: string
@@ -399,4 +402,28 @@ export interface ProjectForkDoc {
   forkedProjectId: string
   forkedByUserId: string
   createdAt: number
+}
+
+// ─── GitHub Integration ───────────────────────────────────────────────────────
+
+/** Per-project GitHub connection — one doc per project */
+export interface ProjectGitHubDoc {
+  _id: ObjectId
+  id: string
+  projectId: string
+  userId: string
+  /** push = export code to GitHub; build-from = use repo as analysis source */
+  mode: "push" | "build-from"
+  repoOwner: string
+  repoName: string
+  branch: string
+  /** Last successful push timestamp */
+  lastPushedAt?: number
+  /** Last pushed commit SHA */
+  lastPushedSha?: string
+  /** push status for latest operation */
+  pushStatus?: "ok" | "failed" | "skipped_no_source"
+  pushError?: string
+  createdAt: number
+  updatedAt: number
 }

@@ -18,7 +18,7 @@ export type ProjectState =
   | "deployment_failed"
   | "pending_plan"
 
-export type ProjectMode = "website" | "scratch"
+export type ProjectMode = "website" | "scratch" | "github"
 
 /** How the website was analyzed: "relevant" (AI-interpreted) or "deep" (exact replica). */
 export type CrawlMode = "relevant" | "deep"

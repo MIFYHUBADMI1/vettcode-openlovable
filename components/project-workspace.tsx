@@ -13,6 +13,7 @@ import { BuildLoading } from "@/components/build-loading"
 import { PublishMenu } from "@/components/publish-menu"
 import { DeploymentHistory } from "@/components/deployment-history"
 import { ProjectVisibilityToggle } from "@/components/project-visibility-toggle"
+import { ProjectGitHubIntegration } from "@/components/project-github-integration"
 import Markdown from "react-markdown"
 import type { Project, ProjectState } from "@/lib/types/project"
 
@@ -531,6 +532,19 @@ export function ProjectWorkspace({ projectId, initialState }: ProjectWorkspacePr
           {/* Project Visibility Toggle — shown when project is ready */}
           {(state === "ready" || state === "build_complete") && project ? (
             <ProjectVisibilityToggle project={project} />
+          ) : null}
+
+          {/* GitHub Integration */}
+          {(state === "ready" || state === "build_complete" || state === "specification_ready") && project ? (
+            <div className="border border-border bg-card p-6">
+              <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-5">
+                GitHub
+              </p>
+              <ProjectGitHubIntegration
+                projectId={projectId}
+                isBuilt={Boolean(project.totalumProjectId)}
+              />
+            </div>
           ) : null}
 
           {/* Workspace controls — always shown when not building */}
