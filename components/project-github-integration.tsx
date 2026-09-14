@@ -158,6 +158,19 @@ export function ProjectGitHubIntegration({ projectId, isBuilt }: Props) {
               <p className="text-xs text-muted-foreground">Sign in with GitHub to push code or build from a repo</p>
             </div>
           </div>
+          <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3 text-xs text-blue-600 dark:text-blue-400">
+            <p className="font-medium mb-1">💡 Why connect GitHub?</p>
+            <ul className="space-y-1 text-muted-foreground">
+              <li>• <strong>Auto-push:</strong> Deploy your built code to a GitHub repo after each build</li>
+              <li>• <strong>Build from repo:</strong> Use an existing GitHub repo as the source for AI analysis</li>
+            </ul>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Don't have GitHub on your account? Connect it in{" "}
+              <Link href="/settings/profile" className="font-medium text-primary underline underline-offset-2">
+                Settings → Profile
+              </Link>
+            </p>
+          </div>
           <a
             href={`/api/auth/github?next=/project/${projectId}`}
             className="inline-flex w-fit items-center gap-2 rounded-lg bg-[#24292e] px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#1a1e22]"

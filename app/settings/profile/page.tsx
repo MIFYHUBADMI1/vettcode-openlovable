@@ -6,7 +6,15 @@ import { getBalance } from "@/lib/credits/credits"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ProfileAvatarUpload } from "@/components/profile-avatar-upload"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle2, Shield } from "lucide-react"
+import { CheckCircle2, Shield, Github, Link as LinkIcon } from "lucide-react"
+
+function GitHubIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden>
+      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.38.6.11.82-.26.82-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.49 1 .11-.78.42-1.3.76-1.6-2.66-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.14 3 .4 2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58C20.57 21.8 24 17.3 24 12 24 5.37 18.63 0 12 0Z" />
+    </svg>
+  )
+}
 
 function initials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -128,6 +136,75 @@ export default async function ProfileSettingsPage() {
               <dd className="mt-1 font-medium font-mono">{balance.toLocaleString()}</dd>
             </div>
           </dl>
+        </section>
+
+        {/* Connected Services */}
+        <section className="border border-border bg-card p-6">
+          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+            Connected services
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Link external services to enable additional features like GitHub repository integration
+          </p>
+
+          <div className="mt-5 space-y-3">
+            {/* GitHub integration */}
+            <div className="flex items-center justify-between rounded-lg border border-border p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded-lg bg-[#24292e]">
+                  <GitHubIcon className="size-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">GitHub</p>
+                  <p className="text-xs text-muted-foreground">
+                    {user.githubAccessToken
+                      ? `Connected as @${user.githubUsername || 'GitHub user'}`
+                      : "Push code to repos or build from existing projects"}
+                  </p>
+                </div>
+              </div>
+
+              {user.githubAccessToken ? (
+                <Badge variant="secondary" className="gap-1.5 font-mono text-xs">
+                  <CheckCircle2 className="size-3" />
+                  Connected
+                </Badge>
+              ) : (
+                <a
+                  href="/api/auth/github?next=/settings/profile"
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#24292e] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#1a1e22]"
+                >
+                  <LinkIcon className="size-3.5" />
+                  Connect GitHub
+                </a>
+              )}
+            </div>
+
+            {/* Google integration (if not already using Google OAuth) */}
+            {user.authProvider !== "google" && (
+              <div className="flex items-center justify-between rounded-lg border border-border p-4 opacity-50">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-white">
+                    <svg className="size-5" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">Google</p>
+                    <p className="text-xs text-muted-foreground">
+                      Coming soon
+                    </p>
+                  </div>
+                </div>
+                <Badge variant="outline" className="font-mono text-xs text-muted-foreground">
+                  Soon
+                </Badge>
+              </div>
+            )}
+          </div>
         </section>
 
         {/* Quick links */}
