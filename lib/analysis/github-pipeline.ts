@@ -18,8 +18,8 @@ const CODE_EXTENSIONS = new Set([
   ".json", ".md", ".mdx", ".yaml", ".yml",
 ])
 
-const MAX_FILES   = 500
-const MAX_BYTES   = 2 * 1024 * 1024 // 2 MB
+const MAX_FILES = 500
+const MAX_BYTES = 2 * 1024 * 1024 // 2 MB
 
 /**
  * Runs the GitHub-repo analysis pipeline for a project with mode "github".
@@ -56,19 +56,22 @@ export async function runGitHubAnalysis(projectId: string): Promise<void> {
       return
     }
 
-    const { githubAccessToken: token, repoOwner, repoName, branch } = { ...userDoc, ...ghDoc }
-    const repoLabel = `${ghDoc.repoOwner}/${ghDoc.repoName}`
+    const token = userDoc.githubAccessToken
+    const repoOwner = ghDoc.repoOwner!
+    const repoName = ghDoc.repoName!
+    const branch = ghDoc.branch!
+    const repoLabel = `${repoOwner}/${repoName}`
 
     await store.appendEvent(projectId, event("analyze", `📂 Fetching repository contents from ${repoLabel}...`))
 
     // Fetch README
-    const readme = await getReadme(token, ghDoc.repoOwner, ghDoc.repoName)
+    const readme = await getReadme(token, repoOwner, repoName)
     logger.info("pipeline.github", "readme fetched", { projectId, hasReadme: Boolean(readme) })
 
     // Fetch file tree
     let tree
     try {
-      tree = await getRepoTree(token, ghDoc.repoOwner, ghDoc.repoName, ghDoc.branch)
+      tree = await getRepoTree(token, repoOwner, repoName, branch)
     } catch (e) {
       if (e instanceof GitHubApiError && e.status === 409) {
         // Empty repo
@@ -94,8 +97,8 @@ export async function runGitHubAnalysis(projectId: string): Promise<void> {
     for (const file of codeFiles) {
       if (totalBytes >= MAX_BYTES) break
       try {
-        const content = await getFileContent(token, ghDoc.repoOwner, ghDoc.repoName, file.path)
-        const bytes   = Buffer.byteLength(content, "utf8")
+        const content = await getFileContent(token, repoOwner, repoName, file.path)
+        const bytes = Buffer.byteLength(content, "utf8")
         if (totalBytes + bytes > MAX_BYTES) break
         fileContents.push(`// File: ${file.path}\n${content}`)
         totalBytes += bytes
@@ -116,9 +119,9 @@ export async function runGitHubAnalysis(projectId: string): Promise<void> {
     // Store a minimal understanding object
     const understanding: ProjectUnderstanding = {
       sourceUrl: `https://github.com/${ghDoc.repoOwner}/${ghDoc.repoName}`,
-      title:     `${ghDoc.repoOwner}/${ghDoc.repoName}`,
+      title: `${ghDoc.repoOwner}/${ghDoc.repoName}`,
       description: readme ? readme.slice(0, 500) : `GitHub repository: ${repoLabel}`,
-      purpose:   `Application built from GitHub repository ${repoLabel}`,
+      purpose: `Application built from GitHub repository ${repoLabel}`,
       targetUsers: [],
       userRoles: [],
       pages: [],
