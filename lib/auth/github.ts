@@ -20,7 +20,9 @@ export function getGitHubOAuthConfig(): GitHubOAuthConfig {
     ?? process.env.OAUTH_BASE_URL
     ?? process.env.NEXTAUTH_URL
     ?? "http://localhost:3000"
-  const redirectUri = base.replace(/\/$/, "") + "/api/auth/github/callback"
+  const redirectUri = base.endsWith("/api/auth/github/callback")
+    ? base
+    : `${base.replace(/\/$/, "")}/api/auth/github/callback`
   return { clientId, clientSecret, redirectUri }
 }
 
