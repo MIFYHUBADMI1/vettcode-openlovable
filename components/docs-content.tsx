@@ -50,6 +50,7 @@ const sectionMeta = [
   { id: "database-manager", label: "Database Manager", icon: Database, keywords: ["database", "tables", "records", "fields", "schema", "data", "crud", "create", "edit", "delete"] },
   { id: "workspace", label: "Working With Your App", icon: Puzzle, keywords: ["workspace", "preview", "source code", "instruction bar", "database manager", "edit", "changes"] },
   { id: "publishing", label: "Publishing & Domains", icon: Upload, keywords: ["publish", "domain", "subdomain", "dns", "deploy", "live", "url", "https", "custom domain"] },
+  { id: "github", label: "GitHub Integration", icon: GitCompare, keywords: ["github", "git", "repo", "repository", "push", "auto-push", "build from", "source control", "version control", "connect", "oauth"] },
   { id: "credits", label: "Credits & Billing", icon: CreditCard, keywords: ["credits", "billing", "payment", "price", "cost", "top up", "mobile money", "mtn", "airtel", "free"] },
   { id: "account", label: "Account & Settings", icon: Settings, keywords: ["account", "profile", "password", "security", "settings", "referral", "refer", "earn"] },
   { id: "faq", label: "Frequently Asked Questions", icon: HelpCircle, keywords: ["faq", "question", "answer", "help", "support", "problem", "issue", "export", "mobile", "secure"] },
@@ -705,6 +706,129 @@ export function DocsContent() {
               </p>
             </div>
             <SectionFeedbackInline sectionId="account" />
+          </section>
+
+          {/* ─── GITHUB INTEGRATION ─── */}
+          <section id="github" style={{ opacity: isVisible("github") ? 1 : 0.25, transition: "opacity 0.2s" }}>
+            <SectionHeader icon={GitCompare} title="GitHub Integration" />
+            <div className="space-y-6 text-muted-foreground leading-7">
+              <p>
+                Connect your GitHub account to unlock powerful version control features for your MirrorSite projects. GitHub integration enables automatic code pushing and building from existing repositories.
+              </p>
+
+              <h3 className="text-lg font-semibold text-foreground">What is GitHub integration?</h3>
+              <p>
+                GitHub integration allows you to link your MirrorSite projects with your GitHub repositories. Once connected, you can:
+              </p>
+              <ul className="space-y-2">
+                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Auto-push to GitHub</strong> — Automatically push your built application code to a GitHub repository after each successful build</span></li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Build from existing repos</strong> — Use an existing GitHub repository as the source for AI analysis and application generation</span></li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Version control</strong> — Track all changes to your project code with full git history</span></li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Team collaboration</strong> — Share your code with team members or contributors through GitHub</span></li>
+              </ul>
+
+              <h3 className="text-lg font-semibold text-foreground mt-8">How to connect GitHub</h3>
+              <p><strong className="text-foreground">Step 1: Connect your GitHub account</strong></p>
+              <ul className="space-y-2">
+                <li>• Go to <strong className="text-foreground">Settings → Profile</strong></li>
+                <li>• Scroll to the <strong className="text-foreground">Connected Services</strong> section</li>
+                <li>• Click <strong className="text-foreground">Connect GitHub</strong></li>
+                <li>• Sign in with your GitHub account and authorize MirrorSite AI</li>
+              </ul>
+
+              <p className="mt-6"><strong className="text-foreground">Step 2: Enable integration for a project</strong></p>
+              <ul className="space-y-2">
+                <li>• Open any project workspace</li>
+                <li>• Click the <strong className="text-foreground">GitHub</strong> button in the top action bar</li>
+                <li>• Choose your integration mode (see below)</li>
+                <li>• Select or create a repository</li>
+                <li>• Click <strong className="text-foreground">Connect</strong></li>
+              </ul>
+
+              <h3 className="text-lg font-semibold text-foreground mt-8">Integration modes</h3>
+
+              <div className="rounded-lg border border-border bg-card p-5 mt-4">
+                <h4 className="text-sm font-semibold text-foreground mb-3">📤 Push to GitHub (Auto-push mode)</h4>
+                <p className="text-sm">
+                  Automatically push your built application code to a GitHub repository after each successful build. Perfect for:
+                </p>
+                <ul className="mt-2 space-y-1 text-sm">
+                  <li>• Backing up your code</li>
+                  <li>• Tracking changes over time</li>
+                  <li>• Deploying to external hosting (Vercel, Netlify, etc.)</li>
+                  <li>• Sharing with team members</li>
+                </ul>
+              </div>
+
+              <div className="rounded-lg border border-border bg-card p-5 mt-4">
+                <h4 className="text-sm font-semibold text-foreground mb-3">📖 Build from repo (Source mode)</h4>
+                <p className="text-sm">
+                  Use an existing GitHub repository as the starting point for AI analysis. The AI will:
+                </p>
+                <ul className="mt-2 space-y-1 text-sm">
+                  <li>• Read your README and code files</li>
+                  <li>• Analyze your application structure</li>
+                  <li>• Generate a specification based on your existing codebase</li>
+                  <li>• Build or enhance the application</li>
+                </ul>
+                <p className="mt-3 text-sm">
+                  Great for migrating existing projects or building on top of starter templates.
+                </p>
+              </div>
+
+              <h3 className="text-lg font-semibold text-foreground mt-8">Managing your repositories</h3>
+              <p>
+                When connecting GitHub, you can:
+              </p>
+              <ul className="space-y-2">
+                <li>• Select from your existing GitHub repositories</li>
+                <li>• Create new repositories directly from MirrorSite</li>
+                <li>• Choose which branch to push to (default: main)</li>
+                <li>• View push history and commit links</li>
+                <li>• Disconnect at any time</li>
+              </ul>
+
+              <h3 className="text-lg font-semibold text-foreground mt-8">Benefits of GitHub integration</h3>
+              <div className="grid gap-3 sm:grid-cols-2 mt-4">
+                <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-4">
+                  <p className="font-semibold text-sm text-green-600 dark:text-green-400 mb-2">✓ Version History</p>
+                  <p className="text-xs text-muted-foreground">Track every change with full git commit history</p>
+                </div>
+                <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-4">
+                  <p className="font-semibold text-sm text-blue-600 dark:text-blue-400 mb-2">✓ Collaboration</p>
+                  <p className="text-xs text-muted-foreground">Share code with team members effortlessly</p>
+                </div>
+                <div className="rounded-lg border border-purple-500/30 bg-purple-500/5 p-4">
+                  <p className="font-semibold text-sm text-purple-600 dark:text-purple-400 mb-2">✓ Backup & Safety</p>
+                  <p className="text-xs text-muted-foreground">Your code is safely stored on GitHub</p>
+                </div>
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4">
+                  <p className="font-semibold text-sm text-amber-600 dark:text-amber-400 mb-2">✓ External Deployment</p>
+                  <p className="text-xs text-muted-foreground">Deploy to Vercel, Netlify, or any git-based host</p>
+                </div>
+              </div>
+
+              <h3 className="text-lg font-semibold text-foreground mt-8">Frequently asked questions</h3>
+              <div className="space-y-4 mt-4">
+                <div>
+                  <p className="font-semibold text-foreground text-sm">Do I need a GitHub account?</p>
+                  <p className="text-sm mt-1">Yes. You need a free GitHub account to use this feature. Sign up at <a href="https://github.com/signup" target="_blank" rel="noreferrer" className="text-primary hover:underline">github.com/signup</a></p>
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground text-sm">Can I use private repositories?</p>
+                  <p className="text-sm mt-1">Yes. MirrorSite AI supports both public and private repositories. Your code remains private if your repository is private.</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground text-sm">What happens if I disconnect?</p>
+                  <p className="text-sm mt-1">Disconnecting stops future auto-pushes but doesn't delete any code already in your GitHub repository. Your git history remains intact.</p>
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground text-sm">Can I connect multiple projects to the same repo?</p>
+                  <p className="text-sm mt-1">Yes, but we recommend using different repositories or branches for each project to avoid conflicts.</p>
+                </div>
+              </div>
+            </div>
+            <SectionFeedbackInline sectionId="github" />
           </section>
 
           {/* ─── FAQ ─── */}

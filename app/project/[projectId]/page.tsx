@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/lib/auth/session"
 import { store } from "@/lib/store/store"
 import {
   LayoutDashboard, Code2, ScrollText, PenLine,
-  Database, Download, ExternalLink, KeyRound,
+  Database, Download, ExternalLink, KeyRound, Github,
 } from "lucide-react"
 
 export default async function ProjectWorkspacePage({ params }: { params: Promise<{ projectId: string }> }) {
@@ -96,6 +96,15 @@ export default async function ProjectWorkspacePage({ params }: { params: Promise
                   .env
                 </Link>
               )}
+
+              {/* GitHub — scroll to section */}
+              <button
+                onClick={() => document.getElementById('github-integration')?.scrollIntoView({ behavior: 'smooth' })}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-accent hover:text-foreground"
+              >
+                <Github className="size-3.5" />
+                GitHub
+              </button>
 
               {/* Open live preview — only when built */}
               {project.developmentUrl && (

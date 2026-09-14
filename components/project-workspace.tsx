@@ -536,7 +536,7 @@ export function ProjectWorkspace({ projectId, initialState }: ProjectWorkspacePr
 
           {/* GitHub Integration */}
           {(state === "ready" || state === "build_complete" || state === "specification_ready") && project ? (
-            <div className="border border-border bg-card p-6">
+            <div id="github-integration" className="scroll-mt-24 border border-border bg-card p-6">
               <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-5">
                 GitHub
               </p>
