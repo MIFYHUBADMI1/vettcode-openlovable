@@ -14,7 +14,7 @@ interface ProjectPreferencesDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSubmit: (preferences: ProjectPreferences) => void
-  mode: "website" | "idea"
+  mode: "website" | "idea" | "github"
 }
 
 const TOTAL_STEPS = 5
@@ -57,7 +57,7 @@ export function ProjectPreferencesDialog({ open, onOpenChange, onSubmit, mode }:
             Configure Your Application
           </DialogTitle>
           <DialogDescription>
-            Tell us about your {mode === "website" ? "mirrored" : "planned"} app so the AI builds exactly what you need.
+            Tell us about your {mode === "website" ? "mirrored" : mode === "github" ? "GitHub" : "planned"} app so the AI builds exactly what you need.
           </DialogDescription>
         </DialogHeader>
 
@@ -88,7 +88,7 @@ export function ProjectPreferencesDialog({ open, onOpenChange, onSubmit, mode }:
                 <Label htmlFor="app-name">Application name</Label>
                 <Input
                   id="app-name"
-                  placeholder={mode === "website" ? "e.g. Interior Design Studio" : "e.g. Habit Tracker"}
+                  placeholder={mode === "website" ? "e.g. Interior Design Studio" : mode === "github" ? "e.g. My App" : "e.g. Habit Tracker"}
                   value={prefs.appName ?? ""}
                   onChange={(e) => update("appName", e.target.value)}
                 />

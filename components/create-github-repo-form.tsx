@@ -276,6 +276,7 @@ export function CreateGitHubRepoForm({ hasGitHub }: { hasGitHub: boolean }) {
       <ProjectPreferencesDialog
         open={showPreferences}
         onOpenChange={setShowPreferences}
+        mode="github"
         onSubmit={(prefs) => {
           setPreferences(prefs)
           setShowPreferences(false)
