@@ -6,7 +6,7 @@ import { getBalance } from "@/lib/credits/credits"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ProfileAvatarUpload } from "@/components/profile-avatar-upload"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle2, Shield, Github, Link as LinkIcon } from "lucide-react"
+import { CheckCircle2, Shield, Link as LinkIcon } from "lucide-react"
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
