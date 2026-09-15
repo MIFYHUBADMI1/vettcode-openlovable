@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import { useState } from "react"
+import { mutate } from "swr"
 import { LogOut, Shield, User, Users } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -41,8 +42,12 @@ export function AccountMenu() {
     setSigningOut(true)
     try {
       await postJson("/api/auth/logout")
-      router.push("/login")
-      router.refresh()
+      // Wipe the entire SWR in-memory cache so no stale user data bleeds
+      // into the next session (important when switching between accounts).
+      await mutate(() => true, undefined, { revalidate: false })
+      // Full page reload — tears down all React state and SWR instances,
+      // ensuring the next session starts completely fresh.
+      window.location.href = "/login"
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't sign out. Please try again.")
       setSigningOut(false)

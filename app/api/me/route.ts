@@ -9,10 +9,12 @@ import { singleFlight } from "@/lib/cache/single-flight"
 
 const CACHE_HEADERS = {
   // Private: per-user data, must not be shared by CDN.
-  // max-age=10: browser can use cached copy for 10s without hitting server.
-  // stale-while-revalidate=30: after expiry, serve stale data for up to 30s
-  // while revalidating in the background — eliminates visible loading spinners.
-  "Cache-Control": "private, max-age=10, stale-while-revalidate=30",
+  // max-age=0: browser must always revalidate — no stale authenticated
+  // responses after logout. stale-while-revalidate is intentionally omitted:
+  // if the session cookie is gone, a stale /api/me would return old user data
+  // which is the root cause of session bleed when switching accounts.
+  // must-revalidate ensures the browser won't serve stale copies past max-age.
+  "Cache-Control": "private, no-cache, must-revalidate",
 }
 
 /**
