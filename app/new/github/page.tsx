@@ -9,22 +9,22 @@ import { usersCol } from "@/lib/db/collections"
 const STEPS = [
   {
     icon: BookOpen,
-    label: "Read",
-    body: "We fetch the README and source files from your repository (up to 2 MB of code).",
+    label: "Select mode",
+    body: "Choose Clone (build from scratch) or Extend (continue existing app with your changes).",
     color: "text-purple-500",
     bg: "bg-purple-500/10",
   },
   {
     icon: FileCode,
-    label: "Analyse",
-    body: "The AI reads your codebase and generates a full application specification from it.",
+    label: "Analyze",
+    body: "We read your README, repository structure, and (for Extend mode) your existing codebase.",
     color: "text-blue-500",
     bg: "bg-blue-500/10",
   },
   {
     icon: Hammer,
     label: "Build",
-    body: "We scaffold a working app based on what we found. Review the plan first or let it auto-build.",
+    body: "Clone mode builds a new app from your README. Extend mode continues your existing code with improvements.",
     color: "text-green-500",
     bg: "bg-green-500/10",
   },
@@ -70,8 +70,8 @@ export default async function NewGitHubProjectPage() {
               Build from a GitHub repo.
             </h1>
             <p className="max-w-2xl text-pretty text-lg leading-8 text-muted-foreground">
-              Point us at any public GitHub repository — or a private one you have access to — and we&apos;ll
-              read the code, understand what it does, and build a working app from it.
+              Point us at any public GitHub repository — or a private one you have access to. Clone mode builds
+              a fresh app from your README. Extend mode continues your existing codebase with new features.
             </p>
           </div>
         </div>
@@ -122,13 +122,13 @@ export default async function NewGitHubProjectPage() {
 
             {/* What we read */}
             <div className="mt-2 rounded-xl border border-border bg-muted/40 p-4">
-              <p className="mb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground">What we read</p>
+              <p className="mb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground">What we analyze</p>
               <ul className="space-y-1.5 text-xs text-muted-foreground">
                 {[
-                  "README and documentation files",
-                  "TypeScript, JavaScript, Python, Go, Ruby, Java, PHP",
-                  "HTML, CSS, JSON, YAML config files",
-                  "Up to 500 files or 2 MB of code",
+                  "README and documentation (required for Clone mode)",
+                  "Complete repository structure and file tree",
+                  "Extend mode: full codebase download for continuation",
+                  "TypeScript, JavaScript, Python, Go, Ruby, Java, PHP, and more",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2">
                     <GitBranch className="size-3 shrink-0 text-purple-500" />

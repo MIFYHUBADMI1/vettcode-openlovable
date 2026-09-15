@@ -414,6 +414,10 @@ export interface ProjectGitHubDoc {
   userId: string
   /** push = export code to GitHub; build-from = use repo as analysis source */
   mode: "push" | "build-from"
+  /** Sub-mode for build-from: clone (build from scratch) or extend (continue existing app) */
+  githubSubMode?: "clone" | "extend"
+  /** User's custom request for extend mode (what to add/change) */
+  userRequest?: string
   repoOwner: string
   repoName: string
   branch: string

@@ -2,29 +2,23 @@ import "server-only"
 import { store, cryptoId } from "@/lib/store/store"
 import { logger } from "@/lib/logging/logger"
 import { usersCol, projectGitHubCol } from "@/lib/db/collections"
-import { getReadme, getRepoTree, getFileContent, GitHubApiError } from "@/lib/integrations/github/client"
+import { getReadme, getRepoTree, GitHubApiError } from "@/lib/integrations/github/client"
+import { buildFileTree } from "@/lib/integrations/github/tree-builder"
 import { autoLaunchBuild } from "@/lib/analysis/pipeline"
 import { generateSpecificationFromIdea } from "@/lib/analysis/specification"
-import type { ProjectEvent } from "@/lib/types/project"
+import type { ProjectEvent, MirrorProject } from "@/lib/types/project"
 import type { ProjectUnderstanding } from "@/lib/types/understanding"
+import type { ProjectGitHubDoc } from "@/lib/types/db"
 
 function event(stage: string, message: string, level: ProjectEvent["level"] = "info"): ProjectEvent {
   return { id: cryptoId(), at: Date.now(), level, stage, message }
 }
 
-const CODE_EXTENSIONS = new Set([
-  ".ts", ".tsx", ".js", ".jsx", ".py", ".go",
-  ".rb", ".java", ".cs", ".php", ".html", ".css",
-  ".json", ".md", ".mdx", ".yaml", ".yml",
-])
-
-const MAX_FILES = 500
-const MAX_BYTES = 2 * 1024 * 1024 // 2 MB
-
 /**
  * Runs the GitHub-repo analysis pipeline for a project with mode "github".
- * Fetches README + code files from the connected repo and uses them as
- * the planning source in place of Firecrawl website crawling.
+ * Supports two sub-modes:
+ * - Clone: Build from scratch using README + file tree
+ * - Extend: Continue existing app with codebase zip + user request
  */
 export async function runGitHubAnalysis(projectId: string): Promise<void> {
   logger.info("pipeline.github", "starting", { projectId })
@@ -56,11 +50,12 @@ export async function runGitHubAnalysis(projectId: string): Promise<void> {
     const repoName = ghDoc.repoName!
     const branch = ghDoc.branch!
     const repoLabel = `${repoOwner}/${repoName}`
+    const subMode = ghDoc.githubSubMode || "clone"
 
     if (token) {
-      await store.appendEvent(projectId, event("analyze", `📂 Fetching repository contents from ${repoLabel} (authenticated)...`))
+      await store.appendEvent(projectId, event("analyze", `📂 Fetching repository from ${repoLabel} (authenticated)...`))
     } else {
-      await store.appendEvent(projectId, event("analyze", `📂 Fetching public repository ${repoLabel} (unauthenticated)...`))
+      await store.appendEvent(projectId, event("analyze", `📂 Fetching public repository ${repoLabel}...`))
     }
 
     // Fetch README
@@ -81,10 +76,17 @@ export async function runGitHubAnalysis(projectId: string): Promise<void> {
           await store.appendEvent(projectId, event("analyze", "❌ Access denied. Please check that your GitHub account has access to this repository.", "error"))
           return
         }
-        // 404 might be missing README, continue
+        // 404 might be missing README - handle below based on mode
       } else {
         throw e
       }
+    }
+
+    // Clone mode requires README
+    if (subMode === "clone" && !readme) {
+      await store.updateProject(projectId, { state: "build_failed", error: "Clone mode requires a README file." })
+      await store.appendEvent(projectId, event("analyze", "❌ This repository doesn't have a README. Clone mode requires a README at the root of the repository to understand what to build.", "error"))
+      return
     }
 
     // Fetch file tree
@@ -111,90 +113,199 @@ export async function runGitHubAnalysis(projectId: string): Promise<void> {
       throw e
     }
 
-    // Filter to code files only, respecting limits
-    const codeFiles = tree.filter(f => {
-      if (f.type !== "blob") return false
-      const ext = "." + f.path.split(".").pop()!.toLowerCase()
-      return CODE_EXTENSIONS.has(ext)
-    }).slice(0, MAX_FILES)
+    // Build file tree string
+    const allPaths = tree.filter(f => f.type === "blob").map(f => f.path)
+    const fileTreeString = buildFileTree(allPaths)
 
-    await store.appendEvent(projectId, event("analyze", `📄 Found ${codeFiles.length} code files. Reading contents...`))
+    await store.appendEvent(projectId, event("analyze", `📄 Found ${allPaths.length} files. Building project structure...`))
 
-    // Fetch file contents up to 2MB total
-    const fileContents: string[] = []
-    let totalBytes = 0
-    for (const file of codeFiles) {
-      if (totalBytes >= MAX_BYTES) break
-      try {
-        const content = await getFileContent(token, repoOwner, repoName, file.path)
-        const bytes = Buffer.byteLength(content, "utf8")
-        if (totalBytes + bytes > MAX_BYTES) break
-        fileContents.push(`// File: ${file.path}\n${content}`)
-        totalBytes += bytes
-      } catch {
-        // Skip unreadable files
-      }
-    }
-
-    logger.info("pipeline.github", "files fetched", { projectId, count: fileContents.length, bytes: totalBytes })
-    await store.appendEvent(projectId, event("analyze", `🧠 Analysing ${fileContents.length} files (${Math.round(totalBytes / 1024)}KB) with AI...`))
-
-    // Build analysis prompt from README + code files
-    const analysisInput = [
-      readme ? `# README\n\n${readme}` : "",
-      fileContents.join("\n\n---\n\n"),
-    ].filter(Boolean).join("\n\n===\n\n")
-
-    // Store a minimal understanding object
-    const understanding: ProjectUnderstanding = {
-      sourceUrl: `https://github.com/${ghDoc.repoOwner}/${ghDoc.repoName}`,
-      title: `${ghDoc.repoOwner}/${ghDoc.repoName}`,
-      description: readme ? readme.slice(0, 500) : `GitHub repository: ${repoLabel}`,
-      purpose: `Application built from GitHub repository ${repoLabel}`,
-      targetUsers: [],
-      userRoles: [],
-      pages: [],
-      navigation: [],
-      components: [],
-      designSystem: { colors: [], typography: [] },
-      contentStructure: [],
-      assets: [],
-      interactions: [],
-      userFlows: [],
-      observedFunctionality: [],
-      inferredFunctionality: [],
-      suggestedFeatures: [],
-      dataEntities: [],
-      backendRequirements: [],
-      authenticationRequirements: [],
-      screenshots: [],
-      rawEvidenceReferences: [repoLabel],
-    }
-
+    // Store README and file tree on project
     await store.updateProject(projectId, {
-      understanding,
-      state: "analysis_complete",
+      githubReadme: readme || undefined,
+      githubFileTree: fileTreeString,
     })
-    await store.appendEvent(projectId, event("analyze", `✅ Repository analysed! Generating application specification...`))
 
-    // Generate spec using the repo content as the idea/description
-    const ideaText = `Build an application based on this GitHub repository (${repoLabel}).\n\n${analysisInput.slice(0, 8000)}`
-    const specification = await generateSpecificationFromIdea(ideaText, project.userId, projectId)
-
-    await store.updateProject(projectId, {
-      state: "specification_ready",
-      specification,
-      name: specification.title || project.name,
-    })
-    await store.appendEvent(projectId, event("specify", `📋 Specification ready! Auto-launching build...`))
-
-    // Auto-launch Totalum build
-    await autoLaunchBuild(projectId)
+    // Branch based on sub-mode
+    if (subMode === "extend") {
+      await handleExtendMode(projectId, project, ghDoc, token, repoOwner, repoName, branch, repoLabel, readme, fileTreeString)
+    } else {
+      await handleCloneMode(projectId, project, ghDoc, repoLabel, readme!, fileTreeString)
+    }
 
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
     logger.error("pipeline.github", "failed", { projectId, error: message })
-    await store.updateProject(projectId, { state: "build_failed", error: "Failed to analyse GitHub repository." })
+    await store.updateProject(projectId, { state: "build_failed", error: "Failed to analyze GitHub repository." })
     await store.appendEvent(projectId, event("analyze", `❌ Failed to read repository: ${message}`, "error"))
   }
+}
+
+/**
+ * Clone mode: Build from scratch using README + file tree.
+ * Prompt tells AI to implement what the README describes.
+ */
+async function handleCloneMode(
+  projectId: string,
+  project: MirrorProject,
+  ghDoc: ProjectGitHubDoc,
+  repoLabel: string,
+  readme: string,
+  fileTree: string
+) {
+  await store.appendEvent(projectId, event("analyze", "🧬 Clone mode: Building from scratch based on README..."))
+
+  // Build understanding object
+  const understanding: ProjectUnderstanding = {
+    sourceUrl: `https://github.com/${ghDoc.repoOwner}/${ghDoc.repoName}`,
+    title: `${ghDoc.repoOwner}/${ghDoc.repoName}`,
+    description: readme.slice(0, 500),
+    purpose: `Application cloned from GitHub repository ${repoLabel}`,
+    targetUsers: [],
+    userRoles: [],
+    pages: [],
+    navigation: [],
+    components: [],
+    designSystem: { colors: [], typography: [] },
+    contentStructure: [],
+    assets: [],
+    interactions: [],
+    userFlows: [],
+    observedFunctionality: [],
+    inferredFunctionality: [],
+    suggestedFeatures: [],
+    dataEntities: [],
+    backendRequirements: [],
+    authenticationRequirements: [],
+    screenshots: [],
+    rawEvidenceReferences: [repoLabel],
+  }
+
+  await store.updateProject(projectId, {
+    understanding,
+    state: "analysis_complete",
+  })
+
+  await store.appendEvent(projectId, event("analyze", "✅ Repository analyzed! Generating specification..."))
+
+  // Build prompt for clone mode
+  const ideaText = `Build an application that does exactly this. Use the built-in database and authentication where needed. Do not ask for clarification — implement your best interpretation.
+
+README:
+${readme}
+
+Application structure:
+${fileTree}
+`
+
+  const specification = await generateSpecificationFromIdea(ideaText, project.userId, projectId)
+
+  await store.updateProject(projectId, {
+    state: "specification_ready",
+    specification,
+    name: specification.title || project.name,
+  })
+
+  await store.appendEvent(projectId, event("specify", "📋 Specification ready! Launching build..."))
+
+  // Auto-launch build
+  await autoLaunchBuild(projectId)
+  logger.info("pipeline.github", "clone mode complete", { projectId })
+}
+
+/**
+ * Extend mode: Continue existing app with codebase zip + user request.
+ * Downloads the repo as a zip, tells AI to extract and continue with user's changes.
+ */
+async function handleExtendMode(
+  projectId: string,
+  project: MirrorProject,
+  ghDoc: ProjectGitHubDoc,
+  token: string | null,
+  repoOwner: string,
+  repoName: string,
+  branch: string,
+  repoLabel: string,
+  readme: string | null,
+  fileTree: string
+) {
+  await store.appendEvent(projectId, event("analyze", "🔄 Extend mode: Preparing to continue existing codebase..."))
+
+  // GitHub zipball URL (no auth needed for public repos in the download itself)
+  const zipUrl = `https://api.github.com/repos/${repoOwner}/${repoName}/zipball/${branch}`
+
+  // Store zip URL on project
+  await store.updateProject(projectId, {
+    githubZipUrl: zipUrl,
+  })
+
+  await store.appendEvent(projectId, event("analyze", "📦 Codebase package ready for download..."))
+
+  // Build understanding object
+  const understanding: ProjectUnderstanding = {
+    sourceUrl: `https://github.com/${ghDoc.repoOwner}/${ghDoc.repoName}`,
+    title: `${ghDoc.repoOwner}/${ghDoc.repoName}`,
+    description: readme ? readme.slice(0, 500) : `Extending GitHub repository ${repoLabel}`,
+    purpose: `Application extended from GitHub repository ${repoLabel}`,
+    targetUsers: [],
+    userRoles: [],
+    pages: [],
+    navigation: [],
+    components: [],
+    designSystem: { colors: [], typography: [] },
+    contentStructure: [],
+    assets: [],
+    interactions: [],
+    userFlows: [],
+    observedFunctionality: [],
+    inferredFunctionality: [],
+    suggestedFeatures: [],
+    dataEntities: [],
+    backendRequirements: [],
+    authenticationRequirements: [],
+    screenshots: [],
+    rawEvidenceReferences: [repoLabel, zipUrl],
+  }
+
+  await store.updateProject(projectId, {
+    understanding,
+    state: "analysis_complete",
+  })
+
+  await store.appendEvent(projectId, event("analyze", "✅ Repository analyzed! Generating specification with your changes..."))
+
+  // Build prompt for extend mode
+  const userRequest = ghDoc.userRequest || "Continue and improve the existing application."
+  const readmeSection = readme ? `\n\nREADME:\n${readme}` : ""
+
+  const ideaText = `You are continuing an existing application. The codebase is available at this URL (extract it first):
+${zipUrl}
+
+The user wants you to: ${userRequest}
+
+${readmeSection}
+
+Existing application structure:
+${fileTree}
+
+Instructions:
+1. Download and extract the codebase from the URL above
+2. Analyze the existing code structure
+3. Implement the user's requested changes
+4. Maintain compatibility with the existing codebase
+5. Use the built-in database and authentication where appropriate
+`
+
+  const specification = await generateSpecificationFromIdea(ideaText, project.userId, projectId)
+
+  await store.updateProject(projectId, {
+    state: "specification_ready",
+    specification,
+    name: specification.title || project.name,
+  })
+
+  await store.appendEvent(projectId, event("specify", "📋 Specification ready! Launching build with your changes..."))
+
+  // Auto-launch build
+  await autoLaunchBuild(projectId)
+  logger.info("pipeline.github", "extend mode complete", { projectId, zipUrl })
 }

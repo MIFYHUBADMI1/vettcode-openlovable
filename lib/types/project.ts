@@ -188,6 +188,12 @@ export interface MirrorProject {
   infrastructure?: InfrastructureSubscription
   /** User preferences collected during project creation. */
   preferences?: ProjectPreferences
+  /** GitHub mode: README content from the repository */
+  githubReadme?: string
+  /** GitHub mode: structured file tree string */
+  githubFileTree?: string
+  /** GitHub mode (extend): zip download URL for the source code */
+  githubZipUrl?: string
   /** Project visibility: private (default) or public. Can only be public if deployed. */
   visibility?: "private" | "public"
 }

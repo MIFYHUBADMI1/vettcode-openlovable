@@ -8,7 +8,7 @@ import { getCurrentUser } from "@/lib/auth/session"
 import { store } from "@/lib/store/store"
 import {
   LayoutDashboard, Code2, ScrollText, PenLine,
-  Database, Download, ExternalLink, KeyRound,
+  Database, Download, ExternalLink, KeyRound, BookOpen, FolderTree, FileArchive,
 } from "lucide-react"
 
 export default async function ProjectWorkspacePage({ params }: { params: Promise<{ projectId: string }> }) {
@@ -95,6 +95,39 @@ export default async function ProjectWorkspacePage({ params }: { params: Promise
                 >
                   <KeyRound className="size-3.5" />
                   .env
+                </Link>
+              )}
+
+              {/* README — GitHub mode only */}
+              {project.githubReadme && (
+                <Link
+                  href={`/project/${project.id}/readme`}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-xs font-medium text-purple-600 transition-all hover:bg-purple-500/20 dark:text-purple-400"
+                >
+                  <BookOpen className="size-3.5" />
+                  README
+                </Link>
+              )}
+
+              {/* App Tree — GitHub mode only */}
+              {project.githubFileTree && (
+                <Link
+                  href={`/project/${project.id}/tree`}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-xs font-medium text-green-600 transition-all hover:bg-green-500/20 dark:text-green-400"
+                >
+                  <FolderTree className="size-3.5" />
+                  App Tree
+                </Link>
+              )}
+
+              {/* Repo Code — GitHub extend mode only */}
+              {project.githubZipUrl && (
+                <Link
+                  href={`/project/${project.id}/repo-code`}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs font-medium text-amber-600 transition-all hover:bg-amber-500/20 dark:text-amber-400"
+                >
+                  <FileArchive className="size-3.5" />
+                  Repo Code
                 </Link>
               )}
 
