@@ -1,6 +1,7 @@
 /**
  * GitHub REST API v3 client.
- * All calls use the user's stored access token from UserDoc.
+ * accessToken is optional — omitting it makes unauthenticated requests
+ * which work for public repos (60 req/hr rate limit vs 5,000 with a token).
  * Values returned from the API are treated as untrusted input.
  */
 
@@ -16,13 +17,13 @@ export class GitHubApiError extends Error {
 async function ghFetch<T>(
   method: string,
   path: string,
-  accessToken: string,
+  accessToken: string | null | undefined,
   body?: unknown,
 ): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     method,
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       Accept: "application/vnd.github+json",
       "X-GitHub-Api-Version": "2022-11-28",
       ...(body ? { "Content-Type": "application/json" } : {}),
@@ -80,14 +81,14 @@ export async function createRepo(
   })
 }
 
-export async function getRepo(accessToken: string, owner: string, repo: string): Promise<GitHubRepo> {
+export async function getRepo(accessToken: string | null | undefined, owner: string, repo: string): Promise<GitHubRepo> {
   return ghFetch<GitHubRepo>("GET", `/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`, accessToken)
 }
 
 // ─── File tree + content ─────────────────────────────────────────────────────
 
 export async function getRepoTree(
-  accessToken: string,
+  accessToken: string | null | undefined,
   owner: string,
   repo: string,
   branch: string,
@@ -101,7 +102,7 @@ export async function getRepoTree(
 }
 
 export async function getFileContent(
-  accessToken: string,
+  accessToken: string | null | undefined,
   owner: string,
   repo: string,
   path: string,
@@ -118,7 +119,7 @@ export async function getFileContent(
 }
 
 export async function getReadme(
-  accessToken: string,
+  accessToken: string | null | undefined,
   owner: string,
   repo: string,
 ): Promise<string | null> {
@@ -157,7 +158,7 @@ export async function pushFilesToRepo(
   commitMessage = "chore: sync from MirrorSite AI",
 ): Promise<PushFilesResult> {
   const ownerE = encodeURIComponent(owner)
-  const repoE  = encodeURIComponent(repo)
+  const repoE = encodeURIComponent(repo)
 
   // 1. Get current branch tip SHA
   const refData = await ghFetch<{ object: { sha: string } }>(

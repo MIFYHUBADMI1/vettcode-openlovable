@@ -48,36 +48,65 @@ export async function runGitHubAnalysis(projectId: string): Promise<void> {
       return
     }
 
-    // Get user's GitHub token
+    // Get user's GitHub token (optional - works without it for public repos)
     const userDoc = await (await usersCol()).findOne({ id: project.userId })
-    if (!userDoc?.githubAccessToken) {
-      await store.updateProject(projectId, { state: "build_failed", error: "GitHub access token missing." })
-      await store.appendEvent(projectId, event("analyze", "❌ GitHub account not connected. Please sign in with GitHub.", "error"))
-      return
-    }
+    const token = userDoc?.githubAccessToken || null
 
-    const token = userDoc.githubAccessToken
     const repoOwner = ghDoc.repoOwner!
     const repoName = ghDoc.repoName!
     const branch = ghDoc.branch!
     const repoLabel = `${repoOwner}/${repoName}`
 
-    await store.appendEvent(projectId, event("analyze", `📂 Fetching repository contents from ${repoLabel}...`))
+    if (token) {
+      await store.appendEvent(projectId, event("analyze", `📂 Fetching repository contents from ${repoLabel} (authenticated)...`))
+    } else {
+      await store.appendEvent(projectId, event("analyze", `📂 Fetching public repository ${repoLabel} (unauthenticated)...`))
+    }
 
     // Fetch README
-    const readme = await getReadme(token, repoOwner, repoName)
-    logger.info("pipeline.github", "readme fetched", { projectId, hasReadme: Boolean(readme) })
+    let readme: string | null = null
+    try {
+      readme = await getReadme(token, repoOwner, repoName)
+      logger.info("pipeline.github", "readme fetched", { projectId, hasReadme: Boolean(readme) })
+    } catch (e) {
+      if (e instanceof GitHubApiError && (e.status === 401 || e.status === 403 || e.status === 404)) {
+        // Private repo or auth issue
+        const isAuthError = e.status === 401 || e.status === 403
+        if (isAuthError && !token) {
+          await store.updateProject(projectId, { state: "build_failed", error: "This appears to be a private repository. Please connect your GitHub account to access it." })
+          await store.appendEvent(projectId, event("analyze", "❌ This repository is private. Please connect your GitHub account in Settings → Profile to access private repositories.", "error"))
+          return
+        } else if (isAuthError && token) {
+          await store.updateProject(projectId, { state: "build_failed", error: "Access denied. You may not have permission to access this repository." })
+          await store.appendEvent(projectId, event("analyze", "❌ Access denied. Please check that your GitHub account has access to this repository.", "error"))
+          return
+        }
+        // 404 might be missing README, continue
+      } else {
+        throw e
+      }
+    }
 
     // Fetch file tree
     let tree
     try {
       tree = await getRepoTree(token, repoOwner, repoName, branch)
     } catch (e) {
-      if (e instanceof GitHubApiError && e.status === 409) {
-        // Empty repo
-        await store.updateProject(projectId, { state: "build_failed", error: "The GitHub repository is empty." })
-        await store.appendEvent(projectId, event("analyze", "❌ The repository appears to be empty.", "error"))
-        return
+      if (e instanceof GitHubApiError) {
+        if (e.status === 409) {
+          // Empty repo
+          await store.updateProject(projectId, { state: "build_failed", error: "The GitHub repository is empty." })
+          await store.appendEvent(projectId, event("analyze", "❌ The repository appears to be empty.", "error"))
+          return
+        } else if ((e.status === 401 || e.status === 403) && !token) {
+          await store.updateProject(projectId, { state: "build_failed", error: "This appears to be a private repository. Please connect your GitHub account to access it." })
+          await store.appendEvent(projectId, event("analyze", "❌ This repository is private. Please connect your GitHub account in Settings → Profile to access private repositories.", "error"))
+          return
+        } else if ((e.status === 401 || e.status === 403) && token) {
+          await store.updateProject(projectId, { state: "build_failed", error: "Access denied. You may not have permission to access this repository." })
+          await store.appendEvent(projectId, event("analyze", "❌ Access denied. Please check that your GitHub account has access to this repository.", "error"))
+          return
+        }
       }
       throw e
     }
