@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { postJson, useProject, useCreditCosts } from "@/lib/client/api"
+import { postJson, useProject, useCreditCosts, useSession } from "@/lib/client/api"
 import { ensureProtocol } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -12,13 +12,14 @@ import { toast } from "sonner"
 export function ProjectWorkspaceControls({ projectId }: { projectId: string }) {
   const router = useRouter()
   const { project, refresh } = useProject(projectId, { pollWhileBuilding: true })
+  const { refresh: refreshSession } = useSession()
   const [prompt, setPrompt] = useState("")
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function build() {
     setBusy(true); setError(null)
-    try { await postJson(`/api/projects/${projectId}/build`, {}); await refresh() }
+    try { await postJson(`/api/projects/${projectId}/build`, {}); await Promise.all([refresh(), refreshSession()]) }
     catch (e) { setError(e instanceof Error ? e.message : "Could not start build") }
     finally { setBusy(false) }
   }
@@ -26,7 +27,7 @@ export function ProjectWorkspaceControls({ projectId }: { projectId: string }) {
   async function sendPrompt() {
     if (prompt.trim().length < 3) return
     setBusy(true); setError(null)
-    try { await postJson(`/api/projects/${projectId}/agent`, { prompt: prompt.trim() }); setPrompt(""); await refresh(); router.refresh() }
+    try { await postJson(`/api/projects/${projectId}/agent`, { prompt: prompt.trim() }); setPrompt(""); await Promise.all([refresh(), refreshSession()]); router.refresh() }
     catch (e) { setError(e instanceof Error ? e.message : "Could not send instruction") }
     finally { setBusy(false) }
   }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { AdminNav } from "@/components/admin-nav"
 
 // Placeholder types - will be fully defined when implementing child components
@@ -796,13 +796,16 @@ export default function AdminLedgerPage() {
     fetchLedgerData()
   }, [fetchLedgerData])
 
-  // Auto-refresh every 15 seconds (Requirement 1.19)
+  // Auto-refresh every 30 seconds — raised from 15s since ledger data
+  // doesn't need sub-second freshness and this halves the DB read rate.
+  // Uses a ref to hold the latest fetchLedgerData so the interval never
+  // captures a stale closure (avoids the dependency array trap).
+  const fetchLedgerRef = useRef(fetchLedgerData)
+  useEffect(() => { fetchLedgerRef.current = fetchLedgerData }, [fetchLedgerData])
   useEffect(() => {
-    const interval = setInterval(() => {
-      fetchLedgerData()
-    }, 15000)
+    const interval = setInterval(() => { fetchLedgerRef.current() }, 30000)
     return () => clearInterval(interval)
-  }, [fetchLedgerData])
+  }, []) // empty deps — interval is created once, fetchLedgerRef stays current
 
   // CSV Export function (Requirements: 1.13, 1.14, 1.15)
   const handleExportCSV = useCallback(() => {

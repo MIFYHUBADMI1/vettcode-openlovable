@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
-import { postJson, patchJson, deleteJson, jsonFetcher, useSession } from "@/lib/client/api"
+import { postJson, patchJson, deleteJson, jsonFetcher, useSession, useProjectActivity } from "@/lib/client/api"
 import { ensureProtocol, cn } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -120,7 +120,17 @@ export function EditWorkspace({ projectId, projectName, initialState }: EditWork
       projectRef.current = fresh.data.project
       return fresh
     },
-    { refreshInterval: 10000, revalidateOnFocus: true },
+    {
+      // Active states (building/deploying/analyzing): poll every 10s
+      // Idle states (ready, failed, etc.): poll every 2 minutes — nothing
+      // changes on the server without a user action when idle
+      refreshInterval: (latest) => {
+        const s = (latest as ProjectData | undefined)?.data?.project?.state ?? initialState
+        return s === "building" || s === "deploying" || s === "analyzing" ? 10000 : 120000
+      },
+      revalidateOnFocus: true,
+      dedupingInterval: 5000,
+    },
   )
 
   const project = projectData?.data?.project
@@ -133,18 +143,19 @@ export function EditWorkspace({ projectId, projectName, initialState }: EditWork
       ?.slice(-1)[0]?.productionUrl
   )
 
-  // Poll agent status — always, so we can merge fresh project data (including
-  // developmentUrl) into the SWR cache. The workspace page does this via a
-  // useEffect below; without it the edit page shows stale data.
+  // Poll agent status — only during active states (building/deploying/analyzing).
+  // Disabled when idle to avoid unnecessary Totalum sync calls on the server.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: statusData } = useSWR<Record<string, any>>(
-    `/api/projects/${projectId}/status`,
+    (state === "building" || state === "deploying" || state === "analyzing")
+      ? `/api/projects/${projectId}/status`
+      : null,
     jsonFetcher,
     {
-      refreshInterval: (latest) => {
-        const s = (latest as any)?.data?.state ?? state
-        return s === "building" || s === "deploying" ? 3000 : 15000
-      },
+      // Active: 10s — was 3s, which was too aggressive for Totalum sync
+      // The null key above already disables polling when idle
+      refreshInterval: 10000,
+      dedupingInterval: 5000,
       keepPreviousData: true,
     },
   )
@@ -179,29 +190,31 @@ export function EditWorkspace({ projectId, projectName, initialState }: EditWork
     }
   }, [(statusData as any)?.data?.project, refreshProject])
 
-  // Conversation (poll during builds, otherwise on-demand)
-  const { data: convData, mutate: refreshConv } = useSWR<{ ok: boolean; data: { conversation: ConversationMessage[] } }>(
-    `/api/projects/${projectId}/activity`,
-    jsonFetcher,
-    { refreshInterval: isBuilding ? 5000 : 30000 },
-  )
+  // Conversation — use canonical hook (replaces duplicate inline subscriptions
+  // in ConversationTab and project-activity.tsx that all shared the same key)
+  const { events: activityEvents, refresh: refreshConv } = useProjectActivity(projectId, isBuilding)
 
-  // Version history
+  // Version history — no background polling; versions are append-only and only
+  // change after a build completes. The useEffect below triggers a refresh on
+  // build completion instead of wasting 2 req/min on a 30s timer.
   const { data: versionsData, mutate: refreshVersions } = useSWR<{ ok: boolean; data: { versions: Version[]; totalCount: number } }>(
     `/api/projects/${projectId}/versions?limit=50`,
     jsonFetcher,
-    { refreshInterval: 30000 },
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 30000,
+    },
   )
   const versions = versionsData?.data?.versions ?? []
 
-  // App credit balance (from MirrorSite's own system, not Totalum)
-  const { session } = useSession()
+  // App credit balance — from Zustand store, no extra fetch
+  const { session, refresh: refreshSession } = useSession()
   const credits = session?.credits?.balance ?? 0
 
   // Auto-scroll conversation
   useEffect(() => {
     conversationEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [convData?.data?.conversation?.length])
+  }, [activityEvents.length])
 
   // Refresh project data when build completes
   useEffect(() => {
@@ -221,6 +234,8 @@ export function EditWorkspace({ projectId, projectName, initialState }: EditWork
     try {
       await postJson(`/api/projects/${projectId}/agent`, { prompt: text })
       toast.success("Instruction sent", { description: "The AI is working on your changes…" })
+      // Invalidate session to reflect the credit deduction immediately
+      void refreshSession()
       refreshConv()
       refreshProject()
     } catch (err) {
@@ -229,7 +244,7 @@ export function EditWorkspace({ projectId, projectName, initialState }: EditWork
     } finally {
       setSending(false)
     }
-  }, [prompt, sending, projectId, refreshConv, refreshProject])
+  }, [prompt, sending, projectId, refreshConv, refreshProject, refreshSession])
 
   // Stop agent
   const handleStop = useCallback(async () => {
@@ -316,7 +331,7 @@ export function EditWorkspace({ projectId, projectName, initialState }: EditWork
           <VersionsTab projectId={projectId} versions={versions} />
         )}
         {activeTab === "logs" && (
-          <LogsTab projectId={projectId} />
+          <LogsTab projectId={projectId} isBuilding={isBuilding} />
         )}
       </div>
 
@@ -1094,7 +1109,12 @@ function SecretsPanel({ projectId, hasTotalumProject }: { projectId: string; has
   const { data: secretsData, mutate: refreshSecrets } = useSWR<{ ok: boolean; data: { secrets: Secret[] } }>(
     hasTotalumProject ? `/api/projects/${projectId}/secrets` : null,
     jsonFetcher,
-    { refreshInterval: 30000 },
+    {
+      // Secrets only change on explicit user action — no background polling needed.
+      // Fetch once on mount, then refreshSecrets() is called after every write.
+      revalidateOnFocus: false,
+      dedupingInterval: 60000,
+    },
   )
   const secrets = secretsData?.data?.secrets ?? []
 
@@ -1480,7 +1500,7 @@ function LiveConversationPanel({
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className={cn("text-[9px]", config.color, `border-current/30`) }>
+                      <Badge variant="outline" className={cn("text-[9px]", config.color, `border-current/30`)}>
                         {config.label}
                       </Badge>
                       <span className="font-mono text-[10px] text-muted-foreground">
@@ -1505,15 +1525,12 @@ function LiveConversationPanel({
 // ─── Conversation Tab ───────────────────────────────────────────
 
 function ConversationTab({ projectId, isBuilding }: { projectId: string; isBuilding: boolean }) {
-  const { data } = useSWR<{ ok: boolean; data: { events: Array<{ id: string; at: number; level: string; stage: string; message: string }> } }>(
-    `/api/projects/${projectId}/activity`,
-    jsonFetcher,
-    { refreshInterval: isBuilding ? 5000 : 15000 },
-  )
+  // Use the canonical hook — shares the same SWR cache as the parent component
+  // so no second network request is made; SWR deduplicates automatically.
+  const { events } = useProjectActivity(projectId, isBuilding)
+  const displayEvents = events.slice().reverse()
 
-  const events = (data?.data?.events ?? []).slice().reverse()
-
-  if (!events.length) {
+  if (!displayEvents.length) {
     return (
       <div className="flex flex-col items-center justify-center rounded-xl border border-border bg-card p-16 text-center">
         <MessageSquare className="size-12 text-muted-foreground/30 mb-4" />
@@ -1526,7 +1543,7 @@ function ConversationTab({ projectId, isBuilding }: { projectId: string; isBuild
   return (
     <div className="rounded-xl border border-border bg-card p-4 max-h-[700px] overflow-y-auto">
       <ol className="flex flex-col gap-3">
-        {events.map((event) => (
+        {displayEvents.map((event) => (
           <li key={event.id} className="flex gap-3">
             <span
               className={cn(
@@ -1675,14 +1692,21 @@ function VersionsTab({ projectId, versions }: { projectId: string; versions: Ver
 
 // ─── Logs Tab ───────────────────────────────────────────────────
 
-function LogsTab({ projectId }: { projectId: string }) {
+function LogsTab({ projectId, isBuilding }: { projectId: string; isBuilding: boolean }) {
   const [logType, setLogType] = useState<"dev" | "prod">("dev")
   const [searchTerm, setSearchTerm] = useState("")
 
   const { data: logsData } = useSWR<{ ok: boolean; data: { logs?: string } }>(
     `/api/projects/${projectId}/logs?type=${logType}${searchTerm ? `&regexSearch=${encodeURIComponent(searchTerm)}` : ""}`,
     jsonFetcher,
-    { refreshInterval: 10000 },
+    {
+      // Only poll logs while a build is active — otherwise logs don't change
+      // and polling every 10s is pure waste. A 60s interval catches any late
+      // log flushes after a build completes.
+      refreshInterval: isBuilding ? 10000 : 60000,
+      revalidateOnFocus: false,
+      dedupingInterval: 8000,
+    },
   )
 
   const logs = logsData?.data?.logs ?? "No logs available."

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useSession, postJson } from "@/lib/client/api"
+import { useClientStore } from "@/lib/store/client-store"
 import { toast } from "sonner"
 
 function initials(name: string): string {
@@ -28,6 +29,7 @@ function initials(name: string): string {
 export function AccountMenu() {
   const router = useRouter()
   const { session, isLoading } = useSession()
+  const clearAll = useClientStore((s) => s.clearAll)
   const [signingOut, setSigningOut] = useState(false)
 
   if (isLoading) {
@@ -42,11 +44,11 @@ export function AccountMenu() {
     setSigningOut(true)
     try {
       await postJson("/api/auth/logout")
-      // Wipe the entire SWR in-memory cache so no stale user data bleeds
-      // into the next session (important when switching between accounts).
+      // Clear the Zustand client store (session, projects, credit costs)
+      clearAll()
+      // Also wipe the SWR in-memory cache for any remaining SWR hooks
       await mutate(() => true, undefined, { revalidate: false })
-      // Full page reload — tears down all React state and SWR instances,
-      // ensuring the next session starts completely fresh.
+      // Full page reload — tears down all React state ensuring a clean slate
       window.location.href = "/login"
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't sign out. Please try again.")

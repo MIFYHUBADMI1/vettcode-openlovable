@@ -1,23 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import useSWR from "swr"
+import { useProjectActivity } from "@/lib/client/api"
 import { cn } from "@/lib/utils"
-
-interface ActivityEvent {
-  id: string
-  at: number
-  level: string
-  stage: string
-  message: string
-}
-
-async function fetcher(url: string) {
-  const response = await fetch(url)
-  const body = await response.json()
-  if (!response.ok || !body.ok) throw new Error(body.error?.message ?? "Unable to load activity")
-  return body.data as { events: ActivityEvent[] }
-}
 
 function relativeTime(at: number): string {
   const diffMs = Date.now() - at
@@ -39,58 +24,57 @@ function levelIcon(level: string) {
 }
 
 /** Hide events that leak internal API routes or technical implementation details. */
-function isUserFacing(event: ActivityEvent): boolean {
+function isUserFacing(event: { message: string }): boolean {
   const msg = event.message
-  // Skip raw fetch/API route messages that leak provider internals
   if (/Fetch (GET|POST|PUT|DELETE|PATCH)/i.test(msg)) return false
   if (/\/api\/v1\//i.test(msg)) return false
   if (/every \d+ seconds? to track/i.test(msg)) return false
   return true
 }
 
-export function ProjectActivity({ projectId }: { projectId: string }) {
-  const { data, error } = useSWR(`/api/projects/${projectId}/activity`, fetcher, {
-    refreshInterval: 10000, // Poll every 10 seconds (reduced from 5s)
-    keepPreviousData: true,
-    dedupingInterval: 5000, // Prevent duplicate requests within 5 seconds
-  })
+interface ProjectActivityProps {
+  projectId: string
+  /** Pass true while a build/deploy is active to increase poll frequency. */
+  isBuilding?: boolean
+}
 
-  // Keep stable events in state - never show empty if we've already shown events
-  const [stableEvents, setStableEvents] = useState<ActivityEvent[]>([])
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
+export function ProjectActivity({ projectId, isBuilding = false }: ProjectActivityProps) {
+  // Uses the canonical hook — shares the same SWR cache entry as
+  // edit-workspace.tsx and ConversationTab, so only ONE network request
+  // is ever in flight for this project's activity data.
+  const { events: freshEvents, error } = useProjectActivity(projectId, isBuilding)
+
+  // Stable events: never flash empty if we've already shown data
+  const [stableEvents, setStableEvents] = useState(freshEvents)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(freshEvents.length > 0)
 
   useEffect(() => {
-    if (data?.events && data.events.length > 0) {
-      setStableEvents(data.events)
+    if (freshEvents.length > 0) {
+      setStableEvents(freshEvents)
       setHasLoadedOnce(true)
     }
-  }, [data?.events])
+  }, [freshEvents])
 
   if (error) return <p className="text-sm text-destructive">{error.message}</p>
 
-  // Show loading only on first load
-  if (!data && !hasLoadedOnce) return <p className="text-sm text-muted-foreground">Loading activity…</p>
+  if (!hasLoadedOnce) {
+    return <p className="text-sm text-muted-foreground">Loading activity…</p>
+  }
 
-  // Use stable events if available, otherwise show empty state (but only if we've never loaded)
-  const eventsToShow = stableEvents.length > 0 ? stableEvents : (data?.events || [])
+  const eventsToShow = stableEvents.length > 0 ? stableEvents : freshEvents
 
-  if (eventsToShow.length === 0 && !hasLoadedOnce)
+  if (eventsToShow.length === 0) {
     return <p className="text-sm text-muted-foreground">Nothing has happened yet — this fills in as soon as work starts.</p>
+  }
 
-  if (eventsToShow.length === 0 && hasLoadedOnce)
-    return <p className="text-sm text-muted-foreground">Loading updates…</p>
-
-  const events = eventsToShow.slice().filter(isUserFacing).reverse()
+  const displayEvents = eventsToShow.slice().filter(isUserFacing).reverse()
 
   return (
     <ol className="flex flex-col gap-4">
-      {events.map((event, index) => {
+      {displayEvents.map((event, index) => {
         const icon = levelIcon(event.level)
         return (
-          <li
-            key={event.id}
-            className={cn("flex gap-3", index === 0 && "float-in")}
-          >
+          <li key={event.id} className={cn("flex gap-3", index === 0 && "float-in")}>
             <span
               aria-hidden
               className={cn(
