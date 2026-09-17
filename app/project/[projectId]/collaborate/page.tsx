@@ -29,8 +29,11 @@ export default async function CollaboratePage({
     redirect(`/login?next=/project/${projectId}/collaborate`)
   }
 
+  // App-shell layout: fixed viewport height — every panel scrolls internally,
+  // so the plan nav, composer, and launch button are always reachable without
+  // scrolling the page.
   return (
-    <main className="min-h-svh bg-background text-foreground flex flex-col">
+    <main className="h-svh overflow-hidden bg-background text-foreground flex flex-col">
       <AppHeader />
 
       {/* Page header */}

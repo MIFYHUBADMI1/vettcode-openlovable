@@ -431,14 +431,23 @@ function ChatPanel({
       {/* Conversation */}
       <div className="flex-1 overflow-y-auto px-5 py-6">
         <div className="mx-auto flex max-w-2xl flex-col gap-5">
-          {/* Intro — lightweight, no AI call on load (spec section 15) */}
+          {/* Intro — lightweight, no AI call on load (spec section 15).
+              Context-aware: when the founder is working on a section, the
+              intro speaks to that section instead of generic onboarding. */}
           {messages.length === 0 && (
             <div className="rounded-xl border border-border bg-card p-6">
               <h2 className="text-lg font-semibold text-foreground">Your AI Co-Founder</h2>
-              <p className="mt-0.5 text-sm text-primary">I know your idea. Let&apos;s make it stronger.</p>
+              {activeDef ? (
+                <p className="mt-0.5 text-sm text-primary">
+                  Working on {activeDef.label} — {activeDef.emptyHint}
+                </p>
+              ) : (
+                <p className="mt-0.5 text-sm text-primary">I know your idea. Let&apos;s make it stronger.</p>
+              )}
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                I&apos;ve got your current plan in context. We can work through it together — find what&apos;s
-                missing, strengthen weak spots, and lock in improvements before you build.
+                {activeDef
+                  ? "Tell me what you want to change and I'll draft it for your review — nothing goes into the plan until you approve it."
+                  : "I've got your current plan in context. We can work through it together — find what's missing, strengthen weak spots, and lock in improvements before you build."}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {QUICK_ACTIONS.map((qa) => (
@@ -983,7 +992,7 @@ export function CollaborateClient({
           the single source of these components (no duplicate mounts). */}
       <main className="hidden min-w-0 flex-1 flex-col overflow-hidden lg:flex">
         {activeSection && !chatWithFocus ? (
-          <div className="flex-1 overflow-y-auto">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             <SectionDetail
               spec={spec}
               sectionId={activeSection}
@@ -1031,8 +1040,10 @@ export function CollaborateClient({
       </aside>
 
       {/* Mobile / tablet: single-column flow with view switcher. The only
-          mount of chat/section/launch below lg — the desktop column is hidden. */}
-      <div className="flex w-full flex-col lg:hidden">
+          mount of chat/section/launch below lg — the desktop column is hidden.
+          min-h-0 keeps the flex chain height-constrained so each tab panel
+          scrolls internally and the launch button stays pinned. */}
+      <div className="flex w-full min-h-0 flex-col lg:hidden">
         <div className="flex border-b border-border bg-card" role="tablist" aria-label="Workspace views">
           {(["plan", "chat", "insights"] as const).map((v) => (
             <button
@@ -1051,9 +1062,9 @@ export function CollaborateClient({
             </button>
           ))}
         </div>
-        <div className="flex flex-1 flex-col overflow-y-auto">
+        <div className="flex flex-1 min-h-0 flex-col">
           {mobileView === "plan" && (
-            <div id="collab-panel-plan" role="tabpanel" aria-labelledby="collab-tab-plan" className="flex flex-col">
+            <div id="collab-panel-plan" role="tabpanel" aria-labelledby="collab-tab-plan" className="min-h-0 flex-1 overflow-y-auto">
               <PlanNav
                 spec={spec}
                 activeSection={activeSection}
@@ -1069,8 +1080,8 @@ export function CollaborateClient({
             </div>
           )}
           {mobileView === "chat" && (
-            <div id="collab-panel-chat" role="tabpanel" aria-labelledby="collab-tab-chat" className="flex flex-1 flex-col">
-              <div className="flex-1">
+            <div id="collab-panel-chat" role="tabpanel" aria-labelledby="collab-tab-chat" className="flex min-h-0 flex-1 flex-col">
+              <div className={cx("min-h-0 flex-1", activeSection && !chatWithFocus && "overflow-y-auto")}>
                 {activeSection && !chatWithFocus ? (
                   <SectionDetail
                     spec={spec}
@@ -1092,11 +1103,10 @@ export function CollaborateClient({
                   />
                 )}
               </div>
-              {isOwner && <LaunchButton projectId={projectId} state={projectState} />}
             </div>
           )}
           {mobileView === "insights" && (
-            <div id="collab-panel-insights" role="tabpanel" aria-labelledby="collab-tab-insights">
+            <div id="collab-panel-insights" role="tabpanel" aria-labelledby="collab-tab-insights" className="min-h-0 flex-1 overflow-y-auto">
               <InsightsPanel
                 spec={spec}
                 analysis={analysis}
@@ -1116,6 +1126,9 @@ export function CollaborateClient({
             </div>
           )}
         </div>
+        {/* Pinned below every mobile tab — always reachable, never requires
+            scrolling to the end of a long panel. */}
+        {isOwner && <LaunchButton projectId={projectId} state={projectState} />}
       </div>
     </div>
   )
