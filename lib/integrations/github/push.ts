@@ -55,7 +55,7 @@ export async function pushProjectToGitHub(opts: PushOptions): Promise<void> {
       opts.repoName,
       opts.branch,
       files,
-      opts.commitMessage ?? "chore: sync from MirrorSite AI",
+      opts.commitMessage ?? "chore: sync from Atai",
     )
 
     await col.updateOne(

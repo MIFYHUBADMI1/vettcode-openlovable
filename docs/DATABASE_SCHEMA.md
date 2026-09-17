@@ -6,10 +6,10 @@
 
 ## Overview
 
-MirrorSite AI uses **MongoDB Atlas** (cloud-hosted) for all data storage.
+Atai uses **MongoDB Atlas** (cloud-hosted) for all data storage.
 
 ### Database Name
-`mirrorsiteai` (configured in `.env.local`)
+`Ataiai` (configured in `.env.local`)
 
 ### Total Collections
 **15 collections** covering users, projects, billing, and system data

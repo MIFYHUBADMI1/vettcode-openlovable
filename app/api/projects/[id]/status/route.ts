@@ -30,7 +30,7 @@ function event(stage: string, message: string, level: ProjectEvent["level"] = "i
 
 /**
  * Polled by the workspace while a build is running. Syncs the live Totalum
- * agent status into MirrorSite's own project state and resolves the preview URL
+ * agent status into Atai's own project state and resolves the preview URL
  * when the build completes (spec sections 10, 11 & 30).
  * 
  * Uses single-flight deduplication to prevent thundering herd when multiple tabs

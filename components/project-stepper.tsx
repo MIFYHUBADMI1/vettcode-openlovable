@@ -28,7 +28,7 @@ const PHASES: Phase[] = [
     id: "plan",
     label: "Plan ready",
     blurb: "A build plan is drafted for your review.",
-    states: ["specification_ready", "awaiting_build_confirmation"],
+    states: ["specification_ready", "plan_ready", "awaiting_build_confirmation"],
   },
   {
     id: "building",

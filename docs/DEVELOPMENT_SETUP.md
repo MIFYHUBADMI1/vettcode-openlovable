@@ -23,7 +23,7 @@ If you don't have Node.js: Download from https://nodejs.org (pick LTS version)
 
 The project already exists at:
 ```
-C:\Users\USER\Desktop\mirrorsiteai\
+C:\Users\USER\Desktop\Ataiai\
 ```
 
 Open it in your IDE (VS Code or Kiro).
@@ -104,7 +104,7 @@ taskkill /PID <PID_NUMBER> /F
 
 ### Check 1: Landing Page
 - Go to http://localhost:3000
-- Should see the MirrorSite AI landing page
+- Should see the Atai landing page
 - No errors in browser console
 
 ### Check 2: Registration
@@ -271,7 +271,7 @@ docs/                   ← 📚 This folder (you are here)
 
 ## Deploying to Production
 
-The app is already deployed at https://mirrorsite.atai.ink via Vercel.
+The app is already deployed at https://Atai.atai.ink via Vercel.
 
 **Automatic deployment**: Every push to the `main` branch auto-deploys to Vercel.
 

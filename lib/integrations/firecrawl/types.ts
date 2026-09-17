@@ -1,5 +1,5 @@
 /** Normalized website evidence produced by the Firecrawl service. This is the
- * ONLY shape the rest of MirrorSite consumes — raw Firecrawl responses never
+ * ONLY shape the rest of Atai consumes — raw Firecrawl responses never
  * leak past this module (spec section 40). */
 export interface FirecrawlPageEvidence {
   url: string

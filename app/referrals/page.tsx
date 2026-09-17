@@ -5,8 +5,8 @@ import { ReferralDashboard } from "@/components/referral-dashboard"
 import { AppHeader } from "@/components/app-header"
 
 export const metadata: Metadata = {
-  title: "Refer & Earn — MirrorSite",
-  description: "Invite friends to MirrorSite AI and earn credits when they become active users.",
+  title: "Refer & Earn — Atai",
+  description: "Invite friends to Atai and earn credits when they become active users.",
   robots: { index: false, follow: false },
 }
 

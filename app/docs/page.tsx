@@ -3,25 +3,25 @@ import { SITE_URL } from "@/lib/env"
 import { DocsContent } from "@/components/docs-content"
 
 export const metadata: Metadata = {
-  title: "MirrorSite AI Documentation | Guides, Tutorials & Help",
+  title: "Atai Documentation | Guides, Tutorials & Help",
   description:
-    "Complete guide to MirrorSite AI. Learn how to turn websites and ideas into working applications, manage projects, publish to custom domains, and get the most out of every feature.",
+    "Complete guide to Atai. Learn how to turn websites and ideas into working applications, manage projects, publish to custom domains, and get the most out of every feature.",
   alternates: { canonical: "/docs" },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: `${SITE_URL}/docs`,
-    siteName: "MirrorSite AI",
-    title: "MirrorSite AI Documentation | Guides, Tutorials & Help",
+    siteName: "Atai",
+    title: "Atai Documentation | Guides, Tutorials & Help",
     description:
-      "Complete guide to MirrorSite AI. Learn how to turn websites and ideas into working applications.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI Documentation" }],
+      "Complete guide to Atai. Learn how to turn websites and ideas into working applications.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai Documentation" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "MirrorSite AI Documentation | Guides, Tutorials & Help",
-    description: "Complete guide to MirrorSite AI — tutorials, guides, and help.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI Documentation" }],
+    title: "Atai Documentation | Guides, Tutorials & Help",
+    description: "Complete guide to Atai — tutorials, guides, and help.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai Documentation" }],
   },
 }
 

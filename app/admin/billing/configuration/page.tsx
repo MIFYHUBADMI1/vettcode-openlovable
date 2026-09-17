@@ -56,7 +56,7 @@ interface BillingConfig {
     creditsPerBaselineUnit: number
   }
   conversionRate: {
-    mirrorsiteCreditsPerBaselineUnit: number
+    AtaiCreditsPerBaselineUnit: number
     description: string
   }
 }
@@ -230,8 +230,8 @@ export default function AdminConfigurationPage() {
                 </div>
                 <ArrowRight className="size-6 text-muted-foreground" />
                 <div className="text-center">
-                  <p className="text-3xl font-bold text-primary">{config?.conversionRate.mirrorsiteCreditsPerBaselineUnit.toLocaleString()}</p>
-                  <p className="text-xs text-muted-foreground">MirrorSite Credits</p>
+                  <p className="text-3xl font-bold text-primary">{config?.conversionRate.AtaiCreditsPerBaselineUnit.toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">Atai Credits</p>
                 </div>
               </div>
               <p className="mt-3 text-xs text-muted-foreground">{config?.conversionRate.description}</p>
@@ -261,7 +261,7 @@ export default function AdminConfigurationPage() {
                         <td className="py-3 font-mono font-medium capitalize">{tier.id}</td>
                         <td className="py-3">{tier.label}</td>
                         <td className="py-3 text-right font-mono font-semibold text-primary">{tier.credits.toLocaleString()} credits</td>
-                        <td className="py-3 text-right font-mono text-muted-foreground">{Math.round(tier.credits / (config?.conversionRate.mirrorsiteCreditsPerBaselineUnit ?? 1000))}</td>
+                        <td className="py-3 text-right font-mono text-muted-foreground">{Math.round(tier.credits / (config?.conversionRate.AtaiCreditsPerBaselineUnit ?? 1000))}</td>
                         <td className="py-3 text-xs text-muted-foreground max-w-[200px]">{tier.description}</td>
                       </tr>
                     ))}
@@ -300,7 +300,7 @@ export default function AdminConfigurationPage() {
                         </td>
                         <td className="py-3 text-right font-mono">${plan.priceUSD}/mo</td>
                         <td className="py-3 text-right font-mono text-primary">{plan.mirrorCredits.toLocaleString()}</td>
-                        <td className="py-3 text-right font-mono text-muted-foreground">{Math.round(plan.mirrorCredits / (config?.conversionRate.mirrorsiteCreditsPerBaselineUnit ?? 1000)).toLocaleString()}</td>
+                        <td className="py-3 text-right font-mono text-muted-foreground">{Math.round(plan.mirrorCredits / (config?.conversionRate.AtaiCreditsPerBaselineUnit ?? 1000)).toLocaleString()}</td>
                         <td className="py-3 capitalize">{plan.interval}</td>
                         <td className="py-3">
                           <Badge variant={plan.active ? "default" : "outline"}>

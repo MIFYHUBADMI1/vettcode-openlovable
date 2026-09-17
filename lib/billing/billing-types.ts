@@ -1,5 +1,5 @@
 /**
- * MirrorSite AI — Billing System Types
+ * Atai — Billing System Types
  *
  * Types for the unified billing system: credit ledger, build authorization,
  * payment records, subscription records, and reconciliation.
@@ -79,7 +79,7 @@ export interface PaymentRecord {
   /** The product that was purchased */
   productId?: string
   productName?: string
-  /** MirrorSite credits granted by this payment */
+  /** Atai Credits granted by this payment */
   creditsGranted?: number
   /** Credit type granted */
   creditType?: CreditType

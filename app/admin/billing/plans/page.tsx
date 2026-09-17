@@ -37,7 +37,7 @@ interface BillingConfig {
   subscriptionPlans: PlanConfig[]
   permanentCreditPacks: CreditPack[]
   conversionRate: {
-    mirrorsiteCreditsPerBaselineUnit: number
+    AtaiCreditsPerBaselineUnit: number
     description: string
   }
   systemConfig: {
@@ -271,7 +271,7 @@ export default function AdminPlansPage() {
             <Card>
               <CardContent className="py-5">
                 <p className="text-xs text-muted-foreground">Provider Conversion Rate</p>
-                <p className="mt-2 text-2xl font-semibold">1 : {config?.conversionRate.mirrorsiteCreditsPerBaselineUnit.toLocaleString()}</p>
+                <p className="mt-2 text-2xl font-semibold">1 : {config?.conversionRate.AtaiCreditsPerBaselineUnit.toLocaleString()}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {config?.conversionRate.description}
                 </p>

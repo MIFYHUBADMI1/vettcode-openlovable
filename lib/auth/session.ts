@@ -12,7 +12,7 @@ import { AppError } from "@/lib/errors"
  * server-side (TTL index) and can be revoked individually (logout) or in
  * bulk (logout-all-devices, account deletion).
  */
-const COOKIE = "mirrorsite_session"
+const COOKIE = "Atai_session"
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30 // 30 days
 
 export async function createSession(userId: string): Promise<string> {

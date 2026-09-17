@@ -20,7 +20,7 @@ import type { NextRequest } from "next/server"
  *  - Static assets and Next.js internals
  */
 
-const SESSION_COOKIE = "mirrorsite_session"
+const SESSION_COOKIE = "Atai_session"
 
 // API routes that are intentionally public (no session required).
 const PUBLIC_API_PREFIXES = [

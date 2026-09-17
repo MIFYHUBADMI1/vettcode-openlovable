@@ -191,7 +191,7 @@ export default function DodoProductsAdminPage() {
 
             <div className="grid gap-2">
               <Label htmlFor="name">Product Name</Label>
-              <Input id="name" value={createForm.name} onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))} placeholder="MirrorSite AI — Business" />
+              <Input id="name" value={createForm.name} onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))} placeholder="Atai — Business" />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
@@ -199,7 +199,7 @@ export default function DodoProductsAdminPage() {
                 id="description"
                 value={createForm.description}
                 onChange={(e) => setCreateForm((f) => ({ ...f, description: e.target.value }))}
-                placeholder="600,000 MirrorSite Credits per month."
+                placeholder="600,000 Atai Credits per month."
                 className="min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
               />
             </div>

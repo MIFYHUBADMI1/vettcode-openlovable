@@ -15,7 +15,7 @@ interface PlanInfo {
   name: string
   storageLabel: string
   storageBytes: number
-  mirrorSitePrice: number
+  AtaiPrice: number
   description: string
   isPaid: boolean
   isCurrent: boolean
@@ -210,8 +210,8 @@ export function InfrastructureManager({ projectId }: { projectId: string }) {
                       )}
                     </div>
                     <p className="text-2xl font-bold mb-1">
-                      {plan.mirrorSitePrice === 0 ? "Free" : `${plan.mirrorSitePrice.toLocaleString()}`}
-                      {plan.mirrorSitePrice > 0 && (
+                      {plan.AtaiPrice === 0 ? "Free" : `${plan.AtaiPrice.toLocaleString()}`}
+                      {plan.AtaiPrice > 0 && (
                         <span className="text-sm font-normal text-muted-foreground"> credits/mo</span>
                       )}
                     </p>
@@ -238,7 +238,7 @@ export function InfrastructureManager({ projectId }: { projectId: string }) {
                           <Loader2 className="size-4 animate-spin" />
                         ) : isCurrent ? (
                           "Current Plan"
-                        ) : plan.mirrorSitePrice === 0 ? (
+                        ) : plan.AtaiPrice === 0 ? (
                           "Activate"
                         ) : (
                           <>

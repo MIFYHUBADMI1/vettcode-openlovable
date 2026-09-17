@@ -4,9 +4,9 @@ import { randomBytes } from "node:crypto"
 import { buildGoogleAuthUrl } from "@/lib/auth/google"
 import { handleRouteError } from "@/lib/api/respond"
 
-const REFERRAL_COOKIE = "mirrorsite_referral"
+const REFERRAL_COOKIE = "Atai_referral"
 
-const STATE_COOKIE = "mirrorsite_oauth_state"
+const STATE_COOKIE = "Atai_oauth_state"
 
 /** Redirects to Google's consent screen with a random CSRF `state`, stashed
  * in a short-lived cookie for the callback to verify (spec section 3). */

@@ -2,7 +2,7 @@
 
 ## Implementation Summary
 
-Successfully implemented a user-facing toggle UI for choosing between "MirrorSite Legacy" and "MirrorSite Heavy" pipeline modes.
+Successfully implemented a user-facing toggle UI for choosing between "Atai Legacy" and "Atai Heavy" pipeline modes.
 
 ### Components Created/Modified:
 

@@ -41,9 +41,10 @@ import { ScrollProgress } from "@/components/scroll-progress"
 const sectionMeta = [
   { id: "getting-started", label: "Getting Started", icon: Rocket, keywords: ["signup", "register", "account", "first project", "quick start", "begin", "new user", "500 credits", "free"] },
   { id: "how-it-works", label: "How It Works", icon: Zap, keywords: ["understand", "plan", "build", "workflow", "process", "stages", "overview"] },
-  { id: "pipeline-modes", label: "Pipeline Modes", icon: Crown, keywords: ["legacy", "heavy", "mode", "pipeline", "stages", "quality", "credits", "comparison", "7 stage"] },
-  { id: "website-mode", label: "Website Mode", icon: Globe, keywords: ["url", "website", "mirror", "clone", "scrape", "crawl", "deep crawl", "relevant", "link", "paste"] },
-  { id: "idea-mode", label: "Idea Mode", icon: Lightbulb, keywords: ["idea", "describe", "description", "prompt", "from scratch", "concept", "brainstorm"] },
+  { id: "pipeline-modes", label: "Atai Standard & Pro", icon: Crown, keywords: ["standard", "pro", "mode", "pipeline", "stages", "quality", "credits", "comparison", "7 stage"] },
+  { id: "website-mode", label: "Website Mode", icon: Globe, keywords: ["url", "website", "mirror", "clone", "scrape", "crawl", "deep crawl", "relevant", "link", "paste", "competitor"] },
+  { id: "idea-mode", label: "Idea Mode", icon: Lightbulb, keywords: ["idea", "describe", "description", "problem", "solution", "business model", "founder form", "target audience"] },
+  { id: "collaborate", label: "Collaborate & Refine Plan", icon: Users, keywords: ["collaborate", "plan", "refine", "review", "chat", "ai chat", "plan_ready", "submit plan", "before build"] },
   { id: "understanding", label: "Understanding & Planning", icon: Compass, keywords: ["analysis", "plan", "features", "data model", "user flows", "design direction", "blueprint"] },
   { id: "editing-your-plan", label: "Editing Your Plan", icon: FileText, keywords: ["edit", "customize", "modify", "change", "enable", "disable", "features", "instructions"] },
   { id: "building", label: "Building Your Application", icon: Code2, keywords: ["build", "generate", "compile", "deploy", "frontend", "backend", "database", "code"] },
@@ -52,6 +53,7 @@ const sectionMeta = [
   { id: "publishing", label: "Publishing & Domains", icon: Upload, keywords: ["publish", "domain", "subdomain", "dns", "deploy", "live", "url", "https", "custom domain"] },
   { id: "github", label: "GitHub Integration", icon: GitCompare, keywords: ["github", "git", "repo", "repository", "push", "auto-push", "build from", "source control", "version control", "connect", "oauth"] },
   { id: "credits", label: "Credits & Billing", icon: CreditCard, keywords: ["credits", "billing", "payment", "price", "cost", "top up", "mobile money", "mtn", "airtel", "free"] },
+  { id: "appearance", label: "Themes & Appearance", icon: Settings, keywords: ["theme", "dark", "light", "glass", "glassmorphism", "appearance", "system", "colour", "color"] },
   { id: "account", label: "Account & Settings", icon: Settings, keywords: ["account", "profile", "password", "security", "settings", "referral", "refer", "earn"] },
   { id: "faq", label: "Frequently Asked Questions", icon: HelpCircle, keywords: ["faq", "question", "answer", "help", "support", "problem", "issue", "export", "mobile", "secure"] },
 ]
@@ -88,19 +90,20 @@ export function DocsContent() {
           </Link>
           <div className="mb-4 flex items-center gap-3">
             <span className="grid size-8 place-items-center rounded-md bg-primary text-primary-foreground font-mono text-sm font-bold">
-              M
+              A
             </span>
             <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">
               Documentation
             </p>
           </div>
           <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
-            Everything you need to build with MirrorSite AI
+            Everything you need to build with Atai
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">
             Step-by-step guides, detailed explanations, and answers to common
-            questions. Learn how to turn any website or idea into a working
-            application.
+            questions. Learn how to go from an idea or competitor URL to a fully
+            running business — with app, database, payments, users, marketing and
+            infrastructure included.
           </p>
         </div>
       </section>
@@ -132,7 +135,7 @@ export function DocsContent() {
                 { href: "/referrals", icon: Users, label: "Refer & Earn", desc: "Share your referral link for credits", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-500/10" },
                 { href: "/billing", icon: CreditCard, label: "Billing", desc: "Manage your subscription & credits", color: "text-orange-600 dark:text-orange-400", bg: "bg-orange-500/10" },
                 { href: "/resources", icon: BookOpen, label: "Resources", desc: "Guides, tutorials & more", color: "text-teal-600 dark:text-teal-400", bg: "bg-teal-500/10" },
-                { href: "/about", icon: Shield, label: "About MirrorSite", desc: "Our mission and story", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-500/10" },
+                { href: "/about", icon: Shield, label: "About Atai", desc: "Our mission and story", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-500/10" },
               ].map(({ href, icon: Icon, label, desc, color, bg }) => (
                 <Link
                   key={href}
@@ -157,15 +160,15 @@ export function DocsContent() {
             <SectionHeader icon={Rocket} title="Getting Started" />
             <div className="space-y-6 text-muted-foreground leading-7">
               <p>
-                MirrorSite AI is a tool that turns websites and ideas into working applications. You give it a starting point — a website address or a description of what you want to build — and it creates a complete, functional application you can edit, improve, and publish.
+                Atai is the AI business-building platform. You give it a starting point — a business idea, a competitor&apos;s website, or a GitHub repository — and it creates a complete, functional application you can collaborate on, refine, publish, and grow into a real business.
               </p>
               <p>
-                You don&apos;t need to know how to code. You don&apos;t need design skills. You just need an idea of what you want to build, or a website you want to turn into something new.
+                You don&apos;t need to know how to code. You don&apos;t need a technical co-founder. You don&apos;t need to assemble a team. Atai brings together an AI co-founder, specialist agents, product development, technology, and infrastructure so you can focus on the vision and the customers.
               </p>
 
               {/* Video placeholder — replace src with your YouTube/Vimeo URL when ready */}
               <VideoEmbed
-                title="Getting Started with MirrorSite AI"
+                title="Getting Started with Atai"
                 duration="3:45"
               /* Uncomment and paste your video URL when ready: */
               /* src="https://www.youtube.com/embed/YOUR_VIDEO_ID" */
@@ -173,18 +176,22 @@ export function DocsContent() {
 
               <h3 className="text-lg font-semibold text-foreground mt-8">What you&apos;ll need</h3>
               <ul className="space-y-2">
-                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> A free MirrorSite AI account</li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> A free Atai account</li>
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> A website address to mirror, or an idea to build from</li>
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> Credits for building (new accounts start with 500 free credits)</li>
               </ul>
 
-              <h3 className="text-lg font-semibold text-foreground mt-8">Your first project in 4 steps</h3>
+              <h3 className="text-lg font-semibold text-foreground mt-8">Your journey from idea to business</h3>
               <div className="space-y-4">
                 {[
-                  { step: 1, title: "Create an account", body: "Sign up with your email or Google account. You'll get 500 free credits to start." },
-                  { step: 2, title: "Choose your starting point", body: "Paste a website address or describe your app idea. MirrorSite AI will analyze it and create a structured plan." },
-                  { step: 3, title: "Review and customize the plan", body: "See exactly what will be built — features, screens, data, and design. Edit anything before building." },
-                  { step: 4, title: "Build and publish", body: "One click generates your working application. Publish it to a free web address or connect your own domain." },
+                  { step: 1, title: "Create an account", body: "Sign up with your email or Google account. You get 500 free credits to start — no credit card required." },
+                  { step: 2, title: "Choose your starting point", body: "Describe your business idea using the Founder Form, paste a competitor's URL, or link a GitHub repository." },
+                  { step: 3, title: "Atai analyses and plans", body: "Atai reads your input, understands the product, and creates a complete structured app plan." },
+                  { step: 4, title: "Collaborate & refine the plan", body: "Review your plan on the Collaborate page. Chat with the AI to adjust features, flows, and business model before anything is built." },
+                  { step: 5, title: "Submit and build", body: "Once you're happy with the plan, click Submit. Atai builds the full application — frontend, backend, database, auth, and infrastructure." },
+                  { step: 6, title: "Launch", body: "One click publishes your app to a free subdomain or your own domain. HTTPS, CDN, and global hosting included." },
+                  { step: 7, title: "Operate", body: "Manage your customers, product, data, payments and business from the Atai dashboard." },
+                  { step: 8, title: "Grow", body: "Improve the product, acquire customers, experiment, and keep building as your business scales." },
                 ].map(({ step, title, body }) => (
                   <div key={step} className="flex gap-4 rounded-lg border border-border bg-card p-4">
                     <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 font-mono text-sm font-bold text-primary">{step}</span>
@@ -204,14 +211,14 @@ export function DocsContent() {
             <SectionHeader icon={Zap} title="How It Works" />
             <div className="space-y-6 text-muted-foreground leading-7">
               <p>
-                MirrorSite AI works in three stages: <strong className="text-foreground">Understand</strong>, <strong className="text-foreground">Plan</strong>, and <strong className="text-foreground">Build</strong>.
+                Atai works in three stages: <strong className="text-foreground">Understand</strong>, <strong className="text-foreground">Plan</strong>, and <strong className="text-foreground">Build</strong>.
               </p>
 
               <div className="grid gap-4 sm:grid-cols-3">
                 {[
-                  { icon: Compass, title: "Understand", body: "MirrorSite AI reads your starting point — a website or idea — and figures out what it is, what it does, and how it's structured." },
+                  { icon: Compass, title: "Understand", body: "Atai reads your starting point — a website or idea — and figures out what it is, what it does, and how it's structured." },
                   { icon: FileText, title: "Plan", body: "It creates a detailed blueprint of the application: screens, features, data, and design direction. You review and edit this before anything is built." },
-                  { icon: Code2, title: "Build", body: "Once you approve the plan, MirrorSite AI generates a complete, working application with a real frontend, backend, and database." },
+                  { icon: Code2, title: "Build", body: "Once you approve the plan, Atai generates a complete, working application with a real frontend, backend, and database." },
                 ].map(({ icon: Icon, title, body }) => (
                   <div key={title} className="rounded-xl border border-border bg-card p-5">
                     <Icon className="size-5 text-primary mb-3" />
@@ -222,7 +229,7 @@ export function DocsContent() {
               </div>
 
               <p>
-                The key difference from other tools is that MirrorSite AI understands the full picture before building. It doesn&apos;t just generate screens — it creates a complete application with working data, user accounts, and real functionality.
+                The key difference from other tools is that Atai understands the full picture before building. It doesn&apos;t just generate screens — it creates a complete application with working data, user accounts, and real functionality.
               </p>
             </div>
             <SectionFeedbackInline sectionId="how-it-works" />
@@ -230,53 +237,53 @@ export function DocsContent() {
 
           {/* ─── PIPELINE MODES ─── */}
           <section id="pipeline-modes" style={{ opacity: isVisible("pipeline-modes") ? 1 : 0.25, transition: "opacity 0.2s" }}>
-            <SectionHeader icon={Crown} title="Pipeline Modes" />
+            <SectionHeader icon={Crown} title="Atai Standard & Pro Modes" />
             <div className="space-y-6 text-muted-foreground leading-7">
               <p>
-                MirrorSite AI offers two pipeline modes when generating your application. You choose the mode when creating a new project — it controls how deeply the AI analyses, plans, and builds your app.
+                Atai offers two pipeline modes when generating your application. You choose the mode when creating a new project — it controls how deeply the AI analyses, plans, and builds your app.
               </p>
 
               <div className="grid gap-5 lg:grid-cols-2">
-                {/* Legacy */}
+                {/* Standard */}
                 <div className="flex flex-col gap-4 rounded-xl border border-border bg-card p-6">
                   <div className="flex items-center gap-3">
                     <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
                       <Zap className="size-5 text-primary" />
                     </div>
                     <div>
-                      <p className="font-semibold text-foreground">Legacy Mode</p>
-                      <p className="text-xs text-muted-foreground">Fast · 5-stage pipeline</p>
+                      <p className="font-semibold text-foreground">Atai Standard</p>
+                      <p className="text-xs text-muted-foreground">Fast · efficient pipeline</p>
                     </div>
                     <span className="ml-auto rounded-full bg-primary/10 px-2.5 py-0.5 font-mono text-[10px] font-medium text-primary">DEFAULT</span>
                   </div>
                   <ul className="space-y-1.5 text-sm">
-                    {["30–60 second processing", "5 credits for scrape + 5 for planning", "25k / 50k / 75k credits for builds", "Good for prototypes and simple apps", "Single-pass specification generation"].map(item => (
+                    {["30–60 second processing", "5 credits for scrape + 5 for planning", "25k / 50k / 75k credits for builds", "Good for prototypes and most applications", "Single-pass specification generation"].map(item => (
                       <li key={item} className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" />{item}</li>
                     ))}
                   </ul>
                 </div>
 
-                {/* Heavy */}
+                {/* Pro */}
                 <div className="flex flex-col gap-4 rounded-xl border-2 border-primary/40 bg-primary/5 p-6">
                   <div className="flex items-center gap-3">
                     <div className="flex size-10 items-center justify-center rounded-xl bg-primary/20">
                       <Crown className="size-5 text-primary" />
                     </div>
                     <div>
-                      <p className="font-semibold text-foreground">Heavy Mode</p>
+                      <p className="font-semibold text-foreground">Atai Pro</p>
                       <p className="text-xs text-muted-foreground">Premium · 7-stage pipeline</p>
                     </div>
                     <span className="ml-auto rounded-full bg-primary px-2.5 py-0.5 font-mono text-[10px] font-medium text-primary-foreground">PREMIUM</span>
                   </div>
                   <ul className="space-y-1.5 text-sm">
-                    {["2–5 minute processing", "100 credits for scrape + 100 for planning", "50k / 75k / 100k credits for builds", "Mandatory admin dashboard + analytics", "Research, critique, repair & validation stages", "Totalum feature recommendations included"].map(item => (
+                    {["2–5 minute processing", "100 credits for scrape + 100 for planning", "50k / 75k / 100k credits for builds", "Research, critique, repair & validation stages", "Up to 200% better output quality"].map(item => (
                       <li key={item} className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" />{item}</li>
                     ))}
                   </ul>
                 </div>
               </div>
 
-              <h3 className="text-lg font-semibold text-foreground">The 7 Heavy mode stages</h3>
+              <h3 className="text-lg font-semibold text-foreground">The 7 Pro mode stages</h3>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:col-span-2">
                 {[
                   { n: "1", stage: "Understanding", desc: "Deep analysis of your website or idea" },
@@ -285,7 +292,7 @@ export function DocsContent() {
                   { n: "4", stage: "Critique", desc: "Independent quality review of the plan" },
                   { n: "5", stage: "Repair", desc: "Fixes issues found during critique" },
                   { n: "6", stage: "Validation", desc: "Ensures the spec is complete and consistent" },
-                  { n: "7", stage: "Sanitization", desc: "Final cleanup for Totalum compatibility" },
+                  { n: "7", stage: "Sanitization", desc: "Final cleanup and optimisation" },
                 ].map(({ n, stage, desc }) => (
                   <div key={stage} className="flex gap-3 rounded-lg border border-border bg-card p-4">
                     <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-primary/10 font-mono text-xs font-bold text-primary">{n}</span>
@@ -315,7 +322,7 @@ export function DocsContent() {
             <SectionHeader icon={Globe} title="Website Mode" />
             <div className="space-y-6 text-muted-foreground leading-7">
               <p>
-                Website Mode lets you point MirrorSite AI at any live website and turn it into a working application. This is the most popular way to start.
+                Website Mode lets you point Atai at any live website and turn it into a working application. This is the most popular way to start.
               </p>
 
               <h3 className="text-lg font-semibold text-foreground">How to use Website Mode</h3>
@@ -325,16 +332,16 @@ export function DocsContent() {
                 <li>Paste the website address you want to mirror</li>
                 <li>Choose your analysis mode:
                   <ul className="mt-2 space-y-1 list-disc list-inside ml-4">
-                    <li><strong className="text-foreground">Relevant Info</strong> — MirrorSite AI analyzes the most important pages, understands the product, and creates a custom plan. Best for most projects.</li>
-                    <li><strong className="text-foreground">Deep Crawl</strong> — MirrorSite AI crawls the entire website, collects every page, and builds an exact replica. Best when you need the whole site preserved.</li>
+                    <li><strong className="text-foreground">Relevant Info</strong> — Atai analyzes the most important pages, understands the product, and creates a custom plan. Best for most projects.</li>
+                    <li><strong className="text-foreground">Deep Crawl</strong> — Atai crawls the entire website, collects every page, and builds an exact replica. Best when you need the whole site preserved.</li>
                   </ul>
                 </li>
-                <li>Review the analysis and plan that MirrorSite AI creates</li>
+                <li>Review the analysis and plan that Atai creates</li>
                 <li>Edit anything you want, then click <strong className="text-foreground">Build</strong></li>
               </ol>
 
               <h3 className="text-lg font-semibold text-foreground mt-8">What Website Mode analyzes</h3>
-              <p>When MirrorSite AI analyzes a website, it looks at:</p>
+              <p>When Atai analyzes a website, it looks at:</p>
               <ul className="space-y-2">
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Pages and navigation</strong> — the structure, menus, and how pages connect</span></li>
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Design and layout</strong> — colors, fonts, spacing, and visual patterns</span></li>
@@ -357,36 +364,99 @@ export function DocsContent() {
 
           {/* ─── IDEA MODE ─── */}
           <section id="idea-mode" style={{ opacity: isVisible("idea-mode") ? 1 : 0.25, transition: "opacity 0.2s" }}>
-            <SectionHeader icon={Lightbulb} title="Idea Mode" />
+            <SectionHeader icon={Lightbulb} title="Idea Mode — Founder Form" />
             <div className="space-y-6 text-muted-foreground leading-7">
               <p>
-                Idea Mode lets you start from a description instead of a website. Describe what you want to build — as simple or detailed as you like — and MirrorSite AI turns it into a structured application plan.
+                Idea Mode lets you start from a business description instead of a website. Rather than a single free-text box, Atai uses a structured <strong className="text-foreground">Founder Form</strong> — five fields that help the AI generate a far more accurate and relevant app plan.
               </p>
+
+              <h3 className="text-lg font-semibold text-foreground">The five fields</h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[
+                  { title: "Business / product name", required: false, body: "What you want to call your product. Optional — you can name it later." },
+                  { title: "The problem you are solving", required: true, body: "Describe the pain or gap your business addresses. This drives the whole plan." },
+                  { title: "Your target audience", required: false, body: "Who the product is for — freelancers, small businesses, students, etc." },
+                  { title: "The solution", required: true, body: "How your product solves the problem. Plain language is perfect." },
+                  { title: "Business model", required: false, body: "How you plan to make money: SaaS subscription, One-time purchase, Marketplace / commission, Free with paid upgrades, or Other." },
+                ].map(({ title, required, body }) => (
+                  <div key={title} className="rounded-lg border border-border bg-card p-4">
+                    <div className="flex items-center gap-2 mb-1">
+                      <p className="font-medium text-foreground text-sm">{title}</p>
+                      {required && <span className="rounded-full bg-primary/10 px-2 py-0.5 font-mono text-[9px] font-bold text-primary uppercase">Required</span>}
+                    </div>
+                    <p className="text-sm">{body}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-xl border border-primary/20 bg-primary/5 px-5 py-4">
+                <p className="text-sm font-semibold text-foreground mb-1">Why structured fields matter</p>
+                <p className="text-sm">The business model field is especially important — it tells the AI whether to scaffold payment flows, subscription logic, marketplace commission handling, or free-tier upgrade gates. The more context you provide, the better the plan.</p>
+              </div>
 
               <h3 className="text-lg font-semibold text-foreground">How to use Idea Mode</h3>
               <ol className="space-y-3 list-decimal list-inside">
                 <li>Go to your dashboard and click <strong className="text-foreground">New Project</strong></li>
                 <li>Select <strong className="text-foreground">Start from an Idea</strong></li>
-                <li>Describe what you want to build. Be as specific as you can:
-                  <div className="mt-3 rounded-lg border border-border bg-card p-4 font-mono text-sm">
-                    <p className="text-muted-foreground italic">
-                      &quot;A marketplace where local businesses can create profiles, publish products, manage orders, and receive payments. It should have a dashboard for business owners, a public storefront, and an admin panel.&quot;
-                    </p>
-                  </div>
-                </li>
-                <li>MirrorSite AI will create a full application plan from your description</li>
-                <li>Review, edit, and build</li>
+                <li>Fill in the Founder Form — at minimum the Problem and Solution fields</li>
+                <li>Click <strong className="text-foreground">Generate app plan</strong></li>
+                <li>Atai takes you to the Collaborate page to review and refine before building</li>
               </ol>
-
-              <h3 className="text-lg font-semibold text-foreground mt-8">Tips for better results</h3>
-              <ul className="space-y-2">
-                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Be specific about features</strong> — mention dashboards, user roles, data types, and key actions</span></li>
-                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Describe your users</strong> — who will use this? What do they need to do?</span></li>
-                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Mention the style</strong> — &quot;clean and minimal&quot;, &quot;colorful and playful&quot;, &quot;professional and corporate&quot;</span></li>
-                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Don&apos;t worry about technical details</strong> — MirrorSite AI handles the technology for you</span></li>
-              </ul>
             </div>
             <SectionFeedbackInline sectionId="idea-mode" />
+          </section>
+
+          {/* ─── COLLABORATE & REFINE ─── */}
+          <section id="collaborate" style={{ opacity: isVisible("collaborate") ? 1 : 0.25, transition: "opacity 0.2s" }}>
+            <SectionHeader icon={Users} title="Collaborate & Refine Your Plan" />
+            <div className="space-y-6 text-muted-foreground leading-7">
+              <p>
+                After analysis completes — for any mode (Idea, Website, or GitHub) — Atai transitions your project to <strong className="text-foreground">Plan Ready</strong> state instead of launching the build immediately. This gives you a chance to review and refine the plan before any credits are spent on the build.
+              </p>
+
+              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-5 py-4">
+                <p className="text-sm font-semibold text-foreground mb-1">No credits are charged until you click "Submit Plan &amp; Start Building"</p>
+                <p className="text-sm">Analysis credits are charged when the plan is generated. Build credits are only reserved when you explicitly approve and launch the build from the Collaborate page.</p>
+              </div>
+
+              <h3 className="text-lg font-semibold text-foreground">The Collaborate page</h3>
+              <p>The Collaborate page is a split-view interface:</p>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-xl border border-border bg-card p-5">
+                  <p className="font-semibold text-foreground text-sm mb-2">Left panel — Your plan (60%)</p>
+                  <ul className="space-y-1.5 text-sm">
+                    {["What is being built", "Who the app is for", "Key features", "How users will use the app", "Data the app manages", "How users sign in", "Your recorded project preferences"].map(item => (
+                      <li key={item} className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" />{item}</li>
+                    ))}
+                  </ul>
+                  <p className="mt-3 text-xs text-muted-foreground">Written in plain business language — no technical jargon.</p>
+                </div>
+                <div className="rounded-xl border border-primary/20 bg-primary/5 p-5">
+                  <p className="font-semibold text-foreground text-sm mb-2">Right panel — AI Chat (40%)</p>
+                  <p className="text-sm mb-3">Chat directly with the AI to refine the plan before building:</p>
+                  <ul className="space-y-1.5 text-sm">
+                    {["Ask questions about what will be built", "Request changes to features or flows", "Adjust the business model", "Add or remove functionality", "The plan updates in real time"].map(item => (
+                      <li key={item} className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" />{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <h3 className="text-lg font-semibold text-foreground">How to reach the Collaborate page</h3>
+              <ol className="space-y-2 list-decimal list-inside">
+                <li>After analysis completes, the project enters <strong className="text-foreground">Plan Ready</strong> state</li>
+                <li>A <strong className="text-foreground">Review plan</strong> button appears in the project workspace header</li>
+                <li>Click it to open the Collaborate page</li>
+                <li>Chat with the AI to refine the plan as much as you need</li>
+                <li>When satisfied, click <strong className="text-foreground">Submit Plan &amp; Start Building</strong></li>
+              </ol>
+
+              <p>
+                You can also access the Collaborate page at any time via the workspace action buttons at the top of your project page.
+              </p>
+            </div>
+            <SectionFeedbackInline sectionId="collaborate" />
           </section>
 
           {/* ─── UNDERSTANDING & PLANNING ─── */}
@@ -394,7 +464,7 @@ export function DocsContent() {
             <SectionHeader icon={Compass} title="Understanding & Planning" />
             <div className="space-y-6 text-muted-foreground leading-7">
               <p>
-                After MirrorSite AI analyzes your starting point, it creates a detailed application plan. This is the most important step — it&apos;s where MirrorSite AI figures out exactly what your application needs.
+                After Atai analyzes your starting point, it creates a detailed application plan. This is the most important step — it&apos;s where Atai figures out exactly what your application needs.
               </p>
 
               <h3 className="text-lg font-semibold text-foreground">What the plan includes</h3>
@@ -426,7 +496,7 @@ export function DocsContent() {
             <SectionHeader icon={FileText} title="Editing Your Plan" />
             <div className="space-y-6 text-muted-foreground leading-7">
               <p>
-                The plan MirrorSite AI creates is a starting point — not a final answer. You can change anything before building.
+                The plan Atai creates is a starting point — not a final answer. You can change anything before building.
               </p>
 
               <h3 className="text-lg font-semibold text-foreground">What you can edit</h3>
@@ -435,11 +505,11 @@ export function DocsContent() {
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Add or remove data types</strong> — define what information your application stores</span></li>
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Change the design direction</strong> — update colors, fonts, and visual style</span></li>
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Modify user flows</strong> — change how users move through the application</span></li>
-                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Add custom instructions</strong> — tell MirrorSite AI about specific requirements or preferences</span></li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Add custom instructions</strong> — tell Atai about specific requirements or preferences</span></li>
               </ul>
 
               <p>
-                After editing, MirrorSite AI will update the plan to reflect your changes. You can go back and forth as many times as you need.
+                After editing, Atai will update the plan to reflect your changes. You can go back and forth as many times as you need.
               </p>
             </div>
             <SectionFeedbackInline sectionId="editing-your-plan" />
@@ -450,7 +520,7 @@ export function DocsContent() {
             <SectionHeader icon={Code2} title="Building Your Application" />
             <div className="space-y-6 text-muted-foreground leading-7">
               <p>
-                When you click <strong className="text-foreground">Build</strong>, MirrorSite AI generates your complete application. This usually takes a few minutes.
+                When you click <strong className="text-foreground">Build</strong>, Atai generates your complete application. This usually takes a few minutes.
               </p>
 
               <h3 className="text-lg font-semibold text-foreground">What gets built</h3>
@@ -490,7 +560,7 @@ export function DocsContent() {
             <SectionHeader icon={Database} title="Database Manager" />
             <div className="space-y-6 text-muted-foreground leading-7">
               <p>
-                Every application MirrorSite AI builds comes with a live database. The Database Manager lets you browse tables, view records, create new entries, edit existing ones, and delete data — all without touching code or writing SQL.
+                Every application Atai builds comes with a live database. The Database Manager lets you browse tables, view records, create new entries, edit existing ones, and delete data — all without touching code or writing SQL.
               </p>
 
               <h3 className="text-lg font-semibold text-foreground">How to access the Database Manager</h3>
@@ -564,13 +634,13 @@ export function DocsContent() {
               <ul className="space-y-2">
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Live preview</strong> — see your application running in real time</span></li>
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Source code viewer</strong> — browse and edit the generated code</span></li>
-                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Instruction bar</strong> — describe changes you want and MirrorSite AI will implement them</span></li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Instruction bar</strong> — describe changes you want and Atai will implement them</span></li>
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Database manager</strong> — view and manage your application&apos;s data directly</span></li>
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Deployment controls</strong> — publish, unpublish, and manage your live application</span></li>
               </ul>
 
               <h3 className="text-lg font-semibold text-foreground mt-8">Sending instructions</h3>
-              <p>Use the instruction bar to describe changes in plain language. MirrorSite AI will implement them for you. Some examples:</p>
+              <p>Use the instruction bar to describe changes in plain language. Atai will implement them for you. Some examples:</p>
               <div className="space-y-2">
                 {[
                   "Add a search bar to the dashboard",
@@ -593,7 +663,7 @@ export function DocsContent() {
             <SectionHeader icon={Upload} title="Publishing & Domains" />
             <div className="space-y-6 text-muted-foreground leading-7">
               <p>
-                Once your application is ready, you can publish it to the web so anyone can access it. MirrorSite AI offers two publishing options.
+                Once your application is ready, you can publish it to the web so anyone can access it. Atai offers two publishing options.
               </p>
 
               <h3 className="text-lg font-semibold text-foreground">Free Subdomain</h3>
@@ -603,7 +673,7 @@ export function DocsContent() {
 
               <h3 className="text-lg font-semibold text-foreground mt-8">Custom Domain</h3>
               <p>
-                Connect your own domain name (like <strong className="text-foreground">yourapp.com</strong>) for a professional, branded experience. You&apos;ll need to update a few settings at your domain provider — MirrorSite AI walks you through it step by step.
+                Connect your own domain name (like <strong className="text-foreground">yourapp.com</strong>) for a professional, branded experience. You&apos;ll need to update a few settings at your domain provider — Atai walks you through it step by step.
               </p>
 
               <h3 className="text-lg font-semibold text-foreground mt-8">How to publish</h3>
@@ -622,13 +692,13 @@ export function DocsContent() {
             <SectionHeader icon={CreditCard} title="Credits & Billing" />
             <div className="space-y-6 text-muted-foreground leading-7">
               <p>
-                MirrorSite AI uses a credit system. Credits are spent when MirrorSite AI analyzes websites, generates plans, and builds applications.
+                Atai uses a credit system. Credits are spent when Atai analyzes websites, generates plans, and builds applications.
               </p>
 
               <h3 className="text-lg font-semibold text-foreground">How credits work</h3>
               <ul className="space-y-2">
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Subscription & permanent credits</strong> — monthly plans plus one-time credit packs</span></li>
-                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">500 free credits</strong> — every new account starts with credits to try MirrorSite AI</span></li>
+                <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">500 free credits</strong> — every new account starts with credits to try Atai</span></li>
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Buy more anytime</strong> — purchase permanent credit packs or subscribe via Dodo Payments</span></li>
               </ul>
 
@@ -679,7 +749,7 @@ export function DocsContent() {
               </div>
 
               <h3 className="text-lg font-semibold text-foreground mt-8">Build cost tiers</h3>
-              <p>MirrorSite AI automatically classifies your project into one of three tiers based on the complexity of its specification:</p>
+              <p>Atai automatically classifies your project into one of three tiers based on the complexity of its specification:</p>
               <ul className="space-y-2">
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Simple</strong> — straightforward apps with basic pages and minimal logic</span></li>
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Medium</strong> — multi-page apps with authentication, data models, and dashboards</span></li>
@@ -687,6 +757,52 @@ export function DocsContent() {
               </ul>
             </div>
             <SectionFeedbackInline sectionId="credits" />
+          </section>
+
+          {/* ─── APPEARANCE ─── */}
+          <section id="appearance" style={{ opacity: isVisible("appearance") ? 1 : 0.25, transition: "opacity 0.2s" }}>
+            <SectionHeader icon={Settings} title="Themes & Appearance" />
+            <div className="space-y-6 text-muted-foreground leading-7">
+              <p>
+                Atai supports five visual themes. Your preference is saved automatically and synced across devices when you&apos;re signed in.
+              </p>
+
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {[
+                  { name: "System", desc: "Follows your OS preference — dark when your OS is dark, light when it's light.", badge: "Default" },
+                  { name: "Dark", desc: "True neutral dark background. High contrast, easy on the eyes in low light.", badge: null },
+                  { name: "Light", desc: "Clean pure-white background. Great for bright environments.", badge: null },
+                  { name: "Light Blue", desc: "Soft blue-tinted light theme. A cooler alternative to plain white.", badge: null },
+                  { name: "Glass", desc: "Glassmorphism — translucent, frosted-glass surfaces with backdrop-blur. Vivid and modern.", badge: "Visual" },
+                ].map(({ name, desc, badge }) => (
+                  <div key={name} className="rounded-xl border border-border bg-card p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <p className="font-semibold text-foreground text-sm">{name}</p>
+                      {badge && <span className="rounded-full bg-primary/10 px-2 py-0.5 font-mono text-[9px] font-bold text-primary uppercase">{badge}</span>}
+                    </div>
+                    <p className="text-sm">{desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              <h3 className="text-lg font-semibold text-foreground">How to change your theme</h3>
+              <ol className="space-y-2 list-decimal list-inside">
+                <li>Click the theme icon button in the top navigation bar (any page)</li>
+                <li>Select your preferred theme from the dropdown</li>
+                <li>The theme applies instantly — no page reload needed</li>
+                <li>Or go to <Link href="/settings/appearance" className="font-medium text-primary hover:underline">Settings → Appearance</Link> for a full preview of each theme</li>
+              </ol>
+
+              <div className="rounded-xl border border-border bg-card px-5 py-4">
+                <p className="text-sm font-semibold text-foreground mb-1">Theme persistence</p>
+                <ul className="space-y-1.5 text-sm">
+                  <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" />Saved to <code className="rounded bg-muted px-1 font-mono text-xs">atai:theme</code> in your browser localStorage immediately</li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" />Synced to your account in the database when signed in</li>
+                  <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" />Loaded from your account on next login — works across devices</li>
+                </ul>
+              </div>
+            </div>
+            <SectionFeedbackInline sectionId="appearance" />
           </section>
 
           {/* ─── ACCOUNT ─── */}
@@ -702,7 +818,7 @@ export function DocsContent() {
 
               <h3 className="text-lg font-semibold text-foreground mt-8">Refer and earn</h3>
               <p>
-                Invite friends to MirrorSite AI and earn bonus credits. When someone signs up using your referral link and becomes an active user, you both receive credits. Share your referral link from the <strong className="text-foreground">Refer &amp; Earn</strong> page in your account menu.
+                Invite friends to Atai and earn bonus credits. When someone signs up using your referral link and becomes an active user, you both receive credits. Share your referral link from the <strong className="text-foreground">Refer &amp; Earn</strong> page in your account menu.
               </p>
             </div>
             <SectionFeedbackInline sectionId="account" />
@@ -713,12 +829,12 @@ export function DocsContent() {
             <SectionHeader icon={GitCompare} title="GitHub Integration" />
             <div className="space-y-6 text-muted-foreground leading-7">
               <p>
-                Connect your GitHub account to unlock powerful version control features for your MirrorSite projects. GitHub integration enables automatic code pushing and building from existing repositories.
+                Connect your GitHub account to unlock powerful version control features for your Atai projects. GitHub integration enables automatic code pushing and building from existing repositories.
               </p>
 
               <h3 className="text-lg font-semibold text-foreground">What is GitHub integration?</h3>
               <p>
-                GitHub integration allows you to link your MirrorSite projects with your GitHub repositories. Once connected, you can:
+                GitHub integration allows you to link your Atai projects with your GitHub repositories. Once connected, you can:
               </p>
               <ul className="space-y-2">
                 <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-1 shrink-0" /> <span><strong className="text-foreground">Auto-push to GitHub</strong> — Automatically push your built application code to a GitHub repository after each successful build</span></li>
@@ -733,7 +849,7 @@ export function DocsContent() {
                 <li>• Go to <strong className="text-foreground">Settings → Profile</strong></li>
                 <li>• Scroll to the <strong className="text-foreground">Connected Services</strong> section</li>
                 <li>• Click <strong className="text-foreground">Connect GitHub</strong></li>
-                <li>• Sign in with your GitHub account and authorize MirrorSite AI</li>
+                <li>• Sign in with your GitHub account and authorize Atai</li>
               </ul>
 
               <p className="mt-6"><strong className="text-foreground">Step 2: Enable integration for a project</strong></p>
@@ -782,7 +898,7 @@ export function DocsContent() {
               </p>
               <ul className="space-y-2">
                 <li>• Select from your existing GitHub repositories</li>
-                <li>• Create new repositories directly from MirrorSite</li>
+                <li>• Create new repositories directly from Atai</li>
                 <li>• Choose which branch to push to (default: main)</li>
                 <li>• View push history and commit links</li>
                 <li>• Disconnect at any time</li>
@@ -816,7 +932,7 @@ export function DocsContent() {
                 </div>
                 <div>
                   <p className="font-semibold text-foreground text-sm">Can I use private repositories?</p>
-                  <p className="text-sm mt-1">Yes. MirrorSite AI supports both public and private repositories. Your code remains private if your repository is private.</p>
+                  <p className="text-sm mt-1">Yes. Atai supports both public and private repositories. Your code remains private if your repository is private.</p>
                 </div>
                 <div>
                   <p className="font-semibold text-foreground text-sm">What happens if I disconnect?</p>
@@ -838,15 +954,15 @@ export function DocsContent() {
               {[
                 {
                   q: "Do I need to know how to code?",
-                  a: "No. MirrorSite AI handles all the technical work. You describe what you want, review the plan, and click build. If you do know how to code, you can also edit the generated code directly.",
+                  a: "No. Atai handles all the technical work. You describe what you want, review the plan, and click build. If you do know how to code, you can also edit the generated code directly.",
                 },
                 {
-                  q: "What kind of applications can MirrorSite AI build?",
-                  a: "MirrorSite AI can build a wide range of web applications — dashboards, marketplaces, portfolios, admin panels, booking systems, content platforms, and more. If it has a user interface and stores data, MirrorSite AI can build it.",
+                  q: "What kind of applications can Atai build?",
+                  a: "Atai can build a wide range of web applications — dashboards, marketplaces, portfolios, admin panels, booking systems, content platforms, and more. If it has a user interface and stores data, Atai can build it.",
                 },
                 {
                   q: "Can I edit the application after it's built?",
-                  a: "Yes. You can edit the source code directly, or use the instruction bar to describe changes in plain language. MirrorSite AI will implement them for you.",
+                  a: "Yes. You can edit the source code directly, or use the instruction bar to describe changes in plain language. Atai will implement them for you.",
                 },
                 {
                   q: "How long does it take to build an application?",
@@ -854,11 +970,11 @@ export function DocsContent() {
                 },
                 {
                   q: "Can I connect my own domain name?",
-                  a: "Yes. After publishing, you can connect any domain you own. MirrorSite AI provides step-by-step instructions for updating your domain settings.",
+                  a: "Yes. After publishing, you can connect any domain you own. Atai provides step-by-step instructions for updating your domain settings.",
                 },
                 {
                   q: "Is my data secure?",
-                  a: "Yes. MirrorSite AI uses industry-standard encryption for all data. Your account is protected with secure sessions, and your application data is stored in encrypted databases.",
+                  a: "Yes. Atai uses industry-standard encryption for all data. Your account is protected with secure sessions, and your application data is stored in encrypted databases.",
                 },
                 {
                   q: "What happens if I run out of credits?",
@@ -869,12 +985,12 @@ export function DocsContent() {
                   a: "Yes. You can view and download your application's source code from the workspace. The code is yours to use however you like.",
                 },
                 {
-                  q: "Does MirrorSite AI work on mobile?",
-                  a: "MirrorSite AI is designed for desktop use. The applications it builds are fully responsive and work great on mobile devices.",
+                  q: "Does Atai work on mobile?",
+                  a: "Atai is designed for desktop use. The applications it builds are fully responsive and work great on mobile devices.",
                 },
                 {
                   q: "What is the difference between Website Mode and Idea Mode?",
-                  a: "Website Mode starts from an existing website — MirrorSite AI analyzes it and builds something based on it. Idea Mode starts from a description — you tell MirrorSite AI what you want, and it creates a plan from scratch.",
+                  a: "Website Mode starts from an existing website — Atai analyzes it and builds something based on it. Idea Mode starts from a description — you tell Atai what you want, and it creates a plan from scratch.",
                 },
               ].map(({ q, a }) => (
                 <div key={q} className="rounded-lg border border-border bg-card p-5">

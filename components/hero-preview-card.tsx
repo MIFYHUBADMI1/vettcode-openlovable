@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { CheckCircle2, Sparkles, Database, Shield, Server, Globe2, Zap, Code2, HardDrive } from "lucide-react"
 
 /**
- * Animated hero card showing MirrorSite AI building an app in real-time.
+ * Animated hero card showing Atai building an app in real-time.
  * No fake testimonials, no external iframes, no fabricated names.
  * Pure product proof — animated build log + live before/after visualization.
  */
@@ -91,7 +91,7 @@ export function HeroPreviewCard() {
                 <span className="size-2.5 rounded-full bg-yellow-400/60" />
                 <span className="size-2.5 rounded-full bg-green-400/60" />
               </div>
-              <span className="ml-2 font-mono text-[10px] text-muted-foreground">mirrorsite — build process</span>
+              <span className="ml-2 font-mono text-[10px] text-muted-foreground">Atai — build process</span>
             </div>
             <span className="flex items-center gap-1.5 font-mono text-[10px]">
               <span
@@ -118,7 +118,7 @@ export function HeroPreviewCard() {
               <p className="font-mono text-[9px] text-muted-foreground mb-1">INPUT SIGNAL</p>
               <div className="flex items-center gap-2">
                 <Globe2 className="size-3 text-primary shrink-0" />
-                <span className="font-mono text-[11px] text-foreground truncate">yoursite.com → MirrorSite AI</span>
+                <span className="font-mono text-[11px] text-foreground truncate">yoursite.com → Atai</span>
               </div>
             </div>
 

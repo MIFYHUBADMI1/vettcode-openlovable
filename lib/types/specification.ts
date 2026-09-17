@@ -34,6 +34,18 @@ export const ApplicationSpecificationSchema = z.object({
   title: z.string(),
   description: z.string(),
   purpose: z.string(),
+  // ── Business-plan layer (Collaborate workspace, atai-pivot spec) ──
+  // All optional with defaults so pre-existing specs validate unchanged.
+  vision: z.string().optional(),
+  problem: z.string().optional(),
+  solution: z.string().optional(),
+  valueProposition: z.string().optional(),
+  businessModel: z.string().optional(),
+  revenueModel: z.string().optional(),
+  marketPositioning: z.string().optional(),
+  marketingPlan: z.string().optional(),
+  launchPlan: z.string().optional(),
+  growthPlan: z.string().optional(),
   targetUsers: z.array(z.string()).default([]),
   userRoles: z.array(z.string()).default([]),
   coreFlows: z.array(CoreFlowSchema).default([]),
@@ -48,6 +60,22 @@ export const ApplicationSpecificationSchema = z.object({
   complexity: z.enum(["simple", "medium", "complex"]).optional(),
 })
 export type ApplicationSpecification = z.infer<typeof ApplicationSpecificationSchema>
+
+/** Business-plan fields displayed as plan sections in the Collaborate
+ * workspace. Optional — older projects may not have them yet. */
+export const BUSINESS_PLAN_FIELDS = [
+  "vision",
+  "problem",
+  "solution",
+  "valueProposition",
+  "businessModel",
+  "revenueModel",
+  "marketPositioning",
+  "marketingPlan",
+  "launchPlan",
+  "growthPlan",
+] as const
+export type BusinessPlanField = (typeof BUSINESS_PLAN_FIELDS)[number]
 
 /** Default feature catalog shown as checkboxes in the plan editor. */
 export const DEFAULT_FEATURES: SuggestedFeature[] = [

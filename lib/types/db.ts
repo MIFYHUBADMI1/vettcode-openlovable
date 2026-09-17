@@ -79,6 +79,8 @@ export interface UserDoc {
   updatedAt: number
   lastLoginAt?: number
   deletedAt?: number
+  /** User's preferred UI theme. Defaults to "system" if not set. */
+  theme?: "system" | "dark" | "light" | "light-blue" | "glass"
   /** Unique referral code for this user (e.g. MSA-X7K29P). Generated on first access. */
   referralCode?: string
   /** User ID of the person who referred this user (set once at registration). */

@@ -44,7 +44,7 @@ Democratize web development by making it 100x faster and 10x cheaper to build be
 
 #### Primary: Web Agencies (50,000+ worldwide)
 **Pain**: Manual website cloning takes 40-80 hours  
-**Solution**: Clone in 10 minutes with MirrorSite AI  
+**Solution**: Clone in 10 minutes with Atai  
 **Value**: Save $5,000-10,000 per project  
 **Market Size**: $5B  
 
@@ -191,7 +191,7 @@ Democratize web development by making it 100x faster and 10x cheaper to build be
 
 **Blog Strategy**:
 - **How-to Guides**: "How to clone a website in 10 minutes"
-- **Comparisons**: "MirrorSite vs Webflow vs Wix"
+- **Comparisons**: "Atai vs Webflow vs Wix"
 - **Case Studies**: "How Agency X saved 40 hours per project"
 - **Technical Deep-Dives**: "How we built an AI website cloner"
 - **Frequency**: 2-3 posts per week
@@ -217,7 +217,7 @@ Democratize web development by making it 100x faster and 10x cheaper to build be
 - Share knowledge
 - Answer questions
 - Build relationships
-- Soft mentions of MirrorSite
+- Soft mentions of Atai
 
 **Goal**: Build 1,000+ followers, establish authority
 
@@ -276,7 +276,7 @@ Democratize web development by making it 100x faster and 10x cheaper to build be
 - Tight margins on web projects
 - Clients want fast turnaround
 
-**How MirrorSite Helps**:
+**How Atai Helps**:
 - Clone competitor sites in minutes
 - Generate boilerplate 10x faster
 - Take on more projects
@@ -298,7 +298,7 @@ Democratize web development by making it 100x faster and 10x cheaper to build be
 - Can't charge enough per project
 - Limited by time
 
-**How MirrorSite Helps**:
+**How Atai Helps**:
 - 5-10x faster project delivery
 - Focus on customization, not boilerplate
 - Take on more clients
@@ -320,7 +320,7 @@ Democratize web development by making it 100x faster and 10x cheaper to build be
 - No technical co-founder
 - DIY website builders look cheap
 
-**How MirrorSite Helps**:
+**How Atai Helps**:
 - Professional site for $50-200
 - Launch in days, not months
 - Based on successful sites
@@ -342,7 +342,7 @@ Democratize web development by making it 100x faster and 10x cheaper to build be
 - Risky (lots can go wrong)
 - Need to modernize tech stack
 
-**How MirrorSite Helps**:
+**How Atai Helps**:
 - Automated migration
 - 10x faster, 10x cheaper
 - Modern tech stack (Next.js)
@@ -356,8 +356,8 @@ Democratize web development by making it 100x faster and 10x cheaper to build be
 ## 🚀 Growth Tactics
 
 ### Viral Loop
-1. User creates awesome site with MirrorSite
-2. Site has "Built with MirrorSite" badge (optional)
+1. User creates awesome site with Atai
+2. Site has "Built with Atai" badge (optional)
 3. Visitors click badge → Sign up
 4. **Goal**: 10% conversion on badge clicks
 

@@ -1,5 +1,5 @@
 /**
- * MirrorSite AI — Centralized Billing Configuration
+ * Atai — Centralized Billing Configuration
  *
  * ONE place for all billing constants, pricing, cost models, and plans.
  * No other file should hard-code billing values.
@@ -31,14 +31,14 @@ export const BASELINE_COST_MODEL_V1 = {
 }
 
 /**
- * Convert MirrorSite Credits → Baseline Cost Units.
- * 1,000 MirrorSite Credits = 1 Baseline Cost Unit
+ * Convert Atai Credits → Baseline Cost Units.
+ * 1,000 Atai Credits = 1 Baseline Cost Unit
  */
 export const CREDITS_PER_BASELINE_UNIT = 1_000
 
 // ─── Pricing Model ───────────────────────────────────────────────────────────
 
-export const PRICING_MODEL_VERSION = "MIRRORSITE_PRICING_V1" as const
+export const PRICING_MODEL_VERSION = "ATAI_PRICING_V1" as const
 export const COST_MODEL_VERSION = "BASELINE_COST_MODEL_V1" as const
 
 // ─── Application Build Pricing ───────────────────────────────────────────────
@@ -105,8 +105,8 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     active: true,
     features: [
       "500 welcome credits on email verification",
-      "Access to the MirrorSite AI workspace",
-      "All cloning models (crawl & scrape agents)",
+      "Access to the Atai workspace",
+      "All generation models (crawl & scrape agents)",
       "Advanced site analysis",
       "Built-in database & infrastructure (limited)",
       "Community support",
@@ -129,7 +129,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: "explorer",
     name: "Explorer",
-    tagline: "Get started and explore what MirrorSite AI can do.",
+    tagline: "Get started and explore what Atai can do.",
     priceUSD: 12,
     mirrorCredits: 50_000,
     interval: "monthly",
@@ -137,7 +137,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     dodoProductId: process.env.DODO_PRODUCT_EXPLORER,
     features: [
       "Everything in Free, plus:",
-      "50,000 MirrorSite Credits / month",
+      "50,000 Atai Credits / month",
       "Built-in code editor",
       "AI code fixes & implementations",
       "Limited multi-section code editing",
@@ -171,7 +171,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     dodoProductId: process.env.DODO_PRODUCT_STARTER,
     features: [
       "Everything in Explorer, plus:",
-      "300,000 MirrorSite Credits / month",
+      "300,000 Atai Credits / month",
       "Edit your code — in the editor or visually",
       "Download your source code",
       "Sync with GitHub",
@@ -189,7 +189,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: "business",
     name: "Business",
-    tagline: "The full MirrorSite AI experience for serious builders.",
+    tagline: "The full Atai experience for serious builders.",
     priceUSD: 139,
     mirrorCredits: 600_000,
     interval: "monthly",
@@ -198,7 +198,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     dodoProductId: process.env.DODO_PRODUCT_BUSINESS,
     features: [
       "Everything in Starter, plus:",
-      "600,000 MirrorSite Credits / month",
+      "600,000 Atai Credits / month",
       "Priority builds",
       "Team support",
     ],
@@ -219,7 +219,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     dodoProductId: process.env.DODO_PRODUCT_PROFESSIONAL,
     features: [
       "Everything in Business, plus:",
-      "1,400,000 MirrorSite Credits / month",
+      "1,400,000 Atai Credits / month",
       "Direct support",
       "Full team support",
     ],
@@ -238,7 +238,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     dodoProductId: process.env.DODO_PRODUCT_ENTERPRISE,
     features: [
       "Everything in Professional, plus:",
-      "5,000,000+ MirrorSite Credits / month",
+      "5,000,000+ Atai Credits / month",
       "Custom credit volume",
       "Dedicated infrastructure",
       "SLA-backed uptime",
@@ -352,6 +352,7 @@ export type LedgerTransactionType =
   | "infrastructure_purchase"
   | "fork_purchase"
   | "fork_royalty"
+  | "ai_collaboration"
 
 // ─── Payment States ──────────────────────────────────────────────────────────
 
@@ -396,8 +397,8 @@ export const ACTUAL_COST_CATEGORIES = [
 
 // ─── Customer-Facing Label Helpers ───────────────────────────────────────────
 
-export const CREDIT_UNIT_NAME = "MirrorSite Credits"
-export const BILLING_SYSTEM_NAME = "MirrorSite Billing"
+export const CREDIT_UNIT_NAME = "Atai Credits"
+export const BILLING_SYSTEM_NAME = "Atai Billing"
 
 /** Format a credit amount for display. */
 export function formatCredits(amount: number): string {

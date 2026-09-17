@@ -122,18 +122,18 @@ export async function activatePlan(
   }
 
   // For paid plans, deduct credits
-  if (plan.isPaid && plan.mirrorSitePrice > 0) {
+  if (plan.isPaid && plan.AtaiPrice > 0) {
     // Check balance for better UX (optional check before attempting consumption)
     const balance = await store.getBalance(userId)
-    if (balance < plan.mirrorSitePrice) {
-      return { success: false, message: `Insufficient credits. You need ${plan.mirrorSitePrice.toLocaleString()} credits for the ${plan.name} plan.` }
+    if (balance < plan.AtaiPrice) {
+      return { success: false, message: `Insufficient credits. You need ${plan.AtaiPrice.toLocaleString()} credits for the ${plan.name} plan.` }
     }
 
     // Consume credits via credit-service
     try {
       const consumeResult = await consumeCredits({
         userId,
-        amount: plan.mirrorSitePrice,
+        amount: plan.AtaiPrice,
         transactionType: "infrastructure_purchase",
         idempotencyKey: `infra_${projectId}_${plan.id}_${now}`,
         metadata: {
@@ -144,11 +144,11 @@ export async function activatePlan(
       })
 
       if (!consumeResult.success) {
-        return { success: false, message: `Insufficient credits. You need ${plan.mirrorSitePrice.toLocaleString()} credits for the ${plan.name} plan.` }
+        return { success: false, message: `Insufficient credits. You need ${plan.AtaiPrice.toLocaleString()} credits for the ${plan.name} plan.` }
       }
     } catch (error) {
       if (error instanceof Error && error.message.includes('Insufficient')) {
-        return { success: false, message: `Insufficient credits. You need ${plan.mirrorSitePrice.toLocaleString()} credits for the ${plan.name} plan.` }
+        return { success: false, message: `Insufficient credits. You need ${plan.AtaiPrice.toLocaleString()} credits for the ${plan.name} plan.` }
       }
       throw error
     }
@@ -198,7 +198,7 @@ export async function activatePlan(
     logger.info("infrastructure.activate", "plan activated", {
       projectId,
       planId: plan.id,
-      price: plan.mirrorSitePrice,
+      price: plan.AtaiPrice,
       totalumCap: plan.totalumInfrastructureCredits,
     })
 

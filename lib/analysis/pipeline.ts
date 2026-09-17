@@ -111,7 +111,7 @@ export async function autoLaunchBuild(projectId: string) {
   } catch (e) {
     console.log("[v0] pipeline.autoBuild: FAILED", { projectId, message: (e as Error).message })
     logger.error("pipeline.autoBuild", "auto-build failed", { projectId, message: (e as Error).message })
-    await store.updateProject(projectId, { state: "specification_ready" })
+    await store.updateProject(projectId, { state: "plan_ready" })
     await store.appendEvent(projectId, event("build", "🛠️ Auto-build tripped over a cable. No worries—click Build to give it another go!", "error"))
   }
 }
@@ -211,7 +211,7 @@ export async function runWebsiteAnalysis(projectId: string, pipelineMode?: "lega
     delete (specification as Record<string, unknown>)._sanitized
     console.log("[v0] pipeline.website: step 3/3 generateSpecificationFromUnderstanding done", { projectId, complexity: specification.complexity, sanitized: wasSanitized })
     await store.updateProject(projectId, {
-      state: "specification_ready",
+      state: "plan_ready",
       specification,
       name: specification.title || project.name,
       ...(wasSanitized ? { specSanitized: true } : {}),
@@ -219,24 +219,21 @@ export async function runWebsiteAnalysis(projectId: string, pipelineMode?: "lega
     if (wasSanitized) {
       await store.appendEvent(projectId, event("specify", "⚙️ Pro tip: We swapped some tech for Totalum SDK. Think of it as upgrading from a bicycle to a Tesla!", "warn"))
     }
-    await store.appendEvent(projectId, event("specify", `🎯 Blueprint complete! Your app is classified as ${specification.complexity.toUpperCase()} tier. Let's build this!`))
+    await store.appendEvent(projectId, event("specify", `🎯 Blueprint complete! Your app is classified as ${specification.complexity.toUpperCase()} tier. Review your plan and start the build when ready!`))
 
     // Charge credits for the plan generation.
     try {
       await chargePlanCredits(project.userId, projectId, pipelineMode)
       const modeLabel = pipelineMode === "heavy" ? "Heavy mode" : "Legacy"
-      await store.appendEvent(projectId, event("specify", `💸 Plan credits charged (${modeLabel}). Your wallet is lighter, but your app is getting closer!`))
+      await store.appendEvent(projectId, event("specify", `💸 Plan credits charged (${modeLabel}). Review your plan and refine it before starting the build.`))
     } catch (e) {
       console.log("[v0] pipeline.website: plan credit charge failed", { projectId, message: (e as Error).message })
       logger.error("pipeline.plan", "credit charge failed", { projectId, message: (e as Error).message })
     }
 
-    await store.appendEvent(projectId, event("build", `🚀 Hold tight! Auto-launching your build... This is where the magic happens!`))
-    console.log("[v0] pipeline.website: analysis complete, auto-launching build", { projectId })
-    logger.info("pipeline.website", "analysis complete", { projectId })
-
-    // Auto-launch the Totalum build.
-    await autoLaunchBuild(projectId)
+    await store.appendEvent(projectId, event("plan", `✨ Your app plan is ready! Taking you to the Collaborate page to review and refine before building.`))
+    console.log("[v0] pipeline.website: analysis complete, plan_ready — awaiting founder review", { projectId })
+    logger.info("pipeline.website", "analysis complete — plan_ready", { projectId })
   } catch (e) {
     console.log("[v0] pipeline.website: FAILED", {
       projectId,
@@ -269,7 +266,7 @@ export async function runScratchAnalysis(projectId: string, pipelineMode?: "lega
     const wasSanitized = (specification as Record<string, unknown>)._sanitized === true
     delete (specification as Record<string, unknown>)._sanitized
     await store.updateProject(projectId, {
-      state: "specification_ready",
+      state: "plan_ready",
       specification,
       name: specification.title || project.name,
       ...(wasSanitized ? { specSanitized: true } : {}),
@@ -277,23 +274,20 @@ export async function runScratchAnalysis(projectId: string, pipelineMode?: "lega
     if (wasSanitized) {
       await store.appendEvent(projectId, event("specify", "🔧 Heads up! We upgraded your tech stack to Totalum SDK. It's like swapping dial-up for fiber!", "warn"))
     }
-    await store.appendEvent(projectId, event("specify", `🎨 Ta-da! Your app blueprint is ready. Complexity level: ${specification.complexity.toUpperCase()}. Let's make it real!`))
+    await store.appendEvent(projectId, event("specify", `🎨 Ta-da! Your app blueprint is ready. Complexity level: ${specification.complexity.toUpperCase()}. Review and refine it before building!`))
 
     // Charge credits for the plan generation.
     try {
       await chargePlanCredits(project.userId, projectId, pipelineMode)
       const modeLabel = pipelineMode === "heavy" ? "Heavy mode" : "Legacy"
-      await store.appendEvent(projectId, event("specify", `💳 Credits charged (${modeLabel}). Investing in your dream app!`))
+      await store.appendEvent(projectId, event("specify", `💳 Plan credits charged (${modeLabel}). Your app plan is ready — taking you there now.`))
     } catch (e) {
       console.log("[v0] pipeline.scratch: plan credit charge failed", { projectId, message: (e as Error).message })
       logger.error("pipeline.plan", "credit charge failed", { projectId, message: (e as Error).message })
     }
 
-    await store.appendEvent(projectId, event("build", "🎬 Lights, camera, action! Starting your build now..."))
-    console.log("[v0] pipeline.scratch: analysis complete, auto-launching build", { projectId })
-
-    // Auto-launch the Totalum build.
-    await autoLaunchBuild(projectId)
+    await store.appendEvent(projectId, event("plan", "✨ Your app plan is ready! Taking you to the Collaborate page now."))
+    console.log("[v0] pipeline.scratch: analysis complete, plan_ready — awaiting founder review", { projectId })
   } catch (e) {
     console.log("[v0] pipeline.scratch: FAILED", {
       projectId,
@@ -427,17 +421,15 @@ export async function runDeepCrawlAnalysis(projectId: string, pipelineMode?: "le
     // Classify complexity and store specification
     specification.complexity = classifyComplexity(specification)
     await store.updateProject(projectId, {
-      state: "specification_ready",
+      state: "plan_ready",
       specification,
       name: specification.title || project.name,
     })
 
     const modeLabel = mode === "heavy" ? "heavy mode pipeline" : "legacy AI analysis"
-    await store.appendEvent(projectId, event("specify", `Specification ready (${modeLabel}) — ${specification.complexity} tier`))
-    console.log("[v0] pipeline.deepCrawl: spec ready, auto-launching build", { projectId, mode })
-
-    // Auto-launch build
-    await autoLaunchBuild(projectId)
+    await store.appendEvent(projectId, event("specify", `Plan ready (${modeLabel}) — ${specification.complexity} tier. Review and refine before building.`))
+    await store.appendEvent(projectId, event("plan", "✨ Your app plan is ready! Taking you to the Collaborate page now."))
+    console.log("[v0] pipeline.deepCrawl: plan_ready — awaiting founder review", { projectId, mode })
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : String(e)
     console.log("[v0] pipeline.deepCrawl: FAILED", { projectId, message: errorMessage })

@@ -27,7 +27,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         name: plan.name,
         storageLabel: plan.storageLabel,
         storageBytes: plan.storageBytes,
-        mirrorSitePrice: plan.mirrorSitePrice,
+        AtaiPrice: plan.AtaiPrice,
         description: plan.description,
         isPaid: plan.isPaid,
         isCurrent: subscription?.planId === plan.id,

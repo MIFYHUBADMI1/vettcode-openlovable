@@ -4,8 +4,8 @@ import { randomBytes } from "node:crypto"
 import { buildGitHubAuthUrl } from "@/lib/auth/github"
 import { handleRouteError } from "@/lib/api/respond"
 
-const STATE_COOKIE   = "mirrorsite_github_oauth_state"
-const REFERRAL_COOKIE = "mirrorsite_referral"
+const STATE_COOKIE   = "Atai_github_oauth_state"
+const REFERRAL_COOKIE = "Atai_referral"
 
 export async function GET(req: Request) {
   try {

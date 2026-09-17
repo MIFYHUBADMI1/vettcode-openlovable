@@ -35,7 +35,7 @@ this.modelRegistry.getFallbackModel("critique", attempt)  // was "critic"
 ### 3. ✅ Turbopack Cache Corruption
 **Problem**: Repeated crashes with errors:
 ```
-The directory at "C:\Users\USER\Desktop\mirrorsiteai\.next\dev" was deleted
+The directory at "C:\Users\USER\Desktop\Ataiai\.next\dev" was deleted
 thread '<unnamed>' panicked at turbopack\crates\turbo-tasks-backend\src\backend\operation\mod.rs
 ```
 

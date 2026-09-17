@@ -5,8 +5,8 @@ import { ok, handleRouteError } from "@/lib/api/respond"
 import { singleFlight } from "@/lib/cache/single-flight"
 
 /**
- * Exposes MirrorSite's own estimated pricing plus, when configured, the live
- * Totalum provider costs. MirrorSite prices are never hard-coded to a single
+ * Exposes Atai's own estimated pricing plus, when configured, the live
+ * Totalum provider costs. Atai prices are never hard-coded to a single
  * value — they are estimates with margin (spec sections 22 & 23).
  *
  * Single-flight deduplication prevents thundering herds when many clients
@@ -27,7 +27,7 @@ export async function GET() {
       }
       return ok({
         configured,
-        mirrorSite: {
+        Atai: {
           initialBuild: estimateInitialBuild(),
           followup: estimateFollowup(),
         },

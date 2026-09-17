@@ -19,7 +19,7 @@ function event(stage: string, message: string, level: ProjectEvent["level"] = "i
 
 /**
  * Launches the initial full-stack build (spec sections 7–12).
- * Flow: validate ownership + spec -> reserve MirrorSite credits -> launch
+ * Flow: validate ownership + spec -> reserve Atai Credits -> launch
  * Totalum project -> persist totalumProjectId -> set state building. On any
  * provider failure the reservation is fully refunded.
  */

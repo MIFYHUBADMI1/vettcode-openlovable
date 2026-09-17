@@ -294,7 +294,7 @@ These aren't "planned" — they're actually integrated and tested:
 | **Dodo Payments** | Billing | ✅ Products created, webhooks working |
 | **Google OAuth** | Login with Google | ✅ Configured and working |
 | **Gmail SMTP** | Transactional email | ✅ Verification + reset emails |
-| **Vercel** | Deployment + Analytics | ✅ Live at mirrorsite.atai.ink |
+| **Vercel** | Deployment + Analytics | ✅ Live at Atai.atai.ink |
 | **ImageKit** | Image CDN | ✅ Configured |
 
 ---

@@ -2,7 +2,7 @@ import { store, cryptoId } from "@/lib/store/store"
 import { logger } from "@/lib/logging/logger"
 
 /**
- * MirrorSite credit system (spec sections 22 & 23). MirrorSite bills users in
+ * Atai Credit system (spec sections 22 & 23). Atai bills users in
  * its own credits with margin over provider (Totalum/Firecrawl) usage. Totalum
  * agent runs are usage-based (documented ~10–40 dev credits per prompt), so we
  * never hard-code a fixed cost — we estimate a reservation with margin, then
@@ -14,7 +14,7 @@ import { logger } from "@/lib/logging/logger"
 const MARGIN = 1.5
 
 export interface CostEstimate {
-  // MirrorSite credits reserved for the operation.
+  // Atai Credits reserved for the operation.
   reserve: number
   // Human-readable estimate range for display.
   low: number
@@ -22,14 +22,14 @@ export interface CostEstimate {
   basis: string
 }
 
-/** Estimate MirrorSite cost for an initial website build. */
+/** Estimate Atai cost for an initial website build. */
 export function estimateInitialBuild(providerHigh = 40): CostEstimate {
   const high = Math.ceil(providerHigh * MARGIN) + 10 // +10 covers Firecrawl analysis
   const low = Math.ceil(10 * MARGIN) + 10
   return { reserve: high, low, high, basis: "Website analysis + initial full-stack build" }
 }
 
-/** Estimate MirrorSite cost for a follow-up agent prompt. */
+/** Estimate Atai cost for a follow-up agent prompt. */
 export function estimateFollowup(providerHigh = 40): CostEstimate {
   const high = Math.ceil(providerHigh * MARGIN)
   const low = Math.ceil(10 * MARGIN)

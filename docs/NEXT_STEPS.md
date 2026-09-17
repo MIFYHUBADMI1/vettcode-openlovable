@@ -166,7 +166,7 @@
    - User behavior tracking
 
 8. **White Label** (2 weeks)
-   - Remove MirrorSite branding
+   - Remove Atai branding
    - Custom branding
    - Enterprise feature
 

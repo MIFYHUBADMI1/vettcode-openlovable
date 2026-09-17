@@ -25,25 +25,25 @@ import { SITE_URL } from "@/lib/env"
    ═══════════════════════════════════════════════════════════════ */
 
 export const metadata: Metadata = {
-  title: "MirrorSite AI Refund Policy | Credit Purchases & Refunds",
+  title: "Atai Refund Policy | Credit Purchases & Refunds",
   description:
-    "Learn about MirrorSite AI's refund policy for credit purchases, mobile money payments, failed transactions, and account credits.",
+    "Learn about Atai's refund policy for credit purchases, mobile money payments, failed transactions, and account credits.",
   alternates: { canonical: "/refund-policy" },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: `${SITE_URL}/refund-policy`,
-    siteName: "MirrorSite AI",
-    title: "MirrorSite AI Refund Policy | Credit Purchases & Refunds",
+    siteName: "Atai",
+    title: "Atai Refund Policy | Credit Purchases & Refunds",
     description:
-      "Learn about MirrorSite AI's refund policy for credit purchases, mobile money payments, failed transactions, and account credits.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI Refund Policy" }],
+      "Learn about Atai's refund policy for credit purchases, mobile money payments, failed transactions, and account credits.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai Refund Policy" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "MirrorSite AI Refund Policy | Credit Purchases & Refunds",
-    description: "Learn about MirrorSite AI's refund policy for credit purchases, mobile money payments, failed transactions, and account credits.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI Refund Policy" }],
+    title: "Atai Refund Policy | Credit Purchases & Refunds",
+    description: "Learn about Atai's refund policy for credit purchases, mobile money payments, failed transactions, and account credits.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai Refund Policy" }],
   },
 }
 
@@ -54,13 +54,13 @@ export const metadata: Metadata = {
 const refundPageStructuredData = {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  name: "MirrorSite AI Refund Policy",
+  name: "Atai Refund Policy",
   description:
-    "Refund policy for MirrorSite AI credit purchases, mobile money payments, failed transactions, and account credits.",
+    "Refund policy for Atai credit purchases, mobile money payments, failed transactions, and account credits.",
   url: `${SITE_URL}/refund-policy`,
   isPartOf: {
     "@type": "WebSite",
-    name: "MirrorSite AI",
+    name: "Atai",
     url: SITE_URL,
   },
 }
@@ -71,7 +71,7 @@ const faqStructuredData = {
   mainEntity: [
     {
       "@type": "Question",
-      name: "Can I get a refund on MirrorSite credits?",
+      name: "Can I get a refund on Atai Credits?",
       acceptedAnswer: {
         "@type": "Answer",
         text: "Refund eligibility depends on the situation. Credits that have been consumed through platform actions (website analysis, plan generation, application generation) are not refundable. Unused credits may be eligible for refund if you experience a technical issue that prevents use of the service.",
@@ -82,7 +82,7 @@ const faqStructuredData = {
       name: "What if my payment fails but I was charged?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "If your mobile money payment was deducted but credits were not awarded, contact support with your transaction ID and payment screenshot. MirrorSite will investigate and either award the credits or process a refund.",
+        text: "If your mobile money payment was deducted but credits were not awarded, contact support with your transaction ID and payment screenshot. Atai will investigate and either award the credits or process a refund.",
       },
     },
     {
@@ -90,7 +90,7 @@ const faqStructuredData = {
       name: "How do I request a refund?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Contact MirrorSite support with your account email, transaction details, and a description of the issue. Refund requests are reviewed on a case-by-case basis.",
+        text: "Contact Atai support with your account email, transaction details, and a description of the issue. Refund requests are reviewed on a case-by-case basis.",
       },
     },
     {
@@ -118,16 +118,16 @@ const faqStructuredData = {
 
 const faqItems = [
   {
-    q: "Can I get a refund on MirrorSite credits?",
+    q: "Can I get a refund on Atai Credits?",
     a: "Refund eligibility depends on the situation. Credits that have been consumed through platform actions (website analysis, plan generation, application generation) are not refundable. Unused credits may be eligible for refund if you experience a technical issue that prevents use of the service.",
   },
   {
     q: "What if my payment fails but I was charged?",
-    a: "If your mobile money payment was deducted but credits were not awarded, contact support with your transaction ID and payment screenshot. MirrorSite will investigate and either award the credits or process a refund.",
+    a: "If your mobile money payment was deducted but credits were not awarded, contact support with your transaction ID and payment screenshot. Atai will investigate and either award the credits or process a refund.",
   },
   {
     q: "How do I request a refund?",
-    a: "Contact MirrorSite support with your account email, transaction details, and a description of the issue. Refund requests are reviewed on a case-by-case basis.",
+    a: "Contact Atai support with your account email, transaction details, and a description of the issue. Refund requests are reviewed on a case-by-case basis.",
   },
   {
     q: "Are referral credits refundable?",
@@ -166,7 +166,7 @@ export default function RefundPolicyPage() {
             Refund Policy
           </h1>
           <p className="mt-5 text-lg leading-8 text-muted-foreground max-w-2xl">
-            This Refund Policy explains when and how refunds may be available for MirrorSite AI credit purchases, payments, and promotional credits.
+            This Refund Policy explains when and how refunds may be available for Atai credit purchases, payments, and promotional credits.
           </p>
           <p className="mt-3 font-mono text-sm text-muted-foreground">
             Last Updated: September 1, 2026
@@ -202,10 +202,10 @@ export default function RefundPolicyPage() {
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
               <p>
-                MirrorSite AI sells credits that are used to access platform features such as website analysis, application planning, application generation, and deployment. This Refund Policy explains when refunds or credit adjustments may be available.
+                Atai sells credits that are used to access platform features such as website analysis, application planning, application generation, and deployment. This Refund Policy explains when refunds or credit adjustments may be available.
               </p>
               <p>
-                By purchasing credits on MirrorSite AI, you acknowledge that you have read and understood this Refund Policy. This policy forms part of the <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link>.
+                By purchasing credits on Atai, you acknowledge that you have read and understood this Refund Policy. This policy forms part of the <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link>.
               </p>
               <p>
                 Refund eligibility depends on the nature of the purchase, the payment method, promotional terms, and applicable law.
@@ -253,18 +253,18 @@ export default function RefundPolicyPage() {
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
               <p>
-                If your mobile money payment was deducted from your account but credits were not awarded to your MirrorSite account:
+                If your mobile money payment was deducted from your account but credits were not awarded to your Atai account:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Contact MirrorSite support with your transaction ID and payment confirmation screenshot</li>
-                <li>MirrorSite will investigate the payment</li>
+                <li>Contact Atai support with your transaction ID and payment confirmation screenshot</li>
+                <li>Atai will investigate the payment</li>
                 <li>If the payment is verified, credits will be awarded to your account</li>
                 <li>If the payment cannot be verified, a refund will be processed through your payment provider</li>
               </ul>
               <div className="rounded-lg border border-border bg-card p-4">
                 <p className="text-sm font-medium mb-1">What to include when reporting a failed payment</p>
                 <ul className="text-sm text-muted-foreground space-y-1 mt-2">
-                  <li>• Your MirrorSite account email</li>
+                  <li>• Your Atai account email</li>
                   <li>• Mobile money transaction ID</li>
                   <li>• Amount paid</li>
                   <li>• Date and time of payment</li>
@@ -293,7 +293,7 @@ export default function RefundPolicyPage() {
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
               <p>
-                If a technical issue on MirrorSite&apos;s side prevents you from using credits you have purchased — for example, if the platform is unavailable or a feature malfunctions during a paid operation — MirrorSite may, at its discretion:
+                If a technical issue on Atai&apos;s side prevents you from using credits you have purchased — for example, if the platform is unavailable or a feature malfunctions during a paid operation — Atai may, at its discretion:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>Restore the consumed credits to your account</li>
@@ -301,7 +301,7 @@ export default function RefundPolicyPage() {
                 <li>Process a refund if the credits cannot be restored</li>
               </ul>
               <p>
-                MirrorSite will investigate reported technical issues and make a reasonable determination based on the circumstances.
+                Atai will investigate reported technical issues and make a reasonable determination based on the circumstances.
               </p>
             </div>
           </section>
@@ -346,9 +346,9 @@ export default function RefundPolicyPage() {
               <Mail className="size-5 text-primary" /> 8. How to Request a Refund
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>To request a refund, contact MirrorSite support with:</p>
+              <p>To request a refund, contact Atai support with:</p>
               <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Your MirrorSite account email</li>
+                <li>Your Atai account email</li>
                 <li>The transaction ID or payment reference</li>
                 <li>The date and amount of the purchase</li>
                 <li>A description of the issue and why you are requesting a refund</li>
@@ -360,7 +360,7 @@ export default function RefundPolicyPage() {
                   <p className="font-medium">Contact Support</p>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Reach MirrorSite support through the platform or call <span className="font-mono text-foreground">+256 761 819 885</span> for payment-related assistance.
+                  Reach Atai support through the platform or call <span className="font-mono text-foreground">+256 761 819 885</span> for payment-related assistance.
                 </p>
               </div>
             </div>
@@ -409,7 +409,7 @@ export default function RefundPolicyPage() {
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
               <p>
-                MirrorSite may update this Refund Policy from time to time. When material changes are made, we may provide notice through the platform or other reasonable means.
+                Atai may update this Refund Policy from time to time. When material changes are made, we may provide notice through the platform or other reasonable means.
               </p>
               <p>
                 The &quot;Last Updated&quot; date at the top of this page indicates when this policy was last revised. Purchases made before a policy change are generally subject to the policy in effect at the time of purchase.

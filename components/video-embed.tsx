@@ -93,7 +93,7 @@ export function VideoEmbed({
       {/* Caption below */}
       <div className="border-t border-border px-4 py-3">
         <p className="text-sm text-muted-foreground">
-          Watch a step-by-step walkthrough of getting started with MirrorSite AI — from signing up to publishing your first application.
+          Watch a step-by-step walkthrough of getting started with Atai — from signing up to publishing your first application.
         </p>
       </div>
     </div>

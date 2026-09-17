@@ -33,8 +33,8 @@ export function PipelineModeSelector({ value, onChange, className }: PipelineMod
 
   const wrapperClass = cn(
     "inline-flex items-center gap-2 rounded-lg border p-1 transition-all duration-700 ease-out",
-    value === "legacy" 
-      ? "border-border bg-muted/30" 
+    value === "legacy"
+      ? "border-border bg-muted/30"
       : "border-primary/60 bg-gradient-to-r from-primary/20 via-primary/10 to-primary/20 shadow-xl shadow-primary/30 ring-2 ring-primary/20"
   )
 
@@ -91,12 +91,12 @@ export function PipelineModeSelector({ value, onChange, className }: PipelineMod
       {/* Dynamic hint text based on selection */}
       <div className={cn(
         "text-xs leading-relaxed transition-all duration-700",
-        value === "legacy" 
-          ? "text-muted-foreground" 
+        value === "legacy"
+          ? "text-muted-foreground"
           : "text-primary font-semibold"
       )}>
-        {value === "legacy" 
-          ? "Fast & efficient — perfect for most projects" 
+        {value === "legacy"
+          ? "Fast & efficient — perfect for most projects"
           : "Maximum power unleashed — AI operating at peak performance"}
       </div>
 
@@ -115,13 +115,13 @@ export function PipelineModeSelector({ value, onChange, className }: PipelineMod
           <div className="flex flex-col gap-4 py-2">
             <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/30 p-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-foreground">MirrorSite Legacy</h3>
+                <h3 className="font-semibold text-foreground">Atai Standard</h3>
                 <span className="rounded-full bg-green-500/10 px-2 py-0.5 text-[10px] font-medium text-green-600 dark:text-green-400">
                   FAST
                 </span>
               </div>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Our proven AI orchestrator handles your project efficiently. Perfect for most applications - 
+                Our proven AI orchestrator handles your project efficiently. Perfect for most applications -
                 fast iteration cycles and excellent quality output that gets your app live quickly.
               </p>
               <div className="mt-1 flex flex-col gap-1.5 text-xs text-muted-foreground">
@@ -142,14 +142,14 @@ export function PipelineModeSelector({ value, onChange, className }: PipelineMod
 
             <div className="flex flex-col gap-3 rounded-lg border-2 border-primary/40 bg-gradient-to-br from-primary/5 to-primary/10 p-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-foreground">MirrorSite Heavy</h3>
+                <h3 className="font-semibold text-foreground">Atai Pro</h3>
                 <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground">
                   UNLEASHED
                 </span>
               </div>
               <p className="text-sm leading-relaxed text-foreground">
-                Unlock the full power of MirrorSite. Up to 7+ parallel AI agents analyze, research, plan, 
-                critique, and refine your project. Every detail fine-tuned to perfection. When your vision 
+                Unlock the full power of Atai. Up to 7+ parallel AI agents analyze, research, plan,
+                critique, and refine your project. Every detail fine-tuned to perfection. When your vision
                 demands the absolute best, this is how we deliver it.
               </p>
               <div className="mt-1 flex flex-col gap-1.5 text-xs text-muted-foreground">
@@ -174,8 +174,8 @@ export function PipelineModeSelector({ value, onChange, className }: PipelineMod
 
             <div className="rounded-lg border border-border/50 bg-accent/20 p-3">
               <p className="text-xs leading-relaxed text-muted-foreground">
-                <span className="font-medium text-foreground">Both modes are powerful.</span> Legacy delivers 
-                exceptional results fast. Heavy pushes AI to its limits - more agents, deeper analysis, 
+                <span className="font-medium text-foreground">Both modes are powerful.</span> Atai Standard delivers
+                exceptional results fast. Atai Pro pushes AI to its limits - more agents, deeper analysis,
                 relentless refinement. Choose based on your timeline and how much you want to invest in quality.
               </p>
             </div>

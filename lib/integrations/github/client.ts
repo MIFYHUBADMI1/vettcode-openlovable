@@ -155,7 +155,7 @@ export async function pushFilesToRepo(
   repo: string,
   branch: string,
   files: Array<{ path: string; content: string }>,
-  commitMessage = "chore: sync from MirrorSite AI",
+  commitMessage = "chore: sync from Atai",
 ): Promise<PushFilesResult> {
   const ownerE = encodeURIComponent(owner)
   const repoE = encodeURIComponent(repo)

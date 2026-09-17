@@ -10,8 +10,8 @@ import { getAppUrl } from "@/lib/env"
 import { logger } from "@/lib/logging/logger"
 import { captureReferral } from "@/lib/referrals/referrals"
 
-const STATE_COOKIE    = "mirrorsite_github_oauth_state"
-const REFERRAL_COOKIE = "mirrorsite_referral"
+const STATE_COOKIE    = "Atai_github_oauth_state"
+const REFERRAL_COOKIE = "Atai_referral"
 
 export async function GET(req: Request) {
   const appUrl = getAppUrl()

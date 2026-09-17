@@ -22,7 +22,7 @@ export async function sendMail(params: { to: string; subject: string; html: stri
     const config = getSmtpConfig()
     const transporter = getTransporter()
     await transporter.sendMail({
-      from: `MirrorSite AI <${config.from}>`,
+      from: `Atai <${config.from}>`,
       to: params.to,
       subject: params.subject,
       html: params.html,

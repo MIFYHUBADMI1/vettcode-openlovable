@@ -3,525 +3,33 @@
 import { useEffect, useState, useRef } from "react"
 import Link from "next/link"
 import {
-  ArrowRight, Check, Code2, GitBranch, Globe2, Layers3,
-  Sparkles, TerminalSquare, Zap, Database, Shield, Server,
-  HardDrive, BarChart3, Lock, GitMerge, Boxes, Cpu, MousePointerClick,
-  Timer, Package, Rocket, ChevronRight, ExternalLink,
+  ArrowRight, Check, ChevronRight, ExternalLink,
+  Brain, Code2, Rocket, TrendingUp, Search, DollarSign,
+  Users, Zap, Globe2, Database, Shield, Server, BarChart3,
+  Lightbulb, Target, Building2, Star,
 } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
-import { useSession, usePublicStats } from "@/lib/client/api"
+import { useSession } from "@/lib/client/api"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { cn } from "@/lib/utils"
 
-// ─── Hero Video ───────────────────────────────────────────────────────────────
+// ─── Typewriter ───────────────────────────────────────────────────────────────
 
-function HeroVideo() {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const [muted, setMuted] = useState(true)
-  const [playing, setPlaying] = useState(true)
-  const [hovered, setHovered] = useState(false)
-
-  function toggleMute() {
-    if (!videoRef.current) return
-    videoRef.current.muted = !videoRef.current.muted
-    setMuted(v => !v)
-  }
-
-  function togglePlay() {
-    if (!videoRef.current) return
-    if (videoRef.current.paused) { videoRef.current.play(); setPlaying(true) }
-    else { videoRef.current.pause(); setPlaying(false) }
-  }
-
-  return (
-    <div
-      className="relative w-full"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      {/* Ambient glow */}
-      <div
-        className="pointer-events-none absolute -inset-6 rounded-[2.5rem] opacity-30 transition-opacity duration-500"
-        style={{
-          background: "radial-gradient(ellipse 90% 70% at 50% 50%, oklch(0.65 0.22 260 / 0.5) 0%, transparent 70%)",
-          filter: "blur(36px)",
-          opacity: hovered ? 0.45 : 0.25,
-        }}
-        aria-hidden
-      />
-
-      {/* Gradient border wrapper */}
-      <div
-        className="relative rounded-2xl p-[1.5px] shadow-2xl shadow-primary/10"
-        style={{
-          background: "linear-gradient(135deg, oklch(0.65 0.22 260 / 0.7) 0%, oklch(0.5 0.1 260 / 0.2) 40%, oklch(0.68 0.15 152 / 0.6) 70%, transparent 100%)",
-        }}
-      >
-        {/* Video container */}
-        <div className="overflow-hidden rounded-2xl bg-[#0d0d0f]">
-
-          {/* Browser chrome bar */}
-          <div className="flex items-center justify-between border-b border-white/5 bg-white/[0.03] px-4 py-2.5">
-            <div className="flex items-center gap-2">
-              <span className="size-3 rounded-full bg-red-500/70" />
-              <span className="size-3 rounded-full bg-amber-500/70" />
-              <span className="size-3 rounded-full bg-green-500/70" />
-              <span className="ml-3 font-mono text-[11px] text-white/30">mirrorsite.ai — live demo</span>
-            </div>
-            {/* Live badge */}
-            <span className="flex items-center gap-1.5 rounded-full bg-green-500/15 px-2.5 py-0.5 font-mono text-[10px] text-green-400">
-              <span className="size-1.5 animate-pulse rounded-full bg-green-400" />
-              LIVE
-            </span>
-          </div>
-
-          {/* Video */}
-          <div className="relative">
-            <video
-              ref={videoRef}
-              src="/hero-videos/hero-intro.mp4"
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full"
-              style={{ display: "block", maxHeight: "560px", objectFit: "cover" }}
-            />
-
-            {/* Overlay controls — visible on hover */}
-            <div className={`absolute inset-0 flex items-end justify-between p-4 transition-opacity duration-300 ${hovered ? "opacity-100" : "opacity-0"}`}>
-              {/* Gradient fade at bottom */}
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/60 to-transparent" />
-
-              {/* Play/pause */}
-              <button
-                onClick={togglePlay}
-                className="relative z-10 flex size-9 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm transition-all hover:bg-white/25 hover:scale-105"
-                aria-label={playing ? "Pause" : "Play"}
-              >
-                {playing ? (
-                  <svg className="size-4 text-white" viewBox="0 0 24 24" fill="currentColor">
-                    <rect x="6" y="4" width="4" height="16" rx="1" /><rect x="14" y="4" width="4" height="16" rx="1" />
-                  </svg>
-                ) : (
-                  <svg className="size-4 text-white" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                )}
-              </button>
-
-              {/* Mute/unmute */}
-              <button
-                onClick={toggleMute}
-                className="relative z-10 flex items-center gap-2 rounded-full bg-white/15 px-3 py-2 backdrop-blur-sm transition-all hover:bg-white/25 hover:scale-105"
-                aria-label={muted ? "Unmute" : "Mute"}
-              >
-                {muted ? (
-                  <>
-                    <svg className="size-4 text-white" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M11 5L6 9H2v6h4l5 4V5z" opacity={0.5} />
-                      <line x1="23" y1="9" x2="17" y2="15" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                      <line x1="17" y1="9" x2="23" y2="15" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                    <span className="font-mono text-[10px] text-white/70">Unmute</span>
-                  </>
-                ) : (
-                  <>
-                    <svg className="size-4 text-white" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M11 5L6 9H2v6h4l5 4V5z" />
-                      <path d="M15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                    <span className="font-mono text-[10px] text-white/70">Mute</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* "Built for people who ship fast" tag below */}
-      <div className="relative mt-4 overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.03] px-5 py-4 backdrop-blur-md">
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-              <svg className="size-4 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-              </svg>
-            </div>
-            <p className="text-sm font-semibold text-white/80">From idea to live app — in minutes</p>
-          </div>
-          <div className="flex flex-wrap gap-4 font-mono text-[10px] text-white/40">
-            <span className="flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-primary/60" />Real Next.js codebase</span>
-            <span className="flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-green-400/60" />Auth + DB included</span>
-            <span className="flex items-center gap-1.5"><span className="size-1.5 rounded-full bg-amber-400/60" />Zero lock-in</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Community Showcase ───────────────────────────────────────────────────────
-
-interface ShowcaseProject {
-  id: string
-  name: string
-  purpose: string | null
-  thumbnailUrl: string | null
-  productionUrl: string | null
-  mode: string
-  author: { name: string } | null
-}
-
-function CommunityShowcase() {
-  const [projects, setProjects] = useState<ShowcaseProject[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetch("/api/explore?sort=popular&page=1")
-      .then(r => r.json())
-      .then(d => {
-        if (d.ok) setProjects((d.data.projects ?? []).slice(0, 6))
-      })
-      .catch(() => { })
-      .finally(() => setLoading(false))
-  }, [])
-
-  // Don't render the section at all if no public projects exist yet
-  if (!loading && projects.length === 0) return null
-
-  return (
-    <section className="border-y border-border/60 bg-card/20 py-24">
-      <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
-
-        {/* Header */}
-        <div className="mb-12 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="mb-3 font-mono text-xs font-medium uppercase tracking-[0.2em] text-primary">
-              Built by the community
-            </p>
-            <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
-              See what builders are shipping
-            </h2>
-            <p className="mt-3 max-w-lg text-sm leading-7 text-muted-foreground">
-              Real apps built by real people using MirrorSite AI — each one live and shareable in minutes.
-            </p>
-          </div>
-          <Link
-            href="/explore"
-            className="group inline-flex shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent hover:text-foreground"
-          >
-            Browse all projects
-            <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
-          </Link>
-        </div>
-
-        {/* Grid */}
-        {loading ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card">
-                <div className="aspect-[16/9] w-full animate-pulse bg-muted" />
-                <div className="flex flex-col gap-2 p-4">
-                  <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
-                  <div className="h-3 w-full animate-pulse rounded bg-muted" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {projects.map(p => (
-              <Link
-                key={p.id}
-                href={`/public/${p.id}`}
-                className="group flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
-              >
-                {/* Thumbnail */}
-                <div className="relative aspect-[16/9] w-full overflow-hidden bg-muted">
-                  {p.thumbnailUrl ? (
-                    <img
-                      src={p.thumbnailUrl}
-                      alt={p.name}
-                      className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-muted to-accent/20">
-                      <span className="font-mono text-3xl text-muted-foreground/20">
-                        {p.mode === "scratch" ? "✦" : "⬡"}
-                      </span>
-                    </div>
-                  )}
-                  {/* Live badge */}
-                  {p.productionUrl && (
-                    <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-green-500/90 px-2.5 py-1 font-mono text-[10px] font-medium text-white backdrop-blur">
-                      <span className="size-1.5 rounded-full bg-white animate-pulse" />
-                      Live
-                    </span>
-                  )}
-                  {/* Hover overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition-all duration-300 group-hover:bg-black/25 group-hover:opacity-100">
-                    <span className="flex items-center gap-1.5 rounded-lg bg-white/90 px-4 py-2 text-xs font-semibold text-gray-900 shadow backdrop-blur">
-                      View project <ExternalLink className="size-3" />
-                    </span>
-                  </div>
-                </div>
-
-                {/* Info */}
-                <div className="flex flex-1 flex-col gap-2 p-4">
-                  <p className="truncate font-mono text-sm font-semibold text-foreground group-hover:text-primary transition-colors">
-                    {p.name}
-                  </p>
-                  {p.purpose && (
-                    <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                      {p.purpose}
-                    </p>
-                  )}
-                  {p.author && (
-                    <p className="mt-auto pt-2 font-mono text-[10px] text-muted-foreground/60">
-                      by {p.author.name}
-                    </p>
-                  )}
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {/* Bottom CTA */}
-        <div className="mt-10 text-center">
-          <Link
-            href="/explore"
-            className={cn(buttonVariants({ variant: "outline", size: "lg" }), "gap-2")}
-          >
-            Explore all community projects
-            <ArrowRight className="size-4" />
-          </Link>
-        </div>
-      </div>
-    </section>
-  )
-}
-
-// ─── Data ────────────────────────────────────────────────────────────────────
-
-const HOW_IT_WORKS = [
-  {
-    number: "01",
-    icon: Globe2,
-    title: "Give it a signal",
-    copy: "Drop a URL, paste a screenshot, describe an idea — MirrorSite reads the intent behind whatever you bring.",
-  },
-  {
-    number: "02",
-    icon: Cpu,
-    title: "Watch it think",
-    copy: "AI agents map the structure, product logic, data models, and user flows your application actually needs.",
-  },
-  {
-    number: "03",
-    icon: Code2,
-    title: "Own what ships",
-    copy: "A real Next.js codebase with auth, database, backend, and infrastructure — ready to edit, deploy, and scale.",
-  },
+const HERO_PHRASES = [
+  "your team.",
+  "your co-founder.",
+  "your engineers.",
+  "your product builders.",
+  "your growth team.",
+  "your infrastructure.",
 ]
 
-const CAPABILITIES = [
-  {
-    icon: Globe2,
-    label: "Frontend",
-    title: "Production-ready UI",
-    description: "Routes, layouts, components, and responsive design. Not a mockup — a real interface you can extend immediately.",
-    preview: (
-      <div className="mt-4 space-y-1.5 rounded-lg border border-border/40 bg-background/60 p-3 font-mono text-[10px]">
-        {["/dashboard", "/settings", "/profile", "/api/users"].map((r) => (
-          <div key={r} className="flex items-center gap-2 text-muted-foreground">
-            <span className="size-1.5 shrink-0 rounded-full bg-primary/70" />
-            {r}
-          </div>
-        ))}
-      </div>
-    ),
-  },
-  {
-    icon: Database,
-    label: "Database",
-    title: "Structured data from day one",
-    description: "Real data models, relationships, and persistence built from the structure MirrorSite extracts from your reference.",
-    preview: (
-      <div className="mt-4 rounded-lg border border-border/40 bg-background/60 p-3 font-mono text-[10px]">
-        <div className="mb-2 text-muted-foreground/60">users collection</div>
-        {[["Alex Chen", "active", "admin"], ["Sarah Kim", "active", "user"], ["David R.", "pending", "user"]].map(([name, status, role]) => (
-          <div key={name} className="flex justify-between gap-2 py-0.5 text-muted-foreground">
-            <span>{name}</span>
-            <span className={status === "active" ? "text-emerald-400" : "text-amber-400"}>{status}</span>
-            <span className="text-primary/70">{role}</span>
-          </div>
-        ))}
-      </div>
-    ),
-  },
-  {
-    icon: Shield,
-    label: "Auth",
-    title: "Authentication included",
-    description: "Sign-up, login, email verification, sessions, password reset, and role-based access — all wired up and working.",
-    preview: (
-      <div className="mt-4 space-y-2 rounded-lg border border-border/40 bg-background/60 p-3">
-        {[{ icon: Lock, label: "Email / password login" }, { icon: Shield, label: "OAuth — Google, GitHub" }, { icon: Check, label: "Sessions + JWT" }].map(({ icon: Icon, label }) => (
-          <div key={label} className="flex items-center gap-2 font-mono text-[10px] text-muted-foreground">
-            <Icon className="size-3 text-primary/80 shrink-0" />
-            {label}
-          </div>
-        ))}
-      </div>
-    ),
-  },
-  {
-    icon: Server,
-    label: "Backend",
-    title: "API routes that actually work",
-    description: "Typed API routes wired to real data. Your UI talks to a real backend from the moment the build completes.",
-    preview: (
-      <div className="mt-4 rounded-lg border border-border/40 bg-background/60 p-3 font-mono text-[10px] text-muted-foreground">
-        <div className="mb-1.5 text-muted-foreground/60">API layer</div>
-        <div className="flex items-center gap-2">
-          <span className="text-primary">UI</span>
-          <ChevronRight className="size-2.5" />
-          <span>API Routes</span>
-          <ChevronRight className="size-2.5" />
-          <span>MongoDB</span>
-        </div>
-        <div className="mt-2 flex items-center gap-2">
-          <span className="text-emerald-400">POST</span>
-          <span>/api/users/create</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-blue-400">GET</span>
-          <span>/api/dashboard/data</span>
-        </div>
-      </div>
-    ),
-  },
-  {
-    icon: HardDrive,
-    label: "Storage",
-    title: "File storage, sorted",
-    description: "Upload and serve images, documents, and assets through managed infrastructure built into your project.",
-    preview: (
-      <div className="mt-4 rounded-lg border border-border/40 bg-background/60 p-3 font-mono text-[10px]">
-        {[["Images", "42 files", "128 MB"], ["Documents", "18 files", "56 MB"], ["Assets", "73 files", "212 MB"]].map(([type, count, size]) => (
-          <div key={type} className="flex items-center justify-between py-0.5 text-muted-foreground">
-            <span>{type}</span><span className="text-muted-foreground/60">{count}</span><span className="text-primary/70">{size}</span>
-          </div>
-        ))}
-      </div>
-    ),
-  },
-  {
-    icon: BarChart3,
-    label: "Infrastructure",
-    title: "Managed infrastructure",
-    description: "Database, storage, usage tracking, and project limits — all provisioned and managed, no DevOps required.",
-    preview: (
-      <div className="mt-4 space-y-2.5 rounded-lg border border-border/40 bg-background/60 p-3">
-        {[{ label: "Storage", pct: 65 }, { label: "Requests", pct: 38 }, { label: "CPU", pct: 22 }].map(({ label, pct }) => (
-          <div key={label}>
-            <div className="mb-1 flex justify-between font-mono text-[9px] text-muted-foreground">
-              <span>{label}</span><span className="text-primary/80">{pct}%</span>
-            </div>
-            <div className="h-1 overflow-hidden rounded-full bg-border/60">
-              <div className="h-full rounded-full bg-primary/70 transition-all" style={{ width: `${pct}%` }} />
-            </div>
-          </div>
-        ))}
-      </div>
-    ),
-  },
-]
-
-const BENTO = [
-  {
-    size: "lg",
-    icon: Rocket,
-    eyebrow: "Zero to shipped",
-    title: "From first signal to working app in minutes",
-    body: "Not a boilerplate. Not a wizard. MirrorSite reads what you're building and generates a codebase that's already wired together — frontend, backend, data, and auth.",
-    accent: true,
-  },
-  {
-    size: "sm",
-    icon: Code2,
-    eyebrow: "Real code",
-    title: "You own the output",
-    body: "Download it. Edit it. Deploy it anywhere. No vendor lock-in, no proprietary runtime.",
-  },
-  {
-    size: "sm",
-    icon: GitBranch,
-    eyebrow: "Built to iterate",
-    title: "Keep going after the build",
-    body: "Use the built-in editor, push to GitHub, or bring your own tools. MirrorSite is the starting point, not the ceiling.",
-  },
-  {
-    size: "sm",
-    icon: Boxes,
-    eyebrow: "Full stack",
-    title: "Every layer, covered",
-    body: "Routes, components, data models, auth flows, API routes, storage, infrastructure. The whole thing.",
-  },
-  {
-    size: "sm",
-    icon: Timer,
-    eyebrow: "Speed",
-    title: "Build what used to take weeks",
-    body: "Early users are shipping full-stack MVPs in the time it used to take to set up a database.",
-  },
-]
-
-const WHAT_YOU_GET = [
-  "Working Next.js codebase",
-  "Routes & page components",
-  "Authentication flows",
-  "Application database",
-  "Typed data models",
-  "Backend & API routes",
-  "File storage layer",
-  "Project infrastructure",
-  "Usage monitoring",
-  "Role-based access",
-  "Editor & visual tools",
-  "GitHub sync",
-]
-
-const TECH_STACK = ["React", "Next.js", "TypeScript", "MongoDB", "Node.js", "Tailwind CSS"]
-
-// ─── Typewriter headline ──────────────────────────────────────────────────────
-
-const PHRASES = [
-  "working app without the grind.",
-  "full-stack app in minutes.",
-  "real product, not a mockup.",
-  "something shippable today.",
-]
-
-function TypewriterHeadline() {
-  // Single rendered string + cursor visibility
+function TypewriterText() {
   const [text, setText] = useState("")
   const [cursorOn, setCursorOn] = useState(true)
+  const state = useRef({ phraseIdx: 0, charIdx: 0, erasing: false, timer: null as ReturnType<typeof setTimeout> | null })
 
-  // All mutable loop state lives in a ref — never causes re-trigger bugs
-  const state = useRef({
-    phraseIdx: 0,
-    charIdx: 0,
-    erasing: false,
-    timer: null as ReturnType<typeof setTimeout> | null,
-  })
-
-  // Cursor blink — completely independent interval
   useEffect(() => {
     const id = setInterval(() => setCursorOn((v) => !v), 500)
     return () => clearInterval(id)
@@ -529,470 +37,863 @@ function TypewriterHeadline() {
 
   useEffect(() => {
     const s = state.current
-
     function step() {
-      const phrase = PHRASES[s.phraseIdx]
-
+      const phrase = HERO_PHRASES[s.phraseIdx]
       if (!s.erasing) {
-        // ── Type one character ──
         s.charIdx++
         setText(phrase.slice(0, s.charIdx))
-
         if (s.charIdx === phrase.length) {
-          // Fully typed — hold for 3.5 seconds so the user can read it
-          s.timer = setTimeout(() => {
-            s.erasing = true
-            step()
-          }, 3500)
+          s.timer = setTimeout(() => { s.erasing = true; step() }, 3000)
         } else {
-          // Comfortable reading pace with slight human variation
-          const delay = 90 + Math.random() * 40
-          s.timer = setTimeout(step, delay)
+          s.timer = setTimeout(step, 80 + Math.random() * 40)
         }
       } else {
-        // ── Erase one character ──
         s.charIdx--
         setText(phrase.slice(0, s.charIdx))
-
         if (s.charIdx === 0) {
-          // Fully erased — pause before next phrase
           s.erasing = false
-          s.phraseIdx = (s.phraseIdx + 1) % PHRASES.length
-          s.timer = setTimeout(step, 500)
+          s.phraseIdx = (s.phraseIdx + 1) % HERO_PHRASES.length
+          s.timer = setTimeout(step, 400)
         } else {
-          s.timer = setTimeout(step, 45)
+          s.timer = setTimeout(step, 40)
         }
       }
     }
-
-    // Kick off with a short delay so the page renders first
-    s.timer = setTimeout(step, 600)
-
-    return () => {
-      if (s.timer) clearTimeout(s.timer)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    s.timer = setTimeout(step, 800)
+    return () => { if (s.timer) clearTimeout(s.timer) }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <span className="lp-typewriter-wrap">
+    <span>
       <span className="lp-gradient-text">{text}</span>
-      <span
-        className="lp-cursor"
-        aria-hidden="true"
-        style={{ opacity: cursorOn ? 1 : 0 }}
-      >|</span>
+      <span className="lp-cursor" aria-hidden style={{ opacity: cursorOn ? 1 : 0 }}>|</span>
     </span>
   )
 }
 
+// ─── Counter animation ────────────────────────────────────────────────────────
+
+function AnimatedCounter({ target, suffix = "" }: { target: number; suffix?: string }) {
+  const [count, setCount] = useState(0)
+  const ref = useRef<HTMLSpanElement>(null)
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return
+      observer.disconnect()
+      const duration = 1800
+      const start = Date.now()
+      const tick = () => {
+        const elapsed = Date.now() - start
+        const progress = Math.min(elapsed / duration, 1)
+        const ease = 1 - Math.pow(1 - progress, 3)
+        setCount(Math.floor(ease * target))
+        if (progress < 1) requestAnimationFrame(tick)
+        else setCount(target)
+      }
+      requestAnimationFrame(tick)
+    }, { threshold: 0.5 })
+    if (ref.current) observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [target])
+  return <span ref={ref}>{count.toLocaleString()}{suffix}</span>
+}
+
+// ─── Fade-in on scroll ────────────────────────────────────────────────────────
+
+function FadeIn({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
+  const [visible, setVisible] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) { setVisible(true); observer.disconnect() }
+    }, { threshold: 0.12 })
+    if (ref.current) observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [])
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateY(0)" : "translateY(24px)",
+        transition: `opacity 0.7s ease ${delay}ms, transform 0.7s ease ${delay}ms`,
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+// ─── Data ─────────────────────────────────────────────────────────────────────
+
+const TEAM_MEMBERS = [
+  {
+    icon: Brain,
+    name: "AI Co-Founder",
+    color: "text-violet-400",
+    bg: "bg-violet-500/10",
+    border: "border-violet-500/20",
+    tagline: "Your strategic partner throughout the journey",
+    skills: ["Business model", "Product strategy", "Competitive analysis", "Priorities", "Growth opportunities", "Next steps"],
+  },
+  {
+    icon: Code2,
+    name: "Product & Engineering",
+    color: "text-blue-400",
+    bg: "bg-blue-500/10",
+    border: "border-blue-500/20",
+    tagline: "Turns your vision into a working product",
+    skills: ["Full-stack development", "UI & UX", "Authentication", "Database & APIs", "Infrastructure", "Deployment"],
+  },
+  {
+    icon: TrendingUp,
+    name: "Growth Team",
+    color: "text-emerald-400",
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-500/20",
+    tagline: "Helps you move beyond having a product",
+    skills: ["Launch strategy", "SEO & content", "Customer acquisition", "Analytics", "Growth experiments", "Positioning"],
+  },
+  {
+    icon: Search,
+    name: "Research & Strategy",
+    color: "text-amber-400",
+    bg: "bg-amber-500/10",
+    border: "border-amber-500/20",
+    tagline: "Understand the market you're entering",
+    skills: ["Market research", "Competitor analysis", "Customer research", "Product opportunities", "Business strategy"],
+  },
+  {
+    icon: DollarSign,
+    name: "Funding Support",
+    color: "text-primary",
+    bg: "bg-primary/10",
+    border: "border-primary/20",
+    tagline: "Prepare for external capital when ready",
+    skills: ["Pitch preparation", "Investor readiness", "Financial modelling", "Funding opportunities", "Network connections"],
+  },
+]
+
+const JOURNEY_STEPS = [
+  { n: "01", icon: Lightbulb, title: "Imagine", body: "Tell Atai what you want to build. No technical knowledge required." },
+  { n: "02", icon: Brain, title: "Plan", body: "Your AI co-founder turns your idea into a detailed business and product plan." },
+  { n: "03", icon: Users, title: "Collaborate", body: "Work with Atai to refine the strategy, features, and business model until it's exactly right." },
+  { n: "04", icon: Code2, title: "Build", body: "Your AI development team turns the approved plan into the actual working product." },
+  { n: "05", icon: Rocket, title: "Launch", body: "Infrastructure, deployment, authentication, database, and payments — all brought together." },
+  { n: "06", icon: BarChart3, title: "Operate", body: "Manage your customers, product, data, payments and business from one platform." },
+  { n: "07", icon: TrendingUp, title: "Grow", body: "Improve the product, acquire customers, experiment, and keep building." },
+  { n: "08", icon: Building2, title: "Scale", body: "As your business grows, Atai's technology and capabilities grow with it." },
+]
+
+const MILESTONES = [
+  { value: "$0", label: "The idea", desc: "Every business starts here." },
+  { value: "$1", label: "First customer", desc: "Proof it works." },
+  { value: "$10K", label: "Early traction", desc: "Something is clicking." },
+  { value: "$100K", label: "Growing business", desc: "Real momentum now." },
+  { value: "$1M+", label: "Scaled company", desc: "The engine is running." },
+  { value: "$10M+", label: "Expansion", desc: "Time to go bigger." },
+  { value: "$100M+", label: "Serious scale", desc: "Category leader." },
+  { value: "$1B+", label: "The ambition", desc: "Built for founders thinking this big." },
+]
+
+const WHAT_YOU_DONT_NEED = [
+  "A technical co-founder before starting",
+  "A huge engineering team",
+  "A perfect product on day one",
+  "A massive budget",
+  "Years of technical experience",
+  "A complicated technology stack",
+  "Months of preparation",
+]
+
+const OLD_FOUNDER_STACK = [
+  "Founder", "Developer", "Designer", "Product Manager",
+  "AI Engineer", "Marketer", "Growth Specialist", "DevOps",
+]
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Page() {
-  const [activeStep, setActiveStep] = useState(0)
   const { session } = useSession()
-  const builders = usePublicStats()
+  const [activeStep, setActiveStep] = useState(0)
 
   useEffect(() => {
-    const t = setInterval(() => setActiveStep((v) => (v + 1) % 3), 3000)
-    return () => clearInterval(t)
+    const id = setInterval(() => setActiveStep((v) => (v + 1) % 8), 3500)
+    return () => clearInterval(id)
   }, [])
 
-  const [baseUrl, setBaseUrl] = useState("")
-  useEffect(() => { setBaseUrl(window.location.origin) }, [])
-
-  const structuredData = [
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      name: "MirrorSite AI",
-      applicationCategory: "DeveloperApplication",
-      operatingSystem: "Web",
-      url: baseUrl,
-      description: "Turn websites and ideas into working full-stack applications with authentication, database, backend, and infrastructure included.",
-      offers: {
-        "@type": "AggregateOffer",
-        lowPrice: "12",
-        highPrice: "499",
-        priceCurrency: "USD",
-        offerCount: 5,
-      },
-      author: { "@type": "Organization", name: "ATAI Enterprises", url: "https://atai.ink" },
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      name: "MirrorSite AI",
-      url: baseUrl,
-    },
-  ]
+  const ctaHref = session ? "/dashboard" : "/register"
+  const ctaLabel = session ? "Open dashboard →" : "Start building your business →"
 
   return (
-    <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+    <main className="lp-root min-h-svh overflow-x-hidden bg-background text-foreground">
+      {/* Ambient background */}
+      <div className="lp-ambient" aria-hidden />
+      <div className="lp-grid" aria-hidden />
 
-      <main className="lp-root min-h-svh overflow-x-hidden bg-background text-foreground">
+      <SiteHeader />
 
-        {/* ── Ambient background ──────────────────────────────────── */}
-        <div className="lp-ambient" aria-hidden="true" />
-        <div className="lp-grid" aria-hidden="true" />
+      {/* ══════════════════════════════════════════════════════════
+          HERO — split view: left messaging / right at-a-glance
+      ══════════════════════════════════════════════════════════ */}
+      <section className="relative mx-auto w-full max-w-7xl px-6 pb-20 pt-16 lg:px-10 lg:pt-24">
 
-        <SiteHeader />
+        {/* ── Floating background icons ── */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+          {[
+            { icon: Globe2, x: "8%", y: "12%", size: 28, delay: 0, dur: 7 },
+            { icon: Database, x: "88%", y: "18%", size: 22, delay: 0.8, dur: 9 },
+            { icon: Shield, x: "5%", y: "62%", size: 20, delay: 1.4, dur: 8 },
+            { icon: Code2, x: "92%", y: "55%", size: 26, delay: 0.4, dur: 10 },
+            { icon: Brain, x: "15%", y: "82%", size: 24, delay: 1.8, dur: 7.5 },
+            { icon: TrendingUp, x: "80%", y: "80%", size: 20, delay: 0.6, dur: 9.5 },
+            { icon: DollarSign, x: "50%", y: "5%", size: 18, delay: 2.1, dur: 8.5 },
+            { icon: Rocket, x: "72%", y: "8%", size: 22, delay: 1.1, dur: 6.5 },
+            { icon: Users, x: "25%", y: "6%", size: 18, delay: 2.5, dur: 11 },
+            { icon: Zap, x: "95%", y: "38%", size: 16, delay: 0.2, dur: 7 },
+            { icon: Search, x: "3%", y: "35%", size: 16, delay: 1.6, dur: 8 },
+            { icon: BarChart3, x: "58%", y: "90%", size: 20, delay: 0.9, dur: 9 },
+          ].map(({ icon: Icon, x, y, size, delay, dur }, i) => (
+            <div
+              key={i}
+              className="absolute opacity-[0.06] dark:opacity-[0.08]"
+              style={{
+                left: x, top: y,
+                animation: `heroFloat ${dur}s ease-in-out ${delay}s infinite`,
+              }}
+            >
+              <Icon style={{ width: size, height: size }} className="text-primary" />
+            </div>
+          ))}
+        </div>
 
-        {/* ══════════════════════════════════════════════════════════
-            HERO
-        ══════════════════════════════════════════════════════════ */}
-        <section className="relative mx-auto grid w-full max-w-7xl gap-12 px-6 pb-24 pt-12 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:px-10 lg:pb-32 lg:pt-20">
+        {/* ── Split grid ── */}
+        <div className="relative grid gap-12 lg:grid-cols-2 lg:items-center lg:gap-16">
 
-          <div className="relative z-10 max-w-2xl">
+          {/* LEFT — messaging */}
+          <div className="flex flex-col items-start">
 
-            {/* Eyebrow badge */}
-            <div className="lp-badge mb-8 inline-flex items-center gap-2.5 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 backdrop-blur-sm">
+            {/* Eyebrow */}
+            <div className="lp-badge mb-7 inline-flex items-center gap-2.5 rounded-full border border-primary/20 bg-primary/5 px-5 py-2 backdrop-blur-sm">
               <span className="lp-live-dot size-1.5 rounded-full bg-primary" />
-              <span className="font-mono text-[11px] font-medium uppercase tracking-widest text-primary">
-                AI Application Builder
+              <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+                The AI Business-Building Platform
               </span>
             </div>
 
             {/* Headline */}
-            <h1 className="lp-h1 text-balance text-5xl font-bold leading-[1.04] tracking-[-0.04em] sm:text-6xl xl:text-7xl">
-              Go from idea to{" "}
-              <TypewriterHeadline />
+            <h1 className="lp-h1 text-balance text-5xl font-black leading-[1.03] tracking-[-0.04em] sm:text-6xl xl:text-[4.5rem]">
+              Build the business.
+              <br />
+              <span className="text-muted-foreground font-light">Not the burden.</span>
             </h1>
 
-            {/* Sub-copy */}
-            <p className="lp-copy mt-6 max-w-xl text-pretty text-lg leading-[1.75] text-muted-foreground">
-              MirrorSite AI reads your signal — a URL, a design, an idea — and generates a complete full-stack foundation with authentication, database, backend, storage, and infrastructure already wired together.
+            {/* Typewriter */}
+            <p className="lp-copy mt-5 text-xl font-semibold tracking-tight sm:text-2xl">
+              Your idea deserves a team.{" "}
+              Atai gives you <TypewriterText />
             </p>
 
-            {/* Proof points */}
-            <ul className="mt-7 space-y-2.5">
-              {[
-                "Full-stack Next.js codebase, not a screenshot",
-                "Auth, database, and backend included — not sold separately",
-                "Edit, deploy, and own the code with zero lock-in",
-              ].map((pt) => (
-                <li key={pt} className="flex items-center gap-3 text-sm font-medium">
-                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/15">
-                    <Check className="size-3 text-primary" />
-                  </span>
-                  {pt}
-                </li>
-              ))}
-            </ul>
+            {/* Body */}
+            <p className="mt-5 text-base leading-8 text-muted-foreground max-w-lg">
+              From your first idea to your first customer — and from your first customer to your next
+              stage of growth — Atai brings together an AI co-founder, specialist agents, product
+              development, technology, infrastructure and business resources to help you build,
+              launch and grow.
+            </p>
+
+            {/* Big statement */}
+            <div className="mt-7 rounded-2xl border border-primary/20 bg-primary/5 px-6 py-4 backdrop-blur-sm">
+              <p className="text-base font-semibold text-foreground">
+                You don&apos;t need to build the team first.
+              </p>
+              <p className="mt-0.5 text-primary font-bold text-lg">
+                The team is already here.
+              </p>
+            </div>
 
             {/* CTAs */}
-            <div className="mt-9 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap gap-3">
               <Link
-                href={session ? "/dashboard" : "/register"}
-                className={cn(buttonVariants({ size: "lg" }), "lp-cta-primary h-12 gap-2 px-6")}
+                href={ctaHref}
+                className={cn(buttonVariants({ size: "lg" }), "lp-cta-primary h-13 gap-2 px-7 text-base font-bold")}
               >
-                {session ? "Open dashboard" : "Start building free"}
-                <ArrowRight className="size-4" />
+                {ctaLabel}
+                <ArrowRight className="size-5" />
               </Link>
               <a
                 href="#how-it-works"
-                className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-12 gap-2 px-6")}
+                className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-13 gap-2 px-7 text-base")}
               >
-                See how it works
+                See the journey
               </a>
             </div>
 
-            {/* Live status */}
-            <p className="mt-6 flex items-center gap-2.5 font-mono text-xs text-muted-foreground">
-              <span className="lp-live-dot size-1.5 rounded-full bg-emerald-400" />
-              No blank canvas. No magic prompt.{" "}
-              <span className="text-primary transition-all duration-500">
-                {["signal detected →", "structure forming →", "app ready →"][activeStep]}
-              </span>
-            </p>
-
-            {/* Tech badges */}
-            <div className="mt-6 flex flex-wrap gap-2">
-              {TECH_STACK.map((tech) => (
-                <span
-                  key={tech}
-                  className="rounded-md border border-border/60 bg-card/60 px-2.5 py-1 font-mono text-[10px] text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
-                >
-                  {tech}
+            {/* Proof chips */}
+            <div className="mt-6 flex flex-wrap gap-3 font-mono text-xs text-muted-foreground">
+              {["No hiring required", "No coding needed", "Built for founders thinking big"].map((t) => (
+                <span key={t} className="flex items-center gap-1.5 rounded-full border border-border/50 bg-card/50 px-3 py-1.5">
+                  <span className="size-1.5 rounded-full bg-primary/60" />{t}
                 </span>
               ))}
             </div>
 
-            {/* Social proof */}
-            {builders > 0 && (
-              <div className="mt-6 flex items-center gap-3">
-                <div className="flex -space-x-2">
-                  {[0, 1, 2, 3].map((i) => (
-                    <span
-                      key={i}
-                      className="inline-block size-7 rounded-full border-2 border-background bg-gradient-to-br from-primary/30 to-primary/10"
-                      style={{ zIndex: 4 - i }}
-                    />
-                  ))}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-semibold text-foreground">{builders.toLocaleString()}+</span> builders already shipping
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Hero video */}
-          <div className="relative z-10">
-            <HeroVideo />
-          </div>
-        </section>
-
-        {/* ── Marquee divider ── */}
-        <div className="lp-marquee-wrap overflow-hidden border-y border-border/60 bg-card/40 py-4">
-          <div className="lp-marquee flex gap-12 whitespace-nowrap">
-            {Array.from({ length: 3 }).flatMap(() =>
-              ["Authentication", "Database", "API Routes", "File Storage", "Infrastructure", "Next.js", "TypeScript", "MongoDB", "Full-Stack", "No Lock-In", "Edit & Deploy"].map((t) => (
-                <span key={t + Math.random()} className="font-mono text-xs font-medium uppercase tracking-[0.15em] text-muted-foreground/60">
-                  {t} <span className="mx-3 text-primary/30">·</span>
-                </span>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* ══════════════════════════════════════════════════════════
-            HOW IT WORKS
-        ══════════════════════════════════════════════════════════ */}
-        <section id="how-it-works" className="mx-auto w-full max-w-7xl px-6 py-28 lg:px-10">
-          <div className="mb-16 text-center">
-            <p className="mb-3 font-mono text-xs font-medium uppercase tracking-[0.2em] text-primary">The process</p>
-            <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
-              Three steps. One real application.
-            </h2>
-            <p className="mx-auto mt-4 max-w-lg text-pretty text-base leading-7 text-muted-foreground">
-              From signal to full-stack — faster than setting up a boilerplate.
-            </p>
-          </div>
-
-          <div className="grid gap-px overflow-hidden rounded-2xl border border-border/60 bg-border/60 sm:grid-cols-3">
-            {HOW_IT_WORKS.map(({ number, icon: Icon, title, copy }, i) => (
-              <div
-                key={title}
-                className={cn(
-                  "group relative flex flex-col gap-5 bg-card p-8 transition-colors hover:bg-accent/30",
-                  "lp-how-item",
-                )}
-                style={{ "--lp-delay": `${i * 100}ms` } as React.CSSProperties}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 transition-colors group-hover:bg-primary/15">
-                    <Icon className="size-5 text-primary" />
-                  </div>
-                  <span className="font-mono text-4xl font-bold text-muted-foreground/15 select-none">{number}</span>
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg tracking-tight">{title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{copy}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════════
-            COMMUNITY SHOWCASE
-        ══════════════════════════════════════════════════════════ */}
-        <CommunityShowcase />
-
-        {/* ══════════════════════════════════════════════════════════
-            BENTO GRID — Why MirrorSite
-        ══════════════════════════════════════════════════════════ */}
-        <section id="principles" className="border-y border-border/60 bg-card/20 py-28">
-          <div className="mx-auto w-full max-w-7xl px-6 lg:px-10">
-            <div className="mb-16 text-center">
-              <p className="mb-3 font-mono text-xs font-medium uppercase tracking-[0.2em] text-primary">Why MirrorSite</p>
-              <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
-                Built for people who actually ship.
-              </h2>
-            </div>
-
-            <div className="lp-bento grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {/* Large card — spans 2 cols on lg */}
-              <div className="lp-bento-card lp-bento-accent group relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-8 lg:col-span-2">
-                <div className="lp-bento-glow" />
-                <div className="relative z-10">
-                  <div className="mb-4 flex size-12 items-center justify-center rounded-xl bg-primary/20">
-                    <Rocket className="size-6 text-primary" />
-                  </div>
-                  <p className="mb-2 font-mono text-xs font-medium uppercase tracking-widest text-primary/80">Zero to shipped</p>
-                  <h3 className="text-2xl font-bold tracking-tight">From first signal to working app in minutes</h3>
-                  <p className="mt-3 max-w-lg text-sm leading-6 text-muted-foreground">
-                    Not a boilerplate. Not a wizard. MirrorSite reads what you're building and generates a codebase that's already wired together — frontend, backend, data, and auth. You show up with an idea, you leave with momentum.
+            {/* Stats */}
+            <div className="mt-8 grid grid-cols-2 gap-3 w-full sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
+              {[
+                { n: 2400, s: "+", label: "Founders building" },
+                { n: 14, s: "×", label: "Faster to launch" },
+                { n: 8, s: "", label: "Journey stages" },
+                { n: 500, s: "", label: "Free credits" },
+              ].map(({ n, s, label }) => (
+                <div key={label} className="flex flex-col items-center gap-0.5 rounded-xl border border-border/40 bg-card/40 px-3 py-3 backdrop-blur-sm">
+                  <p className="text-xl font-black text-foreground tabular-nums">
+                    <AnimatedCounter target={n} suffix={s} />
                   </p>
-                  <div className="mt-6 flex flex-wrap gap-2">
-                    {["Full-stack", "Auth included", "Real DB", "Editable code"].map((tag) => (
-                      <span key={tag} className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 font-mono text-[10px] text-primary">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
+                  <p className="text-[10px] text-muted-foreground text-center">{label}</p>
                 </div>
-              </div>
-
-              {/* Small card */}
-              <div className="lp-bento-card group rounded-2xl border border-border/60 bg-card p-7 transition-colors hover:border-primary/30 hover:bg-accent/20">
-                <div className="mb-4 flex size-10 items-center justify-center rounded-xl bg-primary/10">
-                  <Code2 className="size-5 text-primary" />
-                </div>
-                <p className="mb-1 font-mono text-[10px] font-medium uppercase tracking-widest text-primary/70">Real code</p>
-                <h3 className="text-lg font-bold tracking-tight">You own the output</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">Download it. Edit it. Deploy it anywhere. No vendor lock-in, no proprietary runtime, no hostage situation.</p>
-              </div>
-
-              <div className="lp-bento-card group rounded-2xl border border-border/60 bg-card p-7 transition-colors hover:border-primary/30 hover:bg-accent/20">
-                <div className="mb-4 flex size-10 items-center justify-center rounded-xl bg-primary/10">
-                  <GitBranch className="size-5 text-primary" />
-                </div>
-                <p className="mb-1 font-mono text-[10px] font-medium uppercase tracking-widest text-primary/70">Built to iterate</p>
-                <h3 className="text-lg font-bold tracking-tight">Keep going after the build</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">Built-in editor, GitHub sync, AI code fixes. MirrorSite is the starting point, not the ceiling.</p>
-              </div>
-
-              <div className="lp-bento-card group rounded-2xl border border-border/60 bg-card p-7 transition-colors hover:border-primary/30 hover:bg-accent/20">
-                <div className="mb-4 flex size-10 items-center justify-center rounded-xl bg-primary/10">
-                  <Boxes className="size-5 text-primary" />
-                </div>
-                <p className="mb-1 font-mono text-[10px] font-medium uppercase tracking-widest text-primary/70">Full stack</p>
-                <h3 className="text-lg font-bold tracking-tight">Every layer, covered</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">Routes, components, data models, auth flows, API routes, storage, and infrastructure. The entire stack, assembled.</p>
-              </div>
-
-              {/* Wide card — spans full row on lg */}
-              <div className="lp-bento-card group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-7 transition-colors hover:border-primary/30 sm:col-span-2 lg:col-span-1">
-                <div className="mb-4 flex size-10 items-center justify-center rounded-xl bg-primary/10">
-                  <Timer className="size-5 text-primary" />
-                </div>
-                <p className="mb-1 font-mono text-[10px] font-medium uppercase tracking-widest text-primary/70">Speed</p>
-                <h3 className="text-lg font-bold tracking-tight">What used to take weeks</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">Early users are shipping full-stack MVPs in the time it used to take to set up a database and configure auth.</p>
-              </div>
+              ))}
             </div>
           </div>
-        </section>
 
-        {/* ══════════════════════════════════════════════════════════
-            CAPABILITIES GRID
-        ══════════════════════════════════════════════════════════ */}
-        <section className="mx-auto w-full max-w-7xl px-6 py-28 lg:px-10">
-          <div className="mb-16 text-center">
-            <p className="mb-3 font-mono text-xs font-medium uppercase tracking-[0.2em] text-primary">Capabilities</p>
-            <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
-              Everything your app needs to keep moving.
-            </h2>
-            <p className="mx-auto mt-4 max-w-xl text-pretty text-base leading-7 text-muted-foreground">
-              MirrorSite doesn't just generate the interface. Your project gets a connected full-stack foundation with every building block needed to turn an idea into a real, usable application.
-            </p>
-          </div>
+          {/* RIGHT — at-a-glance what Atai does */}
+          <div className="flex flex-col gap-4">
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {CAPABILITIES.map(({ icon: Icon, label, title, description, preview }, i) => (
-              <div
-                key={label}
-                className="lp-cap-card group rounded-2xl border border-border/60 bg-card p-7 transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
-                style={{ "--lp-delay": `${i * 60}ms` } as React.CSSProperties}
-              >
-                <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 transition-colors group-hover:bg-primary/15">
-                  <Icon className="size-5 text-primary" />
+            {/* Header */}
+            <div className="rounded-2xl border border-primary/20 bg-primary/5 px-5 py-4 text-center">
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-primary mb-1">
+                Everything out of the box
+              </p>
+              <p className="text-sm font-bold text-foreground">
+                Idea or URL in.{" "}
+                <span className="text-primary">Complete running business out.</span>
+              </p>
+            </div>
+
+            {/* Step 1 — Input */}
+            <div className="rounded-2xl border border-border/50 bg-card/50 p-4 backdrop-blur-sm">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="flex size-7 items-center justify-center rounded-lg bg-violet-500/10">
+                  <Lightbulb className="size-3.5 text-violet-400" />
                 </div>
-                <p className="mt-1.5 font-mono text-[9px] font-medium uppercase tracking-widest text-primary/60">{label}</p>
-                <h3 className="mt-3 font-semibold text-base leading-snug">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
-                {preview}
+                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-violet-400">01 — Bring your signal</p>
               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ══════════════════════════════════════════════════════════
-            WHAT YOU GET — checklist
-        ══════════════════════════════════════════════════════════ */}
-        <section className="border-y border-border/60 bg-card/30">
-          <div className="mx-auto max-w-7xl px-6 py-24 lg:px-10">
-            <div className="grid gap-14 lg:grid-cols-[0.7fr_1.3fr] lg:items-center">
-
-              <div>
-                <p className="mb-3 font-mono text-xs font-medium uppercase tracking-[0.2em] text-primary">What you actually get</p>
-                <h2 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl">
-                  Not a template.<br />A working application.
-                </h2>
-                <p className="mt-5 text-sm leading-7 text-muted-foreground">
-                  Every build outputs a real codebase — with every layer connected. You're not customizing a theme or filling in a wizard. You're starting from a working product.
-                </p>
-                <Link
-                  href={session ? "/dashboard" : "/register"}
-                  className={cn(buttonVariants({ size: "lg" }), "mt-8 gap-2")}
-                >
-                  {session ? "Open dashboard" : "Start building free"}
-                  <ArrowRight className="size-4" />
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-                {WHAT_YOU_GET.map((item) => (
-                  <div
-                    key={item}
-                    className="flex items-center gap-2.5 rounded-xl border border-border/60 bg-card px-4 py-3.5 text-sm transition-colors hover:border-primary/30"
-                  >
-                    <Check className="size-4 shrink-0 text-primary" />
-                    <span className="font-medium">{item}</span>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { icon: "💡", label: "Your idea", desc: "Plain language" },
+                  { icon: "🌐", label: "Competitor URL", desc: "We rebuild it" },
+                  { icon: "📂", label: "GitHub repo", desc: "Clone or extend" },
+                ].map(({ icon, label, desc }) => (
+                  <div key={label} className="flex flex-col items-center gap-1 rounded-xl border border-border/40 bg-background/50 px-2 py-3 text-center">
+                    <span className="text-xl">{icon}</span>
+                    <p className="text-xs font-semibold text-foreground">{label}</p>
+                    <p className="text-[10px] text-muted-foreground">{desc}</p>
                   </div>
                 ))}
               </div>
             </div>
-          </div>
-        </section>
 
-        {/* ══════════════════════════════════════════════════════════
-            FINAL CTA
-        ══════════════════════════════════════════════════════════ */}
-        <section className="relative overflow-hidden">
-          <div className="lp-cta-bg" aria-hidden="true" />
-          <div className="relative z-10 mx-auto max-w-7xl px-6 py-28 lg:px-10">
-            <div className="mx-auto max-w-2xl text-center">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5">
-                <Sparkles className="size-3.5 text-primary" />
-                <span className="font-mono text-[11px] font-medium uppercase tracking-widest text-primary">
-                  For people who ship
-                </span>
+            {/* Step 2 — Build */}
+            <div className="rounded-2xl border border-primary/25 bg-primary/5 p-4 backdrop-blur-sm">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="flex size-7 items-center justify-center rounded-lg bg-primary/15">
+                  <Code2 className="size-3.5 text-primary" />
+                </div>
+                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-primary">02 — Atai builds your product</p>
               </div>
-              <h2 className="text-balance text-4xl font-bold tracking-[-0.03em] sm:text-5xl">
-                Bring the reference.<br />
-                <span className="lp-gradient-text">Leave with momentum.</span>
-              </h2>
-              <p className="mx-auto mt-6 max-w-lg text-pretty text-base leading-7 text-muted-foreground">
-                Stop spending your first week fighting config files and auth boilerplate. Start with a working foundation and build the parts that actually matter.
-              </p>
-              <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-                <Link
-                  href={session ? "/dashboard" : "/register"}
-                  className={cn(buttonVariants({ size: "lg" }), "lp-cta-primary h-13 gap-2 px-8 text-base")}
-                >
-                  {session ? "Back to your dashboard" : "Start building — it's free"}
-                  <ArrowRight className="size-5" />
-                </Link>
-                <Link
-                  href="/pricing"
-                  className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-13 gap-2 px-8 text-base")}
-                >
-                  See pricing
-                </Link>
+              <div className="grid grid-cols-4 gap-1.5">
+                {[
+                  { icon: Globe2, label: "Frontend" },
+                  { icon: Server, label: "Backend" },
+                  { icon: Database, label: "Database" },
+                  { icon: Shield, label: "Auth" },
+                  { icon: DollarSign, label: "Payments" },
+                  { icon: Users, label: "User Mgmt" },
+                  { icon: Zap, label: "AI" },
+                  { icon: BarChart3, label: "Infra" },
+                ].map(({ icon: Icon, label }) => (
+                  <div key={label} className="flex flex-col items-center gap-1 rounded-lg border border-primary/15 bg-primary/5 px-1.5 py-2">
+                    <Icon className="size-3.5 text-primary" />
+                    <p className="text-[9px] font-medium text-muted-foreground text-center leading-tight">{label}</p>
+                  </div>
+                ))}
               </div>
-              <p className="mt-5 text-xs text-muted-foreground">
-                Free plan includes 500 credits on email verification. No credit card required.
+            </div>
+
+            {/* Step 3 — Launch & Grow */}
+            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 backdrop-blur-sm">
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/10">
+                  <Rocket className="size-3.5 text-emerald-400" />
+                </div>
+                <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-emerald-400">03 — Launch, market &amp; scale</p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { icon: "🚀", label: "One-click deploy" },
+                  { icon: "📣", label: "Marketing & launch" },
+                  { icon: "📊", label: "Operate from 1 place" },
+                  { icon: "📈", label: "Grow & scale" },
+                ].map(({ icon, label }) => (
+                  <div key={label} className="flex items-center gap-2 rounded-lg border border-emerald-500/15 bg-background/40 px-3 py-2.5">
+                    <span className="text-base">{icon}</span>
+                    <p className="text-xs font-semibold text-foreground">{label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom summary */}
+            <div className="rounded-xl border border-border/40 bg-card/40 px-4 py-3 text-center">
+              <p className="font-mono text-[10px] text-muted-foreground">
+                No coding · No hiring · No waiting ·{" "}
+                <span className="text-primary font-semibold">Everything configured from day one</span>
               </p>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <SiteFooter />
-      </main>
-    </>
+      {/* ══════════════════════════════════════════════════════════
+          EMOTIONAL SECTION
+      ══════════════════════════════════════════════════════════ */}
+      <section className="border-y border-border/60 bg-card/20 py-28">
+        <div className="mx-auto max-w-4xl px-6 text-center lg:px-10">
+          <FadeIn>
+            <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-6">
+              The truth about building a business
+            </p>
+            <h2 className="text-4xl font-black tracking-tight sm:text-5xl">
+              Someone told you building a{" "}
+              <span className="lp-gradient-text">million-dollar business</span>{" "}
+              would be hard.
+            </h2>
+            <p className="mt-4 text-xl text-muted-foreground font-medium">They weren&apos;t wrong.</p>
+          </FadeIn>
+
+          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              "Finding the right people is hard.",
+              "Building the product is hard.",
+              "Understanding technology is hard.",
+              "Marketing is hard.",
+              "Getting customers is hard.",
+              "Managing infrastructure is hard.",
+              "Finding funding is hard.",
+              "Doing all of it alone is harder.",
+            ].map((line, i) => (
+              <FadeIn key={line} delay={i * 80}>
+                <div className="rounded-xl border border-border/50 bg-card/60 px-4 py-3 text-sm text-muted-foreground backdrop-blur-sm">
+                  {line}
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+
+          <FadeIn delay={400}>
+            <div className="mt-14">
+              <p className="text-2xl font-bold text-foreground">
+                But you shouldn&apos;t have to do all of it alone.
+              </p>
+              <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto leading-8">
+                Atai is designed to give ambitious founders the team and technology they need to move
+                from an idea to a real business — without first having to build an entire company
+                around themselves.
+              </p>
+              <div className="mt-8 inline-block rounded-2xl border border-primary/30 bg-primary/5 px-8 py-5">
+                <p className="text-lg font-semibold">Your job is to lead the vision.</p>
+                <p className="mt-1 text-primary font-bold text-xl">Atai helps you execute it.</p>
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          THE TEAM
+      ══════════════════════════════════════════════════════════ */}
+      <section className="py-28" id="team">
+        <div className="mx-auto max-w-7xl px-6 lg:px-10">
+          <FadeIn>
+            <div className="text-center mb-16">
+              <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-4">
+                Meet the team behind your business
+              </p>
+              <h2 className="text-4xl font-black tracking-tight sm:text-5xl">
+                You don&apos;t need a team to start.
+              </h2>
+              <p className="mt-3 text-3xl font-bold text-primary">Atai is your team.</p>
+              <p className="mt-5 max-w-2xl mx-auto text-lg text-muted-foreground leading-8">
+                An AI co-founder. Specialist agents. Product builders. Engineers. Researchers.
+                Growth specialists. Infrastructure. Technology. All working together around your business.
+              </p>
+            </div>
+          </FadeIn>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {TEAM_MEMBERS.map((member, i) => (
+              <FadeIn key={member.name} delay={i * 100}>
+                <div className={`flex flex-col gap-4 rounded-2xl border ${member.border} ${member.bg} p-6 backdrop-blur-sm h-full`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`flex size-10 items-center justify-center rounded-xl ${member.bg} border ${member.border}`}>
+                      <member.icon className={`size-5 ${member.color}`} />
+                    </div>
+                    <div>
+                      <p className={`font-bold text-sm ${member.color}`}>{member.name}</p>
+                      <p className="text-xs text-muted-foreground">{member.tagline}</p>
+                    </div>
+                  </div>
+                  <ul className="flex flex-col gap-1.5">
+                    {member.skills.map((skill) => (
+                      <li key={skill} className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <span className={`size-1 rounded-full shrink-0 ${member.color.replace("text-", "bg-")}`} />
+                        {skill}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </FadeIn>
+            ))}
+
+            {/* Tagline card */}
+            <FadeIn delay={500}>
+              <div className="flex flex-col items-center justify-center rounded-2xl border border-primary/30 bg-primary/5 p-8 text-center sm:col-span-2 lg:col-span-1">
+                <p className="text-lg font-semibold text-foreground">One founder.</p>
+                <p className="text-lg font-semibold text-foreground">One platform.</p>
+                <p className="text-2xl font-black text-primary mt-1">One team.</p>
+                <Link href={ctaHref} className={cn(buttonVariants({ size: "sm" }), "mt-6 gap-1.5")}>
+                  Meet your team <ArrowRight className="size-3.5" />
+                </Link>
+              </div>
+            </FadeIn>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          OLD WAY vs ATAI
+      ══════════════════════════════════════════════════════════ */}
+      <section className="border-y border-border/60 bg-card/20 py-28">
+        <div className="mx-auto max-w-5xl px-6 lg:px-10">
+          <FadeIn>
+            <div className="text-center mb-16">
+              <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-4">
+                The old way vs Atai
+              </p>
+              <h2 className="text-4xl font-black tracking-tight sm:text-5xl">
+                You don&apos;t need to build a company
+                <br />
+                <span className="text-muted-foreground font-light">before you can build your business.</span>
+              </h2>
+            </div>
+          </FadeIn>
+
+          <div className="grid gap-12 lg:grid-cols-2">
+            {/* Old way */}
+            <FadeIn>
+              <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-8">
+                <p className="font-mono text-xs font-semibold uppercase tracking-widest text-destructive/70 mb-5">
+                  The old way
+                </p>
+                <p className="text-sm text-muted-foreground mb-6">
+                  Normally a founder has to assemble an entire company before they can build their business:
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {OLD_FOUNDER_STACK.map((role, i) => (
+                    <span key={role} className="rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                      {role}
+                      {i < OLD_FOUNDER_STACK.length - 1 && <span className="ml-2 text-destructive/40">→</span>}
+                    </span>
+                  ))}
+                </div>
+                <p className="mt-6 text-sm font-medium text-muted-foreground">
+                  And suddenly the person who had the idea is spending their entire life trying to assemble a company.
+                </p>
+              </div>
+            </FadeIn>
+
+            {/* Atai way */}
+            <FadeIn delay={150}>
+              <div className="rounded-2xl border border-primary/30 bg-primary/5 p-8">
+                <p className="font-mono text-xs font-semibold uppercase tracking-widest text-primary mb-5">
+                  The Atai way
+                </p>
+                <p className="text-sm text-muted-foreground mb-6">
+                  You start with the vision. Atai provides the technology, AI agents, specialist capabilities and infrastructure around it.
+                </p>
+                <div className="flex flex-col gap-3">
+                  {[
+                    { label: "You", desc: "Lead the vision & make decisions", highlight: true },
+                    { label: "Atai", desc: "Brings the team, technology & infrastructure", highlight: false },
+                  ].map(({ label, desc, highlight }) => (
+                    <div key={label} className={`flex items-center gap-3 rounded-xl border p-4 ${highlight ? "border-primary/40 bg-primary/10" : "border-border/50 bg-card/60"}`}>
+                      <span className={`flex size-8 shrink-0 items-center justify-center rounded-full font-bold text-sm ${highlight ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}>
+                        {label[0]}
+                      </span>
+                      <div>
+                        <p className="text-sm font-semibold">{label}</p>
+                        <p className="text-xs text-muted-foreground">{desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-6 text-sm font-bold text-primary">
+                  One founder. One platform. One team. →
+                </p>
+              </div>
+            </FadeIn>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          JOURNEY — 8 STEPS
+      ══════════════════════════════════════════════════════════ */}
+      <section className="py-28" id="how-it-works">
+        <div className="mx-auto max-w-6xl px-6 lg:px-10">
+          <FadeIn>
+            <div className="text-center mb-16">
+              <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-4">
+                The journey
+              </p>
+              <h2 className="text-4xl font-black tracking-tight sm:text-5xl">
+                From idea to empire —
+                <br />
+                <span className="text-muted-foreground font-light">one step at a time.</span>
+              </h2>
+            </div>
+          </FadeIn>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {JOURNEY_STEPS.map((step, i) => (
+              <FadeIn key={step.n} delay={i * 80}>
+                <div
+                  className={cn(
+                    "group relative flex flex-col gap-3 rounded-2xl border p-6 cursor-default transition-all duration-300",
+                    activeStep === i
+                      ? "border-primary/40 bg-primary/5 shadow-lg shadow-primary/10"
+                      : "border-border/50 bg-card/40 hover:border-primary/20 hover:bg-card/60"
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-[10px] font-bold text-primary/50">{step.n}</span>
+                    <step.icon className={cn("size-4 transition-colors", activeStep === i ? "text-primary" : "text-muted-foreground group-hover:text-primary/60")} />
+                  </div>
+                  <p className="font-bold text-foreground">{step.title}</p>
+                  <p className="text-xs leading-5 text-muted-foreground">{step.body}</p>
+                  {activeStep === i && (
+                    <span className="absolute right-3 top-3 flex size-2 rounded-full bg-primary animate-pulse" />
+                  )}
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+
+          <FadeIn delay={300}>
+            <div className="mt-10 text-center">
+              <Link href={ctaHref} className={cn(buttonVariants({ size: "lg" }), "lp-cta-primary gap-2")}>
+                Start your journey <ArrowRight className="size-4" />
+              </Link>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          MILESTONE LADDER
+      ══════════════════════════════════════════════════════════ */}
+      <section className="border-y border-border/60 bg-card/20 py-28">
+        <div className="mx-auto max-w-4xl px-6 lg:px-10">
+          <FadeIn>
+            <div className="text-center mb-16">
+              <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-4">
+                Built for ambition
+              </p>
+              <h2 className="text-4xl font-black tracking-tight sm:text-5xl">
+                From $0 to your next milestone.
+              </h2>
+              <p className="mt-5 max-w-xl mx-auto text-muted-foreground leading-8">
+                Atai is built to stay with you through the journey. The technology you need changes as your business grows.
+                <span className="text-foreground font-semibold"> Your platform should evolve with you.</span>
+              </p>
+            </div>
+          </FadeIn>
+
+          <div className="relative">
+            {/* Vertical line */}
+            <div className="absolute left-[2.25rem] top-4 bottom-4 w-px bg-gradient-to-b from-primary/60 via-primary/20 to-transparent hidden sm:block" />
+
+            <div className="flex flex-col gap-2">
+              {MILESTONES.map((m, i) => (
+                <FadeIn key={m.value} delay={i * 60}>
+                  <div className="flex items-center gap-5 rounded-xl border border-border/40 bg-card/50 px-5 py-4 backdrop-blur-sm hover:border-primary/30 hover:bg-card/70 transition-all group">
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 font-black text-primary text-sm relative z-10">
+                      {i + 1}
+                    </div>
+                    <div className="flex flex-1 items-center justify-between gap-3 flex-wrap">
+                      <div>
+                        <span className="font-black text-xl text-foreground group-hover:text-primary transition-colors">{m.value}</span>
+                        <span className="ml-3 text-sm font-semibold text-foreground/80">{m.label}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">{m.desc}</p>
+                    </div>
+                    {i === MILESTONES.length - 1 && (
+                      <Star className="size-4 text-primary shrink-0" />
+                    )}
+                  </div>
+                </FadeIn>
+              ))}
+            </div>
+          </div>
+
+          <FadeIn delay={400}>
+            <p className="mt-10 text-center text-sm text-muted-foreground italic">
+              We don&apos;t decide how big your dream can become. We give you the machinery to pursue it.
+            </p>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          WHAT YOU DON'T NEED
+      ══════════════════════════════════════════════════════════ */}
+      <section className="py-28">
+        <div className="mx-auto max-w-4xl px-6 text-center lg:px-10">
+          <FadeIn>
+            <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-6">
+              Stop waiting until you&apos;re ready
+            </p>
+            <h2 className="text-4xl font-black tracking-tight sm:text-5xl">
+              What if you stopped waiting?
+            </h2>
+          </FadeIn>
+
+          <div className="mt-12 grid gap-3 sm:grid-cols-2">
+            {WHAT_YOU_DONT_NEED.map((item, i) => (
+              <FadeIn key={item} delay={i * 60}>
+                <div className="flex items-center gap-3 rounded-xl border border-destructive/15 bg-destructive/5 px-5 py-3 text-left">
+                  <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-destructive/20 text-destructive text-xs font-bold">✕</span>
+                  <span className="text-sm text-muted-foreground">{item}</span>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+
+          <FadeIn delay={300}>
+            <div className="mt-14 space-y-4">
+              {[
+                { text: "You need a problem worth solving.", highlight: false },
+                { text: "You need the courage to start.", highlight: false },
+                { text: "And you need the right people and technology around you.", highlight: true },
+              ].map(({ text, highlight }) => (
+                <p key={text} className={`text-xl font-bold ${highlight ? "text-primary" : "text-foreground"}`}>
+                  {text}
+                </p>
+              ))}
+              <p className="mt-4 text-muted-foreground">That&apos;s what Atai is building.</p>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          TECHNOLOGY CAPABILITIES (kept from original)
+      ══════════════════════════════════════════════════════════ */}
+      <section className="border-y border-border/60 bg-card/20 py-28">
+        <div className="mx-auto max-w-6xl px-6 lg:px-10">
+          <FadeIn>
+            <div className="text-center mb-14">
+              <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-4">
+                The technology
+              </p>
+              <h2 className="text-4xl font-black tracking-tight sm:text-5xl">
+                Everything your business needs.
+                <br />
+                <span className="text-muted-foreground font-light">Built and wired together.</span>
+              </h2>
+            </div>
+          </FadeIn>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { icon: Globe2, label: "Frontend", title: "Production-ready UI", body: "Routes, layouts, components, and responsive design. A real interface you own and can extend immediately." },
+              { icon: Database, label: "Database", title: "Structured data from day one", body: "Real data models, relationships, and persistence. Not a mockup — a working database from the moment your build completes." },
+              { icon: Shield, label: "Authentication", title: "Auth included", body: "Sign-up, login, email verification, sessions, password reset, and role-based access — all wired and working." },
+              { icon: Server, label: "Backend", title: "APIs that actually work", body: "Typed API routes connected to real data. Your UI talks to a real backend from the moment the build completes." },
+              { icon: Zap, label: "AI Integration", title: "AI built in", body: "AI capabilities, agents, and models integrated directly into your product — not bolted on afterwards." },
+              { icon: BarChart3, label: "Infrastructure", title: "Managed infrastructure", body: "Database, storage, usage tracking, and project limits — all provisioned and managed. Zero DevOps required." },
+            ].map((cap, i) => (
+              <FadeIn key={cap.label} delay={i * 80}>
+                <div className="group flex flex-col gap-4 rounded-2xl border border-border/50 bg-card/50 p-6 backdrop-blur-sm hover:border-primary/30 transition-all h-full">
+                  <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 group-hover:bg-primary/15 transition-colors">
+                    <cap.icon className="size-5 text-primary" />
+                  </div>
+                  <div>
+                    <span className="font-mono text-[10px] font-semibold uppercase tracking-widest text-primary/60">{cap.label}</span>
+                    <p className="mt-1 font-bold text-foreground">{cap.title}</p>
+                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{cap.body}</p>
+                  </div>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════════════════
+          FINAL CTA
+      ══════════════════════════════════════════════════════════ */}
+      <section className="relative py-32 overflow-hidden">
+        {/* Background glow */}
+        <div className="lp-cta-bg" aria-hidden />
+
+        <div className="relative mx-auto max-w-4xl px-6 text-center lg:px-10">
+          <FadeIn>
+            <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-6">
+              Built for founders who aren&apos;t thinking small
+            </p>
+            <h2 className="text-5xl font-black tracking-[-0.04em] leading-[1.02] sm:text-6xl xl:text-7xl">
+              You bring the business.
+              <br />
+              <span className="lp-gradient-text">Atai brings the team.</span>
+            </h2>
+            <p className="mt-6 max-w-2xl mx-auto text-xl text-muted-foreground leading-8">
+              Whether you&apos;re aiming for your first $1, your first $1M, or something much bigger —
+              Atai gives you the technology and team infrastructure to build toward it.
+            </p>
+            <p className="mt-3 font-mono text-sm text-primary font-semibold">
+              From idea → business → growth.
+            </p>
+
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+              <Link
+                href={ctaHref}
+                className={cn(buttonVariants({ size: "lg" }), "lp-cta-primary h-14 gap-2 px-10 text-base font-bold")}
+              >
+                {ctaLabel}
+                <ArrowRight className="size-5" />
+              </Link>
+              <Link
+                href="/about"
+                className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-14 gap-2 px-8 text-base")}
+              >
+                Learn more about Atai
+              </Link>
+            </div>
+
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-6 font-mono text-xs text-muted-foreground">
+              {["Free to start — 500 credits included", "No credit card required", "Cancel any time"].map((t) => (
+                <span key={t} className="flex items-center gap-2">
+                  <Check className="size-3 text-primary" />{t}
+                </span>
+              ))}
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      <SiteFooter />
+    </main>
   )
 }

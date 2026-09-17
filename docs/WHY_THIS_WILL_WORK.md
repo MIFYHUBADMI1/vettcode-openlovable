@@ -1,4 +1,4 @@
-# 🔥 Why MirrorSite AI Will Work
+# 🔥 Why Atai Will Work
 
 **Read this before you do ANYTHING else. Seriously.**
 
@@ -21,9 +21,9 @@ Right now, as you read this, there are thousands of people who need exactly what
 
 ### Who are they?
 
-**Freelance developers** who spend 2 weeks building the same navbar, hero section, and footer for every client. They're not paid for that time — they're paid for the end result. MirrorSite cuts that 2 weeks to 2 hours.
+**Freelance developers** who spend 2 weeks building the same navbar, hero section, and footer for every client. They're not paid for that time — they're paid for the end result. Atai cuts that 2 weeks to 2 hours.
 
-**Small agencies** quoting $15,000 for a website rebuild that costs them $8,000 in developer time. With MirrorSite, that $8,000 cost drops to $1,000. They keep the rest. They use you every single project.
+**Small agencies** quoting $15,000 for a website rebuild that costs them $8,000 in developer time. With Atai, that $8,000 cost drops to $1,000. They keep the rest. They use you every single project.
 
 **Startup founders** who can't afford a developer ($150/hr × 200 hours = $30,000) but desperately need a professional website. They'd pay $100 for a working clone of their competitor's site.
 
@@ -125,7 +125,7 @@ It's called **Shiny Object Syndrome**. It's the #1 killer of entrepreneurs. Not 
 
 ## The Real Risk Comparison
 
-### Risk of continuing MirrorSite AI
+### Risk of continuing Atai
 - You spend 2-4 more weeks finishing the code generation feature
 - You launch and get 0 users → you pivot the marketing, not the product
 - Worst case: you spend $500 on ads, get 50 users, make $500/month

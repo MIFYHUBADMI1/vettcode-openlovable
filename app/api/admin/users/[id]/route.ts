@@ -205,7 +205,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           {
             $set: {
               deletedAt: now,
-              email: `deleted_${id}@deleted.mirrorsite.invalid`,
+              email: `deleted_${id}@deleted.Atai.invalid`,
               name: "Deleted user",
               passwordHash: undefined,
               googleId: undefined,

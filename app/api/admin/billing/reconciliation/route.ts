@@ -10,7 +10,7 @@ import {
 /**
  * Billing reconciliation endpoint.
  *
- * Compares Dodo payments ↔ MirrorSite payment records ↔ subscriptions ↔
+ * Compares Dodo payments ↔ Atai payment records ↔ subscriptions ↔
  * credit grants ↔ credit ledger ↔ user entitlements.
  *
  * Detects:

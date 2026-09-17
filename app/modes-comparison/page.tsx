@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { ArrowLeft, Zap, Crown, Clock, CreditCard, Target, Layers } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
@@ -21,20 +23,20 @@ export default function ModesComparisonPage() {
               Pipeline Modes Comparison
             </h1>
             <p className="max-w-2xl text-pretty text-lg leading-8 text-muted-foreground">
-              MirrorSite offers two pipeline modes for generating applications from websites or ideas. Choose
+              Atai offers two pipeline modes for generating applications from websites or ideas. Choose
               the right mode for your project based on complexity, quality needs, and time constraints.
             </p>
           </div>
         </div>
 
         <div className="grid gap-8 lg:grid-cols-2">
-          {/* Legacy Mode Card */}
+          {/* Standard Mode Card */}
           <div className="flex flex-col gap-6 rounded-xl border border-border bg-card p-8">
             <div className="flex items-start justify-between">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <Zap className="size-5 text-primary" />
-                  <h2 className="text-2xl font-semibold">MirrorSite Legacy</h2>
+                  <h2 className="text-2xl font-semibold">Atai Standard</h2>
                 </div>
                 <p className="text-sm text-muted-foreground">Fast and efficient for simple projects</p>
               </div>
@@ -51,7 +53,6 @@ export default function ModesComparisonPage() {
                   <p className="text-sm text-muted-foreground">30-60 seconds</p>
                 </div>
               </div>
-
               <div className="flex items-start gap-3">
                 <CreditCard className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
                 <div className="flex flex-col gap-1">
@@ -59,7 +60,6 @@ export default function ModesComparisonPage() {
                   <p className="text-sm text-muted-foreground">~10 credits per generation</p>
                 </div>
               </div>
-
               <div className="flex items-start gap-3">
                 <Target className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
                 <div className="flex flex-col gap-1">
@@ -69,7 +69,6 @@ export default function ModesComparisonPage() {
                   </p>
                 </div>
               </div>
-
               <div className="flex items-start gap-3">
                 <Layers className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
                 <div className="flex flex-col gap-1">
@@ -90,13 +89,13 @@ export default function ModesComparisonPage() {
             </div>
           </div>
 
-          {/* Heavy Mode Card */}
+          {/* Pro Mode Card */}
           <div className="flex flex-col gap-6 rounded-xl border-2 border-primary/40 bg-primary/5 p-8">
             <div className="flex items-start justify-between">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-2">
                   <Crown className="size-5 text-primary" />
-                  <h2 className="text-2xl font-semibold">MirrorSite Heavy</h2>
+                  <h2 className="text-2xl font-semibold">Atai Pro</h2>
                 </div>
                 <p className="text-sm text-muted-foreground">Premium quality for complex applications</p>
               </div>
@@ -113,7 +112,6 @@ export default function ModesComparisonPage() {
                   <p className="text-sm text-muted-foreground">2-5 minutes</p>
                 </div>
               </div>
-
               <div className="flex items-start gap-3">
                 <CreditCard className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
                 <div className="flex flex-col gap-1">
@@ -121,7 +119,6 @@ export default function ModesComparisonPage() {
                   <p className="text-sm text-muted-foreground">~50-100 credits per generation</p>
                 </div>
               </div>
-
               <div className="flex items-start gap-3">
                 <Target className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
                 <div className="flex flex-col gap-1">
@@ -131,7 +128,6 @@ export default function ModesComparisonPage() {
                   </p>
                 </div>
               </div>
-
               <div className="flex items-start gap-3">
                 <Layers className="mt-0.5 size-5 shrink-0 text-muted-foreground" />
                 <div className="flex flex-col gap-1">
@@ -146,8 +142,8 @@ export default function ModesComparisonPage() {
               <ul className="space-y-1 text-sm text-muted-foreground">
                 <li>• Deep understanding analysis</li>
                 <li>• Research-backed decisions</li>
-                <li>• Multi-stage planning & critique</li>
-                <li>• Automated repair & validation</li>
+                <li>• Multi-stage planning &amp; critique</li>
+                <li>• Automated repair &amp; validation</li>
                 <li>• Content sanitization</li>
                 <li>• Up to 200% better quality</li>
               </ul>
@@ -157,10 +153,9 @@ export default function ModesComparisonPage() {
 
         {/* 7-Stage Pipeline Breakdown */}
         <div className="flex flex-col gap-6 rounded-xl border border-border bg-card p-8">
-          <h2 className="text-2xl font-semibold">Heavy Mode: 7-Stage Pipeline</h2>
+          <h2 className="text-2xl font-semibold">Pro Mode: 7-Stage Pipeline</h2>
           <p className="text-sm leading-6 text-muted-foreground">
-            The Heavy pipeline processes your project through seven specialized stages to deliver
-            significantly better results:
+            The Pro pipeline processes your project through seven specialized stages to deliver significantly better results:
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {[
@@ -185,53 +180,19 @@ export default function ModesComparisonPage() {
           <h2 className="text-2xl font-semibold">Which Mode Should You Choose?</h2>
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="flex flex-col gap-3">
-              <h3 className="font-medium">Use Legacy when:</h3>
+              <h3 className="font-medium">Use Atai Standard when:</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex gap-2">
-                  <span className="text-primary">•</span>
-                  <span>You need quick iterations and fast results</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-primary">•</span>
-                  <span>Your project is relatively simple or straightforward</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-primary">•</span>
-                  <span>You're prototyping or testing an idea</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-primary">•</span>
-                  <span>Credit efficiency is important</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-primary">•</span>
-                  <span>The output quality meets your needs</span>
-                </li>
+                {["You need quick iterations and fast results", "Your project is relatively simple or straightforward", "You're prototyping or testing an idea", "Credit efficiency is important", "The output quality meets your needs"].map(t => (
+                  <li key={t} className="flex gap-2"><span className="text-primary">•</span><span>{t}</span></li>
+                ))}
               </ul>
             </div>
             <div className="flex flex-col gap-3">
-              <h3 className="font-medium">Use Heavy when:</h3>
+              <h3 className="font-medium">Use Atai Pro when:</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex gap-2">
-                  <span className="text-primary">•</span>
-                  <span>You need the highest possible quality</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-primary">•</span>
-                  <span>Your application has complex features or workflows</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-primary">•</span>
-                  <span>You're building a production-grade SaaS or e-commerce app</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-primary">•</span>
-                  <span>The project justifies the additional time and credits</span>
-                </li>
-                <li className="flex gap-2">
-                  <span className="text-primary">•</span>
-                  <span>You want comprehensive planning and validation</span>
-                </li>
+                {["You need the highest possible quality", "Your application has complex features or workflows", "You're building a production-grade SaaS or e-commerce app", "The project justifies the additional time and credits", "You want comprehensive planning and validation"].map(t => (
+                  <li key={t} className="flex gap-2"><span className="text-primary">•</span><span>{t}</span></li>
+                ))}
               </ul>
             </div>
           </div>
@@ -246,4 +207,3 @@ export default function ModesComparisonPage() {
     </main>
   )
 }
-

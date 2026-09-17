@@ -46,7 +46,7 @@ Month 3:   This is really hard. Maybe the idea isn't that good?
 Month 4:   I'm bored of this. I have a BETTER idea...
 ```
 
-Sound familiar? **That's your pattern.** You're reading this at Month 4-5 of MirrorSite AI. Right on schedule.
+Sound familiar? **That's your pattern.** You're reading this at Month 4-5 of Atai. Right on schedule.
 
 The new idea will follow the exact same curve. Except you'll be starting from absolute zero — no auth, no database, no billing, no pipeline, no UI. Nothing.
 
@@ -54,7 +54,7 @@ The new idea will follow the exact same curve. Except you'll be starting from ab
 
 ## The Real Cost of Starting Over
 
-Let's be specific about what you'd lose if you abandon MirrorSite AI today:
+Let's be specific about what you'd lose if you abandon Atai today:
 
 ### Code You'd Have to Rebuild from Scratch
 
@@ -93,7 +93,7 @@ This knowledge took months of painful debugging to acquire. **It transfers to ev
 
 Let's check. Right now, ask yourself: who specifically built a direct competitor while you were at school?
 
-If you can't name a specific competitor that does exactly what MirrorSite does — **the market is still open.**
+If you can't name a specific competitor that does exactly what Atai does — **the market is still open.**
 
 And even if someone launched while you were gone: markets are not winner-take-all. Wix didn't kill Squarespace. Squarespace didn't kill Webflow. There's room for multiple players, especially when you have a specific differentiation (code export, developer-friendly, AI-powered cloning from real sites).
 
@@ -103,7 +103,7 @@ Competition means the market exists. It does not mean you lost.
 
 ## How to Test If Your "Better Idea" Is Actually Better
 
-Before abandoning MirrorSite, your new idea must pass ALL of these:
+Before abandoning Atai, your new idea must pass ALL of these:
 
 **1. Do you have paying customers for it?**
 Not "people who said it sounds cool." People who gave you money. If not: it's just an idea.
@@ -114,13 +114,13 @@ Name, job title, specific pain point, why they can't solve it any other way. If 
 **3. How many weeks would it take to build a version someone could actually pay for?**
 Not the full version. Just the version that solves the core problem. If it's more than 6 weeks: you won't finish it.
 
-**4. Does it require you to throw away the MirrorSite codebase completely?**
+**4. Does it require you to throw away the Atai codebase completely?**
 If yes: is the new idea worth 17-27 weeks of rebuild time?
 
 **5. Have you felt this excited about this idea for more than 2 weeks?**
 Most new ideas feel amazing for 3-7 days then fade. If you've felt excited about this specific idea for 2+ weeks consistently: maybe it's worth considering. If it's fresh excitement from this week: it's the dopamine talking.
 
-If your new idea fails even ONE of these tests: it is not better than MirrorSite AI. Stay.
+If your new idea fails even ONE of these tests: it is not better than Atai. Stay.
 
 ---
 
@@ -172,7 +172,7 @@ The only difference is not talent. Not the idea. Not the market. It's **the deci
 
 ## Specific Promises This Product Can Keep
 
-Here's what MirrorSite AI can realistically deliver within 6 months of you returning:
+Here's what Atai can realistically deliver within 6 months of you returning:
 
 **Month 1 (You): Finish code generation**
 Someone enters a URL → gets a working Next.js codebase. This is the core feature. It's 2-3 weeks of focused work.
@@ -201,7 +201,7 @@ It's not boredom. It's not the complexity. It's not the market.
 
 It's the fear that you'll do all the work and it won't succeed.
 
-That fear is real. MirrorSite AI might not become a trillion-dollar company. It might "only" make you $50,000/year. It might "only" fund your next idea with real money instead of starting broke.
+That fear is real. Atai might not become a trillion-dollar company. It might "only" make you $50,000/year. It might "only" fund your next idea with real money instead of starting broke.
 
 But here's the truth: **the fear of failure is less painful than the certainty of never launching.**
 
@@ -215,7 +215,7 @@ If you launch and it fails, you've learned something real, have something to sho
 
 ## Your Anti-Quit Checklist
 
-Before you allow yourself to seriously consider abandoning MirrorSite AI, you must complete ALL of these:
+Before you allow yourself to seriously consider abandoning Atai, you must complete ALL of these:
 
 - [ ] Read `WHAT_YOU_ALREADY_BUILT.md` — see the real value of what exists
 - [ ] Read `WHY_THIS_WILL_WORK.md` — understand the market opportunity

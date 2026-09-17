@@ -32,25 +32,25 @@ import { SITE_URL } from "@/lib/env"
    ═══════════════════════════════════════════════════════════════ */
 
 export const metadata: Metadata = {
-  title: "MirrorSite AI Privacy Policy | Data & Privacy",
+  title: "Atai Privacy Policy | Data & Privacy",
   description:
-    "Learn how MirrorSite AI collects, processes, stores and protects account, project, AI, website-analysis, billing and technical information when you use the platform.",
+    "Learn how Atai collects, processes, stores and protects account, project, AI, website-analysis, billing and technical information when you use the platform.",
   alternates: { canonical: "/privacy" },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: `${SITE_URL}/privacy`,
-    siteName: "MirrorSite AI",
-    title: "MirrorSite AI Privacy Policy | Data & Privacy",
+    siteName: "Atai",
+    title: "Atai Privacy Policy | Data & Privacy",
     description:
-      "Learn how MirrorSite AI collects, processes, stores and protects your information.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI Privacy Policy" }],
+      "Learn how Atai collects, processes, stores and protects your information.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai Privacy Policy" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "MirrorSite AI Privacy Policy | Data & Privacy",
-    description: "Learn how MirrorSite AI collects, processes, stores and protects your information.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI Privacy Policy" }],
+    title: "Atai Privacy Policy | Data & Privacy",
+    description: "Learn how Atai collects, processes, stores and protects your information.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai Privacy Policy" }],
   },
 }
 
@@ -61,13 +61,13 @@ export const metadata: Metadata = {
 const privacyPageStructuredData = {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  name: "MirrorSite AI Privacy Policy",
+  name: "Atai Privacy Policy",
   description:
-    "Learn how MirrorSite AI collects, processes, stores and protects account, project, AI, website-analysis, billing and technical information.",
+    "Learn how Atai collects, processes, stores and protects account, project, AI, website-analysis, billing and technical information.",
   url: `${SITE_URL}/privacy`,
   isPartOf: {
     "@type": "WebSite",
-    name: "MirrorSite AI",
+    name: "Atai",
     url: SITE_URL,
   },
 }
@@ -78,26 +78,26 @@ const faqStructuredData = {
   mainEntity: [
     {
       "@type": "Question",
-      name: "What information does MirrorSite AI collect?",
+      name: "What information does Atai collect?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "MirrorSite AI collects account information (name, email, authentication details), project information (ideas, prompts, URLs, generated code), payment information (transaction records via mobile money providers), technical information (IP address, browser type, device information), and usage data necessary to operate the service.",
+        text: "Atai collects account information (name, email, authentication details), project information (ideas, prompts, URLs, generated code), payment information (transaction records via mobile money providers), technical information (IP address, browser type, device information), and usage data necessary to operate the service.",
       },
     },
     {
       "@type": "Question",
-      name: "Does MirrorSite store my projects?",
+      name: "Does Atai store my projects?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. MirrorSite stores project information including your ideas, prompts, website references, generated specifications, application code, and project metadata. This information is stored to provide the service and maintain your project history.",
+        text: "Yes. Atai stores project information including your ideas, prompts, website references, generated specifications, application code, and project metadata. This information is stored to provide the service and maintain your project history.",
       },
     },
     {
       "@type": "Question",
-      name: "Does MirrorSite send my project information to AI providers?",
+      name: "Does Atai send my project information to AI providers?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. MirrorSite may transmit project inputs (prompts, ideas, website analysis data, and project context) to third-party AI infrastructure providers when necessary to provide requested functionality such as application generation and analysis.",
+        text: "Yes. Atai may transmit project inputs (prompts, ideas, website analysis data, and project context) to third-party AI infrastructure providers when necessary to provide requested functionality such as application generation and analysis.",
       },
     },
     {
@@ -105,15 +105,15 @@ const faqStructuredData = {
       name: "Is my data used to train AI models?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "MirrorSite may rely on third-party AI providers to process information necessary to provide requested functionality. Whether those providers retain or use submitted information for model improvement may depend on the applicable provider's terms and configuration. MirrorSite does not independently use your data to train AI models.",
+        text: "Atai may rely on third-party AI providers to process information necessary to provide requested functionality. Whether those providers retain or use submitted information for model improvement may depend on the applicable provider's terms and configuration. Atai does not independently use your data to train AI models.",
       },
     },
     {
       "@type": "Question",
-      name: "Does MirrorSite collect payment card information?",
+      name: "Does Atai collect payment card information?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "MirrorSite does not directly collect or store credit card numbers. Payments are processed via mobile money providers (MTN and Airtel). MirrorSite receives transaction confirmation data (transaction ID, amount, status) from the payment verification process but not raw card details.",
+        text: "Atai does not directly collect or store credit card numbers. Payments are processed via mobile money providers (MTN and Airtel). Atai receives transaction confirmation data (transaction ID, amount, status) from the payment verification process but not raw card details.",
       },
     },
     {
@@ -121,7 +121,7 @@ const faqStructuredData = {
       name: "What happens when I submit a website URL?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "When you submit a website URL, MirrorSite uses a third-party website analysis service to crawl and analyze publicly accessible content from that URL. The system extracts page structure, layout, navigation, content, and visual patterns to create structured development context for building an application.",
+        text: "When you submit a website URL, Atai uses a third-party website analysis service to crawl and analyze publicly accessible content from that URL. The system extracts page structure, layout, navigation, content, and visual patterns to create structured development context for building an application.",
       },
     },
     {
@@ -134,10 +134,10 @@ const faqStructuredData = {
     },
     {
       "@type": "Question",
-      name: "Does MirrorSite use cookies?",
+      name: "Does Atai use cookies?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. MirrorSite uses essential cookies for authentication (session cookies) and security. The session cookie is httpOnly, secure, and has a 30-day expiry. MirrorSite also uses Vercel Analytics in production to understand usage patterns.",
+        text: "Yes. Atai uses essential cookies for authentication (session cookies) and security. The session cookie is httpOnly, secure, and has a 30-day expiry. Atai also uses Vercel Analytics in production to understand usage patterns.",
       },
     },
     {
@@ -145,23 +145,23 @@ const faqStructuredData = {
       name: "Is my information shared with third parties?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "MirrorSite shares information with service providers necessary to operate the service, including hosting providers, database services, AI processing providers, website analysis services, email delivery services, payment processors, and analytics services. Information may also be disclosed for legal compliance, safety, or to enforce terms of service.",
+        text: "Atai shares information with service providers necessary to operate the service, including hosting providers, database services, AI processing providers, website analysis services, email delivery services, payment processors, and analytics services. Information may also be disclosed for legal compliance, safety, or to enforce terms of service.",
       },
     },
     {
       "@type": "Question",
-      name: "Does MirrorSite sell personal information?",
+      name: "Does Atai sell personal information?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "No. MirrorSite does not sell personal information to third parties. Information is shared only with service providers necessary to operate the service or as described in this Privacy Policy.",
+        text: "No. Atai does not sell personal information to third parties. Information is shared only with service providers necessary to operate the service or as described in this Privacy Policy.",
       },
     },
     {
       "@type": "Question",
-      name: "How long does MirrorSite retain my information?",
+      name: "How long does Atai retain my information?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "MirrorSite retains information for as long as reasonably necessary to provide the service, maintain legitimate business records, comply with applicable legal requirements, resolve disputes, prevent abuse and enforce agreements. Session tokens expire after 30 days. Specific retention periods for other data categories may be finalized by legal counsel.",
+        text: "Atai retains information for as long as reasonably necessary to provide the service, maintain legitimate business records, comply with applicable legal requirements, resolve disputes, prevent abuse and enforce agreements. Session tokens expire after 30 days. Specific retention periods for other data categories may be finalized by legal counsel.",
       },
     },
     {
@@ -169,15 +169,15 @@ const faqStructuredData = {
       name: "Who owns my project?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "You retain ownership of the content you submit and the applications you create. MirrorSite processes your project information to provide the service but does not claim ownership of your personal information or project content.",
+        text: "You retain ownership of the content you submit and the applications you create. Atai processes your project information to provide the service but does not claim ownership of your personal information or project content.",
       },
     },
     {
       "@type": "Question",
-      name: "Does MirrorSite replace developers?",
+      name: "Does Atai replace developers?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "No. MirrorSite AI is designed to give developers leverage by handling repetitive scaffolding and boilerplate. Users remain responsible for reviewing, customizing, and securing generated applications before production use.",
+        text: "No. Atai is designed to give developers leverage by handling repetitive scaffolding and boilerplate. Users remain responsible for reviewing, customizing, and securing generated applications before production use.",
       },
     },
   ],
@@ -219,48 +219,48 @@ const tocSections = [
 
 const faqItems = [
   {
-    q: "What information does MirrorSite AI collect?",
-    a: "MirrorSite AI collects account information (name, email, authentication details), project information (ideas, prompts, URLs, generated code), payment information (transaction records via mobile money providers), technical information (IP address, browser type, device information), and usage data necessary to operate the service.",
+    q: "What information does Atai collect?",
+    a: "Atai collects account information (name, email, authentication details), project information (ideas, prompts, URLs, generated code), payment information (transaction records via mobile money providers), technical information (IP address, browser type, device information), and usage data necessary to operate the service.",
   },
   {
-    q: "Does MirrorSite store my projects?",
-    a: "Yes. MirrorSite stores project information including your ideas, prompts, website references, generated specifications, application code, and project metadata. This information is stored to provide the service and maintain your project history.",
+    q: "Does Atai store my projects?",
+    a: "Yes. Atai stores project information including your ideas, prompts, website references, generated specifications, application code, and project metadata. This information is stored to provide the service and maintain your project history.",
   },
   {
-    q: "Does MirrorSite process my prompts?",
+    q: "Does Atai process my prompts?",
     a: "Yes. Prompts and ideas you submit are processed to generate application plans, code, and project context. They may be transmitted to third-party AI providers for processing as described in this policy.",
   },
   {
-    q: "Does MirrorSite send my project information to AI providers?",
-    a: "Yes. MirrorSite may transmit project inputs (prompts, ideas, website analysis data, and project context) to third-party AI infrastructure providers when necessary to provide requested functionality such as application generation and analysis.",
+    q: "Does Atai send my project information to AI providers?",
+    a: "Yes. Atai may transmit project inputs (prompts, ideas, website analysis data, and project context) to third-party AI infrastructure providers when necessary to provide requested functionality such as application generation and analysis.",
   },
   {
     q: "Is my data used to train AI models?",
-    a: "MirrorSite may rely on third-party AI providers to process information necessary to provide requested functionality. Whether those providers retain or use submitted information for model improvement may depend on the applicable provider's terms and configuration. MirrorSite does not independently use your data to train AI models.",
+    a: "Atai may rely on third-party AI providers to process information necessary to provide requested functionality. Whether those providers retain or use submitted information for model improvement may depend on the applicable provider's terms and configuration. Atai does not independently use your data to train AI models.",
   },
   {
-    q: "Does MirrorSite collect payment card information?",
-    a: "No. MirrorSite does not directly collect or store credit card numbers. Payments are processed via mobile money providers (MTN and Airtel). MirrorSite receives transaction confirmation data from the payment verification process but not raw card details.",
+    q: "Does Atai collect payment card information?",
+    a: "No. Atai does not directly collect or store credit card numbers. Payments are processed via mobile money providers (MTN and Airtel). Atai receives transaction confirmation data from the payment verification process but not raw card details.",
   },
   {
-    q: "What information does MirrorSite receive from payment providers?",
-    a: "MirrorSite receives transaction confirmation data including transaction ID, amount, currency, payment status, payment reference, and timestamps. This information is used to verify payments and credit your account.",
+    q: "What information does Atai receive from payment providers?",
+    a: "Atai receives transaction confirmation data including transaction ID, amount, currency, payment status, payment reference, and timestamps. This information is used to verify payments and credit your account.",
   },
   {
     q: "What happens when I submit a website URL?",
-    a: "When you submit a website URL, MirrorSite uses a third-party website analysis service to crawl and analyze publicly accessible content. The system extracts page structure, layout, navigation, content, and visual patterns to create structured development context for building an application.",
+    a: "When you submit a website URL, Atai uses a third-party website analysis service to crawl and analyze publicly accessible content. The system extracts page structure, layout, navigation, content, and visual patterns to create structured development context for building an application.",
   },
   {
-    q: "Can MirrorSite analyze private websites?",
-    a: "No. MirrorSite analyzes publicly accessible website content. You should not submit URLs to private areas you are not authorized to access. Users are responsible for ensuring they have authorization to analyze the websites they submit.",
+    q: "Can Atai analyze private websites?",
+    a: "No. Atai analyzes publicly accessible website content. You should not submit URLs to private areas you are not authorized to access. Users are responsible for ensuring they have authorization to analyze the websites they submit.",
   },
   {
     q: "Who owns my project?",
-    a: "You retain ownership of the content you submit and the applications you create. MirrorSite processes your project information to provide the service but does not claim ownership of your personal information or project content.",
+    a: "You retain ownership of the content you submit and the applications you create. Atai processes your project information to provide the service but does not claim ownership of your personal information or project content.",
   },
   {
-    q: "How long does MirrorSite retain my information?",
-    a: "MirrorSite retains information for as long as reasonably necessary to provide the service, maintain legitimate business records, comply with applicable legal requirements, resolve disputes, prevent abuse and enforce agreements. Session tokens expire after 30 days.",
+    q: "How long does Atai retain my information?",
+    a: "Atai retains information for as long as reasonably necessary to provide the service, maintain legitimate business records, comply with applicable legal requirements, resolve disputes, prevent abuse and enforce agreements. Session tokens expire after 30 days.",
   },
   {
     q: "Can I delete my account?",
@@ -268,23 +268,23 @@ const faqItems = [
   },
   {
     q: "Can I request deletion of my data?",
-    a: "Yes. You may request access to, correction of, or deletion of your personal information by contacting MirrorSite support. Some information may be retained where required by law, fraud prevention, security, accounting, dispute resolution, or legitimate business records.",
+    a: "Yes. You may request access to, correction of, or deletion of your personal information by contacting Atai support. Some information may be retained where required by law, fraud prevention, security, accounting, dispute resolution, or legitimate business records.",
   },
   {
-    q: "Does MirrorSite use cookies?",
-    a: "Yes. MirrorSite uses essential cookies for authentication (session cookies) and security. The session cookie is httpOnly, secure, and has a 30-day expiry. MirrorSite also uses Vercel Analytics in production.",
+    q: "Does Atai use cookies?",
+    a: "Yes. Atai uses essential cookies for authentication (session cookies) and security. The session cookie is httpOnly, secure, and has a 30-day expiry. Atai also uses Vercel Analytics in production.",
   },
   {
-    q: "Does MirrorSite use analytics?",
-    a: "Yes. MirrorSite uses Vercel Analytics in production to understand usage patterns and improve the service. Analytics data is collected in aggregate and does not personally identify individual users.",
+    q: "Does Atai use analytics?",
+    a: "Yes. Atai uses Vercel Analytics in production to understand usage patterns and improve the service. Analytics data is collected in aggregate and does not personally identify individual users.",
   },
   {
     q: "Is my information shared with third parties?",
-    a: "MirrorSite shares information with service providers necessary to operate the service, including hosting, database, AI processing, website analysis, email, payment, and analytics providers. Information may also be disclosed for legal compliance, safety, or to enforce terms of service.",
+    a: "Atai shares information with service providers necessary to operate the service, including hosting, database, AI processing, website analysis, email, payment, and analytics providers. Information may also be disclosed for legal compliance, safety, or to enforce terms of service.",
   },
   {
-    q: "Does MirrorSite sell personal information?",
-    a: "No. MirrorSite does not sell personal information to third parties. Information is shared only with service providers necessary to operate the service or as described in this Privacy Policy.",
+    q: "Does Atai sell personal information?",
+    a: "No. Atai does not sell personal information to third parties. Information is shared only with service providers necessary to operate the service or as described in this Privacy Policy.",
   },
 ]
 
@@ -315,7 +315,7 @@ export default function PrivacyPage() {
             Privacy Policy
           </h1>
           <p className="mt-5 text-lg leading-8 text-muted-foreground max-w-2xl">
-            This Privacy Policy explains how MirrorSite AI collects, uses, stores, protects and shares information when you use our services.
+            This Privacy Policy explains how Atai collects, uses, stores, protects and shares information when you use our services.
           </p>
           <p className="mt-3 font-mono text-sm text-muted-foreground">
             Last Updated: September 1, 2026
@@ -329,7 +329,7 @@ export default function PrivacyPage() {
           <div className="rounded-xl border border-primary/20 bg-primary/5 p-6">
             <h2 className="text-lg font-semibold mb-3">Privacy at a Glance</h2>
             <p className="text-sm leading-6 text-muted-foreground mb-4">
-              MirrorSite AI collects information needed to provide your account, process your projects, operate AI-powered application development features, process payments, maintain security, provide support, and improve the service.
+              Atai collects information needed to provide your account, process your projects, operate AI-powered application development features, process payments, maintain security, provide support, and improve the service.
             </p>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> We collect information you provide directly.</li>
@@ -376,13 +376,13 @@ export default function PrivacyPage() {
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
               <p>
-                This Privacy Policy describes how MirrorSite AI handles information when users visit the website, create an account, use the platform, create projects, submit prompts, provide URLs, use AI features, purchase credits, participate in referrals, or contact support.
+                This Privacy Policy describes how Atai handles information when users visit the website, create an account, use the platform, create projects, submit prompts, provide URLs, use AI features, purchase credits, participate in referrals, or contact support.
               </p>
               <p>
                 The exact information processed depends on how you interact with the platform. Separate notices may apply to specific features where required.
               </p>
               <p>
-                By using MirrorSite AI, you acknowledge that you have read and understood this Privacy Policy. We encourage you to review this Policy and the <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link> regularly.
+                By using Atai, you acknowledge that you have read and understood this Privacy Policy. We encourage you to review this Policy and the <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link> regularly.
               </p>
             </div>
           </section>
@@ -394,7 +394,7 @@ export default function PrivacyPage() {
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
               <p>
-                MirrorSite AI is a product created and operated by ATAI — Advanced Technologies and AI Enterprises. ATAI focuses on building practical AI-powered technology that transforms complex technical workflows into accessible, automated experiences.
+                Atai is a product created and operated by ATAI — Advanced Technologies and AI Enterprises. ATAI focuses on building practical AI-powered technology that transforms complex technical workflows into accessible, automated experiences.
               </p>
               <p>
                 [LEGAL ENTITY DETAILS TO BE CONFIRMED BY ATAI/LEGAL COUNSEL]
@@ -408,7 +408,7 @@ export default function PrivacyPage() {
               <Eye className="size-5 text-primary" /> 3. Information We Collect
             </h2>
             <p className="text-base leading-7 text-muted-foreground mb-6">
-              MirrorSite AI processes different categories of information depending on how you use the service:
+              Atai processes different categories of information depending on how you use the service:
             </p>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -474,10 +474,10 @@ export default function PrivacyPage() {
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
               <p>
-                Users may submit product ideas, prompts, application requirements, project information, website references, code, configuration, and other development-related content to MirrorSite AI.
+                Users may submit product ideas, prompts, application requirements, project information, website references, code, configuration, and other development-related content to Atai.
               </p>
               <p>
-                MirrorSite may process this information to:
+                Atai may process this information to:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>Understand the requested application</li>
@@ -496,7 +496,7 @@ export default function PrivacyPage() {
               <div className="rounded-lg border border-border bg-card p-4">
                 <p className="text-sm font-medium mb-1">AI Training</p>
                 <p className="text-sm text-muted-foreground">
-                  MirrorSite may rely on third-party AI providers to process information necessary to provide requested functionality. Whether those providers retain or use submitted information for model improvement may depend on the applicable provider&apos;s terms and configuration. MirrorSite does not independently use your data to train AI models.
+                  Atai may rely on third-party AI providers to process information necessary to provide requested functionality. Whether those providers retain or use submitted information for model improvement may depend on the applicable provider&apos;s terms and configuration. Atai does not independently use your data to train AI models.
                 </p>
               </div>
             </div>
@@ -512,7 +512,7 @@ export default function PrivacyPage() {
                 When you submit a website URL, the following may occur:
               </p>
               <ol className="list-decimal list-inside space-y-1 ml-4">
-                <li>MirrorSite receives the URL you submitted.</li>
+                <li>Atai receives the URL you submitted.</li>
                 <li>The system requests and analyzes publicly accessible website information as required by the requested feature.</li>
                 <li>Relevant information may be processed to understand the website&apos;s structure, layout, navigation, content, and functionality.</li>
                 <li>Structured information may be generated from the analysis.</li>
@@ -522,7 +522,7 @@ export default function PrivacyPage() {
                 <AlertTriangle className="size-4 text-amber-500 mt-0.5 shrink-0" />
                 <div className="text-sm">
                   <p className="font-medium mb-1">Important</p>
-                  <p>Submitting a URL does not transfer ownership of the referenced website to MirrorSite or the user. Users should not submit URLs to private areas they are not authorized to access.</p>
+                  <p>Submitting a URL does not transfer ownership of the referenced website to Atai or the user. Users should not submit URLs to private areas they are not authorized to access.</p>
                 </div>
               </div>
               <p>
@@ -538,13 +538,13 @@ export default function PrivacyPage() {
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
               <p>
-                MirrorSite AI uses mobile money payment processing (MTN and Airtel) for credit purchases. Payment information is processed as follows:
+                Atai uses mobile money payment processing (MTN and Airtel) for credit purchases. Payment information is processed as follows:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>You submit a payment confirmation screenshot for verification.</li>
                 <li>An AI-powered analysis system extracts transaction details from the screenshot for verification purposes.</li>
-                <li>MirrorSite receives transaction confirmation data including: transaction ID, amount, currency, payment status, payment reference, and timestamps.</li>
-                <li>MirrorSite does not directly collect or store credit card numbers.</li>
+                <li>Atai receives transaction confirmation data including: transaction ID, amount, currency, payment status, payment reference, and timestamps.</li>
+                <li>Atai does not directly collect or store credit card numbers.</li>
               </ul>
               <p>
                 Credit balances, usage information, and transaction history are associated with your account in order to provide the service and enforce applicable usage limits.
@@ -581,7 +581,7 @@ export default function PrivacyPage() {
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
               <p>
-                When you use MirrorSite AI, certain information may be collected automatically, including:
+                When you use Atai, certain information may be collected automatically, including:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>IP address</li>
@@ -607,7 +607,7 @@ export default function PrivacyPage() {
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
               <p>
-                MirrorSite AI uses the following types of cookies:
+                Atai uses the following types of cookies:
               </p>
               <div className="rounded-xl border border-border bg-card overflow-hidden">
                 <table className="w-full text-sm">
@@ -621,7 +621,7 @@ export default function PrivacyPage() {
                   <tbody>
                     <tr className="border-b border-border/50">
                       <td className="px-4 py-3 font-medium">Session Cookie</td>
-                      <td className="px-4 py-3">Authentication and security. Named <code className="text-xs bg-muted px-1 py-0.5 rounded">mirrorsite_session</code>. HttpOnly, secure, SameSite: lax.</td>
+                      <td className="px-4 py-3">Authentication and security. Named <code className="text-xs bg-muted px-1 py-0.5 rounded">Atai_session</code>. HttpOnly, secure, SameSite: lax.</td>
                       <td className="px-4 py-3">30 days</td>
                     </tr>
                     <tr>
@@ -633,7 +633,7 @@ export default function PrivacyPage() {
                 </table>
               </div>
               <p>
-                The session cookie is essential for authentication and cannot be disabled while logged in. MirrorSite does not use marketing or advertising cookies.
+                The session cookie is essential for authentication and cannot be disabled while logged in. Atai does not use marketing or advertising cookies.
               </p>
             </div>
           </section>
@@ -644,7 +644,7 @@ export default function PrivacyPage() {
               <Lock className="size-5 text-primary" /> 11. How We Use Information
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>MirrorSite may use information to:</p>
+              <p>Atai may use information to:</p>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 {[
@@ -676,7 +676,7 @@ export default function PrivacyPage() {
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
               <p>
-                MirrorSite AI uses artificial intelligence capabilities across multiple stages of the application-building process. AI processing may involve:
+                Atai uses artificial intelligence capabilities across multiple stages of the application-building process. AI processing may involve:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>Analyzing submitted prompts and ideas to understand requirements</li>
@@ -688,7 +688,7 @@ export default function PrivacyPage() {
                 <li>Verifying payment screenshots for transaction confirmation</li>
               </ul>
               <p>
-                MirrorSite may transmit certain project inputs to third-party AI infrastructure providers when necessary to provide requested functionality. The specific providers and processing arrangements may change as the service evolves.
+                Atai may transmit certain project inputs to third-party AI infrastructure providers when necessary to provide requested functionality. The specific providers and processing arrangements may change as the service evolves.
               </p>
             </div>
           </section>
@@ -711,7 +711,7 @@ export default function PrivacyPage() {
               <p>If the business undergoes merger, acquisition, restructuring, or asset transfer, data may be transferred as part of the relevant transaction, subject to applicable law.</p>
 
               <p className="mt-4">
-                MirrorSite does not sell personal information to third parties.
+                Atai does not sell personal information to third parties.
               </p>
             </div>
           </section>
@@ -722,7 +722,7 @@ export default function PrivacyPage() {
               <Server className="size-5 text-primary" /> 14. Third-Party Services
             </h2>
             <p className="text-base leading-7 text-muted-foreground mb-6">
-              MirrorSite uses the following categories of third-party service providers:
+              Atai uses the following categories of third-party service providers:
             </p>
             <div className="rounded-xl border border-border bg-card overflow-hidden">
               <table className="w-full text-sm">
@@ -755,7 +755,7 @@ export default function PrivacyPage() {
               </table>
             </div>
             <p className="text-base leading-7 text-muted-foreground mt-4">
-              MirrorSite may link to third-party websites or services. Their privacy practices are governed by their own policies. We do not assume responsibility for third-party privacy practices.
+              Atai may link to third-party websites or services. Their privacy practices are governed by their own policies. We do not assume responsibility for third-party privacy practices.
             </p>
           </section>
 
@@ -766,7 +766,7 @@ export default function PrivacyPage() {
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
               <p>
-                MirrorSite implements security measures designed to protect information, including:
+                Atai implements security measures designed to protect information, including:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>Password hashing using bcrypt with a cost factor of 12</li>
@@ -825,7 +825,7 @@ export default function PrivacyPage() {
               </p>
               <div className="rounded-lg border border-border bg-card p-4">
                 <p className="text-sm">
-                  You may also contact MirrorSite support to request access to, correction of, or deletion of your personal information. We will respond to reasonable requests in accordance with applicable law.
+                  You may also contact Atai support to request access to, correction of, or deletion of your personal information. We will respond to reasonable requests in accordance with applicable law.
                 </p>
               </div>
             </div>
@@ -851,7 +851,7 @@ export default function PrivacyPage() {
                 <li>Lodge a complaint with a supervisory authority</li>
               </ul>
               <p>
-                To exercise any of these rights, please contact MirrorSite support. We will respond to reasonable requests in accordance with applicable law.
+                To exercise any of these rights, please contact Atai support. We will respond to reasonable requests in accordance with applicable law.
               </p>
             </div>
           </section>
@@ -863,7 +863,7 @@ export default function PrivacyPage() {
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
               <p>
-                MirrorSite is not intentionally designed to collect personal information from children in circumstances where doing so would violate applicable law. If we become aware that we have collected personal information from a child without appropriate consent, we will take steps to delete that information.
+                Atai is not intentionally designed to collect personal information from children in circumstances where doing so would violate applicable law. If we become aware that we have collected personal information from a child without appropriate consent, we will take steps to delete that information.
               </p>
             </div>
           </section>
@@ -875,10 +875,10 @@ export default function PrivacyPage() {
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
               <p>
-                MirrorSite and its service providers may process information in countries other than the country where you live. These countries may have data protection laws that differ from the laws of your country.
+                Atai and its service providers may process information in countries other than the country where you live. These countries may have data protection laws that differ from the laws of your country.
               </p>
               <p>
-                By using MirrorSite AI, you acknowledge that your information may be transferred to and processed in other countries. We take reasonable measures to ensure that adequate protections are in place.
+                By using Atai, you acknowledge that your information may be transferred to and processed in other countries. We take reasonable measures to ensure that adequate protections are in place.
               </p>
             </div>
           </section>
@@ -896,7 +896,7 @@ export default function PrivacyPage() {
                 When we make material changes to this policy, we will update the &quot;Last Updated&quot; date at the top of this page and, where appropriate, notify users through reasonable means.
               </p>
               <p>
-                We encourage you to review this Policy periodically. Your continued use of MirrorSite AI after changes are posted constitutes acceptance of the updated policy.
+                We encourage you to review this Policy periodically. Your continued use of Atai after changes are posted constitutes acceptance of the updated policy.
               </p>
             </div>
           </section>
@@ -908,7 +908,7 @@ export default function PrivacyPage() {
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
               <p>
-                If you have questions about this Privacy Policy or MirrorSite AI&apos;s privacy practices, please contact us through the MirrorSite AI platform or reach out to ATAI — Advanced Technologies and AI Enterprises.
+                If you have questions about this Privacy Policy or Atai&apos;s privacy practices, please contact us through the Atai platform or reach out to ATAI — Advanced Technologies and AI Enterprises.
               </p>
               <p>
                 [OFFICIAL PRIVACY CONTACT TO BE CONFIRMED BY ATAI]

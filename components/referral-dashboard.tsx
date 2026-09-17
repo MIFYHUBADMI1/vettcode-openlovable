@@ -95,7 +95,7 @@ export function ReferralDashboard() {
           Refer & Earn Credits
         </h1>
         <p className="max-w-2xl text-pretty text-lg leading-8 text-muted-foreground">
-          Invite people to build with MirrorSite AI and earn credits when they become active users.
+          Invite people to build with Atai and earn credits when they become active users.
         </p>
       </div>
 

@@ -53,32 +53,32 @@ const TIERS = Object.values(BUILD_TIERS).map((tier) => ({
 }))
 
 export const metadata: Metadata = {
-  title: "MirrorSite AI Pricing | Credits & Application Generation Plans",
+  title: "Atai Pricing | Credits & Application Generation Plans",
   description:
-    "Choose a MirrorSite AI plan to generate full-stack applications. Simple, Medium, and Complex tiers with transparent credit-based pricing.",
+    "Choose an Atai plan to generate full-stack applications. Simple, Medium, and Complex tiers with transparent credit-based pricing.",
   alternates: { canonical: "/pricing" },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: `${SITE_URL}/pricing`,
-    siteName: "MirrorSite AI",
-    title: "MirrorSite AI Pricing | Credits & Application Generation Plans",
-    description: "Choose a MirrorSite AI plan to generate full-stack applications. Simple, Medium, and Complex tiers with transparent credit-based pricing.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI Pricing" }],
+    siteName: "Atai",
+    title: "Atai Pricing | Credits & Application Generation Plans",
+    description: "Choose an Atai plan to generate full-stack applications. Simple, Medium, and Complex tiers with transparent credit-based pricing.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai Pricing" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "MirrorSite AI Pricing | Credits & Application Generation Plans",
-    description: "Choose a MirrorSite AI plan to generate full-stack applications.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI Pricing" }],
+    title: "Atai Pricing | Credits & Application Generation Plans",
+    description: "Choose an Atai plan to generate full-stack applications.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai Pricing" }],
   },
 }
 
 const pricingStructuredData = {
   "@context": "https://schema.org",
   "@type": "Product",
-  name: "MirrorSite AI",
-  description: "AI-powered application builder that turns websites and ideas into working full-stack applications.",
+  name: "Atai",
+  description: "The founder platform for launching businesses without code. Turn ideas into working full-stack applications.",
   brand: { "@type": "Organization", name: "ATAI Enterprises", url: "https://atai.ink" },
   offers: SUBSCRIPTION_PLANS.filter((p) => !p.custom).map((plan) => ({
     "@type": "Offer",
@@ -111,7 +111,7 @@ export default async function PricingPage() {
           Build More With<br />{CREDIT_UNIT_NAME}
         </h1>
         <p className="mt-5 text-lg text-muted-foreground max-w-xl mx-auto">
-          Use credits to create, improve and customize applications with MirrorSite AI.
+          Use credits to create, improve and customize applications with Atai.
           Start with {WELCOME_BONUS_CREDITS.toLocaleString()} free credits on us.
         </p>
         <div className="mt-8 flex items-center justify-center gap-3">
@@ -150,7 +150,7 @@ export default async function PricingPage() {
               </div>
               <p className="mt-4 font-medium">{WELCOME_BONUS_CREDITS.toLocaleString()} Free Credits</p>
               <p className="mt-2 text-sm text-muted-foreground">
-                New users receive {WELCOME_BONUS_CREDITS.toLocaleString()} permanent credits to try MirrorSite AI.
+                New users receive {WELCOME_BONUS_CREDITS.toLocaleString()} permanent credits to try Atai.
               </p>
             </div>
           </div>
@@ -235,7 +235,7 @@ export default async function PricingPage() {
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">Application Generation</p>
           <h2 className="mt-3 text-3xl font-semibold tracking-tight">Choose Your Project Size</h2>
           <p className="mt-3 text-muted-foreground">
-            Credits are consumed when MirrorSite AI builds your application.
+            Credits are consumed when Atai builds your application.
           </p>
         </div>
 
@@ -472,11 +472,11 @@ export default async function PricingPage() {
             Ready to build something real?
           </h2>
           <p className="mt-3 text-muted-foreground">
-            Start with {WELCOME_BONUS_CREDITS.toLocaleString()} free credits and see what MirrorSite AI can create.
+            Start with {WELCOME_BONUS_CREDITS.toLocaleString()} free credits and see what Atai can create.
           </p>
           <div className="mt-6 flex items-center justify-center gap-3">
             <Link href="/register" className={buttonVariants({ size: "lg" }) + " h-12 px-6"}>
-              Try MirrorSite AI <ArrowRight className="size-4" />
+              Try Atai <ArrowRight className="size-4" />
             </Link>
           </div>
         </div>

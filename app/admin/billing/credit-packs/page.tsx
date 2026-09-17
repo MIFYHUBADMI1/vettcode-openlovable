@@ -41,7 +41,7 @@ interface BillingConfig {
     popular: boolean
   }[]
   conversionRate: {
-    mirrorsiteCreditsPerBaselineUnit: number
+    AtaiCreditsPerBaselineUnit: number
   }
 }
 
@@ -170,7 +170,7 @@ export default function AdminCreditPacksPage() {
                       </div>
                       <div className="flex justify-between">
                         <span>Baseline units</span>
-                        <span className="font-mono">{Math.round(pack.credits / (config?.conversionRate.mirrorsiteCreditsPerBaselineUnit ?? 1000)).toLocaleString()}</span>
+                        <span className="font-mono">{Math.round(pack.credits / (config?.conversionRate.AtaiCreditsPerBaselineUnit ?? 1000)).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>

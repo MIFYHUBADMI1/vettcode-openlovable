@@ -6,7 +6,8 @@ import { useProjects } from "@/lib/client/api"
 import type { ProjectState } from "@/lib/types/project"
 import { cn } from "@/lib/utils"
 
-const STORAGE_KEY = "mirrorsite:checklist-dismissed"
+const STORAGE_KEY = "atai:checklist-dismissed"
+const LEGACY_STORAGE_KEY = "Atai:checklist-dismissed"
 
 const PAST_ANALYSIS: ReadonlySet<ProjectState> = new Set([
   "analysis_complete",
@@ -38,6 +39,12 @@ export function OnboardingChecklist() {
 
   useEffect(() => {
     try {
+      // Migrate legacy Atai: key to atai: key
+      const legacyValue = window.localStorage.getItem(LEGACY_STORAGE_KEY)
+      if (legacyValue !== null) {
+        window.localStorage.setItem(STORAGE_KEY, legacyValue)
+        window.localStorage.removeItem(LEGACY_STORAGE_KEY)
+      }
       setDismissed(window.localStorage.getItem(STORAGE_KEY) === "1")
     } catch {
       setDismissed(false)

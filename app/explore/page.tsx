@@ -451,7 +451,7 @@ export default function ExplorePage() {
         <div className="mt-16 rounded-xl border border-border bg-card p-8 text-center">
           <h2 className="text-xl font-semibold">Share your own creation</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Build an app with MirrorSite AI, publish it, and make it public to appear here
+            Build an app with Atai, publish it, and make it public to appear here
           </p>
           <div className="mt-5 flex flex-wrap justify-center gap-3">
             <Link

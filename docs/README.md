@@ -1,4 +1,4 @@
-# 📚 MirrorSite AI — Complete Documentation
+# 📚 Atai — Complete Documentation
 
 **Your full guide for returning from school and picking up where you left off.**  
 *Last updated: September 2026*
@@ -50,7 +50,7 @@
 | File | Purpose |
 |------|---------|
 | [DONT_QUIT.md](DONT_QUIT.md) | Anti-shiny-object-syndrome. Brutally honest about why starting over is wrong. |
-| [WHY_THIS_WILL_WORK.md](WHY_THIS_WILL_WORK.md) | Market size, real numbers, why MirrorSite has an edge. |
+| [WHY_THIS_WILL_WORK.md](WHY_THIS_WILL_WORK.md) | Market size, real numbers, why Atai has an edge. |
 | [WHAT_YOU_ALREADY_BUILT.md](WHAT_YOU_ALREADY_BUILT.md) | Full inventory of every working feature — more than you'll remember. |
 
 ### 🗺️ Navigation & Status
@@ -133,7 +133,7 @@ Vercel (hosting) + Gmail SMTP (email) + ImageKit (CDN)
 ⚠️ **Dodo Payments** — NOT Stripe. Some old docs/comments may say Stripe. Ignore them.
 
 ### Production URL
-`https://mirrorsite.atai.ink`
+`https://Atai.atai.ink`
 
 ### MongoDB Atlas
 Connection string is in `.env.local` → `MONGODB_URI`  

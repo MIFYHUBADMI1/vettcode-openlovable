@@ -104,7 +104,7 @@ Since the file creation had issues, here's what to do:
 ### Option 2: Using Git
 ```bash
 # If the redesigned file was created:
-cd c:\Users\USER\Desktop\mirrorsiteai
+cd c:\Users\USER\Desktop\Ataiai
 mv components/database-records.tsx components/database-records-old-backup.tsx
 mv components/database-records-redesigned.tsx components/database-records.tsx
 npm run dev

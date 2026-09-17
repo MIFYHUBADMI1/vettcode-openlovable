@@ -165,7 +165,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         getProject(project.totalumProjectId),
       ])
 
-      // Sync deployment state back to MirrorSite
+      // Sync deployment state back to Atai
       if (deployStatus.status === "success" && project.state === "deploying") {
         const productionUrl = totalumProject.productionProjectUrl
         // Update deployment history (best-effort)

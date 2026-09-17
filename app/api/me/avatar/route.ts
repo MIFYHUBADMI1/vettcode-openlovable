@@ -25,7 +25,7 @@ export async function POST(req: Request) {
         file: buffer,
         fileName: file.name || "avatar",
         mimeType: file.type,
-        folder: "/mirrorsite/avatars",
+        folder: "/Atai/avatars",
       })
     } catch (e) {
       await usage.insertOne({

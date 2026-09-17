@@ -40,7 +40,7 @@ export function AuthShell({
                 boxShadow: "0 0 24px -4px color-mix(in oklab, var(--primary) 45%, transparent)",
               }}
             >
-              M
+              A
               <span
                 className="absolute inset-0 rounded-xl"
                 style={{
@@ -51,7 +51,7 @@ export function AuthShell({
               />
             </div>
             <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
-              MirrorSite<span className="text-primary">.ai</span>
+              Atai
             </span>
           </Link>
 

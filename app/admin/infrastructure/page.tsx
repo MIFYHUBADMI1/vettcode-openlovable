@@ -222,7 +222,7 @@ export default function AdminInfrastructurePage() {
             </div>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight">Infrastructure Control</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Monitor, manage, and control all MirrorSite-managed application infrastructure.
+              Monitor, manage, and control all Atai-managed application infrastructure.
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => refreshProjects()} className="gap-1.5">

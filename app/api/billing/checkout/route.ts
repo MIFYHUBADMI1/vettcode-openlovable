@@ -127,8 +127,8 @@ export async function POST(req: Request) {
         // Auto-provision the product if not configured
         const product = await getOrCreateSubscriptionProduct(
           plan.id,
-          `MirrorSite AI — ${plan.name}`,
-          `${plan.mirrorCredits.toLocaleString()} MirrorSite Credits per month. ${plan.name} plan.`,
+          `Atai — ${plan.name}`,
+          `${plan.mirrorCredits.toLocaleString()} Atai Credits per month. ${plan.name} plan.`,
           plan.priceUSD,
           plan.mirrorCredits,
         )
@@ -171,8 +171,8 @@ export async function POST(req: Request) {
         // Auto-provision the product if not configured
         const product = await getOrCreatePermanentProduct(
           pack.id,
-          `MirrorSite AI — ${pack.label}`,
-          `${pack.credits.toLocaleString()} permanent MirrorSite Credits. Never expire.`,
+          `Atai — ${pack.label}`,
+          `${pack.credits.toLocaleString()} permanent Atai Credits. Never expire.`,
           pack.priceUSD,
           pack.credits,
         )

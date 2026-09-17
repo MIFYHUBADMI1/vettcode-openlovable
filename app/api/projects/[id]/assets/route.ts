@@ -15,7 +15,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const file = form.get("file")
     if (!(file instanceof File)) return fail("VALIDATION", "No image file provided.", 422)
     const buffer = Buffer.from(await file.arrayBuffer())
-    const result = await uploadImageToImageKit({ file: buffer, fileName: file.name || "project-asset", mimeType: file.type, folder: `/mirrorsite/projects/${id}` })
+    const result = await uploadImageToImageKit({ file: buffer, fileName: file.name || "project-asset", mimeType: file.type, folder: `/Atai/projects/${id}` })
     await ensureIndexes()
     await (await projectAssetsCol()).insertOne({ _id: new ObjectId(), id: `asset_${cryptoId()}`, userId: user.id, projectId: id, kind: "upload", fileId: result.fileId, filePath: result.filePath, fileName: file.name || "project-asset", url: result.url, mimeType: file.type, size: buffer.byteLength, width: result.width, height: result.height, createdAt: Date.now() })
     return ok({ asset: result })

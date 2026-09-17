@@ -1,15 +1,17 @@
-import { redirect } from "next/navigation"
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { AppHeader } from "@/components/app-header"
-import { getCurrentUser } from "@/lib/auth/session"
-import { getBalance, getCreditHistory } from "@/lib/billing/credit-service"
-import { subscriptionRecordsCol } from "@/lib/db/collections"
+import { ArrowRight, Calendar, Check } from "lucide-react"
+import { useSession, jsonFetcher } from "@/lib/client/api"
 import { PERMANENT_CREDIT_PACKS, SUBSCRIPTION_PLANS, CREDIT_UNIT_NAME, formatUSD } from "@/lib/billing/config"
 import { cn } from "@/lib/utils"
-import { ArrowRight, Calendar, Check } from "lucide-react"
 import { CheckoutButton } from "@/components/billing/checkout-button"
 import { PlanCard } from "@/components/billing/plan-card"
 import { CancelSubscriptionButton } from "@/components/billing/cancel-subscription-button"
+import useSWR from "swr"
 
 function formatCredits(amount: number): string {
   const abs = Math.abs(amount)
@@ -41,29 +43,30 @@ function formatPeriodEnd(timestamp: number): string {
   })
 }
 
-export default async function BillingSettingsPage() {
-  const user = await getCurrentUser()
-  if (!user) redirect("/login?next=%2Fsettings%2Fbilling")
+export default function BillingSettingsPage() {
+  const router = useRouter()
+  const { session, isLoading } = useSession()
 
-  const [balance, creditHistory, activeSubscription] = await Promise.all([
-    getBalance(user.id),
-    getCreditHistory(user.id, 50),
-    (async () => {
-      const col = await subscriptionRecordsCol()
-      return col.findOne({ userId: user.id, status: { $in: ["active", "trialing"] } })
-    })(),
-  ])
+  const { data: billingData } = useSWR<{ ok: boolean; data: { balance: { total: number; subscription: number; permanent: number }; history: unknown[]; subscription: { planId: string; currentPeriodEnd: number | null; cancelAtPeriodEnd: boolean } | null } }>(
+    session ? "/api/billing/overview" : null,
+    jsonFetcher,
+  )
 
-  // Resolve the active plan — fall back to the Free plan when no paid subscription exists
+  useEffect(() => {
+    if (!isLoading && !session) router.replace("/login?next=%2Fsettings%2Fbilling")
+  }, [session, isLoading, router])
+
+  if (isLoading || !session) return null
+
+  const balance = billingData?.data?.balance ?? { total: 0, subscription: 0, permanent: 0 }
+  const creditHistory = (billingData?.data?.history ?? []) as Array<{ id: string; reason: string; creditType: string; createdAt: number; amount: number }>
+  const activeSubscription = billingData?.data?.subscription ?? null
+
   const FREE_PLAN = SUBSCRIPTION_PLANS.find((p) => p.id === "free")!
   const activePlan = activeSubscription
     ? (SUBSCRIPTION_PLANS.find((p) => p.id === activeSubscription.planId) ?? FREE_PLAN)
     : FREE_PLAN
-
-  // Unix ms when the current billing period ends (null for free plan)
   const currentPeriodEnd: number | null = activeSubscription?.currentPeriodEnd ?? null
-
-  // The planId passed to PlanCards — "free" when no paid sub
   const activePlanId = activeSubscription?.planId ?? "free"
 
   return (
@@ -78,7 +81,7 @@ export default async function BillingSettingsPage() {
           <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
             Billing
           </p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight">MirrorSite Billing</h1>
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight">Atai Billing</h1>
         </header>
 
         {/* ── Credit Balance Card ── */}

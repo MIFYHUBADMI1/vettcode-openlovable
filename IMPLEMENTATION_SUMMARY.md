@@ -1,7 +1,7 @@
 # Pipeline Mode Selector - Implementation Complete ✅
 
 ## Overview
-Successfully implemented a user-facing toggle UI for choosing between "MirrorSite Legacy" and "MirrorSite Heavy" pipeline modes.
+Successfully implemented a user-facing toggle UI for choosing between "Atai Legacy" and "Atai Heavy" pipeline modes.
 
 ## Files Created
 
@@ -138,5 +138,5 @@ Possible improvements:
 Implementation follows existing design patterns:
 - shadcn/ui Dialog component
 - Existing form component structure
-- MirrorSite design system
+- Atai design system
 - lucide-react icons

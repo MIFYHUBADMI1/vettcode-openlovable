@@ -242,6 +242,22 @@ export function ProjectWorkspace({ projectId, initialState }: ProjectWorkspacePr
   // Project data: prefer project endpoint (full data); /status may have a subset.
   const project = projectData?.data?.project ?? null
 
+  // ── Auto-redirect when plan is ready ──────────────────────────────────────
+  // When the pipeline finishes and sets state → plan_ready, immediately take
+  // the user to the Collaborate page instead of leaving them stranded in the
+  // workspace with no obvious next step.
+  const autoRedirectedRef = useRef(false)
+  useEffect(() => {
+    if (state === "plan_ready" && !autoRedirectedRef.current) {
+      autoRedirectedRef.current = true
+      // Small delay so the user sees the transition rather than an abrupt jump
+      const t = setTimeout(() => {
+        window.location.href = `/project/${projectId}/collaborate`
+      }, 1800)
+      return () => clearTimeout(t)
+    }
+  }, [state, projectId])
+
   return (
     <>
       {/* React Hot Toast Container - positioned prominently */}
@@ -280,6 +296,12 @@ export function ProjectWorkspace({ projectId, initialState }: ProjectWorkspacePr
 
         {/* Right content */}
         <section className="flex flex-col gap-6">
+
+          {/* ── PLAN READY — absolute top priority, unmissable ── */}
+          {state === "plan_ready" && project?.specification ? (
+            <PlanReadyCTA projectId={projectId} projectName={project.name} />
+          ) : null}
+
           {/* Hero screenshot — only show if understanding has screenshots */}
           {project?.understanding?.screenshots?.[0] ? (
             <div className="overflow-hidden border border-border bg-card">
@@ -594,6 +616,82 @@ const VIEWPORTS: Record<Viewport, { width: string; defaultHeight: number; label:
 
 const MIN_HEIGHT = 200
 const MAX_HEIGHT = 1200
+
+/**
+ * PlanReadyCTA — shown when state === "plan_ready".
+ * Full-width, visually unmissable banner that appears at the VERY TOP of the
+ * workspace. Includes a countdown before auto-redirect so the user knows
+ * exactly what is happening and where they are going.
+ */
+function PlanReadyCTA({ projectId, projectName }: { projectId: string; projectName: string }) {
+  const [seconds, setSeconds] = useState(2)
+
+  useEffect(() => {
+    if (seconds <= 0) return
+    const t = setTimeout(() => setSeconds(s => s - 1), 1000)
+    return () => clearTimeout(t)
+  }, [seconds])
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border-2 border-primary bg-primary/5 shadow-xl shadow-primary/10">
+      {/* Animated top border */}
+      <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent animate-pulse" />
+
+      <div className="p-6 sm:p-8">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-4">
+            {/* Icon */}
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
+              <span className="text-2xl">✨</span>
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-lg font-black text-foreground">Your app plan is ready!</h3>
+                <span className="rounded-full bg-primary px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-widest text-primary-foreground animate-pulse">
+                  Action needed
+                </span>
+              </div>
+              <p className="mt-1.5 text-sm leading-6 text-muted-foreground max-w-lg">
+                Atai has generated a full app plan for{" "}
+                <span className="font-semibold text-foreground">{projectName}</span>.
+                Review it in plain language, refine it with your AI co-founder, and launch the build when you&apos;re ready.
+              </p>
+              <p className="mt-2 text-xs text-primary font-medium">
+                {seconds > 0
+                  ? `Taking you to the Collaborate page in ${seconds}…`
+                  : "Redirecting now…"}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                No credits are charged until you click &ldquo;Submit Plan &amp; Start Building&rdquo;.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 sm:items-end shrink-0">
+            <Link
+              href={`/project/${projectId}/collaborate`}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-7 py-3.5 text-base font-bold text-primary-foreground shadow-lg shadow-primary/30 transition-all hover:bg-primary/90 hover:shadow-primary/40 hover:-translate-y-0.5"
+            >
+              Review &amp; refine plan
+              <span>→</span>
+            </Link>
+            <p className="text-[10px] text-muted-foreground text-center sm:text-right">
+              You can also edit the raw plan below
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress bar for auto-redirect countdown */}
+      <div className="h-1 bg-border/40">
+        <div
+          className="h-full bg-primary transition-all duration-1000 ease-linear"
+          style={{ width: `${((2 - seconds) / 2) * 100}%` }}
+        />
+      </div>
+    </div>
+  )
+}
 
 function ReadyToBuildCTA({ projectId, project, onBuilding }: {
   projectId: string

@@ -6,7 +6,7 @@
 
 ## Overview
 
-MirrorSite AI bills users in **credits** — an internal currency. Users buy credits (or get them free/via subscription), then spend them on operations. This is intentional:
+Atai bills users in **credits** — an internal currency. Users buy credits (or get them free/via subscription), then spend them on operations. This is intentional:
 
 - Decouples pricing from API costs (we can adjust without changing user-facing prices)
 - Allows flexible pricing tiers

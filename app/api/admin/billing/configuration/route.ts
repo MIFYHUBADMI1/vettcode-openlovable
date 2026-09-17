@@ -42,7 +42,7 @@ export async function GET() {
       // ── System Config ──
       systemConfig: {
         currency: DEFAULT_BILLING_CURRENCY,
-        creditUnit: "MirrorSite Credits",
+        creditUnit: "Atai Credits",
         welcomeBonusCredits: WELCOME_BONUS_CREDITS,
         referralVerificationReward: REFERRAL_VERIFICATION_REWARD,
         referralMilestoneReward: REFERRAL_MILESTONE_REWARD,
@@ -80,8 +80,8 @@ export async function GET() {
 
       // ── Conversion Rate ──
       conversionRate: {
-        mirrorsiteCreditsPerBaselineUnit: CREDITS_PER_BASELINE_UNIT,
-        description: `1 baseline cost unit = ${CREDITS_PER_BASELINE_UNIT.toLocaleString()} MirrorSite Credits`,
+        AtaiCreditsPerBaselineUnit: CREDITS_PER_BASELINE_UNIT,
+        description: `1 baseline cost unit = ${CREDITS_PER_BASELINE_UNIT.toLocaleString()} Atai Credits`,
       },
     }
 

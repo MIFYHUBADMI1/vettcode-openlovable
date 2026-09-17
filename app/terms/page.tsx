@@ -46,25 +46,25 @@ import { SITE_URL } from "@/lib/env"
    ═══════════════════════════════════════════════════════════════ */
 
 export const metadata: Metadata = {
-  title: "MirrorSite AI Terms of Service | Terms & Conditions",
+  title: "Atai Terms of Service | Terms & Conditions",
   description:
-    "Read the MirrorSite AI Terms of Service covering accounts, AI-generated applications, website analysis, credits, payments, referrals, intellectual property, acceptable use, early access and service limitations.",
+    "Read the Atai Terms of Service covering accounts, AI-generated applications, website analysis, credits, payments, referrals, intellectual property, acceptable use, early access and service limitations.",
   alternates: { canonical: "/terms" },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: `${SITE_URL}/terms`,
-    siteName: "MirrorSite AI",
-    title: "MirrorSite AI Terms of Service | Terms & Conditions",
+    siteName: "Atai",
+    title: "Atai Terms of Service | Terms & Conditions",
     description:
-      "Read the MirrorSite AI Terms of Service covering accounts, AI-generated applications, website analysis, credits, payments, referrals, intellectual property, acceptable use, early access and service limitations.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI Terms of Service" }],
+      "Read the Atai Terms of Service covering accounts, AI-generated applications, website analysis, credits, payments, referrals, intellectual property, acceptable use, early access and service limitations.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai Terms of Service" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "MirrorSite AI Terms of Service | Terms & Conditions",
-    description: "Read the MirrorSite AI Terms of Service.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "MirrorSite AI Terms of Service" }],
+    title: "Atai Terms of Service | Terms & Conditions",
+    description: "Read the Atai Terms of Service.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai Terms of Service" }],
   },
 }
 
@@ -75,13 +75,13 @@ export const metadata: Metadata = {
 const termsPageStructuredData = {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  name: "MirrorSite AI Terms of Service",
+  name: "Atai Terms of Service",
   description:
-    "Terms of Service governing access to and use of MirrorSite AI, including accounts, AI-generated applications, website analysis, credits, payments, referrals, intellectual property, acceptable use, early access and service limitations.",
+    "Terms of Service governing access to and use of Atai, including accounts, AI-generated applications, website analysis, credits, payments, referrals, intellectual property, acceptable use, early access and service limitations.",
   url: `${SITE_URL}/terms`,
   isPartOf: {
     "@type": "WebSite",
-    name: "MirrorSite AI",
+    name: "Atai",
     url: SITE_URL,
   },
 }
@@ -92,10 +92,10 @@ const faqStructuredData = {
   mainEntity: [
     {
       "@type": "Question",
-      name: "What is MirrorSite AI?",
+      name: "What is Atai?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "MirrorSite AI is an AI-powered application development platform that helps users turn ideas, product concepts, and authorized website references into working full-stack applications using AI-powered analysis, planning, generation and infrastructure capabilities.",
+        text: "Atai is an AI-powered application development platform that helps users turn ideas, product concepts, and authorized website references into working full-stack applications using AI-powered analysis, planning, generation and infrastructure capabilities.",
       },
     },
     {
@@ -103,7 +103,7 @@ const faqStructuredData = {
       name: "Do I need permission to analyze a website?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. You must have the appropriate rights, permissions, or lawful basis to analyze and reproduce content from any website you submit to MirrorSite AI. You are responsible for ensuring you have authorization to analyze the websites you submit.",
+        text: "Yes. You must have the appropriate rights, permissions, or lawful basis to analyze and reproduce content from any website you submit to Atai. You are responsible for ensuring you have authorization to analyze the websites you submit.",
       },
     },
     {
@@ -111,7 +111,7 @@ const faqStructuredData = {
       name: "Who owns the application I create?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Subject to these Terms, applicable third-party rights, and the rights in any third-party materials incorporated into the output, you retain your rights in the application or project you create using MirrorSite AI.",
+        text: "Subject to these Terms, applicable third-party rights, and the rights in any third-party materials incorporated into the output, you retain your rights in the application or project you create using Atai.",
       },
     },
     {
@@ -124,18 +124,18 @@ const faqStructuredData = {
     },
     {
       "@type": "Question",
-      name: "Can I use MirrorSite to build commercial applications?",
+      name: "Can I use Atai to build commercial applications?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. MirrorSite AI is a development and prototyping tool. You may use it to build commercial applications, subject to these Terms and applicable law. You remain responsible for the legality and compliance of your application.",
+        text: "Yes. Atai is a development and prototyping tool. You may use it to build commercial applications, subject to these Terms and applicable law. You remain responsible for the legality and compliance of your application.",
       },
     },
     {
       "@type": "Question",
-      name: "What are MirrorSite credits?",
+      name: "What are Atai Credits?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "MirrorSite credits are an internal usage unit consumed when MirrorSite AI generates applications, analyzes websites, or performs other platform actions. New users receive 500 free credits upon account verification. Credits can be purchased via Dodo Payments or earned through subscriptions.",
+        text: "Atai Credits are an internal usage unit consumed when Atai generates applications, analyzes websites, or performs other platform actions. New users receive 500 free credits upon account verification. Credits can be purchased via Dodo Payments or earned through subscriptions.",
       },
     },
     {
@@ -143,7 +143,7 @@ const faqStructuredData = {
       name: "Can credits be exchanged for cash?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "No. MirrorSite credits have no cash value and cannot be exchanged for cash, transferred to other accounts, or redeemed for money, except where required by applicable law.",
+        text: "No. Atai Credits have no cash value and cannot be exchanged for cash, transferred to other accounts, or redeemed for money, except where required by applicable law.",
       },
     },
     {
@@ -151,31 +151,31 @@ const faqStructuredData = {
       name: "What happens if I violate the Terms?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "MirrorSite may restrict, suspend, or terminate your account if you violate these Terms. This may include loss of access to projects, credits, and platform features. Serious violations may result in permanent account termination.",
+        text: "Atai may restrict, suspend, or terminate your account if you violate these Terms. This may include loss of access to projects, credits, and platform features. Serious violations may result in permanent account termination.",
       },
     },
     {
       "@type": "Question",
-      name: "Is MirrorSite currently in early access?",
+      name: "Is Atai currently in early access?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. MirrorSite AI may currently be in early access. Features may change, functionality may be incomplete, performance may vary, and bugs may occur. We continuously improve the service based on testing, usage and user feedback.",
+        text: "Yes. Atai may currently be in early access. Features may change, functionality may be incomplete, performance may vary, and bugs may occur. We continuously improve the service based on testing, usage and user feedback.",
       },
     },
     {
       "@type": "Question",
-      name: "Does MirrorSite guarantee that my application will work in production?",
+      name: "Does Atai guarantee that my application will work in production?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "No. MirrorSite AI generates application foundations as a starting point. Users must independently evaluate generated output, perform testing, security review, and configure production environments. MirrorSite does not guarantee production readiness for every generated application.",
+        text: "No. Atai generates application foundations as a starting point. Users must independently evaluate generated output, perform testing, security review, and configure production environments. Atai does not guarantee production readiness for every generated application.",
       },
     },
     {
       "@type": "Question",
-      name: "Does MirrorSite own my idea?",
+      name: "Does Atai own my idea?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "No. MirrorSite does not claim ownership of your ideas, concepts, prompts, or the applications you create. You retain your rights in your own content, subject to the limited license needed to operate the service.",
+        text: "No. Atai does not claim ownership of your ideas, concepts, prompts, or the applications you create. You retain your rights in your own content, subject to the limited license needed to operate the service.",
       },
     },
     {
@@ -183,7 +183,7 @@ const faqStructuredData = {
       name: "Can I use my own infrastructure?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "MirrorSite provides managed infrastructure options for generated applications. Users may deploy generated applications to their own infrastructure subject to the applicable licensing and technical requirements of the generated output.",
+        text: "Atai provides managed infrastructure options for generated applications. Users may deploy generated applications to their own infrastructure subject to the applicable licensing and technical requirements of the generated output.",
       },
     },
   ],
@@ -195,10 +195,10 @@ const faqStructuredData = {
 
 const tocSections = [
   { id: "acceptance", label: "1. Acceptance of These Terms" },
-  { id: "about", label: "2. About MirrorSite AI" },
+  { id: "about", label: "2. About Atai" },
   { id: "eligibility", label: "3. Eligibility" },
   { id: "account", label: "4. Your Account" },
-  { id: "service", label: "5. The MirrorSite AI Service" },
+  { id: "service", label: "5. The Atai Service" },
   { id: "ai-output", label: "6. AI-Generated Output" },
   { id: "website-analysis", label: "7. Website Analysis and Reproduction" },
   { id: "user-content", label: "8. User Content" },
@@ -222,7 +222,7 @@ const tocSections = [
   { id: "indemnification", label: "26. Indemnification" },
   { id: "suspension", label: "27. Account Suspension and Termination" },
   { id: "privacy", label: "28. Data and Privacy" },
-  { id: "changes-service", label: "29. Changes to MirrorSite" },
+  { id: "changes-service", label: "29. Changes to Atai" },
   { id: "changes-terms", label: "30. Changes to These Terms" },
   { id: "governing-law", label: "31. Governing Law and Disputes" },
   { id: "general", label: "32. General Provisions" },
@@ -236,8 +236,8 @@ const tocSections = [
 
 const faqItems = [
   {
-    q: "What is MirrorSite AI?",
-    a: "MirrorSite AI is an AI-powered application development platform that helps users turn ideas, product concepts, and authorized website references into working full-stack applications using AI-powered analysis, planning, generation and infrastructure capabilities.",
+    q: "What is Atai?",
+    a: "Atai is an AI-powered application development platform that helps users turn ideas, product concepts, and authorized website references into working full-stack applications using AI-powered analysis, planning, generation and infrastructure capabilities.",
   },
   {
     q: "Do I need permission to analyze a website?",
@@ -245,43 +245,43 @@ const faqItems = [
   },
   {
     q: "Who owns the application I create?",
-    a: "Subject to these Terms, applicable third-party rights, and the rights in any third-party materials incorporated into the output, you retain your rights in the application or project you create using MirrorSite AI.",
+    a: "Subject to these Terms, applicable third-party rights, and the rights in any third-party materials incorporated into the output, you retain your rights in the application or project you create using Atai.",
   },
   {
     q: "Is AI-generated code guaranteed to be error-free?",
     a: "No. AI-generated code may contain mistakes, incomplete implementations, security vulnerabilities, dependency issues, or unexpected behavior. You must independently review, test, and verify generated output before production use.",
   },
   {
-    q: "Can I use MirrorSite to build commercial applications?",
-    a: "Yes. MirrorSite AI is a development and prototyping tool. You may use it to build commercial applications, subject to these Terms and applicable law. You remain responsible for the legality and compliance of your application.",
+    q: "Can I use Atai to build commercial applications?",
+    a: "Yes. Atai is a development and prototyping tool. You may use it to build commercial applications, subject to these Terms and applicable law. You remain responsible for the legality and compliance of your application.",
   },
   {
-    q: "What are MirrorSite credits?",
-    a: "MirrorSite credits are an internal usage unit consumed when MirrorSite AI generates applications, analyzes websites, or performs other platform actions. New users receive 500 free credits upon account verification. Credits can be purchased via Dodo Payments or earned through subscriptions.",
+    q: "What are Atai Credits?",
+    a: "Atai Credits are an internal usage unit consumed when Atai generates applications, analyzes websites, or performs other platform actions. New users receive 500 free credits upon account verification. Credits can be purchased via Dodo Payments or earned through subscriptions.",
   },
   {
     q: "Can credits be exchanged for cash?",
-    a: "No. MirrorSite credits have no cash value and cannot be exchanged for cash, transferred to other accounts, or redeemed for money, except where required by applicable law.",
+    a: "No. Atai Credits have no cash value and cannot be exchanged for cash, transferred to other accounts, or redeemed for money, except where required by applicable law.",
   },
   {
     q: "What happens if I violate the Terms?",
-    a: "MirrorSite may restrict, suspend, or terminate your account if you violate these Terms. This may include loss of access to projects, credits, and platform features.",
+    a: "Atai may restrict, suspend, or terminate your account if you violate these Terms. This may include loss of access to projects, credits, and platform features.",
   },
   {
-    q: "Is MirrorSite currently in early access?",
-    a: "Yes. MirrorSite AI may currently be in early access. Features may change, functionality may be incomplete, performance may vary, and bugs may occur. We continuously improve the service based on testing, usage and user feedback.",
+    q: "Is Atai currently in early access?",
+    a: "Yes. Atai may currently be in early access. Features may change, functionality may be incomplete, performance may vary, and bugs may occur. We continuously improve the service based on testing, usage and user feedback.",
   },
   {
-    q: "Does MirrorSite guarantee that my application will work in production?",
-    a: "No. MirrorSite generates application foundations as a starting point. Users must independently evaluate generated output, perform testing, security review, and configure production environments.",
+    q: "Does Atai guarantee that my application will work in production?",
+    a: "No. Atai generates application foundations as a starting point. Users must independently evaluate generated output, perform testing, security review, and configure production environments.",
   },
   {
-    q: "Does MirrorSite own my idea?",
-    a: "No. MirrorSite does not claim ownership of your ideas, concepts, prompts, or the applications you create. You retain your rights in your own content, subject to the limited license needed to operate the service.",
+    q: "Does Atai own my idea?",
+    a: "No. Atai does not claim ownership of your ideas, concepts, prompts, or the applications you create. You retain your rights in your own content, subject to the limited license needed to operate the service.",
   },
   {
     q: "Can I use my own infrastructure?",
-    a: "MirrorSite provides managed infrastructure options for generated applications. Users may deploy generated applications to their own infrastructure subject to applicable licensing and technical requirements.",
+    a: "Atai provides managed infrastructure options for generated applications. Users may deploy generated applications to their own infrastructure subject to applicable licensing and technical requirements.",
   },
 ]
 
@@ -335,7 +335,7 @@ export default function TermsPage() {
             Terms of Service
           </h1>
           <p className="mt-5 text-lg leading-8 text-muted-foreground max-w-2xl">
-            These Terms of Service govern your access to and use of MirrorSite AI and its related services.
+            These Terms of Service govern your access to and use of Atai and its related services.
           </p>
           <p className="mt-3 font-mono text-sm text-muted-foreground">
             Last Updated: September 1, 2026
@@ -343,20 +343,20 @@ export default function TermsPage() {
         </section>
 
         {/* ═══════════════════════════════════════════════════════
-           QUICK SUMMARY — BEFORE YOU USE MIRRORSITE
+           QUICK SUMMARY — BEFORE YOU USE Atai
            ═══════════════════════════════════════════════════════ */}
         <section className="mx-auto max-w-4xl px-6 pb-12 lg:px-10">
           <div className="rounded-xl border border-primary/20 bg-primary/5 p-6">
-            <h2 className="text-lg font-semibold mb-3">Before You Use MirrorSite</h2>
+            <h2 className="text-lg font-semibold mb-3">Before You Use Atai</h2>
             <p className="text-sm leading-6 text-muted-foreground mb-4">
-              MirrorSite AI helps users turn ideas, product concepts, and authorized website references into application projects using AI-powered analysis, planning, generation and infrastructure capabilities.
+              Atai helps users turn ideas, product concepts, and authorized website references into application projects using AI-powered analysis, planning, generation and infrastructure capabilities.
             </p>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> You are responsible for what you build.</li>
               <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> You must have permission to analyze or reproduce websites or content.</li>
               <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> AI-generated output should be reviewed and tested before production use.</li>
               <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> Credits and payments are subject to the applicable pricing rules.</li>
-              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> MirrorSite may be updated, changed, limited, suspended or discontinued.</li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> Atai may be updated, changed, limited, suspended or discontinued.</li>
               <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> Users must comply with applicable laws.</li>
             </ul>
             <p className="mt-4 text-xs text-muted-foreground italic">
@@ -394,10 +394,10 @@ export default function TermsPage() {
           {/* ── 1. Acceptance of These Terms ── */}
           <Section id="acceptance" number="1" icon={CheckCircle2} title="Acceptance of These Terms">
             <p>
-              By accessing or using MirrorSite AI (&quot;the Service&quot;), you agree to be bound by these Terms of Service (&quot;Terms&quot;). If you do not agree to these Terms, do not use the Service.
+              By accessing or using Atai (&quot;the Service&quot;), you agree to be bound by these Terms of Service (&quot;Terms&quot;). If you do not agree to these Terms, do not use the Service.
             </p>
             <p>
-              These Terms form a legally binding agreement between you and MirrorSite AI, operated by ATAI — Advanced Technologies and AI Enterprises (&quot;ATAI,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;).
+              These Terms form a legally binding agreement between you and Atai, operated by ATAI — Advanced Technologies and AI Enterprises (&quot;ATAI,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;).
             </p>
             <p>
               Additional policies may also apply to your use of the Service, including:
@@ -412,13 +412,13 @@ export default function TermsPage() {
             </p>
           </Section>
 
-          {/* ── 2. About MirrorSite AI ── */}
-          <Section id="about" number="2" icon={Layers3} title="About MirrorSite AI">
+          {/* ── 2. About Atai ── */}
+          <Section id="about" number="2" icon={Layers3} title="About Atai">
             <p>
-              MirrorSite AI is an AI-powered application development platform designed to reduce the distance between an idea and a working full-stack MVP.
+              Atai is an AI-powered application development platform designed to reduce the distance between an idea and a working full-stack MVP.
             </p>
             <p>
-              Depending on the features available, MirrorSite may:
+              Depending on the features available, Atai may:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Analyze websites you submit for reference</li>
@@ -440,17 +440,17 @@ export default function TermsPage() {
           {/* ── 3. Eligibility ── */}
           <Section id="eligibility" number="3" icon={Users} title="Eligibility">
             <p>
-              You may use MirrorSite AI only if you are legally capable of entering into a binding agreement and are permitted to use the service under applicable law.
+              You may use Atai only if you are legally capable of entering into a binding agreement and are permitted to use the service under applicable law.
             </p>
             <p>
-              If you use MirrorSite on behalf of an organization, you represent that you have the authority to bind that organization to these Terms.
+              If you use Atai on behalf of an organization, you represent that you have the authority to bind that organization to these Terms.
             </p>
           </Section>
 
           {/* ── 4. Your Account ── */}
           <Section id="account" number="4" icon={Key} title="Your Account">
             <p>
-              To use certain features of MirrorSite AI, you may need to create an account. When creating an account, you agree to:
+              To use certain features of Atai, you may need to create an account. When creating an account, you agree to:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Provide accurate and complete information</li>
@@ -463,14 +463,14 @@ export default function TermsPage() {
               You must not share your account credentials, create fraudulent accounts, impersonate others, or attempt unauthorized access to other accounts.
             </p>
             <p>
-              MirrorSite supports sign-in via email/password and Google authentication. Account verification may be required for certain features.
+              Atai supports sign-in via email/password and Google authentication. Account verification may be required for certain features.
             </p>
           </Section>
 
-          {/* ── 5. The MirrorSite AI Service ── */}
-          <Section id="service" number="5" icon={Zap} title="The MirrorSite AI Service">
+          {/* ── 5. The Atai Service ── */}
+          <Section id="service" number="5" icon={Zap} title="The Atai Service">
             <p>
-              MirrorSite AI provides an AI-powered platform for application development. The Service may include capabilities such as:
+              Atai provides an AI-powered platform for application development. The Service may include capabilities such as:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>AI-assisted application development and code generation</li>
@@ -483,14 +483,14 @@ export default function TermsPage() {
               <li>AI-powered development prompts and follow-up modifications</li>
             </ul>
             <p>
-              Features, workflows, capabilities, and availability may change as the Service evolves. MirrorSite may add, modify, or discontinue features at any time.
+              Features, workflows, capabilities, and availability may change as the Service evolves. Atai may add, modify, or discontinue features at any time.
             </p>
           </Section>
 
           {/* ── 6. AI-Generated Output ── */}
           <Section id="ai-output" number="6" icon={Cpu} title="AI-Generated Content and Applications">
             <p>
-              MirrorSite uses AI systems to generate or assist with code, application structures, user interfaces, content, configurations, plans, technical recommendations, and other outputs.
+              Atai uses AI systems to generate or assist with code, application structures, user interfaces, content, configurations, plans, technical recommendations, and other outputs.
             </p>
             <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 flex items-start gap-3">
               <AlertTriangle className="size-4 text-amber-500 mt-0.5 shrink-0" />
@@ -512,7 +512,7 @@ export default function TermsPage() {
               <li>Test production behavior before deploying</li>
             </ul>
             <p>
-              MirrorSite does not claim that generated output is error-free, guaranteed to be secure, guaranteed to be compatible with all systems, or guaranteed to achieve any particular commercial result.
+              Atai does not claim that generated output is error-free, guaranteed to be secure, guaranteed to be compatible with all systems, or guaranteed to achieve any particular commercial result.
             </p>
             <p>
               You remain responsible for determining whether generated output is appropriate for your intended use, including production deployment.
@@ -522,10 +522,10 @@ export default function TermsPage() {
           {/* ── 7. Website Analysis and Reproduction ── */}
           <Section id="website-analysis" number="7" icon={Globe} title="Website Analysis and Reproduction">
             <p>
-              MirrorSite AI may provide capabilities for analyzing websites where users submit URLs. When you submit a URL for analysis, you represent that you have the appropriate rights, permissions, licenses, or lawful basis to analyze and reproduce the relevant materials.
+              Atai may provide capabilities for analyzing websites where users submit URLs. When you submit a URL for analysis, you represent that you have the appropriate rights, permissions, licenses, or lawful basis to analyze and reproduce the relevant materials.
             </p>
             <p>
-              You must not use MirrorSite AI to:
+              You must not use Atai to:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Infringe copyright or violate intellectual property rights</li>
@@ -541,7 +541,7 @@ export default function TermsPage() {
             <div className="rounded-lg border border-border bg-card p-4">
               <p className="text-sm font-medium mb-1">Important distinction</p>
               <p className="text-sm text-muted-foreground">
-                MirrorSite provides technical capabilities for analysis. It does not grant you ownership of or licensing rights to third-party websites or content. Submitting a URL does not transfer any rights in the referenced website.
+                Atai provides technical capabilities for analysis. It does not grant you ownership of or licensing rights to third-party websites or content. Submitting a URL does not transfer any rights in the referenced website.
               </p>
             </div>
           </Section>
@@ -549,7 +549,7 @@ export default function TermsPage() {
           {/* ── 8. User Content ── */}
           <Section id="user-content" number="8" icon={FileText} title="User Content">
             <p>
-              &quot;User Content&quot; includes any content you submit to MirrorSite AI, such as prompts, text, ideas, website URLs, uploaded files, project specifications, designs, code, images, and other materials.
+              &quot;User Content&quot; includes any content you submit to Atai, such as prompts, text, ideas, website URLs, uploaded files, project specifications, designs, code, images, and other materials.
             </p>
             <p>
               You are responsible for ensuring you have the necessary rights and permissions to submit any User Content. You must not submit content that you are not authorized to provide.
@@ -557,33 +557,33 @@ export default function TermsPage() {
             <div className="rounded-lg border border-border bg-card p-4">
               <p className="text-sm font-medium mb-1">User Content License</p>
               <p className="text-sm text-muted-foreground">
-                You grant MirrorSite the rights reasonably necessary to host, process, analyze, transmit and otherwise use your submitted content for the purpose of providing, maintaining, securing and improving the Service, subject to the <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link> and applicable law.
+                You grant Atai the rights reasonably necessary to host, process, analyze, transmit and otherwise use your submitted content for the purpose of providing, maintaining, securing and improving the Service, subject to the <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link> and applicable law.
               </p>
             </div>
             <p>
-              This limited license is granted solely for the purpose of operating the Service. MirrorSite does not claim ownership of your User Content beyond what is necessary to provide the Service.
+              This limited license is granted solely for the purpose of operating the Service. Atai does not claim ownership of your User Content beyond what is necessary to provide the Service.
             </p>
           </Section>
 
           {/* ── 9. Intellectual Property ── */}
           <Section id="intellectual-property" number="9" icon={Shield} title="Intellectual Property">
             <p>
-              Intellectual property in connection with MirrorSite AI falls into several categories:
+              Intellectual property in connection with Atai falls into several categories:
             </p>
 
-            <h3 className="text-base font-medium text-foreground mt-6">MirrorSite intellectual property</h3>
+            <h3 className="text-base font-medium text-foreground mt-6">Atai intellectual property</h3>
             <p>
-              MirrorSite AI, including its platform, software, interface, branding, logos, and proprietary technology, is owned by or licensed to ATAI. These Terms do not grant you any rights to use MirrorSite&apos;s trademarks, branding, or intellectual property except as necessary to use the Service.
+              Atai, including its platform, software, interface, branding, logos, and proprietary technology, is owned by or licensed to ATAI. These Terms do not grant you any rights to use Atai&apos;s trademarks, branding, or intellectual property except as necessary to use the Service.
             </p>
 
             <h3 className="text-base font-medium text-foreground mt-6">User content</h3>
             <p>
-              You retain the rights you already have in your own content and materials. MirrorSite does not acquire ownership of your ideas, concepts, prompts, or creative work through your use of the Service.
+              You retain the rights you already have in your own content and materials. Atai does not acquire ownership of your ideas, concepts, prompts, or creative work through your use of the Service.
             </p>
 
             <h3 className="text-base font-medium text-foreground mt-6">Third-party content</h3>
             <p>
-              Third-party materials, libraries, dependencies, and content remain owned by their respective owners. Use of the Service does not automatically transfer ownership of third-party content to you or to MirrorSite.
+              Third-party materials, libraries, dependencies, and content remain owned by their respective owners. Use of the Service does not automatically transfer ownership of third-party content to you or to Atai.
             </p>
 
             <h3 className="text-base font-medium text-foreground mt-6">AI-generated output</h3>
@@ -595,11 +595,11 @@ export default function TermsPage() {
           {/* ── 10. Your Applications and Projects ── */}
           <Section id="generated-apps" number="10" icon={Rocket} title="Your Applications and Projects">
             <p>
-              When you use MirrorSite AI to create an application or project, ownership of the generated output works as follows:
+              When you use Atai to create an application or project, ownership of the generated output works as follows:
             </p>
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
               <p className="text-sm">
-                Subject to these Terms, applicable third-party rights, and the rights in any third-party materials incorporated into the output, you retain your rights in the application or project you create using MirrorSite AI.
+                Subject to these Terms, applicable third-party rights, and the rights in any third-party materials incorporated into the output, you retain your rights in the application or project you create using Atai.
               </p>
             </div>
             <p>
@@ -608,22 +608,22 @@ export default function TermsPage() {
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>You own the application you create, subject to applicable third-party rights</li>
               <li>Third-party code, libraries, and dependencies remain owned by their respective owners</li>
-              <li>MirrorSite does not claim ownership of your generated applications</li>
+              <li>Atai does not claim ownership of your generated applications</li>
               <li>You are responsible for compliance with applicable licenses for any third-party components</li>
             </ul>
             <p>
-              MirrorSite does not claim ownership of your ideas or the applications you create. However, MirrorSite may retain copies of project data for service operation, backups, and as described in the <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
+              Atai does not claim ownership of your ideas or the applications you create. However, Atai may retain copies of project data for service operation, backups, and as described in the <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
             </p>
           </Section>
 
           {/* ── 11. Credits and Usage ── */}
           <Section id="credits" number="11" icon={CreditCard} title="Credits and Usage">
             <p>
-              MirrorSite AI uses an internal credit system. Key aspects of the credit system:
+              Atai uses an internal credit system. Key aspects of the credit system:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Credits are an internal usage unit for the MirrorSite platform</li>
-              <li>MirrorSite credits are consumed when building applications</li>
+              <li>Credits are an internal usage unit for the Atai platform</li>
+              <li>Atai Credits are consumed when building applications</li>
               <li>Credits are consumed for actions such as website analysis, plan generation, and application generation</li>
               <li>Different actions may consume different amounts of credits</li>
               <li>New users receive 500 free credits upon account verification</li>
@@ -636,17 +636,17 @@ export default function TermsPage() {
               <li>Have no cash value unless required by applicable law</li>
               <li>Cannot be transferred between accounts unless the product explicitly permits it</li>
               <li>Are not currency and are not redeemable for money</li>
-              <li>Are consumed when MirrorSite performs credit-consuming actions on your behalf</li>
+              <li>Are consumed when Atai performs credit-consuming actions on your behalf</li>
             </ul>
             <p>
-              MirrorSite credits are conceptually separate from any third-party infrastructure or provider credits. Internal cost structures and provider economics are not exposed to users.
+              Atai Credits are conceptually separate from any third-party infrastructure or provider credits. Internal cost structures and provider economics are not exposed to users.
             </p>
           </Section>
 
           {/* ── 12. Pricing ── */}
           <Section id="pricing" number="12" icon={DollarSign} title="Pricing">
             <p>
-              MirrorSite AI uses a credit-based pricing model. Application generation is priced at three tiers:
+              Atai uses a credit-based pricing model. Application generation is priced at three tiers:
             </p>
             <div className="grid gap-3 sm:grid-cols-3 my-4">
               {[
@@ -665,24 +665,24 @@ export default function TermsPage() {
               Prices, plans, features, and credit requirements may change. Promotional offers may have additional terms. Applicable taxes may apply.
             </p>
             <p>
-              Current prices and plan details are available on the <Link href="/pricing" className="text-primary hover:underline">MirrorSite AI pricing page</Link>.
+              Current prices and plan details are available on the <Link href="/pricing" className="text-primary hover:underline">Atai pricing page</Link>.
             </p>
           </Section>
 
           {/* ── 13. Payments ── */}
           <Section id="payments" number="13" icon={CreditCard} title="Payments">
             <p>
-              MirrorSite AI currently supports credit purchases via mobile money (MTN and Airtel). When you make a payment:
+              Atai currently supports credit purchases via mobile money (MTN and Airtel). When you make a payment:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>You authorize the payment for the selected credit package</li>
               <li>Payment is processed through the applicable mobile money provider</li>
-              <li>MirrorSite receives transaction confirmation data for verification purposes</li>
+              <li>Atai receives transaction confirmation data for verification purposes</li>
               <li>Credits are awarded to your account upon successful verification</li>
               <li>Failed, duplicate, or fraudulent transactions may be investigated and reversed</li>
             </ul>
             <p>
-              You are responsible for ensuring that your payment information is accurate and that you have sufficient funds for the transaction. MirrorSite does not directly collect or store credit card numbers.
+              You are responsible for ensuring that your payment information is accurate and that you have sufficient funds for the transaction. Atai does not directly collect or store credit card numbers.
             </p>
             <p>
               Credit packages are available in various amounts as displayed on the <Link href="/pricing" className="text-primary hover:underline">pricing page</Link>.
@@ -704,14 +704,14 @@ export default function TermsPage() {
               <li>Promotional and referral credits are not refundable and have no cash value</li>
             </ul>
             <p>
-              Requests for refunds should be directed to MirrorSite support. MirrorSite reserves the right to deny refund requests where the terms of a specific purchase or promotion do not provide for refunds.
+              Requests for refunds should be directed to Atai support. Atai reserves the right to deny refund requests where the terms of a specific purchase or promotion do not provide for refunds.
             </p>
           </Section>
 
           {/* ── 15. Referral Program ── */}
           <Section id="referrals" number="15" icon={Gift} title="Referral Program">
             <p>
-              MirrorSite AI offers a referral program that allows users to earn promotional credits by inviting others to join the platform. The current referral program operates as follows:
+              Atai offers a referral program that allows users to earn promotional credits by inviting others to join the platform. The current referral program operates as follows:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Each user may have a unique referral code (format: MSA-XXXXXX)</li>
@@ -723,7 +723,7 @@ export default function TermsPage() {
               <AlertTriangle className="size-4 text-amber-500 mt-0.5 shrink-0" />
               <div className="text-sm">
                 <p className="font-medium mb-1">Referral rewards are promotional credits</p>
-                <p>Referral rewards are promotional credits subject to eligibility and anti-abuse requirements. They have no cash value and cannot be exchanged for money. MirrorSite reserves the right to cancel referral rewards where fraudulent, abusive, or manipulative activity is detected.</p>
+                <p>Referral rewards are promotional credits subject to eligibility and anti-abuse requirements. They have no cash value and cannot be exchanged for money. Atai reserves the right to cancel referral rewards where fraudulent, abusive, or manipulative activity is detected.</p>
               </div>
             </div>
             <p>
@@ -734,7 +734,7 @@ export default function TermsPage() {
           {/* ── 16. Third-Party Services ── */}
           <Section id="third-party" number="16" icon={ExternalLink} title="Third-Party Services">
             <p>
-              MirrorSite AI may rely on third-party services and infrastructure providers to operate the Service. These may include providers of:
+              Atai may rely on third-party services and infrastructure providers to operate the Service. These may include providers of:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>AI processing and code generation</li>
@@ -748,7 +748,7 @@ export default function TermsPage() {
               <li>Analytics and monitoring</li>
             </ul>
             <p>
-              Third-party services may have their own terms of service, privacy policies, availability limitations, and technical requirements. MirrorSite is not responsible for the practices or availability of third-party providers.
+              Third-party services may have their own terms of service, privacy policies, availability limitations, and technical requirements. Atai is not responsible for the practices or availability of third-party providers.
             </p>
             <p>
               The specific third-party providers and processing arrangements may change as the Service evolves.
@@ -758,7 +758,7 @@ export default function TermsPage() {
           {/* ── 17. Infrastructure and Hosting ── */}
           <Section id="infrastructure" number="17" icon={Server} title="Infrastructure and Hosting">
             <p>
-              MirrorSite AI may provide or connect application infrastructure for your generated projects. This may include:
+              Atai may provide or connect application infrastructure for your generated projects. This may include:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Database hosting and management</li>
@@ -789,7 +789,7 @@ export default function TermsPage() {
               <AlertTriangle className="size-4 text-amber-500 mt-0.5 shrink-0" />
               <div className="text-sm">
                 <p className="font-medium mb-1">Early Access</p>
-                <p>MirrorSite AI may currently be in an early-access stage of development.</p>
+                <p>Atai may currently be in an early-access stage of development.</p>
               </div>
             </div>
             <p>
@@ -813,7 +813,7 @@ export default function TermsPage() {
           {/* ── 19. Beta and Experimental Features ── */}
           <Section id="beta" number="19" icon={FlaskIcon} title="Beta and Experimental Features">
             <p>
-              MirrorSite AI may from time to time offer beta or experimental features. Beta features:
+              Atai may from time to time offer beta or experimental features. Beta features:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>May change, be modified, or be removed at any time</li>
@@ -822,14 +822,14 @@ export default function TermsPage() {
               <li>May not be covered by the same availability or reliability standards as the main Service</li>
             </ul>
             <p>
-              Use of beta features is optional and at your own risk. MirrorSite makes no guarantees about the availability, performance, or future of beta features.
+              Use of beta features is optional and at your own risk. Atai makes no guarantees about the availability, performance, or future of beta features.
             </p>
           </Section>
 
           {/* ── 20. Acceptable Use ── */}
           <Section id="acceptable-use" number="20" icon={ShieldCheck} title="Acceptable Use">
             <p>
-              You agree to use MirrorSite AI only for lawful purposes and in accordance with these Terms. You must not use the Service to:
+              You agree to use Atai only for lawful purposes and in accordance with these Terms. You must not use the Service to:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Engage in any unlawful activity or violate applicable laws or regulations</li>
@@ -853,7 +853,7 @@ export default function TermsPage() {
           {/* ── 21. Prohibited Activities ── */}
           <Section id="prohibited" number="21" icon={Ban} title="Prohibited Website Activity">
             <p>
-              Because website analysis is a core capability of MirrorSite AI, the following activities are specifically prohibited:
+              Because website analysis is a core capability of Atai, the following activities are specifically prohibited:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Bypassing authentication or login requirements</li>
@@ -867,7 +867,7 @@ export default function TermsPage() {
               <li>Attempting to circumvent security mechanisms</li>
             </ul>
             <p>
-              You must respect website owners, their terms of service, and applicable law when using MirrorSite&apos;s website analysis capabilities.
+              You must respect website owners, their terms of service, and applicable law when using Atai&apos;s website analysis capabilities.
             </p>
           </Section>
 
@@ -884,14 +884,14 @@ export default function TermsPage() {
               <li>Reviewing generated dependencies for known vulnerabilities</li>
             </ul>
             <p>
-              MirrorSite implements security measures designed to protect the Service, including password hashing, session token management, rate limiting, and access controls. However, no method of transmission or storage is completely secure, and MirrorSite cannot guarantee absolute security.
+              Atai implements security measures designed to protect the Service, including password hashing, session token management, rate limiting, and access controls. However, no method of transmission or storage is completely secure, and Atai cannot guarantee absolute security.
             </p>
           </Section>
 
           {/* ── 23. Service Availability ── */}
           <Section id="availability" number="23" icon={Server} title="Service Availability">
             <p>
-              MirrorSite AI strives to maintain reliable service availability. However, the Service may experience:
+              Atai strives to maintain reliable service availability. However, the Service may experience:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Periodic outages or downtime</li>
@@ -902,23 +902,23 @@ export default function TermsPage() {
               <li>Network issues or latency</li>
             </ul>
             <p>
-              The Service is provided without a guaranteed level of uninterrupted availability unless a separate agreement states otherwise. MirrorSite is not liable for any downtime, data loss, or disruption resulting from service interruptions.
+              The Service is provided without a guaranteed level of uninterrupted availability unless a separate agreement states otherwise. Atai is not liable for any downtime, data loss, or disruption resulting from service interruptions.
             </p>
           </Section>
 
           {/* ── 24. Disclaimers ── */}
           <Section id="disclaimers" number="24" icon={AlertCircle} title="Disclaimers">
             <p>
-              <strong className="text-foreground">No guarantee of business success.</strong> MirrorSite AI does not guarantee product-market fit, revenue, users, customer acquisition, business success, investment, application performance, search ranking, or conversion rates. The platform helps accelerate development but cannot guarantee the outcome of any business.
+              <strong className="text-foreground">No guarantee of business success.</strong> Atai does not guarantee product-market fit, revenue, users, customer acquisition, business success, investment, application performance, search ranking, or conversion rates. The platform helps accelerate development but cannot guarantee the outcome of any business.
             </p>
             <p>
               <strong className="text-foreground">No guarantee of error-free output.</strong> AI-generated output may contain mistakes, outdated information, incomplete implementations, incorrect assumptions, security vulnerabilities, dependency issues, or unexpected behavior.
             </p>
             <p>
-              <strong className="text-foreground">No production-readiness guarantee.</strong> MirrorSite does not guarantee that every generated application is production-ready. Users must independently evaluate generated output and perform appropriate testing, security review, code review, dependency review, backups, and monitoring before production use.
+              <strong className="text-foreground">No production-readiness guarantee.</strong> Atai does not guarantee that every generated application is production-ready. Users must independently evaluate generated output and perform appropriate testing, security review, code review, dependency review, backups, and monitoring before production use.
             </p>
             <p>
-              THE SERVICE IS PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. MIRRORSITE DOES NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, ERROR-FREE, OR COMPLETELY SECURE.
+              THE SERVICE IS PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. Atai DOES NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, ERROR-FREE, OR COMPLETELY SECURE.
             </p>
           </Section>
 
@@ -928,7 +928,7 @@ export default function TermsPage() {
               TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW:
             </p>
             <p>
-              IN NO EVENT SHALL MIRRORSITE AI, ATAI, OR THEIR AFFILIATES, OFFICERS, DIRECTORS, EMPLOYEES, OR AGENTS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES, RESULTING FROM:
+              IN NO EVENT SHALL Atai, ATAI, OR THEIR AFFILIATES, OFFICERS, DIRECTORS, EMPLOYEES, OR AGENTS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES, RESULTING FROM:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Your access to, use of, or inability to use the Service</li>
@@ -938,7 +938,7 @@ export default function TermsPage() {
               <li>AI-generated output or its use</li>
             </ul>
             <p>
-              IN NO EVENT SHALL THE AGGREGATE LIABILITY OF MIRRORSITE AI EXCEED THE AMOUNT YOU PAID TO MIRRORSITE AI IN THE TWELVE (12) MONTHS PRECEDING THE EVENT GIVING RISE TO THE CLAIM, OR [USD $100 / LOCAL CURRENCY EQUIVALENT], WHICHEVER IS GREATER.
+              IN NO EVENT SHALL THE AGGREGATE LIABILITY OF Atai EXCEED THE AMOUNT YOU PAID TO Atai IN THE TWELVE (12) MONTHS PRECEDING THE EVENT GIVING RISE TO THE CLAIM, OR [USD $100 / LOCAL CURRENCY EQUIVALENT], WHICHEVER IS GREATER.
             </p>
             <div className="rounded-lg border border-border bg-card p-4">
               <p className="text-sm text-muted-foreground italic">
@@ -950,7 +950,7 @@ export default function TermsPage() {
           {/* ── 26. Indemnification ── */}
           <Section id="indemnification" number="26" icon={ShieldCheck} title="Indemnification">
             <p>
-              You agree to indemnify, defend, and hold harmless MirrorSite AI, ATAI, and their affiliates, officers, directors, employees, and agents from any claims, damages, losses, liabilities, and expenses (including reasonable legal fees) arising from:
+              You agree to indemnify, defend, and hold harmless Atai, ATAI, and their affiliates, officers, directors, employees, and agents from any claims, damages, losses, liabilities, and expenses (including reasonable legal fees) arising from:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Your use of the Service</li>
@@ -970,9 +970,9 @@ export default function TermsPage() {
 
           {/* ── 27. Account Suspension and Termination ── */}
           <Section id="suspension" number="27" icon={Ban} title="Account Suspension and Termination">
-            <h3 className="text-base font-medium text-foreground mt-6">Suspension by MirrorSite</h3>
+            <h3 className="text-base font-medium text-foreground mt-6">Suspension by Atai</h3>
             <p>
-              MirrorSite may restrict or suspend your account where necessary because of:
+              Atai may restrict or suspend your account where necessary because of:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Abuse or misuse of the Service</li>
@@ -1001,17 +1001,17 @@ export default function TermsPage() {
           {/* ── 28. Data and Privacy ── */}
           <Section id="privacy" number="28" icon={Eye} title="Data and Privacy">
             <p>
-              Your use of MirrorSite AI is also subject to our <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>, which explains how personal information and other data are collected, used, stored, and processed.
+              Your use of Atai is also subject to our <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>, which explains how personal information and other data are collected, used, stored, and processed.
             </p>
             <p>
               By using the Service, you acknowledge that you have read and understood the Privacy Policy. The Privacy Policy is incorporated into these Terms by reference.
             </p>
           </Section>
 
-          {/* ── 29. Changes to MirrorSite ── */}
-          <Section id="changes-service" number="29" icon={TerminalSquare} title="Changes to MirrorSite">
+          {/* ── 29. Changes to Atai ── */}
+          <Section id="changes-service" number="29" icon={TerminalSquare} title="Changes to Atai">
             <p>
-              MirrorSite AI is a continuously evolving service. We may:
+              Atai is a continuously evolving service. We may:
             </p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Add new features and capabilities</li>
@@ -1070,27 +1070,27 @@ export default function TermsPage() {
 
             <h3 className="text-base font-medium text-foreground mt-6">Assignment</h3>
             <p>
-              You may not assign or transfer these Terms or your rights under them without MirrorSite&apos;s prior written consent. MirrorSite may assign these Terms in connection with a merger, acquisition, or sale of assets.
+              You may not assign or transfer these Terms or your rights under them without Atai&apos;s prior written consent. Atai may assign these Terms in connection with a merger, acquisition, or sale of assets.
             </p>
 
             <h3 className="text-base font-medium text-foreground mt-6">Entire Agreement</h3>
             <p>
-              These Terms, together with the <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link> and any other applicable policies, constitute the entire agreement between you and MirrorSite AI regarding the Service.
+              These Terms, together with the <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link> and any other applicable policies, constitute the entire agreement between you and Atai regarding the Service.
             </p>
 
             <h3 className="text-base font-medium text-foreground mt-6">Relationship of Parties</h3>
             <p>
-              Nothing in these Terms creates a partnership, joint venture, agency, or employment relationship between you and MirrorSite AI.
+              Nothing in these Terms creates a partnership, joint venture, agency, or employment relationship between you and Atai.
             </p>
 
             <h3 className="text-base font-medium text-foreground mt-6">Force Majeure</h3>
             <p>
-              MirrorSite is not liable for any failure or delay in performance resulting from causes beyond its reasonable control, including natural disasters, acts of government, infrastructure failures, network outages, or other force majeure events.
+              Atai is not liable for any failure or delay in performance resulting from causes beyond its reasonable control, including natural disasters, acts of government, infrastructure failures, network outages, or other force majeure events.
             </p>
 
             <h3 className="text-base font-medium text-foreground mt-6">Notices</h3>
             <p>
-              Notices to you may be provided through the Service, by email, or by other reasonable means. Notices to MirrorSite should be sent through the contact channels described in the Contact section below.
+              Notices to you may be provided through the Service, by email, or by other reasonable means. Notices to Atai should be sent through the contact channels described in the Contact section below.
             </p>
 
             <h3 className="text-base font-medium text-foreground mt-6">Survival</h3>
@@ -1107,13 +1107,13 @@ export default function TermsPage() {
             <div className="rounded-xl border border-border bg-card p-5 mt-4">
               <div className="flex items-center gap-3 mb-3">
                 <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10"><Mail className="size-4 text-primary" /></div>
-                <p className="font-medium">Contact MirrorSite AI</p>
+                <p className="font-medium">Contact Atai</p>
               </div>
               <p className="text-sm text-muted-foreground">
-                Reach MirrorSite support through the platform or call <span className="font-mono text-foreground">+256 761 819 885</span> for payment-related assistance.
+                Reach Atai support through the platform or call <span className="font-mono text-foreground">+256 761 819 885</span> for payment-related assistance.
               </p>
               <p className="text-sm text-muted-foreground mt-2">
-                For legal inquiries, contact: <span className="text-primary">[OFFICIAL MIRRORSITE LEGAL CONTACT]</span>
+                For legal inquiries, contact: <span className="text-primary">[OFFICIAL Atai LEGAL CONTACT]</span>
               </p>
             </div>
           </Section>
@@ -1150,14 +1150,14 @@ export default function TermsPage() {
           <div className="mx-auto max-w-4xl px-6 py-16 text-center">
             <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary mb-4">Questions?</p>
             <h2 className="text-2xl font-semibold tracking-tight">
-              Have questions about using MirrorSite AI?
+              Have questions about using Atai?
             </h2>
             <p className="mt-3 text-muted-foreground">
               We&apos;re here to help. Reach out or learn more about the platform.
             </p>
             <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link href="/about" className={buttonVariants({ size: "lg" }) + " h-12 px-6"}>
-                About MirrorSite AI <ArrowRight className="size-4" />
+                About Atai <ArrowRight className="size-4" />
               </Link>
               <Link href="/privacy" className={buttonVariants({ variant: "outline", size: "lg" }) + " h-12 px-6"}>
                 Privacy Policy

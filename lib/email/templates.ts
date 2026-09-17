@@ -159,7 +159,7 @@ function shell(title: string, bodyHtml: string, accentColor?: string): string {
             letter-spacing:0.08em;
             color:#818cf8;
             text-transform:uppercase;
-          ">MirrorSite AI</div>
+          ">Atai</div>
         </div>
 
         <!-- Content area -->
@@ -202,7 +202,7 @@ function shell(title: string, bodyHtml: string, accentColor?: string): string {
           text-align:center;
         ">
           <p style="font-size:11px;color:#52525b;margin:0;line-height:1.6;">
-            &copy; 2026 MirrorSite AI &middot; Build smarter, ship faster
+            &copy; 2026 Atai &middot; Build smarter, ship faster
           </p>
           <p style="font-size:10px;color:#3f3f46;margin:8px 0 0 0;line-height:1.4;">
             This is a transactional email regarding your account.
@@ -299,7 +299,7 @@ export function verificationEmail(name: string, verifyUrl: string) {
      </p>`,
   )
   const text = `Hey ${name}, confirm your email: ${verifyUrl} (expires in 24 hours)`
-  return { subject: "✨ Confirm your MirrorSite AI account", html, text }
+  return { subject: "✨ Confirm your Atai account", html, text }
 }
 
 export function passwordResetEmail(name: string, resetUrl: string) {
@@ -325,7 +325,7 @@ export function passwordResetEmail(name: string, resetUrl: string) {
      </div>`,
   )
   const text = `Hey ${name}, reset your password: ${resetUrl} (expires in 1 hour)`
-  return { subject: "🔑 Reset your MirrorSite AI password", html, text }
+  return { subject: "🔑 Reset your Atai password", html, text }
 }
 
 export function emailChangeEmail(name: string, newEmail: string, confirmUrl: string) {

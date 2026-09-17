@@ -24,7 +24,7 @@ export default async function SettingsPage() {
             <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Profile</p>
             <h2 className="mt-4 text-xl font-medium">{user.name}</h2>
             <p className="mt-2 text-sm text-muted-foreground">{user.email}</p>
-            <p className="mt-6 text-xs text-muted-foreground">Authentication: {user.authProvider === "google" ? "Google" : "Email and password"}</p><div className="mt-5 flex gap-4 font-mono text-xs"><Link href="/settings/profile" className="text-primary hover:underline">Profile →</Link><Link href="/settings/security" className="text-primary hover:underline">Security →</Link></div>
+            <p className="mt-6 text-xs text-muted-foreground">Authentication: {user.authProvider === "google" ? "Google" : "Email and password"}</p><div className="mt-5 flex gap-4 font-mono text-xs"><Link href="/settings/profile" className="text-primary hover:underline">Profile →</Link><Link href="/settings/security" className="text-primary hover:underline">Security →</Link><Link href="/settings/appearance" className="text-primary hover:underline">Appearance →</Link></div>
           </div>
           <div className="border border-border bg-card p-6">
             <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Credits</p>
@@ -69,6 +69,10 @@ export default async function SettingsPage() {
                   <span>Change password &amp; security</span>
                   <span className="font-mono text-xs text-primary">→</span>
                 </Link>
+                <Link href="/settings/appearance" className="flex items-center justify-between gap-4 py-4 text-sm transition-colors hover:text-primary">
+                  <span>Appearance &amp; theme</span>
+                  <span className="font-mono text-xs text-primary">→</span>
+                </Link>
               </div>
             </div>
           </section>
@@ -95,7 +99,7 @@ export default async function SettingsPage() {
 
             <div className="min-w-0 flex-1 pr-10">
               <div className="flex flex-wrap items-center gap-2">
-                <p className="font-semibold text-foreground">Join the MirrorSite Community on WhatsApp</p>
+                <p className="font-semibold text-foreground">Join the Atai Community on WhatsApp</p>
               </div>
               <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                 🎁 <strong className="text-foreground">Monthly token drops</strong> & exclusive discount codes — up to{" "}

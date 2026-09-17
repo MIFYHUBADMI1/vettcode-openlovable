@@ -33,7 +33,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return new Response(JSON.stringify(exportData, null, 2), {
       headers: {
         "content-type": "application/json; charset=utf-8",
-        "content-disposition": `attachment; filename="${project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "mirrorsite-project"}.json"`,
+        "content-disposition": `attachment; filename="${project.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase() || "Atai-project"}.json"`,
         "cache-control": "private, no-store",
       },
     })

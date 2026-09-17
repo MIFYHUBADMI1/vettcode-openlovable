@@ -4,7 +4,7 @@ import type { ProjectPreferences } from "@/lib/types/project"
 
 /**
  * Builds the natural-language prompt sent to the Totalum agent for the initial
- * build. MirrorSite owns this prompt (spec section 12) — the user's spec edits
+ * build. Atai owns this prompt (spec section 12) — the user's spec edits
  * shape it, but website-derived content is inserted as REFERENCE only, wrapped
  * so it cannot act as instructions to the downstream agent (spec section 25).
  */

@@ -272,7 +272,7 @@
 
 ### Webhook not received (payments not processing)
 **Cause A**: Webhook URL not configured in Dodo dashboard.  
-**Fix**: Go to Dodo dashboard → Webhooks → set URL to `https://mirrorsite.atai.ink/api/billing/webhook`
+**Fix**: Go to Dodo dashboard → Webhooks → set URL to `https://Atai.atai.ink/api/billing/webhook`
 
 **Cause B**: Wrong `DODO_PAYMENTS_WEBHOOK_KEY`.  
 **Fix**: Copy the webhook signing key from Dodo dashboard → paste into `.env.local`

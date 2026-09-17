@@ -2,8 +2,8 @@ import type { Metadata } from "next"
 import Link from "next/link"
 
 export const metadata: Metadata = {
-  title: "Database Usage Terms & Policies — MirrorSite",
-  description: "Learn about MirrorSite's managed database infrastructure plans, storage limits, and usage policies.",
+  title: "Database Usage Terms & Policies — Atai",
+  description: "Learn about Atai's managed database infrastructure plans, storage limits, and usage policies.",
 }
 
 export default function DatabaseTermsPage() {
@@ -11,7 +11,7 @@ export default function DatabaseTermsPage() {
     <main className="min-h-svh bg-background text-foreground">
       <div className="mx-auto max-w-3xl px-6 py-16 lg:px-10">
         <Link href="/" className="font-mono text-sm text-primary hover:underline">
-          ← MirrorSite.ai
+          ← atai.ink
         </Link>
         <p className="mt-20 font-mono text-xs uppercase tracking-[0.2em] text-primary">
           Database Usage Terms & Policies
@@ -20,15 +20,15 @@ export default function DatabaseTermsPage() {
           Database & Infrastructure Terms
         </h1>
         <p className="mt-6 text-lg leading-8 text-muted-foreground">
-          Understanding how MirrorSite manages your application&apos;s database and infrastructure.
+          Understanding how Atai manages your application&apos;s database and infrastructure.
         </p>
 
         <div className="mt-12 space-y-10 text-base leading-7 text-muted-foreground">
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-3">1. Managed Database</h2>
             <p>
-              MirrorSite-managed applications use managed database and infrastructure services provided through
-              our infrastructure partners. MirrorSite handles the setup, configuration, and maintenance of
+              Atai-managed applications use managed database and infrastructure services provided through
+              our infrastructure partners. Atai handles the setup, configuration, and maintenance of
               these services as part of your infrastructure plan.
             </p>
           </section>
@@ -74,7 +74,7 @@ export default function DatabaseTermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-3">5. Usage Limits</h2>
             <p>
-              MirrorSite may restrict infrastructure operations when a project reaches its plan&apos;s
+              Atai may restrict infrastructure operations when a project reaches its plan&apos;s
               storage or infrastructure limits. When limits are reached:
             </p>
             <ul className="mt-3 list-disc list-inside space-y-1">
@@ -90,7 +90,7 @@ export default function DatabaseTermsPage() {
             <p>
               You can upgrade your application&apos;s infrastructure plan at any time from the Database &amp;
               Infrastructure page. Upgrades take effect immediately and are charged at the plan&apos;s monthly
-              rate using MirrorSite credits.
+              rate using Atai Credits.
             </p>
           </section>
 
@@ -125,7 +125,7 @@ export default function DatabaseTermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-3">9. Excessive Usage &amp; Abuse</h2>
             <p>
-              MirrorSite reserves the right to restrict abusive or automated usage that attempts to circumvent
+              Atai reserves the right to restrict abusive or automated usage that attempts to circumvent
               plan limits, rate limits, security controls, or fair-use policies. This includes but is not
               limited to:
             </p>
@@ -141,7 +141,7 @@ export default function DatabaseTermsPage() {
             <h2 className="text-xl font-semibold text-foreground mb-3">10. Data Retention</h2>
             <p>
               Your application data is retained as long as your project exists. If you delete a project,
-              its associated database data may be permanently removed after a retention period. MirrorSite
+              its associated database data may be permanently removed after a retention period. Atai
               does not guarantee data retention beyond the active project lifecycle.
             </p>
           </section>
@@ -149,7 +149,7 @@ export default function DatabaseTermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-3">11. Availability</h2>
             <p>
-              Managed infrastructure depends on third-party infrastructure providers. MirrorSite cannot
+              Managed infrastructure depends on third-party infrastructure providers. Atai cannot
               guarantee uninterrupted availability. We work to maintain high reliability, but service
               interruptions may occur due to factors outside our control.
             </p>
@@ -158,7 +158,7 @@ export default function DatabaseTermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-3">12. Security</h2>
             <p>
-              MirrorSite implements industry-standard security measures for managed infrastructure, including
+              Atai implements industry-standard security measures for managed infrastructure, including
               encrypted connections, access controls, and regular security monitoring. Users are responsible
               for keeping their application credentials secure.
             </p>
@@ -187,7 +187,7 @@ export default function DatabaseTermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-foreground mb-3">15. Changes</h2>
             <p>
-              MirrorSite may update infrastructure plans, limits, and policies subject to the Terms of
+              Atai may update infrastructure plans, limits, and policies subject to the Terms of
               Service and applicable notice requirements. Significant changes will be communicated through
               the platform.
             </p>

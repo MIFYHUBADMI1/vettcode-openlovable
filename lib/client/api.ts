@@ -14,7 +14,17 @@ export interface SessionUser {
   imageUrl?: string
   credits: number
   isAdmin?: boolean
-  onboarding?: { source?: string; role?: string; signalType?: string; completedAt: number }
+  onboarding?: {
+    /** Legacy fields */
+    source?: string
+    signalType?: "url" | "idea"
+    /** New founder-focused fields (Requirement 6) */
+    businessDescription?: string
+    role?: string
+    destination?: string
+    /** Always set when onboarding is complete */
+    completedAt: number
+  }
   suspended?: boolean
   banned?: boolean
   createdAt: number
@@ -32,7 +42,7 @@ export interface SessionInfo {
 
 export interface CreditCostTable {
   configured: boolean
-  mirrorSite: {
+  Atai: {
     initialBuild: { reserve: number; low: number; high: number; basis: string }
     followup: { reserve: number; low: number; high: number; basis: string }
   }
@@ -133,9 +143,11 @@ export function useSession() {
   return {
     session,
     error: sessionError ? new Error(sessionError) : null,
-    isLoading: sessionLoading && !session,
-    // refresh() triggers an immediate re-fetch — use after any action that
-    // changes the user's balance or profile (build, top-up, admin credit, etc.)
+    // isLoading is true when:
+    // 1. A fetch is actively in flight, OR
+    // 2. We have never fetched yet (sessionFetchedAt is null) and have no session
+    //    — covers the window between mount and the first useEffect fetch completing.
+    isLoading: sessionLoading || (!session && !sessionFetchedAt),
     refresh: invalidateSession,
   }
 }

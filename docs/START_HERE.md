@@ -1,4 +1,4 @@
-# 🚀 Welcome Back to MirrorSite AI!
+# 🚀 Welcome Back to Atai!
 
 **Last Updated**: September 9, 2026  
 **Status**: Active Development  
@@ -21,9 +21,9 @@ Before diving back in, make sure you have:
 
 ---
 
-## 🎯 What is MirrorSite AI?
+## 🎯 What is Atai?
 
-MirrorSite AI is an **AI-powered SaaS platform** that:
+Atai is an **AI-powered SaaS platform** that:
 
 1. **Crawls any website** using Firecrawl API
 2. **Analyzes the structure** using a 7-stage AI pipeline
@@ -65,7 +65,7 @@ Read these in order:
 ## 🏗️ Project Structure
 
 ```
-mirrorsiteai/
+Ataiai/
 ├── app/                      # Next.js app directory (routes, pages, API)
 │   ├── api/                  # REST API endpoints
 │   ├── admin/                # Admin dashboard

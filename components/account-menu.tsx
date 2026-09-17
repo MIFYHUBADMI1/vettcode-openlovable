@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { mutate } from "swr"
-import { LogOut, Shield, User, Users } from "lucide-react"
+import { LogOut, Shield, User, Users, Palette } from "lucide-react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -103,6 +103,10 @@ export function AccountMenu() {
         <DropdownMenuItem onClick={() => router.push("/settings")} className="gap-2">
           <User className="size-4" />
           Settings
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => router.push("/settings/appearance")} className="gap-2">
+          <Palette className="size-4" />
+          Appearance
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem variant="destructive" disabled={signingOut} onClick={handleSignOut} className="gap-2">

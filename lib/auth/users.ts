@@ -14,12 +14,14 @@ export interface PublicUser {
   emailVerified: boolean
   imageUrl?: string
   githubUsername?: string
+  githubAccessToken?: string
   credits: number
   isAdmin?: boolean
   onboarding?: { source?: string; role?: string; signalType?: string; completedAt: number }
   suspended?: boolean
   banned?: boolean
   createdAt: number
+  theme?: "system" | "dark" | "light" | "light-blue" | "glass"
 }
 
 function toPublicUser(doc: UserDoc): PublicUser {
@@ -36,6 +38,7 @@ function toPublicUser(doc: UserDoc): PublicUser {
     suspended: doc.suspended,
     banned: doc.banned,
     createdAt: doc.createdAt,
+    theme: doc.theme,
   }
 }
 
@@ -227,7 +230,7 @@ export async function softDeleteUser(userId: string): Promise<void> {
     {
       $set: {
         deletedAt: Date.now(),
-        email: `deleted_${userId}@deleted.mirrorsite.invalid`,
+        email: `deleted_${userId}@deleted.Atai.invalid`,
         name: "Deleted user",
         passwordHash: undefined,
         googleId: undefined,

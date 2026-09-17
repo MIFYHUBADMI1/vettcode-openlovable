@@ -1,8 +1,11 @@
-import { redirect } from "next/navigation"
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Globe, Lightbulb, ArrowRight } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
-import { getCurrentUser } from "@/lib/auth/session"
+import { useSession } from "@/lib/client/api"
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
@@ -20,7 +23,6 @@ const MODES = [
     description: "Point us at a live site. We crawl it, analyze it, and turn it into an editable application plan.",
     href: "/new/website",
     color: "primary" as const,
-    badge: null,
   },
   {
     id: "idea",
@@ -29,53 +31,42 @@ const MODES = [
     description: "Describe your app in plain language. We'll create a full specification you can review and refine.",
     href: "/new/idea",
     color: "accent" as const,
-    badge: null,
   },
 ]
 
-export default async function NewProjectPage() {
-  const user = await getCurrentUser()
-  if (!user) redirect("/login?next=%2Fnew")
+export default function NewProjectPage() {
+  const router = useRouter()
+  const { session, isLoading } = useSession()
+
+  useEffect(() => {
+    if (!isLoading && !session) router.replace("/login?next=%2Fnew")
+  }, [session, isLoading, router])
+
+  if (isLoading || !session) return null
 
   return (
     <main className="min-h-svh bg-background text-foreground">
       <AppHeader />
       <section className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-6 py-10 lg:px-10 lg:py-14">
         <div className="flex flex-col gap-6">
-          <Link
-            href="/dashboard"
-            className="inline-flex w-fit items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
-          >
+          <Link href="/dashboard" className="inline-flex w-fit items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground">
             <ArrowLeft className="size-3.5" />
             Back to dashboard
           </Link>
           <div className="flex flex-col gap-4 border-b border-border pb-10">
-            <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-6xl">
-              Create a new project
-            </h1>
+            <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-6xl">Create a new project</h1>
             <p className="max-w-2xl text-pretty text-lg leading-8 text-muted-foreground">
               Choose how you want to start. Mirror a website, describe an idea, or build straight from a GitHub repo.
             </p>
           </div>
         </div>
 
-        {/* Standard modes */}
         <div className="grid gap-6 sm:grid-cols-2">
           {MODES.map((mode) => (
-            <Link
-              key={mode.id}
-              href={mode.href}
-              className="group flex flex-col gap-6 border border-border bg-card p-8 transition-all hover:border-primary/40 hover:bg-card/80"
-            >
+            <Link key={mode.id} href={mode.href} className="group flex flex-col gap-6 border border-border bg-card p-8 transition-all hover:border-primary/40 hover:bg-card/80">
               <div className="flex items-start justify-between">
-                <div
-                  className={`flex size-12 items-center justify-center rounded-lg ${mode.color === "primary" ? "bg-primary/10" : "bg-accent/40"
-                    }`}
-                >
-                  <mode.icon
-                    className={`size-6 ${mode.color === "primary" ? "text-primary" : "text-accent-foreground"
-                      }`}
-                  />
+                <div className={`flex size-12 items-center justify-center rounded-lg ${mode.color === "primary" ? "bg-primary/10" : "bg-accent/40"}`}>
+                  <mode.icon className={`size-6 ${mode.color === "primary" ? "text-primary" : "text-accent-foreground"}`} />
                 </div>
                 <ArrowRight className="size-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
               </div>
@@ -87,11 +78,7 @@ export default async function NewProjectPage() {
           ))}
         </div>
 
-        {/* GitHub mode — experimental, full width */}
-        <Link
-          href="/new/github"
-          className="group relative flex flex-col gap-6 border border-purple-500/30 bg-card p-8 transition-all hover:border-purple-500/60 hover:bg-purple-500/5 sm:flex-row sm:items-center sm:justify-between"
-        >
+        <Link href="/new/github" className="group relative flex flex-col gap-6 border border-purple-500/30 bg-card p-8 transition-all hover:border-purple-500/60 hover:bg-purple-500/5 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-5">
             <div className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-purple-500/10">
               <GitHubIcon className="size-6 text-purple-600 dark:text-purple-400" />
@@ -99,54 +86,29 @@ export default async function NewProjectPage() {
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-3">
                 <h2 className="text-xl font-semibold">Build from a GitHub repo</h2>
-                <span className="rounded-full bg-purple-500/15 px-2.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-widest text-purple-600 dark:text-purple-400">
-                  New &amp; Experimental
-                </span>
+                <span className="rounded-full bg-purple-500/15 px-2.5 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-widest text-purple-600 dark:text-purple-400">New &amp; Experimental</span>
               </div>
-              <p className="text-sm leading-6 text-muted-foreground">
-                Paste any public GitHub URL — or a private repo you have access to. We read the code, analyse
-                what it does, and scaffold a working application from it.
-              </p>
-              <p className="font-mono text-xs text-muted-foreground">
-                Works with: TypeScript, JavaScript, Python, Go, Ruby, Java, PHP and more
-              </p>
+              <p className="text-sm leading-6 text-muted-foreground">Paste any public GitHub URL — or a private repo you have access to. We read the code, analyse what it does, and scaffold a working application from it.</p>
+              <p className="font-mono text-xs text-muted-foreground">Works with: TypeScript, JavaScript, Python, Go, Ruby, Java, PHP and more</p>
             </div>
           </div>
           <ArrowRight className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-1" />
         </Link>
 
         <div className="flex flex-col gap-4 border-t border-border pt-8">
-          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-            What happens next?
-          </p>
+          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">What happens next?</p>
           <div className="grid gap-4 sm:grid-cols-3">
-            <div className="flex flex-col gap-2">
-              <span className="flex size-8 items-center justify-center rounded-full border border-border bg-muted font-mono text-xs">
-                1
-              </span>
-              <p className="text-sm font-medium">Analysis</p>
-              <p className="text-sm text-muted-foreground">
-                We analyze your input and create a structured application plan
-              </p>
-            </div>
-            <div className="flex flex-col gap-2">
-              <span className="flex size-8 items-center justify-center rounded-full border border-border bg-muted font-mono text-xs">
-                2
-              </span>
-              <p className="text-sm font-medium">Review &amp; refine</p>
-              <p className="text-sm text-muted-foreground">
-                Edit the specification, add features, and approve when ready
-              </p>
-            </div>
-            <div className="flex flex-col gap-2">
-              <span className="flex size-8 items-center justify-center rounded-full border border-border bg-muted font-mono text-xs">
-                3
-              </span>
-              <p className="text-sm font-medium">Build</p>
-              <p className="text-sm text-muted-foreground">
-                We generate the working application based on your approved plan
-              </p>
-            </div>
+            {[
+              { n: "1", title: "Analysis", body: "We analyze your input and create a structured application plan" },
+              { n: "2", title: "Review & refine", body: "Edit the specification, add features, and approve when ready" },
+              { n: "3", title: "Build", body: "We generate the working application based on your approved plan" },
+            ].map(({ n, title, body }) => (
+              <div key={n} className="flex flex-col gap-2">
+                <span className="flex size-8 items-center justify-center rounded-full border border-border bg-muted font-mono text-xs">{n}</span>
+                <p className="text-sm font-medium">{title}</p>
+                <p className="text-sm text-muted-foreground">{body}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

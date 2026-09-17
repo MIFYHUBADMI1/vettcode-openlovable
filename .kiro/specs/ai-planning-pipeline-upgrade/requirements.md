@@ -2,7 +2,7 @@
 
 ## Introduction
 
-MirrorSite's AI Planning Pipeline Upgrade modernizes application specification generation by introducing a multi-stage, validated planning architecture. The upgrade addresses the current architectural imbalance where Idea Mode produces specifications in a single pass while Website Mode uses a two-stage understanding-then-specification approach. The new unified pipeline introduces explicit understanding stages for both modes, adaptive research phases, independent critique validation, and semantic consistency checks before specifications reach the Totalum builder.
+Atai's AI Planning Pipeline Upgrade modernizes application specification generation by introducing a multi-stage, validated planning architecture. The upgrade addresses the current architectural imbalance where Idea Mode produces specifications in a single pass while Website Mode uses a two-stage understanding-then-specification approach. The new unified pipeline introduces explicit understanding stages for both modes, adaptive research phases, independent critique validation, and semantic consistency checks before specifications reach the Totalum builder.
 
 This upgrade aims to produce higher-quality, more complete, and internally consistent ApplicationSpecifications while maintaining backward compatibility with existing Totalum build pipelines and preserving all current functionality.
 
@@ -28,7 +28,7 @@ This upgrade aims to produce higher-quality, more complete, and internally consi
 
 ### Requirement 1: Idea Mode Understanding Stage
 
-**User Story:** As a MirrorSite developer, I want Idea Mode to produce explicit IdeaUnderstanding objects before generating specifications, so that idea-based and website-based projects follow consistent planning architectures.
+**User Story:** As a Atai developer, I want Idea Mode to produce explicit IdeaUnderstanding objects before generating specifications, so that idea-based and website-based projects follow consistent planning architectures.
 
 #### Acceptance Criteria
 
@@ -58,7 +58,7 @@ This upgrade aims to produce higher-quality, more complete, and internally consi
 
 ### Requirement 3: Shared Planning Service
 
-**User Story:** As a MirrorSite developer, I want both Idea Mode and Website Mode to use a unified planning service, so that specification quality is consistent regardless of input type.
+**User Story:** As a Atai developer, I want both Idea Mode and Website Mode to use a unified planning service, so that specification quality is consistent regardless of input type.
 
 #### Acceptance Criteria
 
@@ -88,7 +88,7 @@ This upgrade aims to produce higher-quality, more complete, and internally consi
 
 ### Requirement 5: Final Repair and Refinement
 
-**User Story:** As a MirrorSite developer, I want validated specification issues to be automatically repaired, so that the Totalum builder receives high-quality, consistent specifications.
+**User Story:** As a Atai developer, I want validated specification issues to be automatically repaired, so that the Totalum builder receives high-quality, consistent specifications.
 
 #### Acceptance Criteria
 
@@ -148,7 +148,7 @@ This upgrade aims to produce higher-quality, more complete, and internally consi
 
 ### Requirement 9: Backward Compatibility
 
-**User Story:** As a MirrorSite maintainer, I want the upgraded pipeline to maintain backward compatibility with existing code, so that deployment requires no breaking changes to downstream systems.
+**User Story:** As a Atai maintainer, I want the upgraded pipeline to maintain backward compatibility with existing code, so that deployment requires no breaking changes to downstream systems.
 
 #### Acceptance Criteria
 
@@ -388,7 +388,7 @@ This upgrade aims to produce higher-quality, more complete, and internally consi
 
 ### Requirement 25: Deep Crawl Compatibility
 
-**User Story:** As a MirrorSite maintainer, I want the enhanced pipeline to support existing deep crawl functionality, so that exact website cloning remains available.
+**User Story:** As a Atai maintainer, I want the enhanced pipeline to support existing deep crawl functionality, so that exact website cloning remains available.
 
 #### Acceptance Criteria
 

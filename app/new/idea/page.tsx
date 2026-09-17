@@ -1,25 +1,30 @@
-import { redirect } from "next/navigation"
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Lightbulb, FileText, Hammer } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
-import { CreateIdeaForm } from "@/components/create-idea-form"
-import { getCurrentUser } from "@/lib/auth/session"
+import { FounderIdeaForm } from "@/components/founder-idea-form"
+import { useSession } from "@/lib/client/api"
 
 const STEPS = [
-  { icon: Lightbulb, label: "Describe", body: "Write a few sentences about the app you want, in plain language." },
-  { icon: FileText, label: "Specify", body: "We turn your idea into a full application plan you can review and edit." },
-  { icon: Hammer, label: "Build", body: "Approve the plan and we scaffold the working app from it." },
+  { icon: Lightbulb, label: "Describe", body: "Tell us the problem you're solving and who it's for. Plain language is fine." },
+  { icon: FileText, label: "Plan", body: "We turn your inputs into a structured app plan you can review and refine with AI." },
+  { icon: Hammer, label: "Build", body: "Happy with the plan? Hit submit and we scaffold the full working app." },
 ]
 
-const PROMPTS = [
-  "A habit tracker with streaks and weekly reminders",
-  "An internal tool for logging customer support tickets",
-  "A marketplace where freelancers list services by category",
-]
+export default function NewIdeaProjectPage() {
+  const router = useRouter()
+  const { session, isLoading } = useSession()
 
-export default async function NewIdeaProjectPage() {
-  const user = await getCurrentUser()
-  if (!user) redirect("/login?next=%2Fnew%2Fidea")
+  useEffect(() => {
+    if (!isLoading && !session) {
+      router.replace("/login?next=%2Fnew%2Fidea")
+    }
+  }, [session, isLoading, router])
+
+  if (isLoading || !session) return null
 
   return (
     <main className="min-h-svh bg-background text-foreground">
@@ -35,36 +40,29 @@ export default async function NewIdeaProjectPage() {
           </Link>
           <div className="flex flex-col gap-4 border-b border-border pb-10">
             <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent-foreground">Idea mode</p>
-            <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-6xl">Start from a blank idea.</h1>
+            <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-6xl">
+              Start from your idea.
+            </h1>
             <p className="max-w-2xl text-pretty text-lg leading-8 text-muted-foreground">
-              No reference site needed. Describe what you want to build in your own words, and we&apos;ll turn it
-              straight into an editable application plan — roles, data, features, and all.
+              No technical knowledge needed. Tell us what problem you&apos;re solving and who it&apos;s for —
+              we&apos;ll turn it into a structured app plan you can review before anything is built.
             </p>
           </div>
         </div>
 
         <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
+          {/* Form */}
           <div className="order-2 flex flex-col gap-6 border border-border bg-card p-6 lg:order-1 lg:p-8">
-            <div className="flex flex-col gap-2">
-              <h2 className="text-xl font-medium">Describe your app</h2>
+            <div className="flex flex-col gap-1.5">
+              <h2 className="text-xl font-medium">Your business idea</h2>
               <p className="text-sm leading-6 text-muted-foreground">
-                The more specific you are about who it&apos;s for and what they do in it, the better the first plan.
+                Fill in what you know. The more specific you are, the better the plan.
               </p>
             </div>
-            <CreateIdeaForm />
-            <div className="flex flex-col gap-2 border-t border-border pt-5">
-              <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Need a starting point?</p>
-              <ul className="flex flex-col gap-1.5">
-                {PROMPTS.map((p) => (
-                  <li key={p} className="text-sm leading-6 text-muted-foreground">
-                    {"\u2022 "}
-                    {p}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <FounderIdeaForm />
           </div>
 
+          {/* Steps sidebar */}
           <div className="order-1 flex flex-col gap-5 lg:order-2">
             {STEPS.map((step, i) => (
               <div key={step.label} className="flex gap-4 border-l border-border pl-5">
@@ -82,6 +80,15 @@ export default async function NewIdeaProjectPage() {
                 </div>
               </div>
             ))}
+
+            <div className="mt-2 rounded-lg border border-border bg-muted/30 p-4">
+              <p className="font-mono text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
+                No code required
+              </p>
+              <p className="text-sm leading-6 text-muted-foreground">
+                You describe the business. We handle the technical architecture, authentication, database, and deployment — automatically.
+              </p>
+            </div>
           </div>
         </div>
       </section>

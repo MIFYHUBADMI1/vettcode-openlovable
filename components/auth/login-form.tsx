@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { GoogleButton } from "@/components/auth/google-button"
 import { GitHubButton } from "@/components/auth/github-button"
 import { postJson } from "@/lib/client/api"
+import { useClientStore } from "@/lib/store/client-store"
 
 const OAUTH_ERROR_MESSAGE = "We couldn't sign you in. Please try again."
 
@@ -18,6 +19,7 @@ export function LoginForm({
   searchParams: Promise<{ error?: string; next?: string }>
 }) {
   const router = useRouter()
+  const fetchSession = useClientStore((s) => s.fetchSession)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -36,13 +38,19 @@ export function LoginForm({
     setSubmitting(true)
     try {
       await postJson("/api/auth/login", { email, password })
+
+      // Fetch session into Zustand store NOW before navigating.
+      // Without this, the dashboard mounts with session=null and
+      // immediately redirects back to /login, creating an infinite loop.
+      await fetchSession()
+
       const params = await searchParams
-      const next = params.next && params.next.startsWith("/") && !params.next.startsWith("//") ? params.next : "/dashboard"
+      const next = params.next && params.next.startsWith("/") && !params.next.startsWith("//")
+        ? params.next
+        : "/dashboard"
       router.push(next)
-      router.refresh()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.")
-    } finally {
       setSubmitting(false)
     }
   }

@@ -1,9 +1,12 @@
-import { redirect } from "next/navigation"
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Globe, ScanSearch, FileText, Hammer } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
 import { CreateProjectForm } from "@/components/create-project-form"
-import { getCurrentUser } from "@/lib/auth/session"
+import { useSession } from "@/lib/client/api"
 
 const STEPS = [
   { icon: Globe, label: "Crawl", body: "We fetch the live site: pages, navigation, screenshots, and copy." },
@@ -12,19 +15,22 @@ const STEPS = [
   { icon: Hammer, label: "Build", body: "Approve the plan and we scaffold the working app from it." },
 ]
 
-export default async function NewWebsiteProjectPage() {
-  const user = await getCurrentUser()
-  if (!user) redirect("/login?next=%2Fnew%2Fwebsite")
+export default function NewWebsiteProjectPage() {
+  const router = useRouter()
+  const { session, isLoading } = useSession()
+
+  useEffect(() => {
+    if (!isLoading && !session) router.replace("/login?next=%2Fnew%2Fwebsite")
+  }, [session, isLoading, router])
+
+  if (isLoading || !session) return null
 
   return (
     <main className="min-h-svh bg-background text-foreground">
       <AppHeader />
       <section className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-6 py-10 lg:px-10 lg:py-14">
         <div className="flex flex-col gap-6">
-          <Link
-            href="/dashboard"
-            className="inline-flex w-fit items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
-          >
+          <Link href="/dashboard" className="inline-flex w-fit items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground">
             <ArrowLeft className="size-3.5" />
             Back to dashboard
           </Link>
@@ -33,8 +39,7 @@ export default async function NewWebsiteProjectPage() {
             <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-6xl">Mirror an existing site.</h1>
             <p className="max-w-2xl text-pretty text-lg leading-8 text-muted-foreground">
               Point us at a live website. We crawl it, build a structured understanding of what it does, then turn that
-              into an editable plan for the real application it should become — before a single line of the build is
-              written.
+              into an editable plan for the real application it should become — before a single line of the build is written.
             </p>
           </div>
         </div>
@@ -44,7 +49,7 @@ export default async function NewWebsiteProjectPage() {
             <div className="flex flex-col gap-2">
               <h2 className="text-xl font-medium">Enter the source URL</h2>
               <p className="text-sm leading-6 text-muted-foreground">
-                {"Works best on marketing sites, dashboards, and app front-ends with a handful of representative pages."}
+                Works best on marketing sites, dashboards, and app front-ends with a handful of representative pages.
               </p>
             </div>
             <CreateProjectForm />

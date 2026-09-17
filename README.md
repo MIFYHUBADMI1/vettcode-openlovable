@@ -1,14 +1,14 @@
-# MirrorSite AI
+# Atai
 
 **Turn websites and ideas into working full-stack applications.**
 
-> MirrorSite AI is an AI-powered application development platform designed to dramatically reduce the distance between an idea and a working full-stack MVP. Analyze a website, describe an idea, or provide a product concept — and MirrorSite generates a complete application foundation including frontend, backend, authentication, database, infrastructure, and deployment.
+> Atai is an AI-powered application development platform designed to dramatically reduce the distance between an idea and a working full-stack MVP. Analyze a website, describe an idea, or provide a product concept — and Atai generates a complete application foundation including frontend, backend, authentication, database, infrastructure, and deployment.
 
 ---
 
-## What is MirrorSite AI?
+## What is Atai?
 
-MirrorSite AI is a web-based platform built by **ATAI — Advanced Technologies and AI Enterprises** that uses artificial intelligence to help users build full-stack applications faster. It sits between the idea stage and a working MVP, handling the repetitive scaffolding, boilerplate, and infrastructure setup so users can focus on product decisions.
+Atai is a web-based platform built by **ATAI — Advanced Technologies and AI Enterprises** that uses artificial intelligence to help users build full-stack applications faster. It sits between the idea stage and a working MVP, handling the repetitive scaffolding, boilerplate, and infrastructure setup so users can focus on product decisions.
 
 ### Who is it for?
 
@@ -22,17 +22,17 @@ MirrorSite AI is a web-based platform built by **ATAI — Advanced Technologies 
 ## How It Works
 
 1. **Input** — Provide a starting point: a website URL, a product idea, or a description of what you want to build
-2. **Analysis** — MirrorSite analyzes the input, understands the product intent, and maps structure, features, and requirements
+2. **Analysis** — Atai analyzes the input, understands the product intent, and maps structure, features, and requirements
 3. **Planning** — The system creates a structured project plan with pages, user roles, workflows, data models, and authentication flows
-4. **Generation** — MirrorSite generates a complete full-stack application foundation
+4. **Generation** — Atai generates a complete full-stack application foundation
 5. **Output** — You receive a working application with frontend, backend, database, authentication, and infrastructure
 
 ### Two entry modes
 
 | Mode | Description |
 |------|-------------|
-| **Website** | Submit a URL to a website you own or have permission to analyze. MirrorSite examines page structure, layout, navigation, components, visual patterns, and functionality. |
-| **Idea** | Describe what you want to build. MirrorSite transforms high-level intent into structured application requirements and generates the application. |
+| **Website** | Submit a URL to a website you own or have permission to analyze. Atai examines page structure, layout, navigation, components, visual patterns, and functionality. |
+| **Idea** | Describe what you want to build. Atai transforms high-level intent into structured application requirements and generates the application. |
 
 ---
 
@@ -72,7 +72,7 @@ MirrorSite AI is a web-based platform built by **ATAI — Advanced Technologies 
 
 ## Credit System
 
-MirrorSite uses a unified credit system with double-entry ledger accounting to track all credit operations.
+Atai uses a unified credit system with double-entry ledger accounting to track all credit operations.
 
 ### Credit Types
 
@@ -142,7 +142,7 @@ This ensures you always get maximum value from your subscription credits while m
 
 ## Payment Methods
 
-MirrorSite AI accepts **mobile money** payments via:
+Atai accepts **mobile money** payments via:
 - **MTN Mobile Money**
 - **Airtel Mobile Money**
 
@@ -150,7 +150,7 @@ MirrorSite AI accepts **mobile money** payments via:
 
 ## License
 
-This is proprietary software owned by **ATAI — Advanced Technologies and AI Enterprises**. All rights reserved. Unauthorized copying, distribution, modification, or use of this software is strictly prohibited. See the [Terms of Service](https://mirrorsite.atai.ink/terms) for usage terms.
+This is proprietary software owned by **ATAI — Advanced Technologies and AI Enterprises**. All rights reserved. Unauthorized copying, distribution, modification, or use of this software is strictly prohibited. See the [Terms of Service](https://Atai.atai.ink/terms) for usage terms.
 
 ---
 
@@ -158,5 +158,5 @@ This is proprietary software owned by **ATAI — Advanced Technologies and AI En
 
 **ATAI — Advanced Technologies and AI Enterprises**
 
-- Website: [mirrorsite.atai.ink](https://mirrorsite.atai.ink)
-- Product: [MirrorSite AI](https://mirrorsite.atai.ink)
+- Website: [Atai.atai.ink](https://Atai.atai.ink)
+- Product: [Atai](https://Atai.atai.ink)

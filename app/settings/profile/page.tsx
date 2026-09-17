@@ -1,12 +1,15 @@
-import { redirect } from "next/navigation"
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { AppHeader } from "@/components/app-header"
-import { getCurrentUser } from "@/lib/auth/session"
-import { getBalance } from "@/lib/credits/credits"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ProfileAvatarUpload } from "@/components/profile-avatar-upload"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle2, Shield, Link as LinkIcon } from "lucide-react"
+import { useSession, jsonFetcher } from "@/lib/client/api"
+import useSWR from "swr"
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
@@ -46,11 +49,22 @@ function timeAgo(timestamp: number): string {
   return `${years}y ago`
 }
 
-export default async function ProfileSettingsPage() {
-  const user = await getCurrentUser()
-  if (!user) redirect("/login?next=%2Fsettings%2Fprofile")
+export default function ProfileSettingsPage() {
+  const router = useRouter()
+  const { session, isLoading } = useSession()
+  const { data: balanceData } = useSWR<{ ok: boolean; data: { balance: number } }>(
+    session ? "/api/credits/balance" : null,
+    jsonFetcher,
+  )
 
-  const balance = await getBalance(user.id)
+  useEffect(() => {
+    if (!isLoading && !session) router.replace("/login?next=%2Fsettings%2Fprofile")
+  }, [session, isLoading, router])
+
+  if (isLoading || !session) return null
+
+  const user = session.user
+  const balance = balanceData?.data?.balance ?? 0
 
   return (
     <main className="min-h-svh bg-background text-foreground">
@@ -230,9 +244,21 @@ export default async function ProfileSettingsPage() {
               className="flex items-center justify-between rounded-lg border border-border p-4 text-sm transition-colors hover:bg-accent"
             >
               <div>
-                <p className="font-medium">Credits & billing</p>
+                <p className="font-medium">Credits &amp; billing</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   View usage history and transactions
+                </p>
+              </div>
+              <span className="text-primary font-mono text-xs">→</span>
+            </Link>
+            <Link
+              href="/settings/appearance"
+              className="flex items-center justify-between rounded-lg border border-border p-4 text-sm transition-colors hover:bg-accent"
+            >
+              <div>
+                <p className="font-medium">Appearance</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Choose your visual theme
                 </p>
               </div>
               <span className="text-primary font-mono text-xs">→</span>

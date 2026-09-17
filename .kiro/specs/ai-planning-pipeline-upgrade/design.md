@@ -4,7 +4,7 @@
 
 ### Purpose
 
-The AI Planning Pipeline Upgrade modernizes MirrorSite's application specification generation by introducing a unified, multi-stage validated planning architecture. This design addresses the architectural imbalance where Idea Mode uses single-pass generation while Website Mode employs two-stage processing, and introduces quality gates through research, critique, and repair stages.
+The AI Planning Pipeline Upgrade modernizes Atai's application specification generation by introducing a unified, multi-stage validated planning architecture. This design addresses the architectural imbalance where Idea Mode uses single-pass generation while Website Mode employs two-stage processing, and introduces quality gates through research, critique, and repair stages.
 
 ### Design Goals
 
@@ -2111,7 +2111,7 @@ import { logger } from '@/lib/logging/logger'
 import { ModelRegistry } from '../models/registry'
 import { IdeaUnderstandingSchema, type IdeaUnderstanding } from '@/lib/types/idea-understanding'
 
-const SYSTEM_PROMPT = `You are MirrorSite's idea analysis engine.
+const SYSTEM_PROMPT = `You are Atai's idea analysis engine.
 
 Your job is to transform a user's application idea into a structured IdeaUnderstanding object.
 
@@ -2192,7 +2192,7 @@ import { ResearchFindingsSchema, type ResearchFindings } from '@/lib/types/resea
 import type { IdeaUnderstanding } from '@/lib/types/idea-understanding'
 import type { ProjectUnderstanding } from '@/lib/types/understanding'
 
-const SYSTEM_PROMPT = `You are MirrorSite's research agent.
+const SYSTEM_PROMPT = `You are Atai's research agent.
 
 Your job is to analyze application requirements and identify:
 1. Missing features that make the app production-ready

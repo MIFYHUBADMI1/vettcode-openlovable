@@ -3,7 +3,7 @@
  * GET /api/internal/projects?email=<email>
  *
  * This endpoint is called server-to-server by the ATAI.INK WEB app so it can
- * surface a user's MirrorSite AI projects inside the VettCode dashboard.
+ * surface a user's Atai projects inside the VettCode dashboard.
  *
  * Auth: a shared secret passed in the X-Internal-Key header.
  * The secret must match the ATAI_INTERNAL_KEY environment variable — never
@@ -15,7 +15,7 @@ import { findUserByEmail } from "@/lib/auth/users"
 import { store } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 
-const MIRRORSITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://mirrorsite.atai.ink"
+const Atai_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://Atai.atai.ink"
 
 export async function GET(req: NextRequest) {
   try {
@@ -46,8 +46,8 @@ export async function GET(req: NextRequest) {
     // ── Lookup ──────────────────────────────────────────────────────────────
     const user = await findUserByEmail(email)
     if (!user) {
-      // Not an error — this user simply hasn't signed up for MirrorSite yet.
-      return ok({ projects: [], mirrorSiteUrl: `${MIRRORSITE_URL}/register` })
+      // Not an error — this user simply hasn't signed up for Atai yet.
+      return ok({ projects: [], AtaiUrl: `${Atai_URL}/register` })
     }
 
     const projects = await store.listProjects(user.id)
@@ -60,10 +60,10 @@ export async function GET(req: NextRequest) {
         state: p.state,
         sourceUrl: p.sourceUrl ?? null,
         updatedAt: p.updatedAt,
-        url: `${MIRRORSITE_URL}/project/${p.id}`,
+        url: `${Atai_URL}/project/${p.id}`,
       })),
-      mirrorSiteUrl: `${MIRRORSITE_URL}/dashboard`,
-      newProjectUrl: `${MIRRORSITE_URL}/new`,
+      AtaiUrl: `${Atai_URL}/dashboard`,
+      newProjectUrl: `${Atai_URL}/new`,
     })
   } catch (e) {
     return handleRouteError("api.internal.projects", e)

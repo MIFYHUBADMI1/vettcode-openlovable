@@ -1,10 +1,13 @@
-import { redirect } from "next/navigation"
+"use client"
+
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, GitBranch, FileCode, Hammer, BookOpen } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
 import { CreateGitHubRepoForm } from "@/components/create-github-repo-form"
-import { getCurrentUser } from "@/lib/auth/session"
-import { usersCol } from "@/lib/db/collections"
+import { useSession, jsonFetcher } from "@/lib/client/api"
+import useSWR from "swr"
 
 const STEPS = [
   {
@@ -30,45 +33,39 @@ const STEPS = [
   },
 ]
 
-const EXAMPLES = [
-  "facebook/react",
-  "vercel/next.js",
-  "owner/my-private-app",
-]
+const EXAMPLES = ["facebook/react", "vercel/next.js", "owner/my-private-app"]
 
-export default async function NewGitHubProjectPage() {
-  const user = await getCurrentUser()
-  if (!user) redirect("/login?next=%2Fnew%2Fgithub")
+export default function NewGitHubProjectPage() {
+  const router = useRouter()
+  const { session, isLoading } = useSession()
 
-  // Check if user has a GitHub access token connected
-  const userDoc = await (await usersCol()).findOne({ id: user.id })
-  const hasGitHub = Boolean(userDoc?.githubAccessToken)
+  useEffect(() => {
+    if (!isLoading && !session) router.replace("/login?next=%2Fnew%2Fgithub")
+  }, [session, isLoading, router])
+
+  const { data: profileData } = useSWR<{ ok: boolean; data: { githubConnected: boolean } }>(
+    session ? "/api/auth/github/status" : null,
+    jsonFetcher,
+  )
+  const hasGitHub = profileData?.data?.githubConnected ?? false
+
+  if (isLoading || !session) return null
 
   return (
     <main className="min-h-svh bg-background text-foreground">
       <AppHeader />
       <section className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-6 py-10 lg:px-10 lg:py-14">
-
         <div className="flex flex-col gap-6">
-          <Link
-            href="/dashboard"
-            className="inline-flex w-fit items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
-          >
+          <Link href="/dashboard" className="inline-flex w-fit items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground">
             <ArrowLeft className="size-3.5" />
             Back to dashboard
           </Link>
           <div className="flex flex-col gap-4 border-b border-border pb-10">
             <div className="flex items-center gap-3">
-              <p className="font-mono text-xs uppercase tracking-[0.2em] text-purple-600 dark:text-purple-400">
-                GitHub mode
-              </p>
-              <span className="rounded-full bg-purple-500/15 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-widest text-purple-600 dark:text-purple-400">
-                New &amp; Experimental
-              </span>
+              <p className="font-mono text-xs uppercase tracking-[0.2em] text-purple-600 dark:text-purple-400">GitHub mode</p>
+              <span className="rounded-full bg-purple-500/15 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-widest text-purple-600 dark:text-purple-400">New &amp; Experimental</span>
             </div>
-            <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-6xl">
-              Build from a GitHub repo.
-            </h1>
+            <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-6xl">Build from a GitHub repo.</h1>
             <p className="max-w-2xl text-pretty text-lg leading-8 text-muted-foreground">
               Point us at any public GitHub repository — or a private one you have access to. Clone mode builds
               a fresh app from your README. Extend mode continues your existing codebase with new features.
@@ -77,8 +74,6 @@ export default async function NewGitHubProjectPage() {
         </div>
 
         <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-
-          {/* Left — form */}
           <div className="order-2 flex flex-col gap-6 border border-border bg-card p-6 lg:order-1 lg:p-8">
             <div className="flex flex-col gap-2">
               <h2 className="text-xl font-medium">Enter a repository</h2>
@@ -87,21 +82,16 @@ export default async function NewGitHubProjectPage() {
               </p>
             </div>
             <CreateGitHubRepoForm hasGitHub={hasGitHub} />
-
-            {/* Examples */}
             <div className="flex flex-col gap-2 border-t border-border pt-5">
               <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Examples</p>
               <ul className="flex flex-col gap-1.5">
                 {EXAMPLES.map((ex) => (
-                  <li key={ex} className="font-mono text-xs text-muted-foreground">
-                    • {ex}
-                  </li>
+                  <li key={ex} className="font-mono text-xs text-muted-foreground">• {ex}</li>
                 ))}
               </ul>
             </div>
           </div>
 
-          {/* Right — steps */}
           <div className="order-1 flex flex-col gap-5 lg:order-2">
             {STEPS.map((step, i) => (
               <div key={step.label} className="flex gap-4 border-l-2 border-purple-500/30 pl-5">
@@ -120,7 +110,6 @@ export default async function NewGitHubProjectPage() {
               </div>
             ))}
 
-            {/* What we read */}
             <div className="mt-2 rounded-xl border border-border bg-muted/40 p-4">
               <p className="mb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground">What we analyze</p>
               <ul className="space-y-1.5 text-xs text-muted-foreground">
@@ -138,12 +127,9 @@ export default async function NewGitHubProjectPage() {
               </ul>
             </div>
 
-            {/* Private repo callout */}
             {!hasGitHub && (
               <div className="rounded-xl border border-purple-500/20 bg-purple-500/5 p-4">
-                <p className="text-xs font-medium text-purple-700 dark:text-purple-300 mb-1">
-                  Want to use a private repo?
-                </p>
+                <p className="text-xs font-medium text-purple-700 dark:text-purple-300 mb-1">Want to use a private repo?</p>
                 <p className="text-xs text-muted-foreground">
                   Connect your GitHub account in{" "}
                   <Link href="/settings/profile" className="font-medium text-purple-600 dark:text-purple-400 underline underline-offset-2">

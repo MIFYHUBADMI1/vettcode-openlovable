@@ -1,5 +1,5 @@
 /**
- * MirrorSite AI — Billing Packages (Unified)
+ * Atai — Billing Packages (Unified)
  *
  * Re-exports from the centralized config. This file preserves backward
  * compatibility for existing imports while the underlying values now

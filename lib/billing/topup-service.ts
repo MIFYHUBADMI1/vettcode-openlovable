@@ -123,7 +123,7 @@ export async function uploadEvidence(params: UploadEvidenceParams): Promise<{ fi
     file: params.fileBuffer,
     fileName: params.fileName,
     mimeType: params.mimeType,
-    folder: "/mirrorsite/evidence",
+    folder: "/Atai/evidence",
   })
 
   await col.updateOne(

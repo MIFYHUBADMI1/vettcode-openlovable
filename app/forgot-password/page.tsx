@@ -4,8 +4,8 @@ import { ForgotPasswordForm } from "@/components/auth/forgot-password-form"
 import { Shield, Clock, CheckCircle2, ArrowRight, Lock, Eye, Fingerprint, Users, Zap } from "lucide-react"
 
 export const metadata: Metadata = {
-  title: "Forgot password — MirrorSite",
-  description: "Reset your MirrorSite AI password.",
+  title: "Forgot password — Atai",
+  description: "Reset your Atai password.",
   robots: { index: false, follow: false },
 }
 

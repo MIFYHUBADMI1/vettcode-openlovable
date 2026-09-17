@@ -6,7 +6,7 @@
 
 ## Overview
 
-MirrorSite AI uses a multi-stage pipeline to turn raw crawl data into a structured `ApplicationSpecification`. Understanding this pipeline is critical because it's the core intellectual property of the platform — the thing that makes results better than competitors.
+Atai uses a multi-stage pipeline to turn raw crawl data into a structured `ApplicationSpecification`. Understanding this pipeline is critical because it's the core intellectual property of the platform — the thing that makes results better than competitors.
 
 **File**: `lib/planning/orchestrator.ts` — `PlanningOrchestrator` class  
 **Stages file**: `lib/planning/stages/`
@@ -401,7 +401,7 @@ lib/analysis/
 
 **Quick log search**:
 ```
-[v0][mirrorsite] ... "stage":"pipeline.deepCrawl" ... projectId: "your-id"
+[v0][Atai] ... "stage":"pipeline.deepCrawl" ... projectId: "your-id"
 ```
 
 ---

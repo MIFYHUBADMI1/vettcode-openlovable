@@ -6,7 +6,7 @@ import { logger } from "@/lib/logging/logger"
 import { grantCredits } from "@/lib/billing/credit-service"
 
 /**
- * MirrorSite referral system.
+ * Atai referral system.
  *
  * Business model:
  *   - Referrer gets +500 credits when referred user verifies their account.

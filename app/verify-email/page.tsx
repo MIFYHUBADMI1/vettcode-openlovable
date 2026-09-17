@@ -2,8 +2,8 @@ import type { Metadata } from "next"
 import { VerifyEmailClient } from "@/components/auth/verify-email-client"
 
 export const metadata: Metadata = {
-  title: "Verify email — MirrorSite",
-  description: "Verify your MirrorSite AI email address.",
+  title: "Verify email — Atai",
+  description: "Verify your Atai email address.",
   robots: { index: false, follow: false },
 }
 

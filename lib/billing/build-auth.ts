@@ -1,5 +1,5 @@
 /**
- * MirrorSite AI — Build Authorization Service
+ * Atai — Build Authorization Service
  *
  * Manages the RESERVE → EXECUTE → FINALIZE flow for build credit management.
  * Before starting a chargeable build, a BuildAuthorization is created.

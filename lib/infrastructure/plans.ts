@@ -1,12 +1,12 @@
 /**
- * MirrorSite Infrastructure Plans — centralized configuration.
+ * Atai Infrastructure Plans — centralized configuration.
  *
  * Each plan defines:
  *   - Customer-facing storage limit
- *   - MirrorSite credit price (monthly)
+ *   - Atai Credit price (monthly)
  *   - Internal Totalum infrastructure credit cap (monthly)
  *
- * 1 MirrorSite credit = 1 UGX.
+ * 1 Atai Credit = 1 UGX.
  * Totalum credits are strictly internal and never exposed to customers.
  */
 
@@ -19,8 +19,8 @@ export interface InfrastructurePlan {
   storageLabel: string
   /** Storage in bytes (for internal comparison). */
   storageBytes: number
-  /** Monthly MirrorSite credit cost. 0 = free. */
-  mirrorSitePrice: number
+  /** Monthly Atai Credit cost. 0 = free. */
+  AtaiPrice: number
   /** Internal Totalum infrastructure credit cap per month. */
   totalumInfrastructureCredits: number
   /** Whether this is a paid plan. */
@@ -35,7 +35,7 @@ export const INFRASTRUCTURE_PLANS: Record<InfrastructurePlanId, InfrastructurePl
     name: "Testing",
     storageLabel: "Up to 50 MB",
     storageBytes: 50 * 1024 * 1024, // 50 MB
-    mirrorSitePrice: 0,
+    AtaiPrice: 0,
     totalumInfrastructureCredits: 5,
     isPaid: false,
     description: "Free testing access for new applications.",
@@ -45,7 +45,7 @@ export const INFRASTRUCTURE_PLANS: Record<InfrastructurePlanId, InfrastructurePl
     name: "Basic",
     storageLabel: "Up to 100 MB",
     storageBytes: 100 * 1024 * 1024, // 100 MB
-    mirrorSitePrice: 5_000,
+    AtaiPrice: 5_000,
     totalumInfrastructureCredits: 10,
     isPaid: true,
     description: "For small applications with light database usage.",
@@ -55,7 +55,7 @@ export const INFRASTRUCTURE_PLANS: Record<InfrastructurePlanId, InfrastructurePl
     name: "Starter",
     storageLabel: "Up to 1 GB",
     storageBytes: 1024 * 1024 * 1024, // 1 GB
-    mirrorSitePrice: 15_000,
+    AtaiPrice: 15_000,
     totalumInfrastructureCredits: 30,
     isPaid: true,
     description: "For growing applications with moderate database needs.",
@@ -65,7 +65,7 @@ export const INFRASTRUCTURE_PLANS: Record<InfrastructurePlanId, InfrastructurePl
     name: "Pro",
     storageLabel: "Up to 5 GB",
     storageBytes: 5 * 1024 * 1024 * 1024, // 5 GB
-    mirrorSitePrice: 35_000,
+    AtaiPrice: 35_000,
     totalumInfrastructureCredits: 100,
     isPaid: true,
     description: "For capable full-stack applications.",
@@ -75,7 +75,7 @@ export const INFRASTRUCTURE_PLANS: Record<InfrastructurePlanId, InfrastructurePl
     name: "Business",
     storageLabel: "Up to 25 GB",
     storageBytes: 25 * 1024 * 1024 * 1024, // 25 GB
-    mirrorSitePrice: 95_000,
+    AtaiPrice: 95_000,
     totalumInfrastructureCredits: 300,
     isPaid: true,
     description: "For advanced applications with high infrastructure demands.",
@@ -85,7 +85,7 @@ export const INFRASTRUCTURE_PLANS: Record<InfrastructurePlanId, InfrastructurePl
     name: "Enterprise",
     storageLabel: "Custom",
     storageBytes: Infinity,
-    mirrorSitePrice: 0, // Custom pricing
+    AtaiPrice: 0, // Custom pricing
     totalumInfrastructureCredits: 0, // Custom
     isPaid: true,
     description: "Custom infrastructure for large-scale applications. Contact us.",
@@ -111,7 +111,7 @@ export function formatStorage(bytes: number): string {
   return `${bytes} bytes`
 }
 
-/** Format MirrorSite credits as price. */
+/** Format Atai Credits as price. */
 export function formatPrice(credits: number): string {
   if (credits === 0) return "Free"
   return `${credits.toLocaleString()} credits/month`

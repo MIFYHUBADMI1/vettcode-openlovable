@@ -2,8 +2,8 @@ import type { Metadata } from "next"
 import { ConfirmEmailChangeClient } from "@/components/auth/confirm-email-change-client"
 
 export const metadata: Metadata = {
-  title: "Confirm email change — MirrorSite",
-  description: "Confirm your new email address on MirrorSite AI.",
+  title: "Confirm email change — Atai",
+  description: "Confirm your new email address on Atai.",
 }
 
 export default function ConfirmEmailChangePage({

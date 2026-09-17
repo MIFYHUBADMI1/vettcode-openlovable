@@ -1,13 +1,15 @@
 import type { ProjectUnderstanding } from "./understanding"
 import type { ApplicationSpecification } from "./specification"
+import type { PlanAnalysis } from "./plan-analysis"
 
-/** Explicit MirrorSite project lifecycle (spec section 30). State is always
+/** Explicit Atai project lifecycle (spec section 30). State is always
  * persisted server-side and never inferred from frontend state alone. */
 export type ProjectState =
   | "created"
   | "analyzing"
   | "analysis_complete"
   | "specification_ready"
+  | "plan_ready"
   | "awaiting_build_confirmation"
   | "building"
   | "build_complete"
@@ -188,6 +190,10 @@ export interface MirrorProject {
   infrastructure?: InfrastructureSubscription
   /** User preferences collected during project creation. */
   preferences?: ProjectPreferences
+  /** Cached AI co-founder plan analysis (Collaborate workspace). */
+  planAnalysis?: PlanAnalysis
+  /** Accepted plan-change decisions, fed back into the AI context. */
+  planUpdateNotes?: string[]
   /** GitHub mode: README content from the repository */
   githubReadme?: string
   /** GitHub mode: structured file tree string */
@@ -220,6 +226,7 @@ export const STATE_LABELS: Record<ProjectState, string> = {
   analyzing: "Analyzing website",
   analysis_complete: "Analysis complete",
   specification_ready: "Application plan ready",
+  plan_ready: "Plan ready — review before building",
   awaiting_build_confirmation: "Awaiting build confirmation",
   building: "Building application",
   build_complete: "Build complete",

@@ -1,8 +1,11 @@
+"use client"
+
 import Link from "next/link"
 import { Compass } from "lucide-react"
 import { CreditMeter } from "@/components/credit-meter"
 import { AccountMenu } from "@/components/account-menu"
 import { VerifyEmailBanner } from "@/components/verify-email-banner"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export function AppHeader() {
   return (
@@ -18,7 +21,7 @@ export function AppHeader() {
                 />
               </svg>
             </span>
-            <span className="font-mono text-sm font-medium tracking-tight text-foreground">MirrorSite</span>
+            <span className="font-mono text-sm font-medium tracking-tight text-foreground">Atai</span>
           </Link>
           <nav className="hidden items-center sm:flex">
             <Link
@@ -38,6 +41,7 @@ export function AppHeader() {
             <Compass className="size-3" />
             Explore
           </Link>
+          <ThemeToggle />
           <CreditMeter />
           <AccountMenu />
         </div>

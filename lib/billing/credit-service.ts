@@ -1,5 +1,5 @@
 /**
- * MirrorSite AI — Unified Credit Service
+ * Atai — Unified Credit Service
  *
  * The SINGLE authoritative system for all credit operations.
  * No other file should directly mutate user credit balances.

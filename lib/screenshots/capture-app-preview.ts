@@ -45,7 +45,7 @@ export async function captureAppPreview(projectId: string, appUrl: string): Prom
         file: buffer,
         fileName: `app-preview-${Date.now()}.png`,
         mimeType,
-        folder: `/mirrorsite/projects/${projectId}/screenshots`,
+        folder: `/Atai/projects/${projectId}/screenshots`,
       })
       imageUrl = uploaded.url
     } else {

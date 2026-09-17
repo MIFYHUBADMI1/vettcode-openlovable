@@ -51,7 +51,7 @@ export async function GET(req: Request) {
     const localProducts = [
       ...SUBSCRIPTION_PLANS.filter((p) => !p.custom).map((p) => ({
         id: p.id,
-        name: `MirrorSite AI — ${p.name}`,
+        name: `Atai — ${p.name}`,
         priceUSD: p.priceUSD,
         credits: p.mirrorCredits,
         type: "subscription" as const,
@@ -60,7 +60,7 @@ export async function GET(req: Request) {
       })),
       ...PERMANENT_CREDIT_PACKS.map((p) => ({
         id: p.id,
-        name: `MirrorSite AI — ${p.label}`,
+        name: `Atai — ${p.label}`,
         priceUSD: p.priceUSD,
         credits: p.credits,
         type: "permanent" as const,

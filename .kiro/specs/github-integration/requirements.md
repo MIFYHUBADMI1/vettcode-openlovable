@@ -2,11 +2,11 @@
 
 ## Introduction
 
-This feature adds GitHub integration to MirrorSite AI across three dimensions:
+This feature adds GitHub integration to Atai across three dimensions:
 
 1. **Sign in with GitHub** — GitHub OAuth as a first-class authentication method alongside email/password and Google OAuth. Full scopes (`repo`, `read:user`, `user:email`) are requested at sign-in time. The GitHub access token, GitHub user ID, and GitHub username are persisted on the `UserDoc`. The `AuthProvider` union is extended to include `"github"`.
 
-2. **Push to GitHub** — A per-project integration where the user connects their GitHub account to a MirrorSite project and selects the "push" direction. The user picks a target repository (new or existing). An initial push of the project's source code (from `getSourceCode()`) is performed immediately. Every subsequent successful build triggers an automatic push.
+2. **Push to GitHub** — A per-project integration where the user connects their GitHub account to a Atai project and selects the "push" direction. The user picks a target repository (new or existing). An initial push of the project's source code (from `getSourceCode()`) is performed immediately. Every subsequent successful build triggers an automatic push.
 
 3. **Build from GitHub** — A per-project integration where the user connects GitHub to a project and selects the "build-from" direction. A GitHub repository is selected as the analysis source. `"github"` becomes a third `ProjectMode`. The repository's README and code files are fetched via the GitHub API and used as the planning source instead of Firecrawl website crawling.
 
@@ -17,7 +17,7 @@ Per-project GitHub connection state is stored in a dedicated `ProjectGitHubDoc` 
 - **GitHubOAuth**: The GitHub OAuth 2.0 authorization code flow used for authentication and authorization.
 - **GitHubAccessToken**: The OAuth access token issued by GitHub and stored on `UserDoc`. Used for all GitHub API calls on behalf of the user.
 - **UserDoc**: The MongoDB user document defined in `lib/types/db.ts`. Stores authentication identity and credit balance.
-- **ProjectGitHubDoc**: A new MongoDB collection document linking a MirrorSite project to a GitHub repository and recording the integration direction.
+- **ProjectGitHubDoc**: A new MongoDB collection document linking a Atai project to a GitHub repository and recording the integration direction.
 - **ProjectMode**: The `"website" | "scratch"` union in `lib/types/project.ts`, extended to `"website" | "scratch" | "github"`.
 - **AuthProvider**: The `"password" | "google"` union in `lib/types/db.ts`, extended to `"password" | "google" | "github"`.
 - **SourceCodeZip**: The signed ZIP archive URL returned by `getSourceCode(projectId)` in `lib/integrations/totalum/service.ts`.
@@ -33,24 +33,24 @@ Per-project GitHub connection state is stored in a dedicated `ProjectGitHubDoc` 
 
 ### Requirement 1 — GitHub OAuth Sign-In Initiation
 
-**User Story:** As a visitor, I want to sign in or register with my GitHub account, so that I can use MirrorSite AI without managing a separate password.
+**User Story:** As a visitor, I want to sign in or register with my GitHub account, so that I can use Atai without managing a separate password.
 
 #### Acceptance Criteria
 
 1. WHEN a user navigates to `/api/auth/github`, THE GitHubOAuth SHALL redirect the user's browser to GitHub's authorization endpoint with `scope` set to `repo read:user user:email`, a cryptographically random `state` nonce, and the registered `redirect_uri`.
 2. WHEN the OAuth initiation request includes a `next` query parameter containing a path that starts with `/` and does not start with `//`, THE GitHubOAuth SHALL encode that path into the `state` value for post-login redirect.
-3. WHEN the OAuth initiation request includes a `ref` query parameter, THE GitHubOAuth SHALL persist the referral code in an `HttpOnly`, `SameSite=Lax`, `Secure` cookie named `mirrorsite_referral` with a maximum age of 10 minutes.
-4. THE GitHubOAuth SHALL persist the `state` nonce in an `HttpOnly`, `SameSite=Lax`, `Secure` cookie named `mirrorsite_github_oauth_state` with a maximum age of 10 minutes.
+3. WHEN the OAuth initiation request includes a `ref` query parameter, THE GitHubOAuth SHALL persist the referral code in an `HttpOnly`, `SameSite=Lax`, `Secure` cookie named `Atai_referral` with a maximum age of 10 minutes.
+4. THE GitHubOAuth SHALL persist the `state` nonce in an `HttpOnly`, `SameSite=Lax`, `Secure` cookie named `Atai_github_oauth_state` with a maximum age of 10 minutes.
 
 ---
 
 ### Requirement 2 — GitHub OAuth Callback and Account Resolution
 
-**User Story:** As a user who has authorized MirrorSite on GitHub, I want the system to log me in or create my account automatically, so that I am taken directly to my workspace.
+**User Story:** As a user who has authorized Atai on GitHub, I want the system to log me in or create my account automatically, so that I am taken directly to my workspace.
 
 #### Acceptance Criteria
 
-1. WHEN the GitHub callback route receives a `code` and `state` parameter, THE GitHubOAuth SHALL verify that the `state` nonce matches the value stored in the `mirrorsite_github_oauth_state` cookie before processing the code.
+1. WHEN the GitHub callback route receives a `code` and `state` parameter, THE GitHubOAuth SHALL verify that the `state` nonce matches the value stored in the `Atai_github_oauth_state` cookie before processing the code.
 2. IF the `state` nonce does not match or the `code` parameter is absent, THEN THE GitHubOAuth SHALL redirect the browser to `/login?error=github_auth_failed` without performing any token exchange.
 3. WHEN the nonce verification succeeds, THE GitHubOAuth SHALL exchange the `code` for a GitHub access token by sending a `POST` request to `https://github.com/login/oauth/access_token`.
 4. WHEN the access token is obtained, THE GitHubOAuth SHALL fetch the authenticated user's profile from `https://api.github.com/user` and primary email from `https://api.github.com/user/emails` using the access token.
@@ -58,8 +58,8 @@ Per-project GitHub connection state is stored in a dedicated `ProjectGitHubDoc` 
 6. WHEN the GitHub profile is obtained, no `UserDoc` matches `githubId`, and a `UserDoc` with the same primary email exists, THE GitHubOAuth SHALL link the GitHub identity to the existing account by writing `githubId`, `githubUsername`, and `githubAccessToken` onto that `UserDoc` and log in the existing user.
 7. WHEN the GitHub profile is obtained and no matching `UserDoc` exists by `githubId` or email, THE GitHubOAuth SHALL create a new `UserDoc` with `authProvider: "github"`, `githubId`, `githubUsername`, `githubAccessToken`, `emailVerified: true`, and grant 500 permanent welcome credits via the credit service using idempotency key `signup_<userId>_github`.
 8. WHEN the resolved user has `banned: true` or `suspended: true`, THE GitHubOAuth SHALL redirect the browser to `/login?error=account_banned` or `/login?error=account_suspended` respectively, without creating a session.
-9. WHEN account resolution succeeds and the user is not banned or suspended, THE GitHubOAuth SHALL create a session, set the session cookie, delete the `mirrorsite_github_oauth_state` cookie, and redirect the browser to the `next` path extracted from the state (defaulting to `/workspace`).
-10. WHEN the resolved user is a new user and a `mirrorsite_referral` cookie is present, THE GitHubOAuth SHALL attempt referral capture and then delete the `mirrorsite_referral` cookie.
+9. WHEN account resolution succeeds and the user is not banned or suspended, THE GitHubOAuth SHALL create a session, set the session cookie, delete the `Atai_github_oauth_state` cookie, and redirect the browser to the `next` path extracted from the state (defaulting to `/workspace`).
+10. WHEN the resolved user is a new user and a `Atai_referral` cookie is present, THE GitHubOAuth SHALL attempt referral capture and then delete the `Atai_referral` cookie.
 
 ---
 
@@ -133,7 +133,7 @@ Per-project GitHub connection state is stored in a dedicated `ProjectGitHubDoc` 
 
 ### Requirement 8 — Build-from GitHub Mode
 
-**User Story:** As a user, I want to use a GitHub repository as the source for my MirrorSite project instead of a website URL, so that I can build an application based on existing code.
+**User Story:** As a user, I want to use a GitHub repository as the source for my Atai project instead of a website URL, so that I can build an application based on existing code.
 
 #### Acceptance Criteria
 

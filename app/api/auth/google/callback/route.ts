@@ -7,7 +7,7 @@ import { getAppUrl } from "@/lib/env"
 import { logger } from "@/lib/logging/logger"
 import { captureReferral } from "@/lib/referrals/referrals"
 
-const STATE_COOKIE = "mirrorsite_oauth_state"
+const STATE_COOKIE = "Atai_oauth_state"
 
 /**
  * Google OAuth callback (spec section 3). Verifies the CSRF `state`,
@@ -64,13 +64,13 @@ export async function GET(req: Request) {
 
     // Capture referral if this is a new user and a referral code was stored
     if (isNewUser) {
-      const referralCookie = jar.get("mirrorsite_referral")?.value
+      const referralCookie = jar.get("Atai_referral")?.value
       if (referralCookie) {
         await captureReferral(user.id, referralCookie).catch((e) => {
           logger.error("api.auth.google.callback", "referral capture failed", { error: e instanceof Error ? e.message : String(e) })
         })
       }
-      jar.delete("mirrorsite_referral")
+      jar.delete("Atai_referral")
     }
 
     if (user.banned || user.suspended) {

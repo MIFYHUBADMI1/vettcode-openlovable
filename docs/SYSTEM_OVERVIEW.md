@@ -1,12 +1,12 @@
 # 🏗️ System Overview
 
-**MirrorSite AI - Complete System Architecture**
+**Atai - Complete System Architecture**
 
 ---
 
 ## 🎯 What Does This System Do?
 
-MirrorSite AI transforms any website into a fully functional Next.js application through an AI-powered pipeline.
+Atai transforms any website into a fully functional Next.js application through an AI-powered pipeline.
 
 ### The Journey of a Website Clone
 
@@ -325,7 +325,7 @@ External APIs (Firecrawl, OpenRouter, etc.)
 ### Environments
 
 1. **Development** - Local (`npm run dev`)
-2. **Production** - Vercel (`mirrorsiteai.vercel.app`)
+2. **Production** - Vercel (`Ataiai.vercel.app`)
 
 ### Environment Variables
 

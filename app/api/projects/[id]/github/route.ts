@@ -116,7 +116,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         repoOwner:       body.repoOwner.trim(),
         repoName:        body.repoName.trim(),
         branch,
-        commitMessage:   `chore: initial sync from MirrorSite AI — ${project.name}`,
+        commitMessage:   `chore: initial sync from Atai — ${project.name}`,
       }).catch(err => console.error("[github] initial push failed", err))
     }
 

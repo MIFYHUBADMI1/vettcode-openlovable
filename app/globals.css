@@ -5,51 +5,144 @@
 
 :root {
   --radius: 0.65rem;
-  --background: oklch(0.98 0.008 70);
-  --foreground: oklch(0.22 0.022 40);
-  --card: oklch(0.995 0.006 70);
-  --card-foreground: oklch(0.22 0.022 40);
-  --popover: oklch(0.995 0.006 70);
-  --popover-foreground: oklch(0.22 0.022 40);
+  /* ── Light theme: true clean white/neutral, no warm tint ── */
+  --background: oklch(0.99 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
   --primary: oklch(0.64 0.17 42);
   --primary-foreground: oklch(0.99 0.006 70);
-  --secondary: oklch(0.95 0.014 55);
-  --secondary-foreground: oklch(0.26 0.025 40);
-  --muted: oklch(0.95 0.013 55);
-  --muted-foreground: oklch(0.52 0.03 45);
-  --accent: oklch(0.91 0.05 55);
-  --accent-foreground: oklch(0.28 0.04 40);
+  --secondary: oklch(0.96 0 0);
+  --secondary-foreground: oklch(0.2 0 0);
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.5 0 0);
+  --accent: oklch(0.94 0 0);
+  --accent-foreground: oklch(0.2 0 0);
   --success: oklch(0.56 0.13 152);
   --success-foreground: oklch(0.98 0.012 150);
   --destructive: oklch(0.58 0.19 25);
   --destructive-foreground: oklch(0.99 0.005 70);
-  --border: oklch(0.89 0.018 55);
-  --input: oklch(0.89 0.018 55);
+  --border: oklch(0.9 0 0);
+  --input: oklch(0.9 0 0);
   --ring: oklch(0.64 0.17 42);
 }
 
 .dark {
-  --background: oklch(0.19 0.016 42);
-  --foreground: oklch(0.95 0.014 60);
-  --card: oklch(0.235 0.02 42);
-  --card-foreground: oklch(0.95 0.014 60);
-  --popover: oklch(0.235 0.02 42);
-  --popover-foreground: oklch(0.95 0.014 60);
+  /* ── Dark theme: true neutral dark, no warm/brown tint ── */
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.73 0.16 45);
-  --primary-foreground: oklch(0.18 0.02 42);
-  --secondary: oklch(0.29 0.02 42);
-  --secondary-foreground: oklch(0.95 0.014 60);
-  --muted: oklch(0.28 0.018 42);
-  --muted-foreground: oklch(0.7 0.025 55);
-  --accent: oklch(0.34 0.05 45);
-  --accent-foreground: oklch(0.96 0.02 55);
+  --primary-foreground: oklch(0.145 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.62 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
   --success: oklch(0.68 0.15 152);
   --success-foreground: oklch(0.16 0.03 152);
   --destructive: oklch(0.64 0.2 25);
   --destructive-foreground: oklch(0.98 0.006 70);
-  --border: oklch(0.32 0.02 42);
-  --input: oklch(0.34 0.022 42);
+  --border: oklch(0.269 0 0);
+  --input: oklch(0.269 0 0);
   --ring: oklch(0.73 0.16 45);
+}
+
+/* ── Light Blue theme ── */
+.theme-light-blue {
+  --background: oklch(0.97 0.018 240);
+  --foreground: oklch(0.2 0.03 240);
+  --card: oklch(0.99 0.012 240);
+  --card-foreground: oklch(0.2 0.03 240);
+  --popover: oklch(0.99 0.012 240);
+  --popover-foreground: oklch(0.2 0.03 240);
+  --primary: oklch(0.55 0.2 250);
+  --primary-foreground: oklch(0.99 0.005 240);
+  --secondary: oklch(0.92 0.03 240);
+  --secondary-foreground: oklch(0.25 0.03 240);
+  --muted: oklch(0.93 0.025 240);
+  --muted-foreground: oklch(0.48 0.04 240);
+  --accent: oklch(0.88 0.06 240);
+  --accent-foreground: oklch(0.25 0.05 240);
+  --success: oklch(0.56 0.13 152);
+  --success-foreground: oklch(0.98 0.012 150);
+  --destructive: oklch(0.58 0.19 25);
+  --destructive-foreground: oklch(0.99 0.005 70);
+  --border: oklch(0.86 0.03 240);
+  --input: oklch(0.86 0.03 240);
+  --ring: oklch(0.55 0.2 250);
+}
+
+/* ── Glass (Glassmorphism) theme ──
+   Keeps the dark palette as a base; surfaces use backdrop-blur + transparency.
+   The special sauce is in the surface overrides below. */
+.theme-glass {
+  --background: oklch(0.15 0.02 250);
+  --foreground: oklch(0.95 0.01 240);
+  --card: oklch(0.22 0.025 250 / 0.55);
+  --card-foreground: oklch(0.95 0.01 240);
+  --popover: oklch(0.22 0.025 250 / 0.72);
+  --popover-foreground: oklch(0.95 0.01 240);
+  --primary: oklch(0.72 0.18 260);
+  --primary-foreground: oklch(0.99 0.005 260);
+  --secondary: oklch(0.28 0.03 250 / 0.6);
+  --secondary-foreground: oklch(0.92 0.01 240);
+  --muted: oklch(0.26 0.02 250 / 0.5);
+  --muted-foreground: oklch(0.68 0.02 240);
+  --accent: oklch(0.32 0.06 260 / 0.65);
+  --accent-foreground: oklch(0.95 0.02 250);
+  --success: oklch(0.68 0.15 152);
+  --success-foreground: oklch(0.16 0.03 152);
+  --destructive: oklch(0.64 0.2 25);
+  --destructive-foreground: oklch(0.98 0.006 70);
+  --border: oklch(0.55 0.04 250 / 0.3);
+  --input: oklch(0.35 0.03 250 / 0.5);
+  --ring: oklch(0.72 0.18 260);
+  /* Glass-specific: vivid ambient gradient on the page background */
+  --glass-bg-gradient:
+    radial-gradient(ellipse 80% 60% at 15% 10%, oklch(0.55 0.22 280 / 0.35), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 85% 90%, oklch(0.52 0.2 200 / 0.3), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 50% 50%, oklch(0.48 0.18 240 / 0.2), transparent 60%);
+}
+
+/* Glass surfaces: cards, popovers, borders get the frosted-glass treatment */
+.theme-glass body {
+  background: var(--glass-bg-gradient), oklch(0.15 0.02 250);
+  background-attachment: fixed;
+}
+
+.theme-glass .bg-card,
+.theme-glass [class*="bg-card"] {
+  backdrop-filter: blur(16px) saturate(1.6);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
+  background-color: var(--card) !important;
+  border-color: oklch(0.6 0.06 250 / 0.25) !important;
+}
+
+.theme-glass .bg-background {
+  background: transparent;
+}
+
+.theme-glass header,
+.theme-glass [class*="bg-background/"] {
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  background-color: oklch(0.18 0.025 250 / 0.6) !important;
+}
+
+/* Subtle light refraction border on glass cards */
+.theme-glass .rounded-xl,
+.theme-glass .rounded-lg,
+.theme-glass .rounded-2xl {
+  box-shadow:
+    inset 0 1px 0 oklch(0.9 0.02 240 / 0.12),
+    0 8px 32px oklch(0.3 0.08 260 / 0.25);
 }
 
 @theme inline {
@@ -1350,6 +1443,31 @@
 @media (max-width: 1023px) {
   .auth-gradient-divider {
     display: none;
+  }
+}
+
+/* ── heroFloat — used by floating background icons on the landing page hero ── */
+@keyframes heroFloat {
+
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg) scale(1);
+    opacity: 0.07;
+  }
+
+  25% {
+    transform: translateY(-14px) rotate(4deg) scale(1.08);
+    opacity: 0.11;
+  }
+
+  50% {
+    transform: translateY(-6px) rotate(-3deg) scale(1.04);
+    opacity: 0.09;
+  }
+
+  75% {
+    transform: translateY(-18px) rotate(2deg) scale(1.06);
+    opacity: 0.12;
   }
 }
 

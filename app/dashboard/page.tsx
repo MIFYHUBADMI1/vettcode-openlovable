@@ -1,6 +1,14 @@
-import { redirect } from "next/navigation"
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { ArrowRight, Globe, Lightbulb, Users, FolderOpen, Compass } from "lucide-react"
+import { ArrowRight, Globe, Lightbulb, Users, FolderOpen, Compass, Brain, TrendingUp } from "lucide-react"
+import { AppHeader } from "@/components/app-header"
+import { ProjectList } from "@/components/project-list"
+import { OnboardingTour } from "@/components/onboarding-tour"
+import { OnboardingChecklist } from "@/components/onboarding-checklist"
+import { useSession } from "@/lib/client/api"
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
@@ -9,17 +17,27 @@ function GitHubIcon({ className }: { className?: string }) {
     </svg>
   )
 }
-import { AppHeader } from "@/components/app-header"
-import { ProjectList } from "@/components/project-list"
-import { OnboardingTour } from "@/components/onboarding-tour"
-import { OnboardingChecklist } from "@/components/onboarding-checklist"
-import { getCurrentUser } from "@/lib/auth/session"
 
-export default async function DashboardPage() {
-  const user = await getCurrentUser()
-  if (!user) redirect("/login?next=%2Fdashboard")
+export default function DashboardPage() {
+  const router = useRouter()
+  const { session, isLoading } = useSession()
 
-  const firstName = user.name.trim().split(/\s+/)[0] || "builder"
+  useEffect(() => {
+    if (!isLoading && !session) {
+      router.replace("/login?next=%2Fdashboard")
+    }
+  }, [session, isLoading, router])
+
+  // Don't render the page until authenticated
+  if (isLoading || !session) return (
+    <main className="min-h-svh bg-background text-foreground">
+      <AppHeader />
+      {/* Render OnboardingTour outside the auth guard so it can detect new users */}
+      <OnboardingTour />
+    </main>
+  )
+
+  const firstName = session.user.name?.trim().split(/\s+/)[0] || "builder"
 
   return (
     <main className="min-h-svh bg-background text-foreground">
@@ -28,9 +46,11 @@ export default async function DashboardPage() {
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-6 py-10 lg:px-10 lg:py-14">
         <div className="flex flex-col gap-6 border-b border-border pb-10 md:flex-row md:items-end md:justify-between">
           <div className="flex flex-col gap-4">
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">Dashboard / control center</p>
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">Dashboard</p>
             <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-6xl">Good to see you, {firstName}.</h1>
-            <p className="max-w-2xl text-pretty text-lg leading-8 text-muted-foreground">Your projects, analysis runs, build states, and next actions—kept in one place.</p>
+            <p className="max-w-2xl text-pretty text-lg leading-8 text-muted-foreground">
+              Your team is ready. Pick a starting point and Atai handles the build, launch, and everything in between.
+            </p>
           </div>
           <Link
             href="/projects"
@@ -41,134 +61,211 @@ export default async function DashboardPage() {
             <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
           </Link>
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
-          <Link
-            href="/new/website"
-            className="group flex flex-col justify-between border border-border bg-card p-5 transition-colors hover:border-primary/50"
-          >
-            <div>
-              <div className="flex items-center justify-between">
-                <p className="font-mono text-xs uppercase tracking-widest text-primary">Website mode</p>
-                <Globe className="size-4 text-primary" />
+
+        {/* ── Start a new project — three entry points ── */}
+        <div>
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-muted-foreground mb-4">
+            Start a new project
+          </p>
+          <div className="grid gap-4 md:grid-cols-3">
+
+            {/* Idea mode */}
+            <Link
+              href="/new/idea"
+              className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-6 transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/5"
+            >
+              <div>
+                <div className="mb-4 flex size-11 items-center justify-center rounded-xl bg-primary/10">
+                  <Lightbulb className="size-5 text-primary" />
+                </div>
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-widest text-primary mb-2">
+                  Idea mode
+                </p>
+                <h2 className="text-lg font-bold text-foreground leading-snug">
+                  Turn your business idea into a real product
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Describe the problem you&apos;re solving and who it&apos;s for. Atai plans, builds, and launches a full-stack application — with database, auth, and payments included.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {["Business plan", "Full-stack app", "Payments", "User auth"].map(tag => (
+                    <span key={tag} className="rounded-md border border-primary/15 bg-primary/5 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-widest text-primary">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
               </div>
-              <h2 className="mt-4 text-xl font-medium">Mirror an existing site</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Bring a website reference and we&apos;ll analyze its structure before you commit to a build.
-              </p>
-            </div>
-            <span className="mt-6 inline-flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-primary">
-              Start mirroring
-              <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
-            </span>
-          </Link>
-          <Link
-            href="/new/idea"
-            className="group flex flex-col justify-between border border-border bg-card p-5 transition-colors hover:border-accent-foreground/50"
-          >
-            <div>
-              <div className="flex items-center justify-between">
-                <p className="font-mono text-xs uppercase tracking-widest text-accent-foreground">Idea mode</p>
-                <Lightbulb className="size-4 text-accent-foreground" />
+              <span className="mt-6 inline-flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-primary">
+                Describe your business
+                <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </Link>
+
+            {/* Website / competitor mode */}
+            <Link
+              href="/new/website"
+              className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-6 transition-all hover:border-violet-500/40 hover:shadow-lg hover:shadow-violet-500/5"
+            >
+              <div>
+                <div className="mb-4 flex size-11 items-center justify-center rounded-xl bg-violet-500/10">
+                  <Globe className="size-5 text-violet-500" />
+                </div>
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-widest text-violet-500 mb-2">
+                  Competitor mode
+                </p>
+                <h2 className="text-lg font-bold text-foreground leading-snug">
+                  Build on top of a competitor or reference
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Paste any website URL. Atai analyses its structure, product logic, and design — then rebuilds the concept as your own fully owned application.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {["URL analysis", "Your own code", "Custom branding", "Editable"].map(tag => (
+                    <span key={tag} className="rounded-md border border-violet-500/15 bg-violet-500/5 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-widest text-violet-500">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
               </div>
-              <h2 className="mt-4 text-xl font-medium">Start from an idea</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                No reference site. Describe what you need and we&apos;ll turn it into a plan.
-              </p>
-            </div>
-            <span className="mt-6 inline-flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-accent-foreground">
-              Describe your app
-              <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
-            </span>
-          </Link>
-          <Link
-            href="/new/github"
-            className="group relative flex flex-col justify-between border border-purple-500/30 bg-card p-5 transition-colors hover:border-purple-500/60 hover:bg-purple-500/5"
-          >
-            {/* Experimental badge */}
-            <div className="absolute right-3 top-3 rounded-full bg-purple-500/15 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-widest text-purple-600 dark:text-purple-400">
-              New
-            </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <p className="font-mono text-xs uppercase tracking-widest text-purple-600 dark:text-purple-400">GitHub mode</p>
-                <GitHubIcon className="size-4 text-purple-600 dark:text-purple-400" />
+              <span className="mt-6 inline-flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-violet-500">
+                Paste a URL
+                <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </Link>
+
+            {/* GitHub mode */}
+            <Link
+              href="/new/github"
+              className="group relative flex flex-col justify-between rounded-2xl border border-purple-500/25 bg-card p-6 transition-all hover:border-purple-500/50 hover:bg-purple-500/5 hover:shadow-lg hover:shadow-purple-500/5"
+            >
+              <div className="absolute right-4 top-4 rounded-full bg-purple-500/15 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-widest text-purple-600 dark:text-purple-400">
+                New
               </div>
-              <h2 className="mt-4 text-xl font-medium">Build from a repo</h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                Paste any GitHub repo URL. We read the code, understand it, and build a working app from it.
-              </p>
+              <div>
+                <div className="mb-4 flex size-11 items-center justify-center rounded-xl bg-purple-500/10">
+                  <GitHubIcon className="size-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-widest text-purple-600 dark:text-purple-400 mb-2">
+                  GitHub mode
+                </p>
+                <h2 className="text-lg font-bold text-foreground leading-snug">
+                  Continue or rebuild from an existing codebase
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  Link any public or private GitHub repository. Atai reads the code, understands what it does, and either extends it with your requested changes or rebuilds it as a new product.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-1.5">
+                  {["Clone repo", "Extend codebase", "Private repos", "Full rebuild"].map(tag => (
+                    <span key={tag} className="rounded-md border border-purple-500/15 bg-purple-500/5 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-widest text-purple-600 dark:text-purple-400">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <span className="mt-6 inline-flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-purple-600 dark:text-purple-400">
+                Connect a repo
+                <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+              </span>
+            </Link>
+          </div>
+
+          {/* What you get with every project */}
+          <div className="mt-4 rounded-xl border border-border bg-muted/20 px-5 py-4">
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+              Every project includes — out of the box
+            </p>
+            <div className="flex flex-wrap gap-x-6 gap-y-1.5">
+              {[
+                "Full-stack Next.js codebase",
+                "Authentication & user management",
+                "Database & data models",
+                "Backend API routes",
+                "Payment integration",
+                "Infrastructure & deployment",
+                "AI integration",
+                "You own the code",
+              ].map((item) => (
+                <span key={item} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="size-1 rounded-full bg-primary/60 shrink-0" />
+                  {item}
+                </span>
+              ))}
             </div>
-            <span className="mt-6 inline-flex items-center gap-1.5 font-mono text-xs uppercase tracking-widest text-purple-600 dark:text-purple-400">
-              Start from repo
-              <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
-            </span>
-          </Link>
+          </div>
         </div>
+
         <OnboardingChecklist />
         <ProjectList />
 
-        {/* Explore public projects */}
-        <div className="flex flex-col gap-5 border border-border bg-card p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-primary/10 p-2.5">
+        {/* ── Explore — see what other founders are building ── */}
+        <div className="rounded-2xl border border-border bg-card p-6">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex items-start gap-4">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
                 <Compass className="size-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-medium">Explore public projects</h3>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  Browse apps built by the community — like, follow creators, or fork a project into your workspace
+                <h3 className="font-semibold text-foreground">See what other founders are building</h3>
+                <p className="mt-1 text-sm text-muted-foreground max-w-lg">
+                  Browse live apps built by the Atai community. Find inspiration, fork a project
+                  straight into your workspace, or see what&apos;s possible with your own idea.
                 </p>
+                <div className="mt-4 grid gap-2 sm:grid-cols-3">
+                  {[
+                    { label: "Discover", body: "Real businesses built by real founders — each one live and deployed." },
+                    { label: "Fork", body: "Clone any public project into your workspace and make it your own." },
+                    { label: "Get inspired", body: "See what Atai can build and use it as a starting point for yours." },
+                  ].map(({ label, body }) => (
+                    <div key={label} className="rounded-lg border border-border bg-background px-3 py-2.5">
+                      <p className="font-mono text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">{label}</p>
+                      <p className="text-xs text-muted-foreground">{body}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
             <Link
               href="/explore"
-              className="group hidden shrink-0 items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:bg-accent hover:text-foreground sm:inline-flex"
+              className="shrink-0 inline-flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/10"
             >
-              Browse library
+              Browse the library
               <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
             </Link>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="flex flex-col gap-1 rounded-lg border border-border bg-background px-4 py-3">
-              <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Discover</span>
-              <p className="text-sm text-foreground">Browse apps built by creators using MirrorSite AI</p>
-            </div>
-            <div className="flex flex-col gap-1 rounded-lg border border-border bg-background px-4 py-3">
-              <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Fork</span>
-              <p className="text-sm text-foreground">Clone any public project straight into your workspace</p>
-            </div>
-            <div className="flex flex-col gap-1 rounded-lg border border-border bg-background px-4 py-3">
-              <span className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Connect</span>
-              <p className="text-sm text-foreground">Like projects and follow creators you find interesting</p>
-            </div>
-          </div>
-          <Link
-            href="/explore"
-            className="group inline-flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:hidden"
-          >
-            Browse public library
-            <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
-          </Link>
         </div>
 
-        {/* Referral Card */}
+        {/* ── Referral — grow together ── */}
         <Link
           href="/referrals"
-          className="group flex items-center justify-between border border-border bg-card p-5 transition-colors hover:border-primary/50"
+          className="group flex flex-col gap-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6 transition-all hover:border-emerald-500/40 hover:shadow-lg hover:shadow-emerald-500/5 sm:flex-row sm:items-center sm:justify-between"
         >
-          <div className="flex items-center gap-4">
-            <div className="rounded-lg bg-primary/10 p-2.5">
-              <Users className="size-5 text-primary" />
+          <div className="flex items-start gap-4">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
+              <TrendingUp className="size-5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div>
-              <h3 className="font-medium">Refer & Earn</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Earn up to <span className="font-medium text-foreground">2,000 credits</span> for every successful referral.
+              <h3 className="font-semibold text-foreground">Help other founders — earn credits</h3>
+              <p className="mt-1 text-sm text-muted-foreground max-w-md">
+                Know someone with a business idea? Refer them to Atai and earn up to{" "}
+                <span className="font-semibold text-foreground">2,000 Atai Credits</span> for every
+                successful referral. Credits never expire.
               </p>
+              <div className="mt-3 flex flex-wrap gap-3 font-mono text-[10px] text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span className="size-1.5 rounded-full bg-emerald-500/60" />
+                  500 credits when they verify email
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="size-1.5 rounded-full bg-emerald-500/60" />
+                  1,500 credits when they hit 75k usage
+                </span>
+              </div>
             </div>
           </div>
-          <ArrowRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+          <span className="shrink-0 inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-5 py-2.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300 transition-colors group-hover:bg-emerald-500/20">
+            Get your referral link
+            <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+          </span>
         </Link>
       </section>
     </main>

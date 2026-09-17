@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -146,7 +146,7 @@ export function CancelSubscriptionButton({
                 Wait! We'd hate to see you go
               </h2>
               <p className="mt-3 text-base text-muted-foreground max-w-xl mx-auto">
-                You're a valued member of the MirrorSite community. Before you leave, let's make sure we're giving you everything you need.
+                You're a valued member of the Atai community. Before you leave, let's make sure we're giving you everything you need.
               </p>
             </div>
 

@@ -200,16 +200,15 @@ ${fileTree}
   const specification = await generateSpecificationFromIdea(ideaText, project.userId, projectId)
 
   await store.updateProject(projectId, {
-    state: "specification_ready",
+    state: "plan_ready",
     specification,
     name: specification.title || project.name,
   })
 
-  await store.appendEvent(projectId, event("specify", "📋 Specification ready! Launching build..."))
+  await store.appendEvent(projectId, event("specify", "📋 Plan ready! Review your app plan and refine it before starting the build."))
+  await store.appendEvent(projectId, event("plan", "✨ App plan ready! Taking you to the Collaborate page to review and refine before building."))
 
-  // Auto-launch build
-  await autoLaunchBuild(projectId)
-  logger.info("pipeline.github", "clone mode complete", { projectId })
+  logger.info("pipeline.github", "clone mode complete — plan_ready", { projectId })
 }
 
 /**
@@ -298,14 +297,13 @@ Instructions:
   const specification = await generateSpecificationFromIdea(ideaText, project.userId, projectId)
 
   await store.updateProject(projectId, {
-    state: "specification_ready",
+    state: "plan_ready",
     specification,
     name: specification.title || project.name,
   })
 
-  await store.appendEvent(projectId, event("specify", "📋 Specification ready! Launching build with your changes..."))
+  await store.appendEvent(projectId, event("specify", "📋 Plan ready with your requested changes! Review and refine before starting the build."))
+  await store.appendEvent(projectId, event("plan", "✨ App plan ready! Taking you to the Collaborate page to review and refine before building."))
 
-  // Auto-launch build
-  await autoLaunchBuild(projectId)
-  logger.info("pipeline.github", "extend mode complete", { projectId, zipUrl })
+  logger.info("pipeline.github", "extend mode complete — plan_ready", { projectId, zipUrl })
 }

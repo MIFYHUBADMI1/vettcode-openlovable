@@ -2,7 +2,7 @@
  * Internal API: Get user credit balance by email
  * GET /api/internal/credits?email=<email>
  *
- * Called by ATAI WEB to check MirrorSite credit balance
+ * Called by ATAI WEB to check Atai Credit balance
  * Auth: x-internal-key header
  */
 

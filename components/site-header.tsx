@@ -5,6 +5,7 @@ import { ArrowRight, Compass, BookOpen, DollarSign, Info, LayoutDashboard, Zap, 
 import { buttonVariants } from "@/components/ui/button"
 import { AccountMenu } from "@/components/account-menu"
 import { useSession } from "@/lib/client/api"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 interface NavLink {
   href: string
@@ -49,8 +50,8 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
     <Wrapper>
       {/* Logo */}
       <Link href="/" className="flex items-center gap-3 font-mono text-sm font-semibold tracking-tight">
-        <span className="grid size-8 place-items-center rounded-md bg-primary text-primary-foreground">M</span>
-        <span>mirrorsite<span className="text-primary">.ai</span></span>
+        <span className="grid size-8 place-items-center rounded-md bg-primary text-primary-foreground">A</span>
+        <span>Atai<span className="text-xs font-normal text-muted-foreground ml-1.5">atai.ink</span></span>
       </Link>
 
       {/* Desktop nav */}
@@ -63,7 +64,7 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
             </a>
             <a href="#principles" className={PILL}>
               <Info className="size-3.5" />
-              Why MirrorSite
+              Why Atai
             </a>
             <Link href="/docs" className={PILL}>
               <BookOpen className="size-3.5" />
@@ -86,12 +87,14 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
             {session && <AccountMenu />}
             {!session && !sessionLoading && (
               <>
+                <ThemeToggle />
                 <Link href="/login" className={PILL}>Sign in</Link>
                 <Link href="/register" className={buttonVariants({ size: "sm" })}>
                   Start building <ArrowRight className="size-4" />
                 </Link>
               </>
             )}
+            {session && <ThemeToggle />}
           </>
         ) : (
           <>
@@ -118,6 +121,7 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
 
       {/* Mobile nav */}
       <div className="flex items-center gap-2 md:hidden">
+        <ThemeToggle />
         <Link href="/explore" className="grid place-items-center rounded-md border border-border p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
           <Compass className="size-4" />
         </Link>

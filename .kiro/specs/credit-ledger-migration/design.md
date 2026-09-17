@@ -1093,7 +1093,7 @@ import * as path from 'path'
 import * as readline from 'readline'
 
 const MONGODB_URI = process.env.MONGODB_URI || ''
-const DB_NAME = process.env.DB_NAME || 'mirrorsite'
+const DB_NAME = process.env.DB_NAME || 'Atai'
 const BACKUP_DIR = path.join(process.cwd(), 'backups')
 
 interface BackupStats {

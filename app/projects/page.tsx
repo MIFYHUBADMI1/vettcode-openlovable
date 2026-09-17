@@ -2,18 +2,17 @@
 
 import { useState, useMemo } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import {
-  ArrowLeft, ArrowRight, Globe2, Lightbulb, Search, Trash2,
+  ArrowLeft, ArrowRight, Globe2, Lightbulb, GitBranch, Search, Trash2,
   Loader2, LayoutGrid, List, SlidersHorizontal, FolderOpen,
-  Clock, CheckCircle2, AlertCircle, Zap, Plus,
+  Clock, CheckCircle2, AlertCircle, Zap, Plus, Rocket, Brain,
 } from "lucide-react"
 import { toast } from "sonner"
 import { AppHeader } from "@/components/app-header"
 import { StateBadge } from "@/components/state-badge"
 import { useProjects, deleteJson } from "@/lib/client/api"
 import { cn } from "@/lib/utils"
-import { STATE_LABELS, type ProjectState, type ProjectSummary } from "@/lib/types/project"
+import { type ProjectState, type ProjectSummary } from "@/lib/types/project"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,16 +42,35 @@ function relativeTime(ms: number): string {
   return new Date(ms).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
 }
 
+// Mode label and icon — reflects Atai's three starting points
+function modeLabel(mode: string): string {
+  if (mode === "website") return "Competitor build"
+  if (mode === "github") return "GitHub build"
+  return "Idea build"
+}
+
+function ModeIcon({ mode, className }: { mode: string; className?: string }) {
+  if (mode === "website") return <Globe2 className={className} />
+  if (mode === "github") return <GitBranch className={className} />
+  return <Lightbulb className={className} />
+}
+
 // ─── Filter groups ────────────────────────────────────────────────────────────
 
-type FilterGroup = "all" | "active" | "ready" | "failed"
+type FilterGroup = "all" | "planning" | "building" | "live" | "failed"
 
-const FILTER_GROUPS: { id: FilterGroup; label: string; icon: React.ElementType; states: ProjectState[] | null }[] = [
-  { id: "all", label: "All", icon: FolderOpen, states: null },
-  { id: "active", label: "In progress", icon: Zap, states: ["analyzing", "building", "deploying", "created", "analysis_complete", "specification_ready", "awaiting_build_confirmation", "pending_plan"] },
-  { id: "ready", label: "Ready", icon: CheckCircle2, states: ["build_complete", "ready", "deployed"] },
-  { id: "failed", label: "Failed", icon: AlertCircle, states: ["build_failed", "deployment_failed"] },
-]
+const FILTER_GROUPS: {
+  id: FilterGroup
+  label: string
+  icon: React.ElementType
+  states: ProjectState[] | null
+}[] = [
+    { id: "all", label: "All", icon: FolderOpen, states: null },
+    { id: "planning", label: "Planning", icon: Brain, states: ["created", "analyzing", "analysis_complete", "specification_ready", "plan_ready", "awaiting_build_confirmation", "pending_plan"] },
+    { id: "building", label: "Building", icon: Zap, states: ["building", "build_complete", "deploying"] },
+    { id: "live", label: "Live", icon: CheckCircle2, states: ["ready", "deployed"] },
+    { id: "failed", label: "Failed", icon: AlertCircle, states: ["build_failed", "deployment_failed"] },
+  ]
 
 type SortKey = "updatedAt" | "name" | "state"
 
@@ -71,7 +89,7 @@ function DeleteDialog({
 }) {
   const [deleting, setDeleting] = useState(false)
   if (!project) return null
-  const title = project.sourceUrl ? hostOf(String(project.sourceUrl)) : project.name
+  const title = project.name
 
   async function handleDelete() {
     setDeleting(true)
@@ -93,8 +111,8 @@ function DeleteDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete this project?</AlertDialogTitle>
           <AlertDialogDescription>
-            This permanently removes <span className="font-medium text-foreground">{title}</span> and its
-            entire build history. This can&apos;t be undone.
+            This permanently removes <span className="font-medium text-foreground">{title}</span> and all
+            its data, build history, and deployment records. This cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -121,12 +139,11 @@ function GridCard({
   project: ProjectSummary
   onDeleteRequest: (p: ProjectSummary) => void
 }) {
-  const title = project.sourceUrl ? hostOf(String(project.sourceUrl)) : project.name
-  const subtitle = project.sourceUrl ?? project.name
   const hasThumbnail = Boolean(project.thumbnailUrl)
+  const isPlanReady = project.state === "plan_ready"
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card transition-all hover:border-primary/30 hover:shadow-md hover:shadow-primary/5">
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card transition-all hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5">
       {/* Delete trigger */}
       <button
         aria-label="Delete project"
@@ -136,17 +153,16 @@ function GridCard({
         <Trash2 className="size-3.5" />
       </button>
 
-      <Link href={`/project/${project.id}`} className="flex flex-1 flex-col">
-        {/* Banner thumbnail */}
+      <Link href={isPlanReady ? `/project/${project.id}/collaborate` : `/project/${project.id}`} className="flex flex-1 flex-col">
+        {/* Thumbnail */}
         {hasThumbnail ? (
           <div className="relative aspect-[16/7] w-full overflow-hidden bg-muted">
             <img
               src={project.thumbnailUrl!}
-              alt={`Preview of ${title}`}
+              alt={`Preview of ${project.name}`}
               className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-card/80" />
-            {/* State badge over image */}
             <div className="absolute bottom-2 right-2">
               <StateBadge state={project.state} />
             </div>
@@ -154,35 +170,36 @@ function GridCard({
         ) : null}
 
         <div className={hasThumbnail ? "flex flex-1 flex-col gap-3 p-4" : "flex flex-1 flex-col gap-4 p-5"}>
-          {/* Icon + mode + state (only when no thumbnail) */}
           {!hasThumbnail && (
             <div className="flex items-center justify-between">
-              <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
-                {project.mode === "website"
-                  ? <Globe2 className="size-4 text-primary" />
-                  : <Lightbulb className="size-4 text-primary" />
-                }
+              <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10">
+                <ModeIcon mode={project.mode} className="size-4 text-primary" />
               </div>
               <StateBadge state={project.state} />
             </div>
           )}
 
-          {/* Name / url */}
           <div className="flex-1">
-            <p className="truncate font-mono text-sm font-semibold text-foreground">{title}</p>
-            {!hasThumbnail && (
-              <p className="mt-0.5 truncate text-xs text-muted-foreground">{subtitle}</p>
-            )}
+            <p className="truncate font-semibold text-sm text-foreground leading-snug">{project.name}</p>
+            <p className="mt-0.5 font-mono text-[10px] text-muted-foreground/70 uppercase tracking-widest">
+              {modeLabel(project.mode)}
+            </p>
           </div>
 
-          {/* Footer */}
+          {/* Plan ready prompt */}
+          {isPlanReady && (
+            <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
+              <p className="text-[11px] font-semibold text-primary">✨ Plan ready — review before building</p>
+            </div>
+          )}
+
           <div className="flex items-center justify-between border-t border-border pt-3">
             <span className="flex items-center gap-1.5 font-mono text-[10px] text-muted-foreground">
               <Clock className="size-3" />
               {relativeTime(project.updatedAt)}
             </span>
             <span className="font-mono text-[10px] text-primary opacity-0 transition-opacity group-hover:opacity-100">
-              Open →
+              {isPlanReady ? "Review →" : "Open →"}
             </span>
           </div>
         </div>
@@ -200,43 +217,38 @@ function ListRow({
   project: ProjectSummary
   onDeleteRequest: (p: ProjectSummary) => void
 }) {
-  const title = project.sourceUrl ? hostOf(String(project.sourceUrl)) : project.name
-  const subtitle = project.sourceUrl ?? project.name
+  const isPlanReady = project.state === "plan_ready"
+  const href = isPlanReady ? `/project/${project.id}/collaborate` : `/project/${project.id}`
 
   return (
     <div className="group relative flex items-center gap-4 rounded-xl border border-border bg-card px-5 py-4 transition-all hover:border-primary/30 hover:shadow-sm">
-      {/* Icon */}
-      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-        {project.mode === "website"
-          ? <Globe2 className="size-4 text-primary" />
-          : <Lightbulb className="size-4 text-primary" />
-        }
+      <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+        <ModeIcon mode={project.mode} className="size-4 text-primary" />
       </div>
 
-      {/* Name */}
       <div className="min-w-0 flex-1">
-        <Link href={`/project/${project.id}`} className="group/link">
-          <p className="truncate font-mono text-sm font-semibold text-foreground transition-colors group-hover/link:text-primary">
-            {title}
+        <Link href={href} className="group/link">
+          <p className="truncate font-semibold text-sm text-foreground transition-colors group-hover/link:text-primary">
+            {project.name}
           </p>
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">{subtitle}</p>
+          <p className="mt-0.5 font-mono text-[10px] text-muted-foreground/60 uppercase tracking-widest">
+            {modeLabel(project.mode)}
+            {isPlanReady && <span className="ml-2 text-primary">· Plan ready</span>}
+          </p>
         </Link>
       </div>
 
-      {/* State badge */}
       <div className="hidden sm:block">
         <StateBadge state={project.state} />
       </div>
 
-      {/* Time */}
       <span className="hidden shrink-0 font-mono text-xs text-muted-foreground md:block">
         {relativeTime(project.updatedAt)}
       </span>
 
-      {/* Actions */}
       <div className="flex items-center gap-1">
         <Link
-          href={`/project/${project.id}`}
+          href={href}
           className="flex size-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           aria-label="Open project"
         >
@@ -271,39 +283,23 @@ export default function ProjectsPage() {
     setDeleteOpen(true)
   }
 
-  // ── Filter + search + sort ──
   const displayed = useMemo(() => {
     let result = [...projects]
-
-    // filter group
     const group = FILTER_GROUPS.find((g) => g.id === filter)
-    if (group?.states) {
-      result = result.filter((p) => group.states!.includes(p.state))
-    }
-
-    // search
+    if (group?.states) result = result.filter((p) => group.states!.includes(p.state))
     const q = search.trim().toLowerCase()
-    if (q) {
-      result = result.filter((p) =>
-        p.name.toLowerCase().includes(q) ||
-        (p.sourceUrl && String(p.sourceUrl).toLowerCase().includes(q))
-      )
-    }
-
-    // sort
+    if (q) result = result.filter((p) => p.name.toLowerCase().includes(q) || (p.sourceUrl && String(p.sourceUrl).toLowerCase().includes(q)))
     result.sort((a, b) => {
       if (sort === "updatedAt") return b.updatedAt - a.updatedAt
       if (sort === "name") return a.name.localeCompare(b.name)
       if (sort === "state") return a.state.localeCompare(b.state)
       return 0
     })
-
     return result
   }, [projects, filter, search, sort])
 
-  // ── Count badges per filter group ──
   const groupCounts = useMemo(() => {
-    const counts: Record<FilterGroup, number> = { all: 0, active: 0, ready: 0, failed: 0 }
+    const counts: Record<FilterGroup, number> = { all: 0, planning: 0, building: 0, live: 0, failed: 0 }
     projects.forEach((p) => {
       counts.all++
       for (const g of FILTER_GROUPS) {
@@ -312,6 +308,9 @@ export default function ProjectsPage() {
     })
     return counts
   }, [projects])
+
+  // Count projects needing action (plan ready)
+  const needsAction = projects.filter((p) => p.state === "plan_ready").length
 
   return (
     <main className="min-h-svh bg-background text-foreground">
@@ -328,22 +327,34 @@ export default function ProjectsPage() {
             >
               <ArrowLeft className="size-3" /> Dashboard
             </Link>
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">Projects</p>
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">Your businesses</p>
             <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">All projects</h1>
             <p className="mt-2 text-sm text-muted-foreground">
               {isLoading
-                ? "Loading…"
+                ? "Loading your projects…"
                 : projects.length === 0
-                  ? "No projects yet. Start one from the dashboard."
-                  : `${projects.length} project${projects.length === 1 ? "" : "s"}`
-              }
+                  ? "No projects yet. Pick a starting point below."
+                  : `${projects.length} project${projects.length === 1 ? "" : "s"} — each one a business you're building with Atai`}
             </p>
+            {/* Action prompt for plan_ready projects */}
+            {needsAction > 0 && (
+              <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/5 px-3 py-1.5 font-mono text-xs text-primary">
+                <span className="size-1.5 rounded-full bg-primary animate-pulse" />
+                {needsAction} plan{needsAction > 1 ? "s" : ""} ready for your review
+              </div>
+            )}
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-2">
+            <Link
+              href="/new/idea"
+              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:bg-accent hover:text-foreground"
+            >
+              <Lightbulb className="size-4" /> From idea
+            </Link>
             <Link
               href="/new/website"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               <Plus className="size-4" /> New project
             </Link>
@@ -354,13 +365,13 @@ export default function ProjectsPage() {
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
           {/* Filter tabs */}
-          <div className="flex gap-1 rounded-lg border border-border bg-card p-1">
+          <div className="flex gap-1 rounded-xl border border-border bg-card p-1">
             {FILTER_GROUPS.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setFilter(id)}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                  "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
                   filter === id
                     ? "bg-primary text-primary-foreground shadow-sm"
                     : "text-muted-foreground hover:bg-accent hover:text-foreground",
@@ -382,7 +393,6 @@ export default function ProjectsPage() {
 
           {/* Right controls */}
           <div className="flex items-center gap-2">
-            {/* Search */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -390,12 +400,11 @@ export default function ProjectsPage() {
                 placeholder="Search projects…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-9 rounded-lg border border-border bg-card pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30 w-52"
+                className="h-9 rounded-xl border border-border bg-card pl-8 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30 w-52"
               />
             </div>
 
-            {/* Sort */}
-            <div className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 py-1.5">
+            <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-1.5">
               <SlidersHorizontal className="size-3.5 text-muted-foreground" />
               <select
                 value={sort}
@@ -408,12 +417,11 @@ export default function ProjectsPage() {
               </select>
             </div>
 
-            {/* View toggle */}
-            <div className="flex rounded-lg border border-border bg-card p-1">
+            <div className="flex rounded-xl border border-border bg-card p-1">
               <button
                 onClick={() => setView("grid")}
                 className={cn(
-                  "flex size-7 items-center justify-center rounded-md transition-colors",
+                  "flex size-7 items-center justify-center rounded-lg transition-colors",
                   view === "grid" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
                 )}
                 aria-label="Grid view"
@@ -423,7 +431,7 @@ export default function ProjectsPage() {
               <button
                 onClick={() => setView("list")}
                 className={cn(
-                  "flex size-7 items-center justify-center rounded-md transition-colors",
+                  "flex size-7 items-center justify-center rounded-lg transition-colors",
                   view === "list" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
                 )}
                 aria-label="List view"
@@ -445,47 +453,52 @@ export default function ProjectsPage() {
               <div
                 key={i}
                 className={cn(
-                  "animate-pulse rounded-xl border border-border bg-card",
-                  view === "grid" ? "h-44" : "h-16",
+                  "animate-pulse rounded-2xl border border-border bg-card",
+                  view === "grid" ? "h-48" : "h-16",
                 )}
               />
             ))}
           </div>
         ) : displayed.length === 0 ? (
-          <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border bg-card/40 py-20 text-center">
-            <div className="flex size-14 items-center justify-center rounded-full bg-muted">
-              <FolderOpen className="size-6 text-muted-foreground" />
+          <div className="flex flex-col items-center gap-5 rounded-2xl border border-dashed border-border bg-card/40 py-24 text-center">
+            <div className="flex size-16 items-center justify-center rounded-full bg-muted">
+              <Rocket className="size-7 text-muted-foreground" />
             </div>
             {projects.length === 0 ? (
               <>
                 <div>
-                  <p className="font-semibold">No projects yet</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Start by mirroring a website or building from an idea.
+                  <p className="text-lg font-bold text-foreground">Your first business starts here</p>
+                  <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
+                    Describe your idea, paste a competitor&apos;s URL, or link a GitHub repo.
+                    Atai handles the planning, building, and launching.
                   </p>
                 </div>
-                <div className="flex gap-3">
-                  <Link
-                    href="/new/website"
-                    className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-                  >
-                    <Globe2 className="size-4" /> Mirror a website
-                  </Link>
+                <div className="flex flex-wrap justify-center gap-3">
                   <Link
                     href="/new/idea"
-                    className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium hover:bg-accent"
+                    className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
                   >
-                    <Lightbulb className="size-4" /> Start from idea
+                    <Lightbulb className="size-4" /> Start from an idea
+                  </Link>
+                  <Link
+                    href="/new/website"
+                    className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-5 py-2.5 text-sm font-medium hover:bg-accent"
+                  >
+                    <Globe2 className="size-4" /> Build on a competitor
+                  </Link>
+                  <Link
+                    href="/new/github"
+                    className="inline-flex items-center gap-2 rounded-xl border border-purple-500/30 bg-purple-500/5 px-5 py-2.5 text-sm font-medium text-purple-600 hover:bg-purple-500/10 dark:text-purple-400"
+                  >
+                    <GitBranch className="size-4" /> From a GitHub repo
                   </Link>
                 </div>
               </>
             ) : (
               <>
                 <div>
-                  <p className="font-semibold">No matches</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Try adjusting your search or filter.
-                  </p>
+                  <p className="font-semibold text-foreground">No matches found</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Try adjusting your search or filter.</p>
                 </div>
                 <button
                   onClick={() => { setSearch(""); setFilter("all") }}
@@ -504,7 +517,6 @@ export default function ProjectsPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {/* List header */}
             <div className="hidden grid-cols-[1fr_auto_auto_auto] gap-4 px-5 pb-1 text-[10px] font-mono uppercase tracking-wider text-muted-foreground sm:grid">
               <span>Project</span>
               <span>Status</span>
@@ -530,7 +542,7 @@ export default function ProjectsPage() {
             ))}
             <div className="flex items-center gap-1.5 ml-auto">
               <FolderOpen className="size-3.5" />
-              <span>{projects.length} total</span>
+              <span>{projects.length} total project{projects.length !== 1 ? "s" : ""}</span>
             </div>
           </div>
         )}

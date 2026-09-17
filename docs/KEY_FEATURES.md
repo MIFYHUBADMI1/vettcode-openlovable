@@ -170,7 +170,7 @@ See `CREDIT_SYSTEM.md` for full details. Key points:
 
 ## 5. Dodo Payments Integration
 
-**What it is**: The payment processor for MirrorSite AI. Handles subscriptions and one-time credit purchases.
+**What it is**: The payment processor for Atai. Handles subscriptions and one-time credit purchases.
 
 > ⚠️ **NOT Stripe** — despite docs that say "Stripe". The actual payment provider is **Dodo Payments** (`dodopayments` npm package). This was migrated from Stripe. Update any docs that say Stripe.
 
@@ -358,7 +358,7 @@ All in `.env.local`:
 
 ```bash
 # App
-NEXT_PUBLIC_APP_URL         # Production URL: https://mirrorsite.atai.ink
+NEXT_PUBLIC_APP_URL         # Production URL: https://Atai.atai.ink
 AUTH_SECRET                 # JWT signing secret (random, keep secret)
 
 # Database
