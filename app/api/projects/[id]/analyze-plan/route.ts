@@ -11,6 +11,7 @@ import {
 } from "@/lib/analysis/cofounder"
 import { computePlanHealth } from "@/lib/analysis/plan-sections"
 import { chargeAnalysisCredits } from "@/lib/analysis/collaborate-credits"
+import { getCollaborateCosts } from "@/lib/billing/runtime-config"
 import type { PlanAnalysis } from "@/lib/types/plan-analysis"
 import type { ProjectEvent } from "@/lib/types/project"
 
@@ -81,10 +82,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 
     // Stamp proposals with the REAL current section values.
+    const costs = await getCollaborateCosts()
     const analysis: PlanAnalysis = {
       ...parsed,
       proposals: parsed.proposals.map((p) => buildProposal(spec, p, "analysis")),
-      creditsCharged: 10,
+      creditsCharged: costs.planAnalysisCost,
     }
 
     await store.updateProject(id, { planAnalysis: analysis })

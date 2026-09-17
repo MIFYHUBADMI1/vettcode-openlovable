@@ -1,16 +1,18 @@
 "use client"
 
 import useSWR from "swr"
+import { useEffect, useState } from "react"
 import {
   Loader2, AlertTriangle, Shield, Settings, Coins, DollarSign, Package,
   RefreshCw, CreditCard, Webhook, Key, ArrowRight, CheckCircle2, XCircle,
-  TrendingUp, Star, Zap,
+  TrendingUp, Star, Zap, MessageSquare, Brain,
 } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { jsonFetcher } from "@/lib/client/api"
+import { jsonFetcher, patchJson } from "@/lib/client/api"
 import { AdminNav } from "@/components/admin-nav"
+import { toast } from "sonner"
 
 interface BillingConfig {
   currency: string
@@ -59,6 +61,117 @@ interface BillingConfig {
     AtaiCreditsPerBaselineUnit: number
     description: string
   }
+  collaborateCosts: {
+    chatMessageCost: number
+    planAnalysisCost: number
+    defaults: { chatMessageCost: number; planAnalysisCost: number }
+  }
+}
+
+// ── Collaborate AI costs — editable card ─────────────────────────────────────
+
+function CollaborateCostsCard({
+  costs,
+  onSaved,
+}: {
+  costs: BillingConfig["collaborateCosts"]
+  onSaved: () => void
+}) {
+  const [chat, setChat] = useState(String(costs.chatMessageCost))
+  const [analyze, setAnalyze] = useState(String(costs.planAnalysisCost))
+  const [saving, setSaving] = useState(false)
+
+  // Re-sync fields when fresh data arrives (e.g. after save or refresh).
+  useEffect(() => {
+    setChat(String(costs.chatMessageCost))
+    setAnalyze(String(costs.planAnalysisCost))
+  }, [costs.chatMessageCost, costs.planAnalysisCost])
+
+  const chatNum = Number(chat)
+  const analyzeNum = Number(analyze)
+  const valid =
+    Number.isInteger(chatNum) && chatNum >= 0 && chatNum <= 10000 &&
+    Number.isInteger(analyzeNum) && analyzeNum >= 0 && analyzeNum <= 100000
+  const dirty = chatNum !== costs.chatMessageCost || analyzeNum !== costs.planAnalysisCost
+
+  async function save() {
+    if (!valid || !dirty || saving) return
+    setSaving(true)
+    try {
+      await patchJson("/api/admin/billing/configuration", {
+        collaborate: { chatMessageCost: chatNum, planAnalysisCost: analyzeNum },
+      })
+      toast.success("Collaborate costs updated.")
+      onSaved()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update costs.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Card>
+      <CardContent className="py-5">
+        <div className="flex items-center gap-2 mb-1">
+          <MessageSquare className="size-4 text-primary" />
+          <p className="font-medium">Collaborate AI Co-Founder</p>
+          <Badge variant="secondary" className="ml-auto text-[10px]">Runtime-editable</Badge>
+        </div>
+        <p className="mb-4 text-xs text-muted-foreground">
+          Credits charged per AI action in the project Collaborate workspace. Set 0 to make an action free.
+        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="collab-chat-cost" className="text-xs text-muted-foreground">Chat message cost</label>
+            <div className="mt-1 flex items-center gap-2">
+              <input
+                id="collab-chat-cost"
+                type="number"
+                min={0}
+                max={10000}
+                step={1}
+                value={chat}
+                onChange={(e) => setChat(e.target.value)}
+                className="w-24 rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              <span className="text-xs text-muted-foreground">credits / message</span>
+            </div>
+            {chatNum !== costs.defaults.chatMessageCost && (
+              <p className="mt-1 text-[10px] text-muted-foreground">Default: {costs.defaults.chatMessageCost}</p>
+            )}
+          </div>
+          <div>
+            <label htmlFor="collab-analyze-cost" className="text-xs text-muted-foreground">Plan analysis cost</label>
+            <div className="mt-1 flex items-center gap-2">
+              <input
+                id="collab-analyze-cost"
+                type="number"
+                min={0}
+                max={100000}
+                step={1}
+                value={analyze}
+                onChange={(e) => setAnalyze(e.target.value)}
+                className="w-24 rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
+              />
+              <span className="text-xs text-muted-foreground">credits / analysis</span>
+            </div>
+            {analyzeNum !== costs.defaults.planAnalysisCost && (
+              <p className="mt-1 text-[10px] text-muted-foreground">Default: {costs.defaults.planAnalysisCost}</p>
+            )}
+          </div>
+        </div>
+        <div className="mt-4 flex items-center gap-2">
+          <Button size="sm" onClick={save} disabled={!valid || !dirty || saving}>
+            {saving ? <Loader2 className="size-3.5 animate-spin" /> : <CheckCircle2 className="size-3.5" />}
+            Save changes
+          </Button>
+          {dirty && valid && <span className="text-[11px] text-amber-500">Unsaved changes</span>}
+          {!valid && <span className="text-[11px] text-destructive">Costs must be whole numbers ≥ 0</span>}
+        </div>
+      </CardContent>
+    </Card>
+  )
 }
 
 export default function AdminConfigurationPage() {
@@ -213,6 +326,14 @@ export default function AdminConfigurationPage() {
               </CardContent>
             </Card>
           </div>
+        </section>
+
+        {/* ── Collaborate AI Costs (runtime-editable) ── */}
+        <section className="mt-8">
+          <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-4">AI Collaboration Costs</p>
+          {config?.collaborateCosts && (
+            <CollaborateCostsCard costs={config.collaborateCosts} onSaved={() => mutate()} />
+          )}
         </section>
 
         {/* ── Conversion Rate ── */}

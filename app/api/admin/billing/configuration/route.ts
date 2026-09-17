@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/lib/auth/session"
-import { ok, handleRouteError } from "@/lib/api/respond"
+import { ok, fail, handleRouteError } from "@/lib/api/respond"
+import { z } from "zod"
 import {
   PERMANENT_CREDIT_PACKS,
   BUILD_TIERS,
@@ -12,10 +13,19 @@ import {
   CREDITS_PER_BASELINE_UNIT,
   BASELINE_COST_MODEL_V1,
 } from "@/lib/billing/config"
+import {
+  getCollaborateCosts,
+  updateCollaborateCosts,
+  DEFAULT_COLLABORATE_COSTS,
+  invalidateBillingSettings,
+} from "@/lib/billing/runtime-config"
+import { logger } from "@/lib/logging/logger"
 
 export async function GET() {
   try {
     await requireAdmin()
+
+    const collaborateCosts = await getCollaborateCosts()
 
     const configuration = {
       // ── Currency ──
@@ -47,6 +57,13 @@ export async function GET() {
         referralVerificationReward: REFERRAL_VERIFICATION_REWARD,
         referralMilestoneReward: REFERRAL_MILESTONE_REWARD,
         referralMilestoneThreshold: REFERRAL_MILESTONE_THRESHOLD,
+      },
+
+      // ── Collaborate AI Co-Founder (runtime-configurable) ──
+      collaborateCosts: {
+        chatMessageCost: collaborateCosts.chatMessageCost,
+        planAnalysisCost: collaborateCosts.planAnalysisCost,
+        defaults: DEFAULT_COLLABORATE_COSTS,
       },
 
       // ── Dodo Integration ──
@@ -86,6 +103,49 @@ export async function GET() {
     }
 
     return ok(configuration)
+  } catch (e) {
+    return handleRouteError("api.admin.billing.configuration", e)
+  }
+}
+
+/**
+ * PATCH /api/admin/billing/configuration
+ *
+ * Update runtime-configurable billing settings. Currently supports the
+ * Collaborate AI costs; unknown fields are rejected so typos fail loudly
+ * instead of silently doing nothing.
+ */
+const PatchSchema = z.object({
+  collaborate: z
+    .object({
+      chatMessageCost: z.number().int().min(0).max(10_000).optional(),
+      planAnalysisCost: z.number().int().min(0).max(100_000).optional(),
+    })
+    .optional(),
+})
+
+export async function PATCH(req: Request) {
+  try {
+    const admin = await requireAdmin()
+
+    const body = (await req.json().catch(() => null)) as unknown
+    const parsed = PatchSchema.safeParse(body)
+    if (!parsed.success) {
+      return fail("VALIDATION", "Invalid configuration values.", 422)
+    }
+    if (!parsed.data.collaborate) {
+      return fail("VALIDATION", "No configuration changes provided.", 422)
+    }
+
+    const updated = await updateCollaborateCosts(parsed.data.collaborate)
+    invalidateBillingSettings()
+
+    logger.info("api.admin.billing.configuration", "collaborate costs updated", {
+      adminId: admin.id,
+      costs: updated,
+    })
+
+    return ok({ collaborateCosts: updated })
   } catch (e) {
     return handleRouteError("api.admin.billing.configuration", e)
   }
