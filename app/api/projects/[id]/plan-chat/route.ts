@@ -10,7 +10,7 @@ import {
   parseChatProposal,
   buildProposal,
 } from "@/lib/analysis/cofounder"
-import { chargeChatCredits } from "@/lib/analysis/collaborate-credits"
+import { chargeChatCredits, refundCollaboration } from "@/lib/analysis/collaborate-credits"
 
 function event(stage: string, message: string, level: ProjectEvent["level"] = "info"): ProjectEvent {
   return { id: cryptoId(), at: Date.now(), level, stage, message }
@@ -73,12 +73,21 @@ export async function POST(
       activeSection,
     })
 
-    const { text: reply } = await generateText({
-      model: MODEL,
-      system: COFOUNDER_CHAT_SYSTEM,
-      prompt: `${context}\n\n---\nFOUNDER MESSAGE:\n${message}`,
-      maxOutputTokens: 4096,
-    })
+    let reply: string
+    try {
+      const result = await generateText({
+        model: MODEL,
+        system: COFOUNDER_CHAT_SYSTEM,
+        prompt: `${context}\n\n---\nFOUNDER MESSAGE:\n${message}`,
+        maxOutputTokens: 4096,
+      })
+      reply = result.text
+    } catch (aiError) {
+      // The charge already happened — give the credits back so a provider
+      // outage never costs the user money (spec section 43).
+      await refundCollaboration(user.id, id, "chat")
+      throw aiError
+    }
 
     const { cleanReply, proposal: parsedProposal } = parseChatProposal(reply)
 

@@ -344,16 +344,12 @@ function ChatPanel({
   spec,
   activeSection,
   onSpecChanged,
-  analysis,
-  onAnalysisUpdated,
 }: {
   projectId: string
   isOwner: boolean
   spec: ApplicationSpecification
   activeSection: PlanSectionId | null
   onSpecChanged: (spec: ApplicationSpecification) => void
-  analysis: PlanAnalysis | null
-  onAnalysisUpdated: (a: PlanAnalysis | null) => void
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
@@ -383,14 +379,13 @@ function ChatPanel({
           ...prev,
           { id: `a-${Date.now()}`, role: "assistant", content: data.reply, proposal: data.proposal },
         ])
-        if (data.proposal) onAnalysisUpdated(analysis) // proposals arrive inline; analysis unchanged
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong. Please try again.")
       } finally {
         setSending(false)
       }
     },
-    [sending, isOwner, projectId, activeSection, analysis, onAnalysisUpdated],
+    [sending, isOwner, projectId, activeSection],
   )
 
   const acceptProposal = useCallback(
@@ -404,14 +399,13 @@ function ChatPanel({
           },
         })
         if (data.project?.specification) onSpecChanged(data.project.specification)
-        if (data.project?.planAnalysis !== undefined) onAnalysisUpdated(data.project.planAnalysis)
         setMessages((prev) => prev.map((m) => (m.proposal?.id === proposal.id ? { ...m, proposal: null } : m)))
         toast.success("Added to your plan.")
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Could not update the plan. Please try again.")
       }
     },
-    [projectId, onSpecChanged, onAnalysisUpdated],
+    [projectId, onSpecChanged],
   )
 
   const rejectProposal = useCallback((proposal: PlanProposal) => {
@@ -926,6 +920,9 @@ export function CollaborateClient({
   const [spec, setSpec] = useState<ApplicationSpecification | undefined>(initialProject.specification)
   const [analysis, setAnalysis] = useState<PlanAnalysis | null>(initialProject.planAnalysis ?? null)
   const [activeSection, setActiveSection] = useState<PlanSectionId | null>(null)
+  // When true, the chat is shown while a section is selected — the composer
+  // shows the "Working on" chip and the AI receives the focus section.
+  const [chatWithFocus, setChatWithFocus] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [mobileView, setMobileView] = useState<"chat" | "plan" | "insights">("chat")
   const [projectState] = useState(initialProject.state)
@@ -974,25 +971,33 @@ export function CollaborateClient({
         <PlanNav
           spec={spec}
           activeSection={activeSection}
-          onSelect={(id) => setActiveSection((cur) => (cur === id ? null : id))}
+          onSelect={(id) => {
+            setActiveSection((cur) => (cur === id ? null : id))
+            setChatWithFocus(false)
+          }}
           analysis={analysis}
         />
       </aside>
 
-      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        {activeSection ? (
+      {/* Desktop center column — hidden below lg so the mobile container is
+          the single source of these components (no duplicate mounts). */}
+      <main className="hidden min-w-0 flex-1 flex-col overflow-hidden lg:flex">
+        {activeSection && !chatWithFocus ? (
           <div className="flex-1 overflow-y-auto">
             <SectionDetail
               spec={spec}
               sectionId={activeSection}
               canEdit={isOwner}
               onWorkOnThis={() => {
-                // Keep section selected; chat becomes visible (mobile) and
-                // the composer shows the "Working on" chip.
-                setMobileView("chat")
+                // Keep the section selected — the composer shows the
+                // "Working on" chip and the AI receives the focus section.
+                setChatWithFocus(true)
                 toast(`Working on ${getPlanSection(activeSection)?.label ?? "this section"} — tell your co-founder what you want to change.`)
               }}
-              onClose={() => setActiveSection(null)}
+              onClose={() => {
+                setActiveSection(null)
+                setChatWithFocus(false)
+              }}
             />
           </div>
         ) : (
@@ -1000,10 +1005,8 @@ export function CollaborateClient({
             projectId={projectId}
             isOwner={isOwner}
             spec={spec}
-            activeSection={activeSection}
+            activeSection={chatWithFocus ? activeSection : null}
             onSpecChanged={setSpec}
-            analysis={analysis}
-            onAnalysisUpdated={setAnalysis}
           />
         )}
         {isOwner && <LaunchButton projectId={projectId} state={projectState} />}
@@ -1016,7 +1019,10 @@ export function CollaborateClient({
           analyzing={analyzing}
           onAnalyze={runAnalysis}
           onRefresh={() => runAnalysis(true)}
-          onWorkOn={(id) => setActiveSection(id)}
+          onWorkOn={(id) => {
+            setActiveSection(id)
+            setChatWithFocus(false)
+          }}
           isOwner={isOwner}
           projectId={projectId}
           onSpecChanged={setSpec}
@@ -1024,14 +1030,17 @@ export function CollaborateClient({
         />
       </aside>
 
-      {/* Mobile / tablet: single-column flow with view switcher */}
+      {/* Mobile / tablet: single-column flow with view switcher. The only
+          mount of chat/section/launch below lg — the desktop column is hidden. */}
       <div className="flex w-full flex-col lg:hidden">
         <div className="flex border-b border-border bg-card" role="tablist" aria-label="Workspace views">
           {(["plan", "chat", "insights"] as const).map((v) => (
             <button
               key={v}
+              id={`collab-tab-${v}`}
               role="tab"
               aria-selected={mobileView === v}
+              aria-controls={`collab-panel-${v}`}
               onClick={() => setMobileView(v)}
               className={cx(
                 "flex-1 px-3 py-2.5 text-xs font-medium capitalize transition-colors",
@@ -1042,55 +1051,69 @@ export function CollaborateClient({
             </button>
           ))}
         </div>
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex flex-1 flex-col overflow-y-auto">
           {mobileView === "plan" && (
-            <PlanNav
-              spec={spec}
-              activeSection={activeSection}
-              onSelect={(id) => {
-                setActiveSection((cur) => (cur === id ? null : id))
-                if (activeSection !== id) setMobileView("chat")
-              }}
-              analysis={analysis}
-              collapsedOnMobile
-            />
-          )}
-          {mobileView === "chat" &&
-            (activeSection ? (
-              <SectionDetail
-                spec={spec}
-                sectionId={activeSection}
-                canEdit={isOwner}
-                onWorkOnThis={() => setMobileView("chat")}
-                onClose={() => setActiveSection(null)}
-              />
-            ) : (
-              <ChatPanel
-                projectId={projectId}
-                isOwner={isOwner}
+            <div id="collab-panel-plan" role="tabpanel" aria-labelledby="collab-tab-plan" className="flex flex-col">
+              <PlanNav
                 spec={spec}
                 activeSection={activeSection}
-                onSpecChanged={setSpec}
+                onSelect={(id) => {
+                  const selecting = activeSection !== id
+                  setActiveSection(selecting ? id : null)
+                  setChatWithFocus(false)
+                  if (selecting) setMobileView("chat")
+                }}
                 analysis={analysis}
+                collapsedOnMobile
+              />
+            </div>
+          )}
+          {mobileView === "chat" && (
+            <div id="collab-panel-chat" role="tabpanel" aria-labelledby="collab-tab-chat" className="flex flex-1 flex-col">
+              <div className="flex-1">
+                {activeSection && !chatWithFocus ? (
+                  <SectionDetail
+                    spec={spec}
+                    sectionId={activeSection}
+                    canEdit={isOwner}
+                    onWorkOnThis={() => setChatWithFocus(true)}
+                    onClose={() => {
+                      setActiveSection(null)
+                      setChatWithFocus(false)
+                    }}
+                  />
+                ) : (
+                  <ChatPanel
+                    projectId={projectId}
+                    isOwner={isOwner}
+                    spec={spec}
+                    activeSection={chatWithFocus ? activeSection : null}
+                    onSpecChanged={setSpec}
+                  />
+                )}
+              </div>
+              {isOwner && <LaunchButton projectId={projectId} state={projectState} />}
+            </div>
+          )}
+          {mobileView === "insights" && (
+            <div id="collab-panel-insights" role="tabpanel" aria-labelledby="collab-tab-insights">
+              <InsightsPanel
+                spec={spec}
+                analysis={analysis}
+                analyzing={analyzing}
+                onAnalyze={runAnalysis}
+                onRefresh={() => runAnalysis(true)}
+                onWorkOn={(id) => {
+                  setActiveSection(id)
+                  setChatWithFocus(false)
+                  setMobileView("chat")
+                }}
+                isOwner={isOwner}
+                projectId={projectId}
+                onSpecChanged={setSpec}
                 onAnalysisUpdated={setAnalysis}
               />
-            ))}
-          {mobileView === "insights" && (
-            <InsightsPanel
-              spec={spec}
-              analysis={analysis}
-              analyzing={analyzing}
-              onAnalyze={runAnalysis}
-              onRefresh={() => runAnalysis(true)}
-              onWorkOn={(id) => {
-                setActiveSection(id)
-                setMobileView("chat")
-              }}
-              isOwner={isOwner}
-              projectId={projectId}
-              onSpecChanged={setSpec}
-              onAnalysisUpdated={setAnalysis}
-            />
+            </div>
           )}
         </div>
       </div>

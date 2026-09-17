@@ -10,7 +10,7 @@ import {
   buildProposal,
 } from "@/lib/analysis/cofounder"
 import { computePlanHealth } from "@/lib/analysis/plan-sections"
-import { chargeAnalysisCredits } from "@/lib/analysis/collaborate-credits"
+import { chargeAnalysisCredits, refundCollaboration } from "@/lib/analysis/collaborate-credits"
 import { getCollaborateCosts } from "@/lib/billing/runtime-config"
 import type { PlanAnalysis } from "@/lib/types/plan-analysis"
 import type { ProjectEvent } from "@/lib/types/project"
@@ -69,12 +69,21 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       historyLimit: 6,
     })
 
-    const { text } = await generateText({
-      model: MODEL,
-      system: COFOUNDER_ANALYZE_SYSTEM,
-      prompt: context,
-      maxOutputTokens: 4096,
-    })
+    let text: string
+    try {
+      const result = await generateText({
+        model: MODEL,
+        system: COFOUNDER_ANALYZE_SYSTEM,
+        prompt: context,
+        maxOutputTokens: 4096,
+      })
+      text = result.text
+    } catch (aiError) {
+      // Refund the charge taken above — a provider outage must not cost the
+      // user credits (spec section 43: no false success, no lost money).
+      await refundCollaboration(user.id, id, "analysis")
+      throw aiError
+    }
 
     const parsed = parseAnalysisResponse(text, spec)
     if (!parsed) {

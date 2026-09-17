@@ -1,5 +1,5 @@
 import { store, cryptoId } from "@/lib/store/store"
-import { consumeCredits, getAvailableCredits } from "@/lib/billing/credit-service"
+import { consumeCredits, grantCredits, getAvailableCredits } from "@/lib/billing/credit-service"
 import { getCollaborateCosts } from "@/lib/billing/runtime-config"
 import { logger } from "@/lib/logging/logger"
 
@@ -24,6 +24,42 @@ export const DEFAULT_ANALYZE_COST = 10
 export async function chargeChatCredits(userId: string, projectId: string): Promise<boolean> {
   const costs = await getCollaborateCosts()
   return chargeCollaboration(userId, projectId, costs.chatMessageCost, "AI co-founder chat message")
+}
+
+/** Best-effort refund when the AI work itself failed after the charge was
+ * taken. Never throws — a failed refund must not mask the original AI error.
+ * Zero-cost configurations are a no-op (nothing was charged). */
+export async function refundCollaboration(
+  userId: string,
+  projectId: string,
+  kind: "chat" | "analysis",
+): Promise<void> {
+  try {
+    const costs = await getCollaborateCosts()
+    const amount = kind === "chat" ? costs.chatMessageCost : costs.planAnalysisCost
+    if (amount <= 0) return
+    await grantCredits({
+      userId,
+      creditType: "permanent",
+      amount,
+      transactionType: "other_reversal",
+      idempotencyKey: `collab_refund_${cryptoId()}`,
+      referenceType: "project",
+      referenceId: projectId,
+      metadata: {
+        reason: kind === "chat" ? "AI chat failed — automatic refund" : "AI plan analysis failed — automatic refund",
+        feature: "collaborate",
+      },
+    })
+    logger.info("credits.collaborate", "refunded after AI failure", { userId, projectId, kind, amount })
+  } catch (e) {
+    logger.warn("credits.collaborate", "refund failed", {
+      userId,
+      projectId,
+      kind,
+      message: e instanceof Error ? e.message : String(e),
+    })
+  }
 }
 
 /** Charge for a full plan analysis. */
