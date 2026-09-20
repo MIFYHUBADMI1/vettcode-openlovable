@@ -1,6 +1,7 @@
 import { store } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { singleFlight } from "@/lib/cache/single-flight"
+import { resolveProjectThumbnail } from "@/lib/media/project-thumbnail"
 
 /**
  * GET /api/public/projects/:id
@@ -41,7 +42,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
           sourceUrl: project.sourceUrl,
           productionUrl: deployment.productionUrl,
           customDomain: deployment.customDomain,
-          thumbnailUrl: project.understanding?.screenshots?.[0] ?? null,
+          thumbnailUrl: resolveProjectThumbnail(project.understanding?.screenshots),
           purpose: project.understanding?.purpose ?? null,
           createdAt: project.createdAt,
           updatedAt: project.updatedAt,

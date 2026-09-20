@@ -6,6 +6,7 @@ import { Trash2, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import type { ProjectSummary } from "@/lib/types/project"
 import { StateBadge } from "@/components/state-badge"
+import { ProjectThumbnail } from "@/components/project-thumbnail"
 import { deleteJson } from "@/lib/client/api"
 import {
   AlertDialog,
@@ -104,8 +105,8 @@ export function ProjectCard({ project, onDeleted }: { project: ProjectSummary; o
       <Link href={`/project/${project.id}`} className="flex flex-col">
         {hasThumbnail && (
           <div className="relative aspect-[16/7] w-full overflow-hidden bg-muted">
-            <img
-              src={project.thumbnailUrl!}
+            <ProjectThumbnail
+              src={project.thumbnailUrl}
               alt={`Screenshot of ${title}`}
               className="h-full w-full object-cover object-top"
             />

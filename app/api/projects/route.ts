@@ -3,6 +3,7 @@ import { store } from "@/lib/store/store"
 import { ok, handleRouteError } from "@/lib/api/respond"
 import { createUserProject, type CreateProjectInput } from "@/lib/projects/create-project"
 import { singleFlight } from "@/lib/cache/single-flight"
+import { resolveProjectThumbnail } from "@/lib/media/project-thumbnail"
 
 /**
  * Returns the list of projects for the authenticated user.
@@ -26,7 +27,7 @@ export async function GET() {
           state: p.state,
           sourceUrl: p.sourceUrl,
           updatedAt: p.updatedAt,
-          thumbnailUrl: p.understanding?.screenshots?.[0] ?? null,
+          thumbnailUrl: resolveProjectThumbnail(p.understanding?.screenshots),
         })),
       })
     })

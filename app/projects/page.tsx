@@ -10,6 +10,7 @@ import {
 import { toast } from "sonner"
 import { AppHeader } from "@/components/app-header"
 import { StateBadge } from "@/components/state-badge"
+import { ProjectThumbnail } from "@/components/project-thumbnail"
 import { useProjects, deleteJson } from "@/lib/client/api"
 import { cn } from "@/lib/utils"
 import { type ProjectState, type ProjectSummary } from "@/lib/types/project"
@@ -157,8 +158,8 @@ function GridCard({
         {/* Thumbnail */}
         {hasThumbnail ? (
           <div className="relative aspect-[16/7] w-full overflow-hidden bg-muted">
-            <img
-              src={project.thumbnailUrl!}
+            <ProjectThumbnail
+              src={project.thumbnailUrl}
               alt={`Preview of ${project.name}`}
               className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
             />

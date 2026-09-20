@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { FirstMission } from "@/components/onboarding/first-mission"
 import { ActivationEmpty } from "@/components/onboarding/activation-empty"
+import { ProjectThumbnail } from "@/components/project-thumbnail"
 import { Skeleton } from "@/components/ui/skeleton"
 import { buttonVariants } from "@/components/ui/button"
 import { useProjectActivity, useProjects, useSession, type ActivityEvent } from "@/lib/client/api"
@@ -199,8 +200,13 @@ function DashboardEmpty() {
 function NextActionCard({ project, askHref }: { project: ProjectSummary; askHref: string }) {
   const status = interpretProjectState(project.state, project.id)
   return (
-    <section className={cn("rounded-2xl border p-5 sm:p-6", severityClass(status.severity))}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <section className={cn("overflow-hidden rounded-2xl border p-0", severityClass(status.severity))}>
+      <ProjectThumbnail
+        src={project.thumbnailUrl}
+        alt={`Preview of ${project.name}`}
+        className="max-h-48 w-full object-cover object-top"
+      />
+      <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
         <div className="min-w-0">
           <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
             Continue where you left off
@@ -208,14 +214,6 @@ function NextActionCard({ project, askHref }: { project: ProjectSummary; askHref
           <h3 className="mt-2 text-xl font-semibold tracking-tight">{status.headline}</h3>
           <p className="mt-1 text-sm text-muted-foreground">{status.description}</p>
           <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
-            {project.thumbnailUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={project.thumbnailUrl}
-                alt=""
-                className="size-10 rounded-lg object-cover"
-              />
-            ) : null}
             <span className="font-medium">{project.name}</span>
             <span className="text-muted-foreground">·</span>
             <span className="text-muted-foreground">{MODE_LABEL[project.mode]}</span>
@@ -240,7 +238,7 @@ function NextActionCard({ project, askHref }: { project: ProjectSummary; askHref
           )}
         </div>
       </div>
-      <nav className="mt-4 flex flex-wrap gap-2 border-t border-border/70 pt-3" aria-label="Project">
+      <nav className="flex flex-wrap gap-2 border-t border-border/70 px-5 py-3 sm:px-6" aria-label="Project">
         {[
           { href: `/project/${project.id}`, label: "Overview" },
           { href: `/project/${project.id}/plan`, label: "Plan" },
@@ -407,11 +405,23 @@ function BusinessesList({ projects }: { projects: ProjectSummary[] }) {
           const status = interpretProjectState(project.state, project.id)
           return (
             <li key={project.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-0">
-                <p className="truncate font-medium">{project.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {status.founderLabel} · {MODE_LABEL[project.mode]} · {relativeTime(project.updatedAt)}
-                </p>
+              <div className="flex min-w-0 items-center gap-3">
+                <ProjectThumbnail
+                  src={project.thumbnailUrl}
+                  alt=""
+                  className="size-10 shrink-0 rounded-lg object-cover object-top"
+                  fallback={
+                    <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-muted text-xs font-medium text-muted-foreground">
+                      {project.name.slice(0, 1).toUpperCase()}
+                    </span>
+                  }
+                />
+                <div className="min-w-0">
+                  <p className="truncate font-medium">{project.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {status.founderLabel} · {MODE_LABEL[project.mode]} · {relativeTime(project.updatedAt)}
+                  </p>
+                </div>
               </div>
               <Link href={status.primaryAction.href} className={cn(buttonVariants({ size: "sm", variant: "outline" }))}>
                 {status.primaryAction.label}

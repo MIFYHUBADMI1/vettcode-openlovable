@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/auth/session"
 import { projectsCol, usersCol, projectLikesCol, userFollowsCol } from "@/lib/db/collections"
 import { ok, handleRouteError } from "@/lib/api/respond"
+import { resolveProjectThumbnail } from "@/lib/media/project-thumbnail"
 
 /**
  * GET /api/explore
@@ -84,7 +85,7 @@ export async function GET(req: Request) {
         state: p.state,
         sourceUrl: p.sourceUrl ?? null,
         purpose: p.understanding?.purpose ?? null,
-        thumbnailUrl: p.understanding?.screenshots?.[0] ?? null,
+        thumbnailUrl: resolveProjectThumbnail(p.understanding?.screenshots),
         productionUrl: latestDeploy?.productionUrl ?? null,
         likeCount: likeCountMap[p.id] ?? 0,
         forkCount: (p as Record<string, unknown>).forkCount as number ?? 0,
