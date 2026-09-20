@@ -68,6 +68,14 @@ interface UsagePayload {
 
 const PAGE_SIZE = 25
 
+/** Preset time ranges — all within the server-side 90-day export/list clamp. */
+const RANGES = [
+  { label: "Last 24 hours", ms: 24 * 60 * 60 * 1000 },
+  { label: "Last 7 days", ms: 7 * 24 * 60 * 60 * 1000 },
+  { label: "Last 30 days", ms: 30 * 24 * 60 * 60 * 1000 },
+  { label: "Last 90 days", ms: 90 * 24 * 60 * 60 * 1000 },
+] as const
+
 function breakdownTable(title: string, rows: BreakdownRow[] | undefined, keyHeader: string, modelLinkBase?: string) {
   return (
     <section className="rounded-xl border border-border bg-card p-4">
@@ -113,6 +121,7 @@ function breakdownTable(title: string, rows: BreakdownRow[] | undefined, keyHead
 }
 
 export function RuntimeUsageClient({ projectId }: { projectId: string }) {
+  const [rangeIdx, setRangeIdx] = useState(0)
   const [environment, setEnvironment] = useState("")
   const [status, setStatus] = useState("")
   const [capability, setCapability] = useState("")
@@ -120,9 +129,12 @@ export function RuntimeUsageClient({ projectId }: { projectId: string }) {
   const [apiKeyId, setApiKeyId] = useState("")
   const [requestId, setRequestId] = useState("")
   const [cursors, setCursors] = useState<string[]>([])
+  const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState(false)
 
   const qs = useMemo(() => {
     const p = new URLSearchParams()
+    p.set("from", String(Date.now() - RANGES[rangeIdx].ms))
     if (environment) p.set("environment", environment)
     if (status) p.set("status", status)
     if (capability) p.set("capability", capability)
@@ -133,7 +145,7 @@ export function RuntimeUsageClient({ projectId }: { projectId: string }) {
     const cursor = cursors[cursors.length - 1]
     if (cursor) p.set("cursor", cursor)
     return p.toString()
-  }, [environment, status, capability, model, apiKeyId, requestId, cursors])
+  }, [rangeIdx, environment, status, capability, model, apiKeyId, requestId, cursors])
 
   const { data, error, isLoading } = useSWR<UsagePayload>(
     `/api/projects/${projectId}/runtime/usage?${qs}`,
@@ -146,9 +158,49 @@ export function RuntimeUsageClient({ projectId }: { projectId: string }) {
     setCursors([])
   }
 
+  /** Downloads the bounded CSV export with the currently active filters. */
+  async function exportCsv() {
+    setExporting(true)
+    setExportError(false)
+    try {
+      const params = new URLSearchParams(qs)
+      params.delete("limit")
+      params.delete("cursor")
+      const res = await fetch(`/api/projects/${projectId}/runtime/usage/export?${params.toString()}`, {
+        credentials: "include",
+      })
+      if (!res.ok) throw new Error(String(res.status))
+      const blob = await res.blob()
+      const disposition = res.headers.get("content-disposition") ?? ""
+      const match = /filename=(\S+)/.exec(disposition)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = match?.[1] ?? "atai-runtime-usage.csv"
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } catch {
+      setExportError(true)
+    } finally {
+      setExporting(false)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap gap-2">
+        <select
+          aria-label="Time range"
+          className="h-8 rounded-lg border border-border bg-background px-2 text-sm"
+          value={rangeIdx}
+          onChange={(e) => resetAnd(() => setRangeIdx(Number(e.target.value)))}
+        >
+          {RANGES.map((r, i) => (
+            <option key={r.label} value={i}>{r.label}</option>
+          ))}
+        </select>
         <select
           aria-label="Environment"
           className="h-8 rounded-lg border border-border bg-background px-2 text-sm"
@@ -290,6 +342,21 @@ export function RuntimeUsageClient({ projectId }: { projectId: string }) {
           Next
         </Button>
         {cursors.length > 0 ? <span>Page {cursors.length + 1}</span> : null}
+        <span className="grow" />
+        {exportError ? <span role="alert" className="text-destructive">Export failed. Please try again.</span> : null}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={exporting}
+          onClick={() => void exportCsv()}
+        >
+          {exporting ? "Exporting…" : "Export CSV"}
+        </Button>
+        <p className="w-full text-xs text-muted-foreground">
+          Exports up to 1,000 newest events for the selected filters; if more matched, the file itself says what was
+          omitted. Narrow the time range for a complete export.
+        </p>
       </div>
 
       {breakdownTable("By capability", data?.byCapability, "Capability")}

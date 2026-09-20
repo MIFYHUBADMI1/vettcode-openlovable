@@ -76,7 +76,8 @@ The repository had **14 `tsc` errors** before this phase. All fixed minimally, n
 - Summary tiles: requests, success rate, Atai credits charged, provider cost (or "Unavailable").
 - Estimate block explicitly labeled *"clearly an estimate, not an invoice"* with the basis string; honest "not enough usage data to estimate yet" state.
 - Breakdown tables by capability / model / API key / provider / error category.
-- **Removed the fake disabled "Export CSV (not enabled)" button** (§118 no-fake-features). Export is out of scope per the brief ("only if the app already supports data export").
+- **Removed the fake disabled "Export CSV (not enabled)" button** (§118 no-fake-features), then implemented a real, bounded CSV export (see below).
+- **Bounded CSV export**: `GET /api/projects/[id]/runtime/usage/export` + `lib/runtime/control/export.ts` — same ownership gate, rate-limited (10/min/user), hard cap of 1,000 newest rows with an in-file truncation marker and honesty headers (`x-export-truncated`), provider cost empty (never `$0`) when unavailable, RFC-4180 escaping + formula-injection guard. Wired into the Usage page with a time-range selector (24h/7d/30d/90d).
 - Empty state: "No runtime activity yet…" — no fake zero-value charts.
 
 ### 3.3 Authenticated runtime health endpoint
@@ -120,7 +121,7 @@ The repository had **14 `tsc` errors** before this phase. All fixed minimally, n
 
 ## 5. Known limitations (intentional, per brief)
 
-1. **Export CSV/JSON** — not implemented (the fake button was removed); the brief only suggests export where the platform already supports it.
+1. **JSON export** — CSV implemented; JSON not (same data, little value).
 2. **Fallback on provider failure** — automatic retry/fallback chains are NOT enabled; the fallback list only affects model resolution when no model is specified (existing documented behavior — no double-charge risk).
 3. **Concurrent-requests limit** — not owner-configurable; platform caps in-flight work at `RUNTIME_MAX_IN_FLIGHT` (default 32) per process. The Limits page states this honestly instead of exposing a fake control.
 4. **Notification/alerting** — no separate alert system built; provisioning failures surface in Workspace activity + Health page.

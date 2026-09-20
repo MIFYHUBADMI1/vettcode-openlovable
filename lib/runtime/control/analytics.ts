@@ -4,7 +4,7 @@ import type { RuntimeUsageEvent, RuntimeEnvironment } from "@/runtime/contracts/
 import { toPublicUsageEvent, publicCost } from "./usage-public"
 import type { PublicUsageEvent, UsageSummary } from "./types"
 
-const MAX_RANGE_MS = 90 * 24 * 60 * 60 * 1000
+export const MAX_RANGE_MS = 90 * 24 * 60 * 60 * 1000
 const DEFAULT_LIST_LIMIT = 25
 const MAX_LIST_LIMIT = 100
 
@@ -22,7 +22,8 @@ export interface UsageQuery {
   limit?: number
 }
 
-function clampRange(from: number | undefined, to: number | undefined): { from: number; to: number } {
+/** Shared with the bounded CSV export so both paths clamp identically. */
+export function clampRange(from: number | undefined, to: number | undefined): { from: number; to: number } {
   const now = Date.now()
   const end = to && Number.isFinite(to) ? Math.min(to, now + 60_000) : now
   let start = from && Number.isFinite(from) ? from : end - 24 * 60 * 60 * 1000
@@ -45,7 +46,8 @@ function encodeCursor(createdAt: number, id: string): string {
   return `${createdAt}_${id}`
 }
 
-function matchFilter(projectId: string, q: UsageQuery, range: { from: number; to: number }): Record<string, unknown> {
+/** Shared with the bounded CSV export so both paths filter identically. */
+export function matchFilter(projectId: string, q: UsageQuery, range: { from: number; to: number }): Record<string, unknown> {
   const filter: Record<string, unknown> = {
     projectId,
     createdAt: { $gte: range.from, $lte: range.to },
