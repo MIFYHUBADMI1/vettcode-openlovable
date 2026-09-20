@@ -12,6 +12,10 @@ export interface SessionUser {
   authProvider: "password" | "google"
   emailVerified: boolean
   imageUrl?: string
+  /** Connection STATUS only — the GitHub access token never leaves the server. */
+  githubConnected?: boolean
+  /** Non-secret GitHub login name, for display when githubConnected. */
+  githubUsername?: string
   credits: number
   isAdmin?: boolean
   onboarding?: {
@@ -23,7 +27,8 @@ export interface SessionUser {
     role?: string
     destination?: string
     /** Always set when onboarding is complete */
-    completedAt: number
+    completedAt?: number
+    dismissedAt?: number
   }
   suspended?: boolean
   banned?: boolean
@@ -66,7 +71,7 @@ function unwrap<T>(body: unknown, status: number): T {
 }
 
 export async function jsonFetcher<T>(url: string): Promise<T> {
-  const res = await fetch(url, { headers: { accept: "application/json" } })
+  const res = await fetch(url, { headers: { accept: "application/json" }, credentials: "include" })
   const body = await res.json().catch(() => null)
   return unwrap<T>(body, res.status)
 }
@@ -74,6 +79,7 @@ export async function jsonFetcher<T>(url: string): Promise<T> {
 export async function postJson<T>(url: string, payload?: unknown): Promise<T> {
   const res = await fetch(url, {
     method: "POST",
+    credentials: "include",
     headers: { "content-type": "application/json", accept: "application/json" },
     body: payload === undefined ? undefined : JSON.stringify(payload),
   })

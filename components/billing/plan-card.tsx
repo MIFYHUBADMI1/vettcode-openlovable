@@ -7,7 +7,8 @@ import { CheckoutButton } from "@/components/billing/checkout-button"
 import { PlanChangeDialog } from "@/components/billing/plan-change-dialog"
 import { formatUSD, CREDIT_UNIT_NAME, SUBSCRIPTION_PLANS } from "@/lib/billing/config"
 import type { SubscriptionPlan } from "@/lib/billing/config"
-import Link from "next/link"
+
+import { AuthTrigger } from "@/components/auth/auth-trigger"
 import { toast } from "sonner"
 
 interface PlanCardProps {
@@ -181,10 +182,11 @@ export function PlanCard({
               </CheckoutButton>
             )
           ) : (
-            <Link
-              href="/register"
+            <AuthTrigger
+              view="signup"
+              next="/pricing"
               className={cn(
-                "mt-6 block text-center py-2.5 rounded-lg text-sm font-medium transition-colors",
+                "mt-6 block w-full text-center py-2.5 rounded-lg text-sm font-medium transition-colors",
                 plan.id === "free"
                   ? "bg-primary text-primary-foreground hover:bg-primary/90"
                   : (plan.popular || selected)
@@ -193,7 +195,7 @@ export function PlanCard({
               )}
             >
               {plan.id === "free" ? "Get Started Free" : "Get Started"}
-            </Link>
+            </AuthTrigger>
           )}
         </div>
       </div>

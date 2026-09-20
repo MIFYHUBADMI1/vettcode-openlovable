@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google"
 import Script from "next/script"
 import { ThemeProvider } from "@/components/theme-provider"
+import { AuthProvider } from "@/components/auth/auth-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { SITE_URL } from "@/lib/env"
 import "./globals.css"
@@ -13,13 +14,13 @@ const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono"
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Atai | Launch your business. No code required.",
+    default: "Atai.ink | Turn your idea into a real business",
     template: "%s | Atai",
   },
   description:
-    "Atai is the founder platform for launching businesses without code. Turn your idea into a working full-stack application with AI-powered planning, generation, and infrastructure.",
+    "Atai.ink is the AI business-building platform. Plan, build, launch, manage, and grow a digital business from an idea, a website, a URL, or a GitHub project.",
   applicationName: "Atai",
-  keywords: ["AI website builder", "AI application builder", "full-stack app builder", "AI code generator", "no-code platform", "founder platform", "rapid application development", "MVP builder", "AI-powered web development"],
+  keywords: ["Atai.ink", "AI business builder", "AI co-founder", "AI application builder", "founder platform", "plan mode", "MVP builder", "AI-powered web development"],
   verification: {
     google: "fVuc4AOfzEAxCg2a5vgQ967z_AGcs2MbUn6QUjl70b4",
     other: { "pressplaced-verification": "fc52a89ec5ab0207" },
@@ -30,15 +31,15 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: SITE_URL,
     siteName: "Atai",
-    title: "Atai | Launch your business. No code required.",
-    description: "The founder platform for launching businesses without code. Powered by ATAI Enterprises.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai — Launch your business. No code required." }],
+    title: "Atai.ink | Turn your idea into a real business",
+    description: "Plan, build, launch, manage, and grow your digital business with Atai.ink. Powered by ATAI Enterprises.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai.ink — Turn your idea into a real business" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Atai | Launch your business. No code required.",
-    description: "The founder platform for launching businesses without code. Powered by ATAI Enterprises.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai — Launch your business. No code required." }],
+    title: "Atai.ink | Turn your idea into a real business",
+    description: "Plan, build, launch, manage, and grow your digital business with Atai.ink. Powered by ATAI Enterprises.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai.ink — Turn your idea into a real business" }],
   },
   icons: { icon: "/favicon.png", apple: "/favicon.png" },
   authors: [{ name: "ATAI Enterprises", url: "https://atai.ink" }],
@@ -76,7 +77,7 @@ const STRUCTURED_DATA = JSON.stringify({
   applicationCategory: "DeveloperApplication",
   operatingSystem: "Web",
   url: SITE_URL,
-  description: "The founder platform for launching businesses without code. Powered by ATAI Enterprises.",
+  description: "Plan, build, launch, manage, and grow your digital business with Atai.ink. Powered by ATAI Enterprises.",
   image: `${SITE_URL}/og-image.png`,
   brand: { "@type": "Organization", name: "ATAI Enterprises", url: "https://atai.ink" },
   author: { "@type": "Organization", name: "ATAI Enterprises", url: "https://atai.ink" },
@@ -116,8 +117,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             strategy="afterInteractive"
             dangerouslySetInnerHTML={{ __html: STRUCTURED_DATA }}
           />
-          {children}
-          <Toaster />
+          <AuthProvider>
+            {children}
+            <Toaster />
+          </AuthProvider>
         </ThemeProvider>
 
         {process.env.NODE_ENV === "production" && <Analytics />}

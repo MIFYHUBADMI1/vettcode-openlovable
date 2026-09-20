@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { AuthTrigger } from "@/components/auth/auth-trigger"
 
 // ─── Fade-in on scroll ────────────────────────────────────────────────────────
 
@@ -118,9 +119,9 @@ export function AboutContent() {
             <span className="font-semibold text-foreground">Atai helps handle the rest.</span>
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-            <Link href="/register" className={cn(buttonVariants({ size: "lg" }), "gap-2 h-12 px-7")}>
+            <AuthTrigger view="signup" next="/new/idea" className={cn(buttonVariants({ size: "lg" }), "gap-2 h-12 px-7")}>
               Start building your business <ArrowRight className="size-4" />
-            </Link>
+            </AuthTrigger>
             <a href="#how-it-works" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-12 px-7")}>
               See how it works
             </a>
@@ -379,9 +380,9 @@ export function AboutContent() {
             </h2>
             <p className="mt-5 text-lg text-muted-foreground">From idea → business → growth.</p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-              <Link href="/register" className={cn(buttonVariants({ size: "lg" }), "gap-2 h-13 px-8")}>
+              <AuthTrigger view="signup" next="/new/idea" className={cn(buttonVariants({ size: "lg" }), "gap-2 h-13 px-8")}>
                 Start building free <ArrowRight className="size-4" />
-              </Link>
+              </AuthTrigger>
               <Link href="/pricing" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-13 px-8")}>
                 See pricing
               </Link>

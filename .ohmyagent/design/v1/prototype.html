@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Atai — motion landing prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: oklch(0.145 0 0);
+      --fg: oklch(0.985 0 0);
+      --muted: oklch(0.62 0 0);
+      --card: oklch(0.205 0 0);
+      --border: oklch(0.269 0 0);
+      --primary: oklch(0.73 0.16 45);
+      --primary-fg: oklch(0.145 0 0);
+      --violet: oklch(0.72 0.14 300);
+      --emerald: oklch(0.72 0.14 160);
+      --danger: oklch(0.64 0.2 25);
+      --radius: 0.65rem;
+      --sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+      --mono: "Geist Mono", ui-monospace, monospace;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    a { color: inherit; }
+    .ambient {
+      position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background:
+        radial-gradient(ellipse 80% 50% at 10% -10%, color-mix(in oklab, var(--primary) 9%, transparent), transparent 55%),
+        radial-gradient(ellipse 50% 30% at 90% 100%, color-mix(in oklab, var(--primary) 6%, transparent), transparent 60%);
+    }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      max-width: 80rem; margin: 0 auto; padding: 1rem 1.5rem;
+    }
+    .brand { display: flex; align-items: center; gap: .6rem; font-weight: 800; text-decoration: none; }
+    .mark { width: 1.6rem; height: 1.6rem; border-radius: .4rem; background: var(--primary); }
+    nav { display: flex; gap: 1.25rem; font-size: .875rem; color: var(--muted); }
+    nav a { text-decoration: none; }
+    nav a:hover { color: var(--fg); }
+    .btn {
+      display: inline-flex; align-items: center; gap: .5rem;
+      height: 3.25rem; padding: 0 1.6rem; border-radius: calc(var(--radius) + 4px);
+      font-weight: 700; text-decoration: none; border: 1px solid transparent; cursor: pointer;
+    }
+    .btn-primary {
+      background: var(--primary); color: var(--primary-fg);
+      box-shadow: 0 0 0 0 transparent;
+      transition: transform .2s ease, box-shadow .3s ease;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 20px -4px color-mix(in oklab, var(--primary) 45%, transparent);
+    }
+    .btn-primary:focus-visible, .btn-ghost:focus-visible, .chip:focus-visible {
+      outline: 2px solid var(--primary); outline-offset: 3px;
+    }
+    .btn-ghost {
+      background: transparent; color: var(--fg);
+      border-color: color-mix(in oklab, var(--border) 80%, white 10%);
+    }
+    .wrap { max-width: 80rem; margin: 0 auto; padding: 4rem 1.5rem 5rem; }
+    .hero { display: grid; gap: 3rem; align-items: center; }
+    @media (min-width: 1024px) { .hero { grid-template-columns: 1fr 1fr; gap: 4rem; padding-top: 2rem; } }
+    .eyebrow {
+      display: inline-flex; align-items: center; gap: .6rem;
+      border: 1px solid color-mix(in oklab, var(--primary) 25%, transparent);
+      background: color-mix(in oklab, var(--primary) 8%, transparent);
+      border-radius: 999px; padding: .4rem 1rem;
+      font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--primary);
+      animation: rise .6s cubic-bezier(.16,1,.3,1) both;
+    }
+    .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); animation: pulse 2.2s ease-in-out infinite; }
+    h1 {
+      font-size: clamp(2.4rem, 5vw, 4.5rem);
+      line-height: 1.03; letter-spacing: -.04em; font-weight: 800; margin: 1.4rem 0 0;
+      animation: rise .75s .08s cubic-bezier(.16,1,.3,1) both;
+    }
+    h1 span { color: var(--muted); font-weight: 400; }
+    .type {
+      font-size: clamp(1.15rem, 2vw, 1.5rem); font-weight: 700; margin: 1.1rem 0 0;
+      animation: rise .7s .18s cubic-bezier(.16,1,.3,1) both;
+    }
+    .grad { color: var(--primary); }
+    .cursor { color: var(--primary); animation: blink 1s step-end infinite; }
+    .lede { max-width: 34rem; color: var(--muted); margin: 1.1rem 0 0; animation: rise .7s .28s both; }
+    .callout {
+      margin-top: 1.5rem; padding: 1rem 1.25rem; border-radius: 1rem;
+      border: 1px solid color-mix(in oklab, var(--primary) 22%, transparent);
+      background: color-mix(in oklab, var(--primary) 7%, transparent);
+      animation: rise .7s .36s both;
+    }
+    .callout strong { color: var(--primary); display: block; font-size: 1.1rem; }
+    .cta-row { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.75rem; animation: rise .7s .44s both; }
+    .chips { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: 1.25rem; animation: rise .7s .5s both; }
+    .chip {
+      font-family: var(--mono); font-size: 12px; color: var(--muted);
+      border: 1px solid var(--border); background: color-mix(in oklab, var(--card) 70%, transparent);
+      border-radius: 999px; padding: .35rem .75rem;
+    }
+    .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: .75rem; margin-top: 1.75rem; animation: rise .7s .56s both; }
+    @media (min-width: 640px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+    @media (min-width: 1024px) and (max-width: 1279px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+    .stat {
+      text-align: center; padding: .85rem .5rem; border-radius: .8rem;
+      border: 1px solid color-mix(in oklab, var(--border) 80%, transparent);
+      background: color-mix(in oklab, var(--card) 55%, transparent);
+    }
+    .stat b { display: block; font-size: 1.25rem; }
+    .stat span { font-size: 10px; color: var(--muted); }
+    .rail { display: flex; flex-direction: column; gap: 1rem; }
+    .rail-head {
+      text-align: center; padding: 1rem; border-radius: 1rem;
+      border: 1px solid color-mix(in oklab, var(--primary) 22%, transparent);
+      background: color-mix(in oklab, var(--primary) 7%, transparent);
+      animation: rise .7s .2s both;
+    }
+    .rail-head p { margin: 0; font-size: .9rem; font-weight: 700; }
+    .mono { font-family: var(--mono); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; }
+    .stage {
+      border-radius: 1rem; padding: 1rem;
+      border: 1px solid var(--border);
+      background: color-mix(in oklab, var(--card) 70%, transparent);
+      opacity: 0; transform: translateY(16px);
+      animation: rise .7s cubic-bezier(.16,1,.3,1) both;
+    }
+    .stage-1 { animation-delay: .55s; border-color: color-mix(in oklab, var(--violet) 28%, var(--border)); }
+    .stage-2 { animation-delay: 1.05s; border-color: color-mix(in oklab, var(--primary) 30%, transparent); background: color-mix(in oklab, var(--primary) 6%, var(--card)); }
+    .stage-3 { animation-delay: 1.55s; border-color: color-mix(in oklab, var(--emerald) 28%, var(--border)); }
+    .stage h3 { margin: 0 0 .75rem; display: flex; align-items: center; gap: .5rem; font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; font-family: var(--mono); }
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; }
+    .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: .4rem; }
+    .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem; }
+    .cell {
+      text-align: center; padding: .7rem .4rem; border-radius: .7rem;
+      border: 1px solid var(--border); background: color-mix(in oklab, var(--bg) 50%, transparent);
+      font-size: .7rem;
+    }
+    .cell b { display: block; font-size: .75rem; margin-top: .2rem; }
+    .cell span { color: var(--muted); font-size: 10px; }
+    .connector {
+      height: 14px; margin: -2px 1.5rem;
+      background: linear-gradient(to bottom, color-mix(in oklab, var(--primary) 0%, transparent), var(--primary));
+      transform-origin: top; transform: scaleY(0);
+      animation: draw 0.45s ease forwards;
+    }
+    .c1 { animation-delay: .9s; }
+    .c2 { animation-delay: 1.4s; }
+    section.band { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: color-mix(in oklab, var(--card) 35%, transparent); }
+    .center { text-align: center; }
+    h2 { font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -.03em; line-height: 1.1; margin: 0; }
+    h2 em { font-style: normal; color: var(--muted); font-weight: 400; }
+    .hard-grid { display: grid; gap: .75rem; margin-top: 2.5rem; }
+    @media (min-width: 640px) { .hard-grid { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 1024px) { .hard-grid { grid-template-columns: repeat(4, 1fr); } }
+    .hard-grid div {
+      border: 1px solid var(--border); background: color-mix(in oklab, var(--card) 70%, transparent);
+      border-radius: .8rem; padding: .85rem 1rem; font-size: .875rem; color: var(--muted);
+    }
+    .team { display: grid; gap: 1rem; }
+    @media (min-width: 640px) { .team { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 1024px) { .team { grid-template-columns: repeat(3, 1fr); } }
+    .card {
+      border: 1px solid var(--border); border-radius: 1rem; padding: 1.25rem;
+      background: color-mix(in oklab, var(--card) 65%, transparent);
+      transition: border-color .25s ease, transform .25s ease;
+    }
+    .card:hover { border-color: color-mix(in oklab, var(--primary) 30%, transparent); transform: translateY(-1px); }
+    .card h3 { margin: 0 0 .25rem; font-size: .95rem; }
+    .card p { margin: 0; color: var(--muted); font-size: .8rem; }
+    .card ul { margin: .8rem 0 0; padding: 0; list-style: none; color: var(--muted); font-size: .85rem; }
+    .card li { padding: .15rem 0; }
+    .split { display: grid; gap: 1.5rem; }
+    @media (min-width: 1024px) { .split { grid-template-columns: 1fr 1fr; } }
+    .old { border-color: color-mix(in oklab, var(--danger) 30%, transparent); background: color-mix(in oklab, var(--danger) 6%, var(--card)); }
+    .roles { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .roles span { font-size: .75rem; border: 1px solid color-mix(in oklab, var(--danger) 25%, transparent); padding: .3rem .6rem; border-radius: .5rem; color: var(--muted); }
+    .journey { display: grid; gap: .75rem; }
+    @media (min-width: 640px) { .journey { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 1024px) { .journey { grid-template-columns: repeat(4, 1fr); } }
+    .step {
+      position: relative; border: 1px solid var(--border); border-radius: 1rem; padding: 1.15rem;
+      background: color-mix(in oklab, var(--card) 50%, transparent);
+      transition: border-color .35s ease, background .35s ease;
+    }
+    .step.active {
+      border-color: color-mix(in oklab, var(--primary) 40%, transparent);
+      background: color-mix(in oklab, var(--primary) 8%, var(--card));
+    }
+    .step .n { font-family: var(--mono); font-size: 10px; color: color-mix(in oklab, var(--primary) 55%, transparent); }
+    .progress {
+      height: 3px; background: var(--border); border-radius: 99px; margin: 0 auto 2rem; max-width: 40rem; overflow: hidden;
+    }
+    .progress > i {
+      display: block; height: 100%; width: 12.5%; background: var(--primary);
+      transition: transform .5s ease; transform-origin: left;
+    }
+    .miles { display: flex; flex-direction: column; gap: .5rem; max-width: 48rem; margin: 0 auto; }
+    .mile {
+      display: flex; align-items: center; gap: 1rem; padding: .9rem 1.1rem; border-radius: .8rem;
+      border: 1px solid var(--border); background: color-mix(in oklab, var(--card) 60%, transparent);
+    }
+    .num {
+      width: 2.1rem; height: 2.1rem; border-radius: 999px; display: grid; place-items: center;
+      border: 1px solid color-mix(in oklab, var(--primary) 30%, transparent);
+      background: color-mix(in oklab, var(--primary) 10%, transparent); font-weight: 800; color: var(--primary); font-size: .8rem;
+    }
+    .dont { display: grid; gap: .6rem; max-width: 48rem; margin: 2rem auto 0; }
+    @media (min-width: 640px) { .dont { grid-template-columns: 1fr 1fr; } }
+    .dont div {
+      display: flex; gap: .7rem; align-items: center; text-align: left;
+      border: 1px solid color-mix(in oklab, var(--danger) 18%, transparent);
+      background: color-mix(in oklab, var(--danger) 6%, transparent);
+      border-radius: .8rem; padding: .7rem 1rem; font-size: .875rem; color: var(--muted);
+    }
+    .x { width: 1.2rem; height: 1.2rem; border-radius: 99px; background: color-mix(in oklab, var(--danger) 25%, transparent); color: var(--danger); display: grid; place-items: center; font-size: .7rem; font-weight: 800; flex-shrink: 0; }
+    footer { border-top: 1px solid var(--border); padding: 2rem 1.5rem; text-align: center; color: var(--muted); font-size: .8rem; }
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 0%, transparent); }
+      50% { box-shadow: 0 0 0 5px color-mix(in oklab, var(--primary) 18%, transparent); }
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+    @keyframes draw { to { transform: scaleY(1); } }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+      .stage, h1, .eyebrow, .type, .lede, .callout, .cta-row, .chips, .stats, .rail-head { opacity: 1; transform: none; }
+      .connector { transform: scaleY(1); }
+      html { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"></div>
+  <header>
+    <a class="brand" href="#"><span class="mark" aria-hidden="true"></span>Atai</a>
+    <nav aria-label="Primary">
+      <a href="#team">Team</a>
+      <a href="#how-it-works">Journey</a>
+      <a href="#cta">Start</a>
+    </nav>
+    <a class="btn btn-ghost" href="#cta" style="height:2.5rem;padding:0 1rem;font-size:.85rem">Sign in</a>
+  </header>
+
+  <main>
+    <section class="wrap hero">
+      <div>
+        <div class="eyebrow"><span class="dot"></span>The AI Business-Building Platform</div>
+        <h1>Build the business.<br /><span>Not the burden.</span></h1>
+        <p class="type">Your idea deserves a team. Atai gives you <span class="grad" id="tw">your team.</span><span class="cursor" aria-hidden="true">|</span></p>
+        <p class="lede">From your first idea to your first customer — and from your first customer to your next stage of growth — Atai brings together an AI co-founder, specialist agents, product development, technology, infrastructure and business resources to help you build, launch and grow.</p>
+        <div class="callout">
+          You don’t need to build the team first.
+          <strong>The team is already here.</strong>
+        </div>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="#cta">Start building your business →</a>
+          <a class="btn btn-ghost" href="#how-it-works">See the journey</a>
+        </div>
+        <div class="chips">
+          <span class="chip">No hiring required</span>
+          <span class="chip">No coding needed</span>
+          <span class="chip">Built for founders thinking big</span>
+        </div>
+        <div class="stats">
+          <div class="stat"><b>2,400+</b><span>Founders building</span></div>
+          <div class="stat"><b>14×</b><span>Faster to launch</span></div>
+          <div class="stat"><b>8</b><span>Journey stages</span></div>
+          <div class="stat"><b>500</b><span>Free credits</span></div>
+        </div>
+      </div>
+
+      <div class="rail" aria-label="How Atai builds a business">
+        <div class="rail-head">
+          <p class="mono" style="color:var(--primary);margin-bottom:.35rem">Everything out of the box</p>
+          <p>Idea or URL in. <span style="color:var(--primary)">Complete running business out.</span></p>
+        </div>
+        <article class="stage stage-1">
+          <h3 style="color:var(--violet)">01 — Bring your signal</h3>
+          <div class="grid3">
+            <div class="cell"><b>Your idea</b><span>Plain language</span></div>
+            <div class="cell"><b>Competitor URL</b><span>We rebuild it</span></div>
+            <div class="cell"><b>GitHub repo</b><span>Clone or extend</span></div>
+          </div>
+        </article>
+        <div class="connector c1" aria-hidden="true"></div>
+        <article class="stage stage-2">
+          <h3 style="color:var(--primary)">02 — Atai builds your product</h3>
+          <div class="grid4">
+            <div class="cell"><b>Frontend</b></div>
+            <div class="cell"><b>Backend</b></div>
+            <div class="cell"><b>Database</b></div>
+            <div class="cell"><b>Auth</b></div>
+            <div class="cell"><b>Payments</b></div>
+            <div class="cell"><b>User Mgmt</b></div>
+            <div class="cell"><b>AI</b></div>
+            <div class="cell"><b>Infra</b></div>
+          </div>
+        </article>
+        <div class="connector c2" aria-hidden="true"></div>
+        <article class="stage stage-3">
+          <h3 style="color:var(--emerald)">03 — Launch, market &amp; scale</h3>
+          <div class="grid2">
+            <div class="cell" style="text-align:left;padding:.7rem .9rem"><b>One-click deploy</b></div>
+            <div class="cell" style="text-align:left;padding:.7rem .9rem"><b>Marketing &amp; launch</b></div>
+            <div class="cell" style="text-align:left;padding:.7rem .9rem"><b>Operate from 1 place</b></div>
+            <div class="cell" style="text-align:left;padding:.7rem .9rem"><b>Grow &amp; scale</b></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="band">
+      <div class="wrap center" style="max-width:56rem">
+        <p class="mono" style="color:var(--primary)">The truth about building a business</p>
+        <h2 style="margin-top:1rem">Someone told you building a <span class="grad">million-dollar business</span> would be hard.</h2>
+        <p style="color:var(--muted);font-size:1.2rem">They weren’t wrong.</p>
+        <div class="hard-grid">
+          <div>Finding the right people is hard.</div>
+          <div>Building the product is hard.</div>
+          <div>Understanding technology is hard.</div>
+          <div>Marketing is hard.</div>
+          <div>Getting customers is hard.</div>
+          <div>Managing infrastructure is hard.</div>
+          <div>Finding funding is hard.</div>
+          <div>Doing all of it alone is harder.</div>
+        </div>
+        <p style="margin-top:2.5rem;font-size:1.35rem;font-weight:700">But you shouldn’t have to do all of it alone.</p>
+        <p style="color:var(--muted);max-width:40rem;margin:1rem auto 0">Atai is designed to give ambitious founders the team and technology they need to move from an idea to a real business — without first having to build an entire company around themselves.</p>
+      </div>
+    </section>
+
+    <section class="wrap" id="team">
+      <div class="center" style="margin-bottom:2.5rem">
+        <p class="mono" style="color:var(--primary)">Meet the team behind your business</p>
+        <h2 style="margin-top:1rem">You don’t need a team to start.</h2>
+        <p style="color:var(--primary);font-size:1.6rem;font-weight:800">Atai is your team.</p>
+      </div>
+      <div class="team">
+        <article class="card"><h3 style="color:oklch(0.75 0.14 300)">AI Co-Founder</h3><p>Your strategic partner throughout the journey</p><ul><li>Business model</li><li>Product strategy</li><li>Competitive analysis</li></ul></article>
+        <article class="card"><h3 style="color:oklch(0.72 0.12 250)">Product &amp; Engineering</h3><p>Turns your vision into a working product</p><ul><li>Full-stack development</li><li>UI &amp; UX</li><li>Deployment</li></ul></article>
+        <article class="card"><h3 style="color:var(--emerald)">Growth Team</h3><p>Helps you move beyond having a product</p><ul><li>Launch strategy</li><li>SEO &amp; content</li><li>Customer acquisition</li></ul></article>
+        <article class="card"><h3 style="color:oklch(0.8 0.12 85)">Research &amp; Strategy</h3><p>Understand the market you’re entering</p><ul><li>Market research</li><li>Competitor analysis</li><li>Customer research</li></ul></article>
+        <article class="card"><h3 style="color:var(--primary)">Funding Support</h3><p>Prepare for external capital when ready</p><ul><li>Pitch preparation</li><li>Investor readiness</li><li>Financial modelling</li></ul></article>
+        <article class="card center" style="display:flex;flex-direction:column;justify-content:center;border-color:color-mix(in oklab, var(--primary) 30%, transparent)">
+          <h3>One founder. One platform.</h3>
+          <p style="color:var(--primary);font-size:1.4rem;font-weight:800;margin-top:.4rem">One team.</p>
+          <a class="btn btn-primary" href="#cta" style="height:2.4rem;margin:1rem auto 0;font-size:.85rem">Meet your team</a>
+        </article>
+      </div>
+    </section>
+
+    <section class="band">
+      <div class="wrap">
+        <div class="center" style="margin-bottom:2.5rem">
+          <p class="mono" style="color:var(--primary)">The old way vs Atai</p>
+          <h2 style="margin-top:1rem">You don’t need to build a company<br /><em>before you can build your business.</em></h2>
+        </div>
+        <div class="split">
+          <article class="card old">
+            <p class="mono" style="color:var(--danger)">The old way</p>
+            <p style="margin:1rem 0">Normally a founder has to assemble an entire company before they can build their business:</p>
+            <div class="roles">
+              <span>Founder →</span><span>Developer →</span><span>Designer →</span><span>Product Manager →</span><span>AI Engineer →</span><span>Marketer</span>
+            </div>
+          </article>
+          <article class="card" style="border-color:color-mix(in oklab, var(--primary) 30%, transparent)">
+            <p class="mono" style="color:var(--primary)">The Atai way</p>
+            <p style="margin:1rem 0">You start with the vision. Atai provides the technology, AI agents, specialist capabilities and infrastructure around it.</p>
+            <p style="font-weight:800;color:var(--primary)">One founder. One platform. One team.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap" id="how-it-works">
+      <div class="center" style="margin-bottom:1.5rem">
+        <p class="mono" style="color:var(--primary)">The journey</p>
+        <h2 style="margin-top:1rem">From idea to empire —<br /><em>one step at a time.</em></h2>
+      </div>
+      <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+      <div class="journey" id="steps">
+        <article class="step active" data-i="0"><span class="n">01</span><h3>Imagine</h3><p>Tell Atai what you want to build. No technical knowledge required.</p></article>
+        <article class="step" data-i="1"><span class="n">02</span><h3>Plan</h3><p>Your AI co-founder turns your idea into a detailed business and product plan.</p></article>
+        <article class="step" data-i="2"><span class="n">03</span><h3>Collaborate</h3><p>Work with Atai to refine the strategy, features, and business model.</p></article>
+        <article class="step" data-i="3"><span class="n">04</span><h3>Build</h3><p>Your AI development team turns the approved plan into the working product.</p></article>
+        <article class="step" data-i="4"><span class="n">05</span><h3>Launch</h3><p>Infrastructure, deployment, auth, database, and payments — together.</p></article>
+        <article class="step" data-i="5"><span class="n">06</span><h3>Operate</h3><p>Manage customers, product, data, payments and business from one platform.</p></article>
+        <article class="step" data-i="6"><span class="n">07</span><h3>Grow</h3><p>Improve the product, acquire customers, experiment, and keep building.</p></article>
+        <article class="step" data-i="7"><span class="n">08</span><h3>Scale</h3><p>As your business grows, Atai’s technology and capabilities grow with it.</p></article>
+      </div>
+      <div class="center" style="margin-top:2rem"><a class="btn btn-primary" href="#cta">Start your journey</a></div>
+    </section>
+
+    <section class="band">
+      <div class="wrap">
+        <div class="center" style="margin-bottom:2rem">
+          <p class="mono" style="color:var(--primary)">Built for ambition</p>
+          <h2 style="margin-top:1rem">From $0 to your next milestone.</h2>
+        </div>
+        <div class="miles">
+          <div class="mile"><span class="num">1</span><div><b>$0</b> The idea</div></div>
+          <div class="mile"><span class="num">2</span><div><b>$1</b> First customer</div></div>
+          <div class="mile"><span class="num">3</span><div><b>$10K</b> Early traction</div></div>
+          <div class="mile"><span class="num">4</span><div><b>$100K</b> Growing business</div></div>
+          <div class="mile"><span class="num">5</span><div><b>$1M+</b> Scaled company</div></div>
+          <div class="mile"><span class="num">6</span><div><b>$10M+</b> Expansion</div></div>
+          <div class="mile"><span class="num">7</span><div><b>$100M+</b> Serious scale</div></div>
+          <div class="mile"><span class="num">8</span><div><b>$1B+</b> The ambition</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap center">
+      <p class="mono" style="color:var(--primary)">Stop waiting until you’re ready</p>
+      <h2 style="margin-top:1rem">What if you stopped waiting?</h2>
+      <div class="dont">
+        <div><span class="x">✕</span>A technical co-founder before starting</div>
+        <div><span class="x">✕</span>A huge engineering team</div>
+        <div><span class="x">✕</span>A perfect product on day one</div>
+        <div><span class="x">✕</span>A massive budget</div>
+        <div><span class="x">✕</span>Years of technical experience</div>
+        <div><span class="x">✕</span>A complicated technology stack</div>
+        <div><span class="x">✕</span>Months of preparation</div>
+        <div><span class="x">✕</span>Doing all of it alone</div>
+      </div>
+    </section>
+
+    <section class="wrap center" id="cta">
+      <p class="mono" style="color:var(--primary)">Built for founders who aren’t thinking small</p>
+      <h2 style="margin-top:1rem">You bring the business.<br /><span class="grad">Atai brings the team.</span></h2>
+      <p class="lede" style="margin:1.25rem auto 0;text-align:center">Whether you’re aiming for your first $1, your first $1M, or something much bigger — Atai gives you the technology and team infrastructure to build toward it.</p>
+      <div class="cta-row" style="justify-content:center;animation:none">
+        <a class="btn btn-primary" href="#">Start building your business →</a>
+        <a class="btn btn-ghost" href="#">Learn more about Atai</a>
+      </div>
+      <p class="chips" style="justify-content:center;animation:none">
+        <span class="chip">Free to start — 500 credits included</span>
+        <span class="chip">No credit card required</span>
+        <span class="chip">Cancel any time</span>
+      </p>
+    </section>
+  </main>
+  <footer>Atai — Launch your business. No code required.</footer>
+  <script>
+    (function () {
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      var phrases = ["your team.", "your co-founder.", "your engineers.", "your product builders.", "your growth team.", "your infrastructure."];
+      var el = document.getElementById("tw");
+      if (!reduce && el) {
+        var i = 0, t = "";
+        function loop() {
+          var p = phrases[i % phrases.length];
+          var n = 0, erasing = false;
+          function step() {
+            if (!erasing) {
+              n++; el.textContent = p.slice(0, n);
+              if (n === p.length) { erasing = true; setTimeout(step, 2200); }
+              else setTimeout(step, 70);
+            } else {
+              n--; el.textContent = p.slice(0, n);
+              if (n === 0) { i++; setTimeout(loop, 300); }
+              else setTimeout(step, 35);
+            }
+          }
+          step();
+        }
+        setTimeout(loop, 900);
+      }
+      var steps = document.querySelectorAll(".step");
+      var bar = document.getElementById("bar");
+      var idx = 0, timer;
+      function setStep(n) {
+        idx = n;
+        steps.forEach(function (s, i) { s.classList.toggle("active", i === n); });
+        if (bar) bar.style.transform = "scaleX(" + (n + 1) + ")";
+      }
+      if (bar) bar.style.transform = "scaleX(1)";
+      function play() {
+        if (reduce) return;
+        timer = setInterval(function () { setStep((idx + 1) % steps.length); }, 3200);
+      }
+      var root = document.getElementById("steps");
+      if (root) {
+        root.addEventListener("mouseenter", function () { clearInterval(timer); });
+        root.addEventListener("mouseleave", play);
+        root.addEventListener("focusin", function () { clearInterval(timer); });
+        root.addEventListener("focusout", play);
+        steps.forEach(function (s, i) {
+          s.tabIndex = 0;
+          s.addEventListener("click", function () { setStep(i); });
+        });
+      }
+      if (!reduce) play();
+    })();
+  </script>
+</body>
+</html>

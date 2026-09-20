@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import Link from "next/link"
+
 import { ArrowRight, Check, Zap, Code2, Layers3, Globe, Link as LinkIcon, Shield, Clock, Settings, DollarSign, AlertTriangle, X, Coins } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
@@ -16,6 +16,7 @@ import {
 } from "@/lib/billing/config"
 import { CheckoutButton } from "@/components/billing/checkout-button"
 import { PlanCard } from "@/components/billing/plan-card"
+import { AuthTrigger } from "@/components/auth/auth-trigger"
 
 const TIERS = Object.values(BUILD_TIERS).map((tier) => ({
   name: tier.label,
@@ -115,9 +116,9 @@ export default async function PricingPage() {
           Start with {WELCOME_BONUS_CREDITS.toLocaleString()} free credits on us.
         </p>
         <div className="mt-8 flex items-center justify-center gap-3">
-          <Link href="/register" className={buttonVariants({ size: "lg" }) + " h-12 px-6"}>
+          <AuthTrigger view="signup" next="/pricing" className={buttonVariants({ size: "lg" }) + " h-12 px-6"}>
             Start Building <ArrowRight className="size-4" />
-          </Link>
+          </AuthTrigger>
         </div>
       </section>
 
@@ -216,12 +217,13 @@ export default async function PricingPage() {
                     Buy Now
                   </CheckoutButton>
                 ) : (
-                  <Link
-                    href="/register"
-                    className="mt-4 block text-center py-2 rounded-lg text-sm font-medium border border-border hover:bg-accent transition-colors"
+                  <AuthTrigger
+                    view="signup"
+                    next="/pricing"
+                    className="mt-4 block w-full text-center py-2 rounded-lg text-sm font-medium border border-border hover:bg-accent transition-colors"
                   >
                     Get Started
-                  </Link>
+                  </AuthTrigger>
                 )}
               </div>
             ))}
@@ -278,15 +280,16 @@ export default async function PricingPage() {
                 ))}
               </ul>
 
-              <Link
-                href="/register"
-                className={`mt-6 block text-center py-2.5 rounded-lg text-sm font-medium transition-colors ${tier.popular
+              <AuthTrigger
+                view="signup"
+                next="/pricing"
+                className={`mt-6 block w-full text-center py-2.5 rounded-lg text-sm font-medium transition-colors ${tier.popular
                   ? "bg-primary text-primary-foreground hover:bg-primary/90"
                   : "border border-border hover:bg-accent"
                   }`}
               >
                 Get Started
-              </Link>
+              </AuthTrigger>
             </div>
           ))}
         </div>
@@ -348,12 +351,13 @@ export default async function PricingPage() {
                   <span className="text-sm font-medium">Deployment Cost</span>
                   <span className="font-mono text-sm">500 {CREDIT_UNIT_NAME}</span>
                 </div>
-                <Link
-                  href="/register"
-                  className="block text-center py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                <AuthTrigger
+                  view="signup"
+                  next="/pricing"
+                  className="block w-full text-center py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
                   Get Started Free
-                </Link>
+                </AuthTrigger>
               </div>
             </div>
 
@@ -400,12 +404,13 @@ export default async function PricingPage() {
                   <span className="text-sm font-medium">Deployment Cost</span>
                   <span className="font-mono text-sm">500 {CREDIT_UNIT_NAME}</span>
                 </div>
-                <Link
-                  href="/register"
-                  className="block text-center py-2.5 rounded-lg text-sm font-medium border border-border hover:bg-accent transition-colors"
+                <AuthTrigger
+                  view="signup"
+                  next="/pricing"
+                  className="block w-full text-center py-2.5 rounded-lg text-sm font-medium border border-border hover:bg-accent transition-colors"
                 >
                   Get Started
-                </Link>
+                </AuthTrigger>
               </div>
             </div>
           </div>
@@ -475,9 +480,9 @@ export default async function PricingPage() {
             Start with {WELCOME_BONUS_CREDITS.toLocaleString()} free credits and see what Atai can create.
           </p>
           <div className="mt-6 flex items-center justify-center gap-3">
-            <Link href="/register" className={buttonVariants({ size: "lg" }) + " h-12 px-6"}>
+            <AuthTrigger view="signup" next="/pricing" className={buttonVariants({ size: "lg" }) + " h-12 px-6"}>
               Try Atai <ArrowRight className="size-4" />
-            </Link>
+            </AuthTrigger>
           </div>
         </div>
       </section>

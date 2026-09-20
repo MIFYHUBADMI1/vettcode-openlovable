@@ -5,7 +5,7 @@ import { crawlWebsite, crawlWebsiteDeep, isFirecrawlConfigured } from "@/lib/int
 import { launchProject, isTotalumConfigured } from "@/lib/integrations/totalum/service"
 import { initializeProjectInfrastructure } from "@/lib/infrastructure/service"
 import { getInfrastructurePlan } from "@/lib/infrastructure/plans"
-import { chargeScrapeCredits, chargePlanCredits, chargeDeepCrawlCredits, reserveCredits, refundReservation, getTierCost, classifyComplexity, hasSufficientCredits, SCRAPE_COST, PLAN_COST, DEEP_CRAWL_COST, getScrapeCost, getPlanCost, getDeepCrawlCost } from "@/lib/credits/credits"
+import { chargeScrapeCredits, chargePlanCredits, chargeDeepCrawlCredits, reserveCredits, refundReservation, getTierCost, classifyComplexity, hasSufficientCredits, getScrapeCost, getDeepCrawlCost } from "@/lib/credits/credits"
 import { buildInitialBuildPrompt } from "./prompt-builder"
 import { analyzeWebsite } from "./understanding"
 import { generateSpecificationFromUnderstanding, generateSpecificationFromIdea } from "./specification"
@@ -34,7 +34,7 @@ export async function autoLaunchBuild(projectId: string) {
 
   const tier = project.specification.complexity ?? classifyComplexity(project.specification)
   const pipelineMode = project.pipelineMode ?? "legacy"
-  const creditsNeeded = getTierCost(tier, pipelineMode)
+  const creditsNeeded = await getTierCost(tier, pipelineMode)
   const canAfford = await hasSufficientCredits(project.userId, creditsNeeded)
   if (!canAfford) {
     console.log("[v0] pipeline.autoBuild: insufficient credits", { projectId })
@@ -146,7 +146,7 @@ export async function runWebsiteAnalysis(projectId: string, pipelineMode?: "lega
     }
 
     // Check credits before crawling.
-    const scrapeCost = getScrapeCost(pipelineMode)
+    const scrapeCost = await getScrapeCost(pipelineMode)
     const canAfford = await hasSufficientCredits(project.userId, scrapeCost)
     if (!canAfford) {
       console.log("[v0] pipeline.website: insufficient credits, aborting", { projectId, userId: project.userId, required: scrapeCost })
@@ -318,7 +318,7 @@ export async function runDeepCrawlAnalysis(projectId: string, pipelineMode?: "le
   }
 
   const mode = pipelineMode ?? "legacy"
-  const deepCrawlCost = getDeepCrawlCost(mode)
+  const deepCrawlCost = await getDeepCrawlCost(mode)
 
   try {
     await store.updateProject(projectId, { state: "analyzing" })
@@ -477,7 +477,7 @@ function generateCloneSpecification(
         seenEntities.add(normalized)
         // Only add if it looks like a data concept
         if (normalized.includes("list") || normalized.includes("table") || normalized.includes("record") || normalized.includes("item") || normalized.includes("entry")) {
-          dataEntities.push({ name: heading, fields: [] })
+          dataEntities.push({ name: heading, description: undefined, fields: [] })
         }
       }
     }

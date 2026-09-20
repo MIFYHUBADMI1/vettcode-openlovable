@@ -45,16 +45,26 @@ export function VerifyEmailBanner() {
   }
 
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-amber-500/30 bg-amber-500/10 px-6 py-3 lg:px-10">
+    <div className="flex flex-col gap-3 border-b border-amber-500/30 bg-amber-500/10 px-6 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-10">
       <div className="flex items-center gap-3">
         <MailWarning className="size-4 shrink-0 text-amber-500" />
         <p className="text-sm text-foreground">
-          Verify <span className="font-medium">{session.user.email}</span> to unlock your 500 welcome credits and every feature.
+          Verify <span className="font-medium">{session.user.email}</span> to unlock your 500 bonus credits.
         </p>
       </div>
       <div className="flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 font-mono text-xs"
+          onClick={() => {
+            void refresh()
+          }}
+        >
+          I&apos;ve verified
+        </Button>
         <Button variant="outline" size="sm" disabled={sending} onClick={handleResend} className="h-7 font-mono text-xs">
-          {sending ? "Sending…" : "Resend link"}
+          {sending ? "Sending…" : "Resend email"}
         </Button>
         <button
           type="button"

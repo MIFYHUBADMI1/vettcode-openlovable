@@ -1,51 +1,88 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowLeft, BookOpen, Code2, Compass, Sparkles } from "lucide-react"
+import { SiteHeader } from "@/components/site-header"
+import { SiteFooter } from "@/components/site-footer"
+import { ResourcesHub } from "@/components/resources/hub"
+import { AuthTrigger } from "@/components/auth/auth-trigger"
 import { buttonVariants } from "@/components/ui/button"
 import { SITE_URL } from "@/lib/env"
-
-const resources = [
-  { icon: Compass, title: "The Atai method", copy: "A practical guide to moving from reference, intent, and structure into a buildable first version." },
-  { icon: Code2, title: "For developers", copy: "How to use generated foundations as a starting point for real auth, data, and product logic." },
-  { icon: Sparkles, title: "For designers", copy: "Keep the visual language while making room for states, behavior, and the details screenshots cannot show." },
-]
+import { allSummaries, featuredResource, summarize } from "@/lib/resources"
+import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = {
-  title: "Atai Resources | Guides for AI-Powered App Development",
-  description: "Guides for turning references and ideas into working applications with Atai.",
+  title: "Atai Resources | Guides, playbooks, and templates for founders",
+  description:
+    "Practical guides, playbooks, templates, and Atai product education for turning ideas into real products and businesses.",
   alternates: { canonical: "/resources" },
   openGraph: {
     type: "website",
     locale: "en_US",
-    title: "Atai Resources | Guides for AI-Powered App Development",
-    description: "Guides for turning references and ideas into working applications with Atai.",
+    title: "Atai Resources",
+    description: "Practical knowledge for founders, builders, and people using Atai to create and grow products.",
     url: `${SITE_URL}/resources`,
     siteName: "Atai",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai resources and guides" }],
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai resources" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Atai Resources | Guides for AI-Powered App Development",
-    description: "Guides for turning references and ideas into working applications with Atai.",
-    images: ["/hero/after-landing.png"],
+    title: "Atai Resources",
+    description: "Guides, playbooks, and templates for building, launching, and growing a product.",
+    images: ["/og-image.png"],
   },
 }
 
 export default function ResourcesPage() {
+  const resources = allSummaries()
+  const featured = summarize(featuredResource())
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "Atai Resources",
+    description: metadata.description,
+    url: `${SITE_URL}/resources`,
+    isPartOf: { "@type": "WebSite", name: "Atai", url: SITE_URL },
+    hasPart: resources.map((resource) => ({
+      "@type": "TechArticle",
+      headline: resource.title,
+      url: `${SITE_URL}${resource.href}`,
+      datePublished: resource.publishedAt,
+      dateModified: resource.updatedAt,
+    })),
+  }
+
   return (
-    <main className="workspace-environment min-h-svh bg-background text-foreground"><span className="workspace-signal" aria-hidden="true" />
-      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-10">
-        <Link href="/" className="flex items-center gap-3 font-mono text-sm font-semibold"><span className="grid size-8 place-items-center rounded-md bg-primary text-primary-foreground">M</span>Atai<span className="text-primary">.ai</span></Link>
-        <Link href="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"><ArrowLeft className="size-4" /> Back home</Link>
-      </header>
-      <section className="mx-auto max-w-5xl px-6 pb-24 pt-16 lg:px-10 lg:pt-24">
-        <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">Resources</p>
-        <h1 className="mt-5 max-w-3xl text-balance text-5xl font-semibold tracking-[-0.05em] sm:text-7xl">Build with more signal.</h1>
-        <p className="mt-7 max-w-2xl text-pretty text-lg leading-8 text-muted-foreground">Short, useful notes for founders, designers, and developers who want to turn inspiration into something they can actually own.</p>
-        <div className="mt-8 rounded-xl border border-primary/30 bg-primary/5 p-6 sm:p-8"><div className="flex items-center gap-3"><BookOpen className="size-5 text-primary" /><h2 className="text-xl font-semibold">Full Documentation</h2></div><p className="mt-3 max-w-xl leading-7 text-muted-foreground">Step-by-step guides, tutorials, and answers to every question about using Atai — from your first project to publishing on a custom domain.</p><Link href="/docs" className={buttonVariants({ size: "lg" }) + " mt-5"}>Read the docs <ArrowLeft className="size-4 ml-1.5 rotate-180" /></Link></div>
-        <div className="mt-16 grid gap-4 md:grid-cols-3">{resources.map(({ icon: Icon, title, copy }) => <article key={title} className="rounded-xl border border-border bg-card p-6"><Icon className="size-5 text-primary" /><h2 className="mt-8 text-xl font-medium">{title}</h2><p className="mt-3 text-sm leading-6 text-muted-foreground">{copy}</p><span className="mt-8 inline-flex font-mono text-xs text-primary">Coming soon</span></article>)}</div>
-        <div className="mt-16 rounded-xl border border-border bg-card p-8 sm:p-10"><BookOpen className="size-5 text-primary" /><h2 className="mt-6 text-2xl font-semibold">Start with a real project</h2><p className="mt-3 max-w-xl leading-7 text-muted-foreground">The best way to learn the workflow is to bring a reference or idea into the workspace and inspect what Atai understands.</p><Link href="/register" className={buttonVariants({ size: "lg" }) + " mt-7"}>Start building</Link></div>
-      </section>
+    <main className="min-h-svh bg-background text-foreground">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <SiteHeader activePage="/resources" />
+      <div className="mx-auto w-full max-w-6xl px-6 pb-20 pt-8 lg:px-10">
+        <header className="max-w-2xl">
+          <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-300">Resources</p>
+          <h1 className="mt-3 text-balance text-3xl font-black tracking-tight sm:text-5xl">
+            Build smarter. Launch faster. Grow with clarity.
+          </h1>
+          <p className="mt-4 text-pretty text-base leading-7 text-muted-foreground sm:text-lg">
+            Practical guides, playbooks, templates, and product education for turning ideas into real products — including how to use Atai.
+          </p>
+        </header>
+
+        <div className="mt-10">
+          <ResourcesHub resources={resources} featured={featured} />
+        </div>
+
+        <section className="mt-16 rounded-3xl border border-border bg-card p-6 sm:p-8">
+          <h2 className="text-xl font-semibold">Can&apos;t find what you&apos;re looking for?</h2>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+            Search the library, pick a category, or start a project in Atai and learn by doing.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Link href="/docs" className={cn(buttonVariants({ variant: "outline" }))}>Read the docs</Link>
+            <AuthTrigger view="signup" next="/new/idea" className={cn(buttonVariants())}>
+              Try Atai
+            </AuthTrigger>
+          </div>
+        </section>
+      </div>
+      <SiteFooter />
     </main>
   )
 }

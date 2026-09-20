@@ -166,16 +166,29 @@ export class ModelRegistry {
     const globalModel = process.env.OPENROUTER_MODEL || process.env.OPENROUTER_FREE_MODEL || 'openrouter/auto'
     const globalFallback = process.env.OPENROUTER_FREE_MODEL || 'openrouter/auto'
 
-    // Helper: validate and clean model name
+    // Helper: validate and clean model name. A SET but empty/whitespace-only
+    // value is a misconfiguration — warn and fall back (Req 19.7). An UNSET
+    // variable is a normal configuration choice and stays silent.
     const resolveModel = (model: string | undefined, envVarName: string, fallback: string): string => {
       if (!model || !model.trim()) {
+        if (model !== undefined) {
+          console.warn(`[ModelRegistry] ${envVarName} is empty or whitespace-only; falling back to '${fallback}'`)
+        }
         return fallback
       }
       return model.trim()
     }
 
-    // Helper: build fallback array
-    const buildFallbacks = (fallbackModel: string | undefined): string[] => {
+    // Helper: build fallback array. The chain ALWAYS ends with the
+    // 'openrouter/auto' safety net so the retry path (getFallbackModel) keeps
+    // a working fallback on transient provider failures. A SET but empty or
+    // whitespace-only fallback variable is a misconfiguration — warn and fall
+    // back to openrouter/auto (Req 19.7).
+    const buildFallbacks = (fallbackModel: string | undefined, envVarName: string): string[] => {
+      if (fallbackModel !== undefined && !fallbackModel.trim()) {
+        console.warn(`[ModelRegistry] ${envVarName} is empty or whitespace-only; falling back to 'openrouter/auto'`)
+        return ['openrouter/auto']
+      }
       const fallbacks: string[] = []
       if (fallbackModel && fallbackModel.trim()) {
         fallbacks.push(fallbackModel.trim())
@@ -192,31 +205,31 @@ export class ModelRegistry {
     const config: ModelConfiguration = {
       ideaUnderstanding: {
         primary: resolveModel(process.env.IDEA_UNDERSTANDING_MODEL, 'IDEA_UNDERSTANDING_MODEL', globalModel),
-        fallbacks: buildFallbacks(process.env.IDEA_UNDERSTANDING_FALLBACK_MODEL),
+        fallbacks: buildFallbacks(process.env.IDEA_UNDERSTANDING_FALLBACK_MODEL, 'IDEA_UNDERSTANDING_FALLBACK_MODEL'),
         maxTokens: 4000,
         temperature: 0.7,
       },
       researchAgent: {
         primary: resolveModel(process.env.RESEARCH_MODEL, 'RESEARCH_MODEL', globalModel),
-        fallbacks: buildFallbacks(process.env.RESEARCH_FALLBACK_MODEL),
+        fallbacks: buildFallbacks(process.env.RESEARCH_FALLBACK_MODEL, 'RESEARCH_FALLBACK_MODEL'),
         maxTokens: 4000,
         temperature: 0.7,
       },
       primaryPlanner: {
         primary: resolveModel(process.env.PLANNER_MODEL, 'PLANNER_MODEL', globalModel),
-        fallbacks: buildFallbacks(process.env.PLANNER_FALLBACK_MODEL),
+        fallbacks: buildFallbacks(process.env.PLANNER_FALLBACK_MODEL, 'PLANNER_FALLBACK_MODEL'),
         maxTokens: 8000,
         temperature: 0.7,
       },
       critic: {
         primary: resolveModel(process.env.CRITIC_MODEL, 'CRITIC_MODEL', globalModel),
-        fallbacks: buildFallbacks(process.env.CRITIC_FALLBACK_MODEL),
+        fallbacks: buildFallbacks(process.env.CRITIC_FALLBACK_MODEL, 'CRITIC_FALLBACK_MODEL'),
         maxTokens: 4000,
         temperature: 0.3,
       },
       repairService: {
         primary: resolveModel(process.env.REPAIR_MODEL, 'REPAIR_MODEL', globalModel),
-        fallbacks: buildFallbacks(process.env.REPAIR_FALLBACK_MODEL),
+        fallbacks: buildFallbacks(process.env.REPAIR_FALLBACK_MODEL, 'REPAIR_FALLBACK_MODEL'),
         maxTokens: 8000,
         temperature: 0.5,
       },

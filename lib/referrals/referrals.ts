@@ -17,9 +17,25 @@ import { grantCredits } from "@/lib/billing/credit-service"
 
 const REFERRAL_CODE_PREFIX = "MSA"
 const REFERRAL_CODE_LENGTH = 6
+/** Legacy fallback constants — live values come from admin-configurable
+ * runtime settings (lib/billing/runtime-config.ts) at grant time. */
 const VERIFICATION_REWARD = 500
 const MILESTONE_REWARD = 1500
 const MILESTONE_THRESHOLD = 75_000
+
+/** Resolve the current admin-configured reward values. */
+async function getRuntimeRewards() {
+  const { getRewardSettings } = await import("@/lib/billing/runtime-config")
+  try {
+    return await getRewardSettings()
+  } catch {
+    return {
+      referralVerificationReward: VERIFICATION_REWARD,
+      referralMilestoneReward: MILESTONE_REWARD,
+      referralMilestoneThreshold: MILESTONE_THRESHOLD,
+    }
+  }
+}
 
 // ─── Referral Code Generation ───────────────────────────────────────────────
 
@@ -187,10 +203,11 @@ export async function captureReferral(
   )
   if (!result) return false // Already rewarded (concurrent call won)
 
-  // Grant credits via credit-service
+  // Grant credits via credit-service (admin-configured amount)
+  const rewards = await getRuntimeRewards()
   await grantCredits({
     userId: referral.referrerUserId,
-    amount: VERIFICATION_REWARD,
+    amount: rewards.referralVerificationReward,
     creditType: "permanent",
     transactionType: "referral_bonus",
     idempotencyKey: `referral_verification_${referral.id}`,
@@ -204,7 +221,7 @@ export async function captureReferral(
     referralId: referral.id,
     referrerUserId: referral.referrerUserId,
     referredUserId: userId,
-    credits: VERIFICATION_REWARD,
+    credits: rewards.referralVerificationReward,
   })
 
   return true
@@ -240,8 +257,9 @@ export async function processMilestoneCheck(
 
   const now = Date.now()
   const updatedUsage = referral.eligibleUsage + additionalUsage
+  const rewards = await getRuntimeRewards()
 
-  if (updatedUsage >= MILESTONE_THRESHOLD) {
+  if (updatedUsage >= rewards.referralMilestoneThreshold) {
     // Atomically claim the milestone reward — only one call can succeed
     const result = await referrals.findOneAndUpdate(
       { _id: referral._id, milestoneRewardIssued: false },
@@ -257,15 +275,15 @@ export async function processMilestoneCheck(
       return false
     }
 
-    // Award 1500 credits to referrer via credit-service
+    // Award milestone credits to referrer via credit-service (admin-configured amount)
     await grantCredits({
       userId: referral.referrerUserId,
-      amount: MILESTONE_REWARD,
+      amount: rewards.referralMilestoneReward,
       creditType: "permanent",
       transactionType: "referral_bonus",
       idempotencyKey: `referral_milestone_${referral.id}`,
       metadata: {
-        reason: "Referral usage milestone (75k)",
+        reason: "Referral usage milestone",
         referredUserId,
         eligibleUsage: updatedUsage,
       },
@@ -275,7 +293,7 @@ export async function processMilestoneCheck(
       referralId: referral.id,
       referrerUserId: referral.referrerUserId,
       referredUserId,
-      credits: MILESTONE_REWARD,
+      credits: rewards.referralMilestoneReward,
     })
     return true
   }
@@ -373,9 +391,10 @@ export async function getReferralStats(referrerUserId: string) {
   const pending = all.filter((r) => r.status === "registered")
 
   let totalCreditsEarned = 0
+  const rewards = await getRuntimeRewards()
   for (const r of all) {
-    if (r.verificationRewardIssued) totalCreditsEarned += VERIFICATION_REWARD
-    if (r.milestoneRewardIssued) totalCreditsEarned += MILESTONE_REWARD
+    if (r.verificationRewardIssued) totalCreditsEarned += rewards.referralVerificationReward
+    if (r.milestoneRewardIssued) totalCreditsEarned += rewards.referralMilestoneReward
   }
 
   return {

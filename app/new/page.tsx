@@ -1,11 +1,9 @@
 "use client"
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Globe, Lightbulb, ArrowRight } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
-import { useSession } from "@/lib/client/api"
+import { AuthGate } from "@/components/auth/auth-gate"
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
@@ -35,18 +33,10 @@ const MODES = [
 ]
 
 export default function NewProjectPage() {
-  const router = useRouter()
-  const { session, isLoading } = useSession()
-
-  useEffect(() => {
-    if (!isLoading && !session) router.replace("/login?next=%2Fnew")
-  }, [session, isLoading, router])
-
-  if (isLoading || !session) return null
-
   return (
     <main className="min-h-svh bg-background text-foreground">
       <AppHeader />
+      <AuthGate next="/new">
       <section className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-6 py-10 lg:px-10 lg:py-14">
         <div className="flex flex-col gap-6">
           <Link href="/dashboard" className="inline-flex w-fit items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground">
@@ -112,6 +102,7 @@ export default function NewProjectPage() {
           </div>
         </div>
       </section>
+      </AuthGate>
     </main>
   )
 }

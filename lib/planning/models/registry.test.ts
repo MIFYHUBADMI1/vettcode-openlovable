@@ -11,6 +11,23 @@ describe('ModelRegistry', () => {
   beforeEach(() => {
     // Save original environment
     originalEnv = { ...process.env }
+
+    // Clear ALL model-related env vars so tests start from a clean slate.
+    // This prevents .env.local values (e.g. OPENROUTER_FREE_MODEL) from
+    // leaking into test assertions.
+    delete process.env.OPENROUTER_MODEL
+    delete process.env.OPENROUTER_FREE_MODEL
+    delete process.env.IDEA_UNDERSTANDING_MODEL
+    delete process.env.IDEA_UNDERSTANDING_FALLBACK_MODEL
+    delete process.env.RESEARCH_MODEL
+    delete process.env.RESEARCH_FALLBACK_MODEL
+    delete process.env.PLANNER_MODEL
+    delete process.env.PLANNER_FALLBACK_MODEL
+    delete process.env.CRITIC_MODEL
+    delete process.env.CRITIC_FALLBACK_MODEL
+    delete process.env.REPAIR_MODEL
+    delete process.env.REPAIR_FALLBACK_MODEL
+    delete process.env.PLANNING_STRATEGY
   })
 
   afterEach(() => {
@@ -20,10 +37,6 @@ describe('ModelRegistry', () => {
 
   describe('getModelForStage', () => {
     it('should return default configuration when no env vars set', () => {
-      // Clear relevant env vars
-      delete process.env.OPENROUTER_MODEL
-      delete process.env.PLANNER_MODEL
-
       const registry = new ModelRegistry()
       const config = registry.getModelForStage('planning')
 
@@ -50,7 +63,6 @@ describe('ModelRegistry', () => {
 
     it('should use OPENROUTER_MODEL as fallback when stage-specific not set', () => {
       process.env.OPENROUTER_MODEL = 'openai/gpt-4o'
-      delete process.env.PLANNER_MODEL
 
       const registry = new ModelRegistry()
       const config = registry.getModelForStage('planning')
@@ -100,14 +112,18 @@ describe('ModelRegistry', () => {
       expect(fallback?.primary).toBe('openai/gpt-4o')
     })
 
-    it('should return null when no fallbacks configured and attempt > 0', () => {
+    it('should use the openrouter/auto safety net when no fallback is configured', () => {
       process.env.PLANNER_MODEL = 'anthropic/claude-3.5-sonnet'
-      delete process.env.PLANNER_FALLBACK_MODEL
 
       const registry = new ModelRegistry()
       const fallback = registry.getFallbackModel('planning', 1)
 
-      expect(fallback).toBeNull()
+      // The implicit safety net is the first (only) fallback.
+      expect(fallback).not.toBeNull()
+      expect(fallback?.primary).toBe('openrouter/auto')
+
+      // Beyond the safety net there is nothing left.
+      expect(registry.getFallbackModel('planning', 2)).toBeNull()
     })
 
     it('should return null when attempt exceeds available fallbacks', () => {
@@ -161,9 +177,7 @@ describe('ModelRegistry', () => {
     })
 
     it('should use OPENROUTER_FREE_MODEL as fallback', () => {
-      delete process.env.OPENROUTER_MODEL
       process.env.OPENROUTER_FREE_MODEL = 'free/model'
-      delete process.env.PLANNER_MODEL
 
       const registry = new ModelRegistry()
       const config = registry.getModelForStage('planning')
@@ -228,10 +242,6 @@ describe('ModelRegistry', () => {
 
   describe('Edge Cases', () => {
     it('should handle empty environment gracefully', () => {
-      delete process.env.OPENROUTER_MODEL
-      delete process.env.OPENROUTER_FREE_MODEL
-      delete process.env.PLANNER_MODEL
-
       const registry = new ModelRegistry()
       const config = registry.getModelForStage('planning')
 
@@ -287,7 +297,6 @@ describe('ModelRegistry', () => {
     it('should fall back to openrouter/auto and warn when OPENROUTER_MODEL is empty string', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { })
       process.env.OPENROUTER_MODEL = ''
-      delete process.env.PLANNER_MODEL
 
       const registry = new ModelRegistry()
       // OPENROUTER_MODEL is empty so the default 'openrouter/auto' should remain
@@ -313,5 +322,3 @@ describe('ModelRegistry', () => {
     })
   })
 })
-
-

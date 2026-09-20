@@ -171,14 +171,14 @@ export default function ProfileSettingsPage() {
                 <div>
                   <p className="font-medium text-sm">GitHub</p>
                   <p className="text-xs text-muted-foreground">
-                    {user.githubAccessToken
+                    {user.githubConnected
                       ? `Connected as @${user.githubUsername || 'GitHub user'}`
                       : "Push code to repos or build from existing projects"}
                   </p>
                 </div>
               </div>
 
-              {user.githubAccessToken ? (
+              {user.githubConnected ? (
                 <Badge variant="secondary" className="gap-1.5 font-mono text-xs">
                   <CheckCircle2 className="size-3" />
                   Connected

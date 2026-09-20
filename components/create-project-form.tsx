@@ -11,6 +11,9 @@ import { cn } from "@/lib/utils"
 import { ProjectPreferencesDialog } from "@/components/project-preferences-dialog"
 import { CrawlModeDialog, type CrawlMode } from "@/components/crawl-mode-dialog"
 import { PipelineModeSelector, type PipelineMode } from "@/components/pipeline-mode-selector"
+import { peekPendingStart, takePendingStart } from "@/lib/auth/client-intent"
+import { recordOnboardingActivation } from "@/lib/onboarding/activate"
+import { extractWebsiteUrl } from "@/lib/start/detect-input"
 
 function normalizeUrl(raw: string): string | null {
   const trimmed = raw.trim()
@@ -36,7 +39,20 @@ export function CreateProjectForm() {
   const [showCrawlMode, setShowCrawlMode] = useState(false)
   const [pendingPrefs, setPendingPrefs] = useState<ProjectPreferences | null>(null)
   const [pendingCrawlMode, setPendingCrawlMode] = useState<CrawlMode | null>(null)
-  const [pipelineMode, setPipelineMode] = useState<PipelineMode>("legacy")
+  const [pipelineMode, setPipelineMode] = useState<PipelineMode>("heavy")
+  const [capturedIntent, setCapturedIntent] = useState<string | null>(null)
+
+  useEffect(() => {
+    const pending = peekPendingStart()
+    if (!pending?.prompt) return
+    if (!pending.href.includes("/new/website") && !/^https?:\/\//i.test(pending.prompt) && !/^www\./i.test(pending.prompt)) return
+    takePendingStart()
+    setCapturedIntent(pending.prompt)
+    setUrl(extractWebsiteUrl(pending.prompt) ?? pending.prompt)
+    if (pending.pipelineMode === "legacy" || pending.pipelineMode === "heavy") {
+      setPipelineMode(pending.pipelineMode)
+    }
+  }, [])
 
   // Apply page-wide visual effect with floating bubbles
   useEffect(() => {
@@ -78,12 +94,23 @@ export function CreateProjectForm() {
     try {
       const { project } = await postJson<{ project: Project }>("/api/projects", {
         url: normalized,
+        idea: capturedIntent ?? undefined,
         crawlMode: crawlMode ?? undefined,
         preferences: preferences ?? undefined,
         pipelineMode,
       })
       await Promise.all([refreshProjects(), refreshSession()])
-      router.push(`/project/${project.id}`)
+      try {
+        await recordOnboardingActivation({
+          businessDescription: normalized ?? undefined,
+          source: "direct_project_creation",
+          signalType: "url",
+          destination: `/project/${project.id}/collaborate`,
+        })
+      } catch {
+        /* project exists — activation is derived from project state */
+      }
+      router.push(`/project/${project.id}/collaborate`)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create project")
       setSubmitting(false)
@@ -93,7 +120,10 @@ export function CreateProjectForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!valid || submitting) return
-    // Show crawl mode dialog first
+    if (capturedIntent) {
+      void doSubmit(undefined, "relevant")
+      return
+    }
     setShowCrawlMode(true)
   }
 
@@ -135,7 +165,7 @@ export function CreateProjectForm() {
             aria-invalid={url.length > 0 && !valid}
           />
           <Button type="submit" disabled={!valid || submitting} className="h-11 shrink-0 px-6">
-            {submitting ? "Creatingâ€¦" : "Mirror site"}
+            {submitting ? "Creating…" : "Mirror site"}
           </Button>
         </div>
       </div>

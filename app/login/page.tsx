@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { Suspense } from "react"
 import { LoginForm } from "@/components/auth/login-form"
 import { AuthShell } from "@/components/auth/auth-shell"
 import { LoginMarketing } from "./login-marketing"
@@ -9,11 +10,7 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default function LoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string; next?: string }>
-}) {
+export default function LoginPage() {
   return (
     <AuthShell
       title="Welcome back, founder."
@@ -21,7 +18,9 @@ export default function LoginPage({
       footer={{ prompt: "Don't have an account?", linkLabel: "Start building free →", href: "/register" }}
       marketing={<LoginMarketing />}
     >
-      <LoginForm searchParams={searchParams} />
+      <Suspense>
+        <LoginForm />
+      </Suspense>
     </AuthShell>
   )
 }

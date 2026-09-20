@@ -1,0 +1,43 @@
+export const ONBOARDING_COPY = {
+  eyebrow: "01 / Your vision",
+  contextEyebrow: "02 / Context",
+  readyEyebrow: "Ready",
+  visionHeading: "What are you building?",
+  visionDescription:
+    "Give Atai the idea, business, product, or problem you're working on. It doesn't need to be perfect. Start with what you know.",
+  visionPlaceholder: "I'm building...",
+  visionLabel: "Your vision",
+  examples: [
+    "An AI platform that helps small businesses manage their finances.",
+    "A marketplace connecting local farmers directly with restaurants.",
+    "I have a website but I want to turn it into a real product.",
+    "I want to build something around this GitHub project.",
+  ],
+  gotIt: "Got it.",
+  capabilitiesIntro: "Atai can help you turn this into:",
+  capabilities: ["Product direction", "Business model", "Technical plan", "Build requirements", "Launch strategy"],
+  primaryCta: "Let's get to work",
+  enoughCta: "I've got enough to get started",
+  secondaryCta: "I'll do this later",
+  continueToPlan: "Build the plan",
+  skipError: "Couldn't save that. Try again, or refresh the page.",
+  emptyHeading: "What are you building?",
+  emptyBody: "Tell Atai the idea. We'll help you shape the plan, then build and launch.",
+  emptyCta: "Start with Atai",
+  capturedVision: "Your vision",
+  audienceLabel: "Who are you building this for?",
+  audiencePlaceholder: "Optional — e.g. independent restaurants, early-stage founders…",
+  websiteFollowUp: "What do you want this to become?",
+  githubFollowUp: "What are you trying to build or change?",
+  successHeading: "Your workspace is ready.",
+  successBody: "Let's shape the idea together.",
+  creating: "Setting up your workspace…",
+  preparing: "Preparing your starting context…",
+} as const
+
+export const MODE_COPY = {
+  idea: { label: "Idea", hint: "Start from a problem or product in your own words." },
+  website: { label: "Mirror", hint: "Use an existing product or website as a reference." },
+  url: { label: "URL", hint: "Start from a live site you already have or want to study." },
+  github: { label: "GitHub", hint: "Continue or rebuild from a repository." },
+} as const

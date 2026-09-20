@@ -139,7 +139,7 @@ export class PlanningOrchestrator {
 
     try {
       // Requirement 1.4: Reserve credits before processing (mode-aware)
-      const planCost = getPlanCost(pipelineMode)
+      const planCost = await getPlanCost(pipelineMode)
       const reservation = await reserveCredits(userId, planCost, projectId, `AI planning pipeline (${pipelineMode === "heavy" ? "Heavy mode" : "Legacy"})`)
       if (!reservation) {
         throw new CreditInsufficientError(
@@ -300,7 +300,7 @@ export class PlanningOrchestrator {
       // Requirement 11.4: Refund credits on fatal errors
       if (reservationId) {
         try {
-          const planCost = getPlanCost(pipelineMode)
+          const planCost = await getPlanCost(pipelineMode)
           await refundReservation(userId, planCost, projectId)
         } catch (refundError) {
           logger.error("[PlanningOrchestrator] Failed to refund credits", "Refund failed", {
@@ -367,7 +367,7 @@ export class PlanningOrchestrator {
 
     try {
       // Reserve credits (mode-aware)
-      const planCost = getPlanCost(pipelineMode)
+      const planCost = await getPlanCost(pipelineMode)
       const reservation = await reserveCredits(userId, planCost, projectId, `AI planning pipeline (${pipelineMode === "heavy" ? "Heavy mode" : "Legacy"})`)
       if (!reservation) {
         throw new CreditInsufficientError(
@@ -517,7 +517,7 @@ export class PlanningOrchestrator {
 
       if (reservationId) {
         try {
-          const planCost = getPlanCost(pipelineMode)
+          const planCost = await getPlanCost(pipelineMode)
           await refundReservation(userId, planCost, projectId)
         } catch (refundError) {
           logger.error("[PlanningOrchestrator] Failed to refund credits", "Refund failed", {

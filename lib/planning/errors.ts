@@ -135,7 +135,7 @@ export class ValidationError extends PipelineError {
     userMessageOrErrors: string | ValidationErrorDetail[],
     public readonly errors: ValidationErrorDetail[] = []
   ) {
-    const userMessage = typeof userMessageOrErrors === 'string'
+    const userMessage = typeof userMessageOrErrors === 'string' && userMessageOrErrors.length > 0
       ? userMessageOrErrors
       : 'Generated specification has validation errors'
     const errorList = typeof userMessageOrErrors === 'string' ? errors : userMessageOrErrors

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { postJson, useProjects } from "@/lib/client/api"
 import type { Project, ProjectPreferences } from "@/lib/types/project"
@@ -11,6 +11,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { ProjectPreferencesDialog } from "@/components/project-preferences-dialog"
 import { Loader2, Lock, Globe, AlertCircle, Settings, Copy, Layers } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { peekPendingStart, takePendingStart } from "@/lib/auth/client-intent"
+import { recordOnboardingActivation } from "@/lib/onboarding/activate"
+import { extractGithubRepo } from "@/lib/start/detect-input"
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
@@ -54,6 +57,20 @@ export function CreateGitHubRepoForm({ hasGitHub }: { hasGitHub: boolean }) {
   const [showPreferences, setShowPreferences] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [capturedIntent, setCapturedIntent] = useState<string | null>(null)
+
+  useEffect(() => {
+    const pending = peekPendingStart()
+    if (!pending?.prompt) return
+    if (!pending.href.includes("/new/github") && !/github\.com\//i.test(pending.prompt)) return
+    takePendingStart()
+    setCapturedIntent(pending.prompt)
+    setRepoInput(extractGithubRepo(pending.prompt) ?? pending.prompt)
+    if (pending.prompt.replace(/https?:\/\/\S+/gi, " ").trim().split(/\s+/).filter(Boolean).length >= 4) {
+      setSubMode("extend")
+      setUserRequest(pending.prompt)
+    }
+  }, [])
 
   const parsed = parseRepoInput(repoInput)
   const isValid = parsed !== null
@@ -72,10 +89,21 @@ export function CreateGitHubRepoForm({ hasGitHub }: { hasGitHub: boolean }) {
         githubBranch: branch.trim() || parsed!.branch || "main",
         githubSubMode: subMode,
         userRequest: subMode === "extend" ? userRequest.trim() : undefined,
+        idea: capturedIntent || (subMode === "extend" ? userRequest.trim() : undefined),
         preferences: preferences || undefined,
       })
       await refresh()
-      router.push(`/project/${project.id}`)
+      try {
+        await recordOnboardingActivation({
+          businessDescription: repoInput.trim() || undefined,
+          source: "direct_project_creation",
+          signalType: "url",
+          destination: `/project/${project.id}/collaborate`,
+        })
+      } catch {
+        /* project exists — activation is derived from project state */
+      }
+      router.push(`/project/${project.id}/collaborate`)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create project")
       setBusy(false)

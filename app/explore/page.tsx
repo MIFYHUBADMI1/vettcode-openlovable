@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { AppHeader } from "@/components/app-header"
 import { toast } from "sonner"
+import { AuthTrigger } from "@/components/auth/auth-trigger"
 
 interface ExploreProject {
   id: string
@@ -273,8 +274,16 @@ export default function ExplorePage() {
       if (debouncedSearch) params.set("q", debouncedSearch)
       const res = await fetch(`/api/explore?${params}`)
       const json = await res.json()
-      if (json.ok) setData(json.data)
+      const payload = json.ok ? json.data : null
+      setData({
+        projects: payload?.projects ?? [],
+        total: payload?.total ?? 0,
+        page: payload?.page ?? page,
+        pages: payload?.pages ?? 0,
+      })
+      if (!json.ok) toast.error(json.message || "Failed to load projects")
     } catch {
+      setData({ projects: [], total: 0, page, pages: 0 })
       toast.error("Failed to load projects")
     } finally {
       setLoading(false)
@@ -286,7 +295,7 @@ export default function ExplorePage() {
   function handleLikeToggle(projectId: string) {
     setData(prev => prev ? {
       ...prev,
-      projects: prev.projects.map(p =>
+      projects: (prev.projects ?? []).map(p =>
         p.id === projectId
           ? { ...p, liked: !p.liked, likeCount: p.liked ? p.likeCount - 1 : p.likeCount + 1 }
           : p
@@ -297,7 +306,7 @@ export default function ExplorePage() {
   function handleFollowToggle(authorId: string) {
     setData(prev => prev ? {
       ...prev,
-      projects: prev.projects.map(p =>
+      projects: (prev.projects ?? []).map(p =>
         p.author?.id === authorId
           ? { ...p, author: { ...p.author!, following: !p.author!.following } }
           : p
@@ -373,7 +382,7 @@ export default function ExplorePage() {
               </div>
             ))}
           </div>
-        ) : data?.projects.length === 0 ? (
+        ) : (data?.projects ?? []).length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
             <div className="flex size-16 items-center justify-center rounded-full bg-muted">
               <svg className="size-8 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
@@ -394,7 +403,7 @@ export default function ExplorePage() {
           </div>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {data!.projects.map(project => (
+            {(data?.projects ?? []).map(project => (
               <ProjectCard
                 key={project.id}
                 project={project}
@@ -460,12 +469,13 @@ export default function ExplorePage() {
             >
               Go to your workspace
             </Link>
-            <Link
-              href="/login"
+            <AuthTrigger
+              view="signup"
+              next="/new/idea"
               className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-medium transition-colors hover:bg-accent"
             >
               Sign up free
-            </Link>
+            </AuthTrigger>
           </div>
         </div>
       </div>

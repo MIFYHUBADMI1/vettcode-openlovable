@@ -6,6 +6,7 @@ import { ensureProtocol } from "@/lib/utils"
 import { usersCol, projectLikesCol, userFollowsCol, projectsCol } from "@/lib/db/collections"
 import { getCurrentUser } from "@/lib/auth/session"
 import { PublicProjectActions } from "@/components/public-project-actions"
+import { AuthTrigger } from "@/components/auth/auth-trigger"
 
 function timeAgo(ts: number) {
   const diff = Date.now() - ts
@@ -72,11 +73,11 @@ export default async function PublicProjectPage({ params }: { params: Promise<{ 
     mode: project.mode,
   }).sort({ updatedAt: -1 }).limit(4).toArray()
 
-  // Fork pricing for this project's complexity tier
-  const { FORK_PRICING } = await import("@/lib/billing/config")
+  // Fork pricing for this project's complexity tier (admin-configurable runtime values)
+  const { getForkPricingForTier } = await import("@/lib/billing/runtime-config")
   const complexity = project.specification?.complexity ?? "simple"
-  const forkTier = (complexity === "complex" ? "complex" : complexity === "medium" ? "medium" : "simple") as keyof typeof FORK_PRICING
-  const forkPricing = FORK_PRICING[forkTier]
+  const forkTier = (complexity === "complex" ? "complex" : complexity === "medium" ? "medium" : "simple") as Parameters<typeof getForkPricingForTier>[0]
+  const forkPricing = await getForkPricingForTier(forkTier)
 
   const isOwner = currentUser?.id === project.userId
 
@@ -305,10 +306,10 @@ export default async function PublicProjectPage({ params }: { params: Promise<{ 
               <p className="font-semibold text-foreground">Build your own</p>
               <p className="mt-1 text-xs text-muted-foreground">Turn any idea into a working app in minutes</p>
               <div className="mt-4 flex flex-col gap-2">
-                <Link href="/login"
+                <AuthTrigger view="signup" next="/new/idea"
                   className="inline-flex w-full items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
                   Get started free
-                </Link>
+                </AuthTrigger>
                 <Link href="/explore"
                   className="inline-flex w-full items-center justify-center rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent">
                   Browse more projects

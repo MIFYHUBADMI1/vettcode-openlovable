@@ -1,12 +1,10 @@
 "use client"
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Lightbulb, FileText, Hammer } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
 import { FounderIdeaForm } from "@/components/founder-idea-form"
-import { useSession } from "@/lib/client/api"
+import { AuthGate } from "@/components/auth/auth-gate"
 
 const STEPS = [
   { icon: Lightbulb, label: "Describe", body: "Tell us the problem you're solving and who it's for. Plain language is fine." },
@@ -15,20 +13,10 @@ const STEPS = [
 ]
 
 export default function NewIdeaProjectPage() {
-  const router = useRouter()
-  const { session, isLoading } = useSession()
-
-  useEffect(() => {
-    if (!isLoading && !session) {
-      router.replace("/login?next=%2Fnew%2Fidea")
-    }
-  }, [session, isLoading, router])
-
-  if (isLoading || !session) return null
-
   return (
     <main className="min-h-svh bg-background text-foreground">
       <AppHeader />
+      <AuthGate next="/new/idea">
       <section className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-6 py-10 lg:px-10 lg:py-14">
         <div className="flex flex-col gap-6">
           <Link
@@ -92,6 +80,7 @@ export default function NewIdeaProjectPage() {
           </div>
         </div>
       </section>
+      </AuthGate>
     </main>
   )
 }

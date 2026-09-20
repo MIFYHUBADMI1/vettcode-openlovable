@@ -34,7 +34,7 @@ describe("plan sections", () => {
   it("marks empty fields as missing and populated fields as complete", () => {
     const spec = makeSpec({ vision: "Become the default tool for indie founders." })
     expect(sectionStatus(getPlanSection("vision")!, spec)).toBe("complete")
-    expect(sectionStatus(getPlanSection("growthPlan")!, spec)).toBe("missing")
+    expect(sectionStatus(getPlanSection("businessModel")!, spec)).toBe("missing")
   })
 
   it("treats generator placeholders as missing", () => {

@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import type { ReactNode } from "react"
+import { BrandLogo } from "@/components/brand-logo"
 
 /**
  * Premium glassmorphism two-sided auth layout.
@@ -31,29 +32,7 @@ export function AuthShell({
       <div className="grid min-h-screen w-full lg:grid-cols-[1fr_1fr]">
         {/* ── Left: Form side ── */}
         <div className="relative z-10 flex flex-col items-center justify-center px-6 py-12">
-          {/* Brand */}
-          <Link href="/" className="mb-10 flex items-center gap-2.5 hero-console">
-            <div
-              className="relative flex size-10 items-center justify-center rounded-xl text-sm font-bold text-primary-foreground shadow-lg"
-              style={{
-                background: "linear-gradient(135deg, var(--primary), color-mix(in oklab, var(--accent) 70%, var(--primary)))",
-                boxShadow: "0 0 24px -4px color-mix(in oklab, var(--primary) 45%, transparent)",
-              }}
-            >
-              A
-              <span
-                className="absolute inset-0 rounded-xl"
-                style={{
-                  background: "linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%)",
-                  backgroundSize: "200% 100%",
-                  animation: "shimmer-slide 3s ease-in-out infinite",
-                }}
-              />
-            </div>
-            <span className="font-mono text-sm font-semibold tracking-tight text-foreground">
-              Atai
-            </span>
-          </Link>
+          <BrandLogo href="/" size={40} className="mb-10 hero-console" />
 
           {/* Glass card */}
           <div className="w-full max-w-sm hero-console" style={{ animationDelay: "0.1s" }}>

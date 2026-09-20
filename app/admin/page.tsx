@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react"
 import Link from "next/link"
 import useSWR from "swr"
-import { ArrowRight, Users, CreditCard, FolderKanban, Hammer, ShoppingCart, Activity, Shield, RefreshCw, AlertTriangle, Loader2, User, Key, BarChart3, Megaphone, Briefcase, Globe, Calendar, X, Download, Database, HardDrive, Zap, TrendingUp, MessageSquare } from "lucide-react"
+import { ArrowRight, Users, CreditCard, FolderKanban, Hammer, ShoppingCart, Activity, Shield, RefreshCw, AlertTriangle, Loader2, User, Key, BarChart3, Megaphone, Briefcase, Globe, Calendar, X, Download, Database, HardDrive, Zap, TrendingUp, MessageSquare, Settings } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -721,6 +721,12 @@ export default function AdminDashboardPage() {
         <section className="mt-10">
           <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-4">Admin Tools</p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <QuickLink
+              href="/admin/billing/configuration"
+              title="Billing Configuration"
+              description="Manage billing settings, including AI collaboration credit costs."
+              icon={Settings}
+            />
             <QuickLink
               href="/admin/payments"
               title="Payment Verifications"

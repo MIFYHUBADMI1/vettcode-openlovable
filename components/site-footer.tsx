@@ -2,6 +2,8 @@
 
 import Link from "next/link"
 import { useSession } from "@/lib/client/api"
+import { BrandLogo, BrandMark } from "@/components/brand-logo"
+import { AuthTrigger } from "@/components/auth/auth-trigger"
 
 interface FooterLink {
   href: string
@@ -21,6 +23,7 @@ const FOOTER_COLS = [
       { href: "/new/idea", label: "Start from an idea" },
       { href: "/new/website", label: "Mirror a website" },
       { href: "/new/github", label: "Build from GitHub" },
+      { href: "/#plan", label: "Plan Mode" },
       { href: "/pricing", label: "Pricing" },
       { href: "/explore", label: "Explore projects" },
     ],
@@ -55,7 +58,7 @@ export function SiteFooter({ activePage, links, wrapperClassName }: SiteFooterPr
       <footer className="border-t border-border">
         <div className={wrapperClassName ?? "mx-auto flex w-full max-w-7xl flex-col gap-5 px-6 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between lg:px-10"}>
           <div className="flex items-center gap-3">
-            <span className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-xs">A</span>
+            <BrandMark size={24} />
             <span className="font-mono text-xs">© 2026 Atai — Advanced Technologies and AI Enterprises.</span>
           </div>
           <div className="flex flex-wrap gap-x-5 gap-y-2">
@@ -68,7 +71,7 @@ export function SiteFooter({ activePage, links, wrapperClassName }: SiteFooterPr
                 {label}
               </Link>
             ))}
-            <Link href="/login" className="hover:text-foreground">Sign in</Link>
+            <AuthTrigger view="login" className="hover:text-foreground">Sign in</AuthTrigger>
           </div>
         </div>
       </footer>
@@ -83,12 +86,9 @@ export function SiteFooter({ activePage, links, wrapperClassName }: SiteFooterPr
 
           {/* Brand column */}
           <div className="flex flex-col gap-5">
-            <Link href="/" className="flex items-center gap-3">
-              <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground font-black text-sm">A</span>
-              <span className="font-mono text-sm font-bold tracking-tight text-foreground">Atai</span>
-            </Link>
+            <BrandLogo size={32} />
             <p className="text-sm leading-7 text-muted-foreground max-w-xs">
-              The AI business-building platform. You bring the vision. Atai brings the team.
+              Advanced Technologies & AI Enterprises. The AI business-building platform — from idea to launch to growth.
             </p>
             <p className="font-mono text-xs text-muted-foreground/60">
               From idea → business → growth.
@@ -122,7 +122,7 @@ export function SiteFooter({ activePage, links, wrapperClassName }: SiteFooterPr
                 {col.heading === "Platform" && (
                   <li>
                     <Link
-                      href={session ? "/dashboard" : "/register"}
+                      href={session ? "/dashboard" : "/new/idea"}
                       className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
                     >
                       {session ? "Go to dashboard →" : "Start free →"}

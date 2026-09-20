@@ -8,6 +8,11 @@ import { BusinessPlanField } from "@/lib/types/specification"
  * (spec section 12: never invent sections that don't exist). Statuses are
  * deterministic — derived from field population — so the UI never fabricates
  * a score. "Needs work" is only ever added by AI findings, never guessed.
+ *
+ * Marketing, Launch and Growth are intentionally NOT plan sections: their
+ * data still lives on the spec (marketingPlan/launchPlan/growthPlan) for
+ * later use elsewhere, but they are drafted after the build, not by the
+ * Collaborate workspace, and the AI doesn't need them to generate the app.
  */
 
 export type PlanSectionId =
@@ -24,9 +29,10 @@ export type PlanSectionStatus = "missing" | "complete" | "needs_work"
 export interface PlanSectionDef {
   id: PlanSectionId
   label: string
+  /** Lucide icon name — rendered as a component by the client. */
   icon: string
   /** Group shown in the MY PLAN nav and PLAN STATUS insight panel. */
-  group: "Foundation" | "Product" | "Business" | "Market" | "Launch" | "Growth"
+  group: "Foundation" | "Product" | "Business" | "Market"
   /** Short empty-state copy — the path forward, per spec section 43. */
   emptyHint: string
   /** Extract the current value for display. Empty string = missing. */
@@ -39,7 +45,7 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
   {
     id: "overview",
     label: "Overview",
-    icon: "💡",
+    icon: "Lightbulb",
     group: "Foundation",
     emptyHint: "Let's describe what this product is and who it's for.",
     read: (spec) => s(spec.description) || s(spec.purpose),
@@ -47,7 +53,7 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
   {
     id: "problem",
     label: "Problem",
-    icon: "🧩",
+    icon: "Puzzle",
     group: "Foundation",
     emptyHint: "Let's define the specific problem this business solves.",
     read: (spec) => s(spec.problem) || s(spec.purpose),
@@ -55,7 +61,7 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
   {
     id: "solution",
     label: "Solution",
-    icon: "🛠️",
+    icon: "Wrench",
     group: "Foundation",
     emptyHint: "Let's describe how the product solves the problem.",
     read: (spec) => s(spec.solution) || s(spec.description),
@@ -63,7 +69,7 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
   {
     id: "vision",
     label: "Vision",
-    icon: "🔭",
+    icon: "Telescope",
     group: "Foundation",
     emptyHint: "Let's capture the long-term vision for this business.",
     read: (spec) => s(spec.vision),
@@ -71,7 +77,7 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
   {
     id: "targetUsers",
     label: "Target Customers",
-    icon: "👥",
+    icon: "Users",
     group: "Market",
     emptyHint: "Let's define who this business is built for.",
     read: (spec) => spec.targetUsers.filter(Boolean).join(", "),
@@ -79,7 +85,7 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
   {
     id: "valueProposition",
     label: "Value Proposition",
-    icon: "⭐",
+    icon: "Star",
     group: "Market",
     emptyHint: "Let's articulate why customers would choose you.",
     read: (spec) => s(spec.valueProposition),
@@ -87,7 +93,7 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
   {
     id: "marketPositioning",
     label: "Market Positioning",
-    icon: "🧭",
+    icon: "Compass",
     group: "Market",
     emptyHint: "Let's position this product against the alternatives.",
     read: (spec) => s(spec.marketPositioning),
@@ -95,7 +101,7 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
   {
     id: "features",
     label: "Key Features",
-    icon: "⚡",
+    icon: "Zap",
     group: "Product",
     emptyHint: "Let's pick the capabilities the product needs.",
     read: (spec) =>
@@ -107,7 +113,7 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
   {
     id: "flows",
     label: "User Flows",
-    icon: "🔀",
+    icon: "GitBranch",
     group: "Product",
     emptyHint: "Let's map how users will actually use the product.",
     read: (spec) => spec.coreFlows.map((f) => f.name).filter(Boolean).join(", "),
@@ -115,7 +121,7 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
   {
     id: "data",
     label: "Data Model",
-    icon: "🗄️",
+    icon: "Database",
     group: "Product",
     emptyHint: "Let's define the information the product manages.",
     read: (spec) => spec.dataEntities.map((e) => e.name).filter(Boolean).join(", "),
@@ -123,7 +129,7 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
   {
     id: "auth",
     label: "Accounts & Access",
-    icon: "🔐",
+    icon: "KeyRound",
     group: "Product",
     emptyHint: "Let's decide how people sign in and what they can do.",
     read: (spec) => s(spec.authenticationRequirements),
@@ -131,7 +137,7 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
   {
     id: "businessModel",
     label: "Business Model",
-    icon: "💼",
+    icon: "Briefcase",
     group: "Business",
     emptyHint: "Let's work out how the business creates and delivers value.",
     read: (spec) => s(spec.businessModel),
@@ -139,34 +145,10 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
   {
     id: "revenueModel",
     label: "Revenue Model",
-    icon: "💰",
+    icon: "Coins",
     group: "Business",
     emptyHint: "Let's work out how the business makes money.",
     read: (spec) => s(spec.revenueModel),
-  },
-  {
-    id: "marketingPlan",
-    label: "Marketing",
-    icon: "📣",
-    group: "Launch",
-    emptyHint: "Let's plan how the first customers will find you.",
-    read: (spec) => s(spec.marketingPlan),
-  },
-  {
-    id: "launchPlan",
-    label: "Launch",
-    icon: "🚀",
-    group: "Launch",
-    emptyHint: "Let's create a practical first launch plan.",
-    read: (spec) => s(spec.launchPlan),
-  },
-  {
-    id: "growthPlan",
-    label: "Growth",
-    icon: "📈",
-    group: "Growth",
-    emptyHint: "Let's outline what growth looks like after launch.",
-    read: (spec) => s(spec.growthPlan),
   },
 ]
 
@@ -239,6 +221,35 @@ export function validatePlanSectionValue(sectionId: string, value: unknown): { o
 
 /** The single operation type the AI may request (spec section 31). */
 export const ALLOWED_PROPOSAL_OPERATION = "update_plan_section" as const
+
+/** Sections whose spec representation is generator-managed (feature catalog,
+ * flow list, data entities). Proposals note them in additionalInstructions
+ * instead of corrupting the typed structures, so auto-complete never drafts
+ * them directly. */
+export const GENERATOR_MANAGED_SECTIONS: ReadonlySet<string> = new Set(["features", "flows", "data"])
+
+/** Reset a section to its empty ("not defined") state immutably — used by the
+ * undo path for auto-completed sections. Never throws; unknown sections are
+ * returned unchanged. */
+export function clearSectionUpdate(
+  spec: ApplicationSpecification,
+  sectionId: PlanSectionId,
+): ApplicationSpecification {
+  if (sectionId === "targetUsers") return { ...spec, targetUsers: [] }
+  if (sectionId === "features" || sectionId === "flows" || sectionId === "data") return spec
+  const businessFields = new Set<string>(["vision", "problem", "solution", "valueProposition", "businessModel", "revenueModel", "marketPositioning", "marketingPlan", "launchPlan", "growthPlan"])
+  if (businessFields.has(sectionId)) {
+    return { ...spec, [sectionId]: "" }
+  }
+  switch (sectionId) {
+    case "overview":
+      return { ...spec, description: "" }
+    case "auth":
+      return { ...spec, authenticationRequirements: "" }
+    default:
+      return spec
+  }
+}
 
 /** Apply an approved section update to a specification immutably. */
 export function applySectionUpdate(

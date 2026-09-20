@@ -26,17 +26,24 @@ export async function chargeChatCredits(userId: string, projectId: string): Prom
   return chargeCollaboration(userId, projectId, costs.chatMessageCost, "AI co-founder chat message")
 }
 
+/** Charge for one auto-completed plan section. Returns false when the user
+ * cannot afford it — callers must stop the run and report INSUFFICIENT_CREDITS. */
+export async function chargeAutoCompleteCredits(userId: string, projectId: string): Promise<boolean> {
+  const costs = await getCollaborateCosts()
+  return chargeCollaboration(userId, projectId, costs.autoCompleteSectionCost, "AI co-founder auto-complete section")
+}
+
 /** Best-effort refund when the AI work itself failed after the charge was
  * taken. Never throws — a failed refund must not mask the original AI error.
  * Zero-cost configurations are a no-op (nothing was charged). */
 export async function refundCollaboration(
   userId: string,
   projectId: string,
-  kind: "chat" | "analysis",
+  kind: "chat" | "analysis" | "auto-complete",
 ): Promise<void> {
   try {
     const costs = await getCollaborateCosts()
-    const amount = kind === "chat" ? costs.chatMessageCost : costs.planAnalysisCost
+    const amount = kind === "chat" ? costs.chatMessageCost : kind === "analysis" ? costs.planAnalysisCost : costs.autoCompleteSectionCost
     if (amount <= 0) return
     await grantCredits({
       userId,
@@ -47,7 +54,12 @@ export async function refundCollaboration(
       referenceType: "project",
       referenceId: projectId,
       metadata: {
-        reason: kind === "chat" ? "AI chat failed — automatic refund" : "AI plan analysis failed — automatic refund",
+        reason:
+          kind === "chat"
+            ? "AI chat failed — automatic refund"
+            : kind === "analysis"
+              ? "AI plan analysis failed — automatic refund"
+              : "AI auto-complete section failed — automatic refund",
         feature: "collaborate",
       },
     })

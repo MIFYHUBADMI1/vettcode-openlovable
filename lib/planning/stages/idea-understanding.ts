@@ -23,7 +23,7 @@ import { executeWithRetry } from "@/lib/planning/utils/retry"
  * Minimum required idea length in characters
  * Requirement 1.7: Request clarification for ideas under 8 characters
  */
-const MIN_IDEA_LENGTH = 8
+const MIN_IDEA_LENGTH = 50
 
 /**
  * Maximum number of retry attempts for AI generation
@@ -242,7 +242,7 @@ export class IdeaUnderstandingService {
    * @param idea - The user's idea
    * @throws UnderstandingError if idea is too short
    * 
-   * Requirement 1.7: Request clarification for ideas under 8 characters
+   * Requirement 1.7: Request clarification for ideas under 50 characters
    */
   private validateMinimumIdeaLength(idea: string): void {
     const trimmedIdea = idea.trim()

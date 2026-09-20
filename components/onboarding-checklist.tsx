@@ -1,17 +1,15 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import Link from "next/link"
 import { Check } from "lucide-react"
 import { useProjects } from "@/lib/client/api"
-import type { ProjectState } from "@/lib/types/project"
+import type { ProjectState, ProjectSummary } from "@/lib/types/project"
 import { cn } from "@/lib/utils"
 
-const STORAGE_KEY = "atai:checklist-dismissed"
-const LEGACY_STORAGE_KEY = "Atai:checklist-dismissed"
-
-const PAST_ANALYSIS: ReadonlySet<ProjectState> = new Set([
+const PLAN_STATES = new Set<ProjectState>([
   "analysis_complete",
   "specification_ready",
+  "plan_ready",
   "awaiting_build_confirmation",
   "building",
   "build_complete",
@@ -22,7 +20,7 @@ const PAST_ANALYSIS: ReadonlySet<ProjectState> = new Set([
   "deployment_failed",
 ])
 
-const PAST_BUILD: ReadonlySet<ProjectState> = new Set([
+const BUILD_STATES = new Set<ProjectState>([
   "building",
   "build_complete",
   "build_failed",
@@ -32,84 +30,70 @@ const PAST_BUILD: ReadonlySet<ProjectState> = new Set([
   "deployment_failed",
 ])
 
-export function OnboardingChecklist() {
-  const { projects, isLoading } = useProjects()
-  const [dismissed, setDismissed] = useState(true)
-  const [fadingOut, setFadingOut] = useState(false)
-
-  useEffect(() => {
-    try {
-      // Migrate legacy Atai: key to atai: key
-      const legacyValue = window.localStorage.getItem(LEGACY_STORAGE_KEY)
-      if (legacyValue !== null) {
-        window.localStorage.setItem(STORAGE_KEY, legacyValue)
-        window.localStorage.removeItem(LEGACY_STORAGE_KEY)
-      }
-      setDismissed(window.localStorage.getItem(STORAGE_KEY) === "1")
-    } catch {
-      setDismissed(false)
-    }
-  }, [])
-
-  const steps = [
-    { label: "Create a project", done: projects.length > 0 },
-    { label: "Get an analysis and build plan", done: projects.some((p) => PAST_ANALYSIS.has(p.state)) },
-    { label: "Start a build", done: projects.some((p) => PAST_BUILD.has(p.state)) },
-    { label: "Ship it", done: projects.some((p) => p.state === "deployed") },
+function stepsFor(project: ProjectSummary) {
+  return [
+    {
+      id: "vision",
+      label: "Tell Atai what you're building",
+      done: true,
+      href: `/project/${project.id}/collaborate`,
+    },
+    {
+      id: "plan",
+      label: "Shape the plan",
+      done: PLAN_STATES.has(project.state),
+      href: `/project/${project.id}/collaborate`,
+    },
+    {
+      id: "build",
+      label: "Build the product",
+      done: BUILD_STATES.has(project.state),
+      href: `/project/${project.id}`,
+    },
+    {
+      id: "live",
+      label: "Go live",
+      done: project.state === "deployed",
+      href: `/project/${project.id}`,
+    },
   ]
-  const doneCount = steps.filter((step) => step.done).length
-  const allDone = doneCount === steps.length
+}
 
-  useEffect(() => {
-    if (!allDone || dismissed) return
-    const timer = window.setTimeout(() => {
-      setFadingOut(true)
-      window.setTimeout(() => {
-        try {
-          window.localStorage.setItem(STORAGE_KEY, "1")
-        } catch {
-          // ignore
-        }
-        setDismissed(true)
-      }, 500)
-    }, 2600)
-    return () => window.clearTimeout(timer)
-  }, [allDone, dismissed])
+export function OnboardingChecklist() {
+  const { projects } = useProjects()
+  const project = [...projects].sort((a, b) => b.updatedAt - a.updatedAt)[0]
+  if (!project) return null
 
-  if (isLoading || dismissed) return null
+  const items = stepsFor(project)
+  if (items.every((item) => item.done)) return null
 
   return (
-    <div
-      className={cn(
-        "border border-border bg-card p-5 transition-opacity duration-500",
-        fadingOut ? "opacity-0" : "opacity-100",
-      )}
-    >
-      <div className="flex items-center justify-between">
-        <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Getting started</p>
-        <p className="font-mono text-xs text-muted-foreground">
-          {doneCount}/{steps.length}
-        </p>
-      </div>
-      <ul className="mt-4 flex flex-col gap-3">
-        {steps.map((step) => (
-          <li key={step.label} className="flex items-center gap-3">
-            <span
+    <section className="rounded-2xl border border-border bg-card p-5">
+      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Your first build</p>
+      <h2 className="mt-2 text-lg font-semibold">{project.name}</h2>
+      <ol className="mt-4 space-y-2">
+        {items.map((item) => (
+          <li key={item.id}>
+            <Link
+              href={item.href}
               className={cn(
-                "flex size-5 shrink-0 items-center justify-center rounded-full border text-[10px]",
-                step.done
-                  ? "border-success/40 bg-success/15 text-success"
-                  : "border-border bg-muted text-transparent",
+                "flex items-center gap-3 rounded-xl px-2 py-2 text-sm hover:bg-accent/50",
+                item.done ? "text-muted-foreground" : "text-foreground",
               )}
             >
-              <Check className="size-3" />
-            </span>
-            <span className={cn("text-sm", step.done ? "text-muted-foreground line-through" : "text-foreground")}>
-              {step.label}
-            </span>
+              <span
+                className={cn(
+                  "flex size-5 items-center justify-center rounded-full border",
+                  item.done ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-600" : "border-border",
+                )}
+              >
+                {item.done ? <Check className="size-3" /> : null}
+              </span>
+              {item.label}
+            </Link>
           </li>
         ))}
-      </ul>
-    </div>
+      </ol>
+    </section>
   )
 }

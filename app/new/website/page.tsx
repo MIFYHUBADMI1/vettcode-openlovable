@@ -1,12 +1,10 @@
 "use client"
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, Globe, ScanSearch, FileText, Hammer } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
 import { CreateProjectForm } from "@/components/create-project-form"
-import { useSession } from "@/lib/client/api"
+import { AuthGate } from "@/components/auth/auth-gate"
 
 const STEPS = [
   { icon: Globe, label: "Crawl", body: "We fetch the live site: pages, navigation, screenshots, and copy." },
@@ -16,18 +14,10 @@ const STEPS = [
 ]
 
 export default function NewWebsiteProjectPage() {
-  const router = useRouter()
-  const { session, isLoading } = useSession()
-
-  useEffect(() => {
-    if (!isLoading && !session) router.replace("/login?next=%2Fnew%2Fwebsite")
-  }, [session, isLoading, router])
-
-  if (isLoading || !session) return null
-
   return (
     <main className="min-h-svh bg-background text-foreground">
       <AppHeader />
+      <AuthGate next="/new/website">
       <section className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-6 py-10 lg:px-10 lg:py-14">
         <div className="flex flex-col gap-6">
           <Link href="/dashboard" className="inline-flex w-fit items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground">
@@ -75,6 +65,7 @@ export default function NewWebsiteProjectPage() {
           </div>
         </div>
       </section>
+      </AuthGate>
     </main>
   )
 }

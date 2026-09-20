@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react"
 import Link from "next/link"
+import { AuthTrigger } from "@/components/auth/auth-trigger"
 import {
   ArrowRight,
   Code2,
@@ -33,6 +34,7 @@ import { SiteFooter } from "@/components/site-footer"
 import { DocsSearch } from "@/components/docs-search"
 import { VideoEmbed } from "@/components/video-embed"
 import { ScrollProgress } from "@/components/scroll-progress"
+import { BrandMark } from "@/components/brand-logo"
 
 /* ═══════════════════════════════════════════════════════════════
    SECTION METADATA (for search)
@@ -89,9 +91,7 @@ export function DocsContent() {
             Back to Resources
           </Link>
           <div className="mb-4 flex items-center gap-3">
-            <span className="grid size-8 place-items-center rounded-md bg-primary text-primary-foreground font-mono text-sm font-bold">
-              A
-            </span>
+            <BrandMark size={32} />
             <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">
               Documentation
             </p>
@@ -1007,9 +1007,9 @@ export function DocsContent() {
             <h2 className="text-2xl font-semibold tracking-tight text-center">Ready to build?</h2>
             <p className="mt-3 text-center text-muted-foreground">Start with 500 free credits. No credit card required.</p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              <Link href="/register" className={buttonVariants({ size: "lg" }) + " inline-flex"}>
+              <AuthTrigger view="signup" next="/new/idea" className={buttonVariants({ size: "lg" }) + " inline-flex"}>
                 Get started free <ArrowRight className="size-4 ml-1.5" />
-              </Link>
+              </AuthTrigger>
               <Link href="/pricing" className={buttonVariants({ size: "lg", variant: "outline" }) + " inline-flex"}>
                 <DollarSign className="size-4 mr-1.5" /> View pricing
               </Link>

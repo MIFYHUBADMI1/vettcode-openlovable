@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+
 import Link from "next/link"
 import { ArrowLeft, GitBranch, FileCode, Hammer, BookOpen } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
 import { CreateGitHubRepoForm } from "@/components/create-github-repo-form"
 import { useSession, jsonFetcher } from "@/lib/client/api"
+import { AuthGate } from "@/components/auth/auth-gate"
 import useSWR from "swr"
 
 const STEPS = [
@@ -36,12 +36,7 @@ const STEPS = [
 const EXAMPLES = ["facebook/react", "vercel/next.js", "owner/my-private-app"]
 
 export default function NewGitHubProjectPage() {
-  const router = useRouter()
-  const { session, isLoading } = useSession()
-
-  useEffect(() => {
-    if (!isLoading && !session) router.replace("/login?next=%2Fnew%2Fgithub")
-  }, [session, isLoading, router])
+  const { session } = useSession()
 
   const { data: profileData } = useSWR<{ ok: boolean; data: { githubConnected: boolean } }>(
     session ? "/api/auth/github/status" : null,
@@ -49,11 +44,10 @@ export default function NewGitHubProjectPage() {
   )
   const hasGitHub = profileData?.data?.githubConnected ?? false
 
-  if (isLoading || !session) return null
-
   return (
     <main className="min-h-svh bg-background text-foreground">
       <AppHeader />
+      <AuthGate next="/new/github">
       <section className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-6 py-10 lg:px-10 lg:py-14">
         <div className="flex flex-col gap-6">
           <Link href="/dashboard" className="inline-flex w-fit items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground">
@@ -142,6 +136,7 @@ export default function NewGitHubProjectPage() {
           </div>
         </div>
       </section>
+      </AuthGate>
     </main>
   )
 }

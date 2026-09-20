@@ -241,8 +241,12 @@ describe('executeWithRetry', () => {
         backoffMultiplier: 2,
       })
       
+      // Attach the rejection handler BEFORE timers fire so the rejection
+      // never goes unhandled while fake timers flush.
+      const expectation = expect(promise).rejects.toThrow('Rate limit exceeded')
+
       await vi.runAllTimersAsync()
-      await expect(promise).rejects.toThrow('Rate limit exceeded')
+      await expectation
       expect(fn).toHaveBeenCalledTimes(3)
     })
   })
@@ -383,9 +387,12 @@ describe('executeWithRetry', () => {
       })
       
       // Advance timers past the timeout
+      // Attach the rejection handler BEFORE advancing timers so the
+      // rejection never goes unhandled while fake timers flush.
+      const expectation = expect(promise).rejects.toThrow('Operation timed out after 5000ms')
+
       await vi.advanceTimersByTimeAsync(5000)
-      
-      try { await promise; } catch (e) {} // Let the error be caught by expectawait expect(promise)await expect(promise).rejects.toThrow('Operation timed out after 5000ms')
+      await expectation
       expect(fn).toHaveBeenCalledTimes(1)
     })
     

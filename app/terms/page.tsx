@@ -37,6 +37,7 @@ import {
   TerminalSquare,
 } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
+import { AuthTrigger } from "@/components/auth/auth-trigger"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { SITE_URL } from "@/lib/env"
@@ -1162,9 +1163,9 @@ export default function TermsPage() {
               <Link href="/privacy" className={buttonVariants({ variant: "outline", size: "lg" }) + " h-12 px-6"}>
                 Privacy Policy
               </Link>
-              <Link href="/register" className={buttonVariants({ variant: "outline", size: "lg" }) + " h-12 px-6"}>
+              <AuthTrigger view="signup" next="/new/idea" className={buttonVariants({ variant: "outline", size: "lg" }) + " h-12 px-6"}>
                 Start Building
-              </Link>
+              </AuthTrigger>
             </div>
           </div>
         </section>

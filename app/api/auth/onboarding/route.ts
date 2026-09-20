@@ -1,53 +1,65 @@
 import { requireUser } from "@/lib/auth/session"
-import { ok, handleRouteError } from "@/lib/api/respond"
+import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { usersCol } from "@/lib/db/collections"
+import type { UserOnboarding } from "@/lib/types/db"
 
 /**
  * POST /api/auth/onboarding
  *
- * Saves onboarding answers for the current user.
- * Accepts the new founder-focused fields from Requirement 6:
- *  - businessDescription: what the user's business does (Step 1)
- *  - role: founder role selection (Step 2)
- *  - destination: where the user chose to start (Step 3)
- *
- * Legacy fields (source, signalType) are also accepted for backward compatibility.
+ * Server is the source of truth.
+ * - dismissed: overlay skipped — does NOT count as product activation
+ * - activated: a project was created — sets completedAt
+ * Existing fields are merged so we never wipe historical role/source data.
  */
 export async function POST(req: Request) {
   try {
     const user = await requireUser()
 
     const body = (await req.json().catch(() => ({}))) as {
-      // New fields (Requirement 6)
       businessDescription?: string
       role?: string
       destination?: string
-      // Legacy fields (kept for backward compatibility)
       source?: string
       signalType?: "url" | "idea"
+      dismissed?: boolean
+      activated?: boolean
+    }
+
+    if (body.dismissed && body.activated) {
+      return fail("VALIDATION", "Cannot dismiss and activate in the same request.", 422)
     }
 
     const col = await usersCol()
+    const existing = (user.onboarding ?? {}) as UserOnboarding
+    const now = Date.now()
+
+    const next: UserOnboarding = {
+      ...existing,
+      businessDescription: body.businessDescription?.trim() || existing.businessDescription,
+      role: body.role?.trim() || existing.role,
+      destination: body.destination || existing.destination,
+      source: body.source || existing.source,
+      signalType: body.signalType || existing.signalType,
+    }
+
+    if (body.dismissed) {
+      next.dismissedAt = existing.dismissedAt ?? now
+    }
+    if (body.activated) {
+      next.completedAt = existing.completedAt ?? now
+    }
+
     await col.updateOne(
       { id: user.id },
       {
         $set: {
-          onboarding: {
-            // New founder-focused fields
-            businessDescription: body.businessDescription?.trim() || undefined,
-            role: body.role?.trim() || undefined,
-            destination: body.destination || undefined,
-            // Legacy fields — preserved if provided
-            source: body.source || undefined,
-            signalType: body.signalType || undefined,
-            completedAt: Date.now(),
-          },
-          updatedAt: Date.now(),
+          onboarding: next,
+          updatedAt: now,
         },
       },
     )
 
-    return ok({ saved: true })
+    return ok({ saved: true, onboarding: next })
   } catch (e) {
     return handleRouteError("api.auth.onboarding", e)
   }

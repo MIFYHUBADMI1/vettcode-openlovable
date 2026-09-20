@@ -7,6 +7,7 @@ const STATE_META: Record<ProjectState, { className: string }> = {
   analysis_complete: { className: "bg-accent/15 text-accent border-accent/30" },
   specification_ready: { className: "bg-accent/15 text-accent border-accent/30" },
   pending_plan: { className: "bg-amber-500/10 text-amber-600 border-amber-500/30" },
+  plan_ready: { className: "bg-success/15 text-success border-success/30" },
   awaiting_build_confirmation: { className: "bg-accent/15 text-accent border-accent/30" },
   building: { className: "bg-accent/20 text-accent border-accent/40" },
   build_complete: { className: "bg-success/15 text-success border-success/30" },
