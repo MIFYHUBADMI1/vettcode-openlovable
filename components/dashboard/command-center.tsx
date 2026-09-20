@@ -15,8 +15,10 @@ import {
 import { FirstMission } from "@/components/onboarding/first-mission"
 import { ActivationEmpty } from "@/components/onboarding/activation-empty"
 import { ProjectThumbnail } from "@/components/project-thumbnail"
+import { GitHubIcon } from "@/components/github-icon"
 import { Skeleton } from "@/components/ui/skeleton"
 import { buttonVariants } from "@/components/ui/button"
+import { relativeTime } from "@/lib/client/format"
 import { useProjectActivity, useProjects, useSession, type ActivityEvent } from "@/lib/client/api"
 import {
   filterMeaningfulActivity,
@@ -43,17 +45,6 @@ const MODE_LABEL: Record<ProjectMode, string> = {
   scratch: "Idea",
   website: "Website reference",
   github: "GitHub",
-}
-
-function relativeTime(at: number): string {
-  const delta = Date.now() - at
-  const min = Math.round(delta / 60000)
-  if (min < 1) return "Just now"
-  if (min < 60) return `${min} min ago`
-  const hr = Math.round(min / 60)
-  if (hr < 24) return `${hr} hour${hr === 1 ? "" : "s"} ago`
-  const day = Math.round(hr / 24)
-  return `${day} day${day === 1 ? "" : "s"} ago`
 }
 
 function severityClass(severity: ActionSeverity): string {
@@ -154,13 +145,14 @@ export function DashboardCommandCenter() {
         {projects.length > 0 ? <BusinessesList projects={projects} /> : null}
 
         {projects.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <UsageCard
               available={session.credits.available}
               balance={session.credits.balance}
               emailVerified={session.user.emailVerified}
             />
             <DiscoverCard />
+            <ShapeAtaiCard />
             <ReferralCard />
           </div>
         ) : null}
@@ -187,9 +179,7 @@ function DashboardEmpty() {
           Use a website
         </Link>
         <Link href="/new/github" className={cn(buttonVariants({ variant: "outline" }))}>
-          <svg viewBox="0 0 24 24" className="size-4" fill="currentColor" aria-hidden>
-            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.3 3.44 9.8 8.2 11.38.6.11.82-.26.82-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.74.08-.73.08-.73 1.2.09 1.84 1.24 1.84 1.24 1.07 1.83 2.81 1.3 3.49 1 .11-.78.42-1.3.76-1.6-2.66-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.12-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 3-.4c1.02 0 2.04.14 3 .4 2.28-1.55 3.29-1.23 3.29-1.23.66 1.66.25 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.61-2.81 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .32.22.7.83.58C20.57 21.8 24 17.3 24 12 24 5.37 18.63 0 12 0Z" />
-          </svg>
+          <GitHubIcon className="size-4" />
           Continue from GitHub
         </Link>
       </div>
@@ -364,18 +354,45 @@ function ActivityPanel({ project }: { project: ProjectSummary }) {
 function AiTeamCard({ project }: { project: ProjectSummary | null }) {
   const ask = project ? `/project/${project.id}/collaborate` : "/new"
   const build = project ? `/project/${project.id}` : "/new"
+
+  // Derive each agent's live status from the persisted project state —
+  // same server truth the rest of the dashboard uses. No invented metrics.
+  const state = project?.state
+  const cofounderStatus =
+    !project ? "Start a business to meet your AI team."
+    : state === "created" || state === "pending_plan" || state === "analyzing" || state === "analysis_complete" || state === "specification_ready"
+      ? "Preparing your first plan."
+      : state === "plan_ready"
+        ? "Plan ready — waiting for your review."
+        : state === "awaiting_build_confirmation"
+          ? "Standing by to confirm the build."
+          : "Available — pick up where you left off."
+  const builderStatus =
+    !project ? ""
+    : state === "building" || state === "deploying"
+      ? "Working on your application now."
+      : state === "build_failed" || state === "deployment_failed"
+        ? "Needs attention — the last run didn't finish."
+        : state === "build_complete" || state === "ready" || state === "deployed"
+          ? "Delivered — your application is ready."
+          : "Waits for the plan to be approved."
+
   return (
     <section className="rounded-2xl border border-border bg-card p-5">
       <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Atai AI team</p>
       <ul className="mt-3 space-y-3">
         <li>
           <p className="text-sm font-medium">AI Co-Founder</p>
-          <p className="text-xs text-muted-foreground">Planning, strategy, and decisions in plain language.</p>
+          <p className="text-xs text-muted-foreground">
+            {cofounderStatus} Planning, strategy, and decisions in plain language.
+          </p>
         </li>
-        <li>
-          <p className="text-sm font-medium">Build Agent</p>
-          <p className="text-xs text-muted-foreground">Turns an approved plan into a working product.</p>
-        </li>
+        {builderStatus ? (
+          <li>
+            <p className="text-sm font-medium">Build Agent</p>
+            <p className="text-xs text-muted-foreground">{builderStatus} Turns an approved plan into a working product.</p>
+          </li>
+        ) : null}
       </ul>
       <div className="mt-4 flex flex-wrap gap-2">
         <Link href={ask} className={cn(buttonVariants())}>
@@ -477,6 +494,18 @@ function DiscoverCard() {
       <p className="mt-2 text-sm">See what other founders are building.</p>
       <Link href="/explore" className="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline">
         <Compass className="size-3.5" /> Explore
+      </Link>
+    </section>
+  )
+}
+
+function ShapeAtaiCard() {
+  return (
+    <section className="rounded-2xl border border-border bg-card p-5">
+      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Shape Atai</p>
+      <p className="mt-2 text-sm">Have an idea for Atai? Vote on what we should build next.</p>
+      <Link href="/feature-requests" className="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline">
+        <Lightbulb className="size-3.5" /> Request a feature
       </Link>
     </section>
   )

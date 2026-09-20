@@ -1,5 +1,12 @@
 import { getDb } from "@/lib/db/mongodb"
 import type { UserDoc, SessionDoc, VerificationTokenDoc, RateLimitDoc, ProjectAssetDoc, ProviderUsageDoc, TopUpDoc, PublishEventDoc, ReferralDoc, DocFeedbackDoc, WebhookEventDoc, PlanningRunDoc, ProjectLikeDoc, UserFollowDoc, ProjectForkDoc, ProjectGitHubDoc } from "@/lib/types/db"
+import type {
+  FeatureRequestDoc,
+  FeatureRequestInternalNoteDoc,
+  FeatureRequestStatusHistoryDoc,
+  FeatureRequestUpdateDoc,
+  FeatureRequestVoteDoc,
+} from "@/lib/feature-requests/types"
 import type { MirrorProject, BuildRun } from "@/lib/types/project"
 import type { CreditLedgerEntry, BuildAuthorization, PaymentRecord, SubscriptionRecord } from "@/lib/billing/billing-types"
 
@@ -98,6 +105,26 @@ export async function projectForksCol() {
 
 export async function projectGitHubCol() {
   return (await getDbCached()).collection<ProjectGitHubDoc & { _id?: unknown }>("project_github")
+}
+
+export async function featureRequestsCol() {
+  return (await getDbCached()).collection<FeatureRequestDoc & { _id?: unknown }>("feature_requests")
+}
+
+export async function featureRequestVotesCol() {
+  return (await getDbCached()).collection<FeatureRequestVoteDoc & { _id?: unknown }>("feature_request_votes")
+}
+
+export async function featureRequestStatusHistoryCol() {
+  return (await getDbCached()).collection<FeatureRequestStatusHistoryDoc & { _id?: unknown }>("feature_request_status_history")
+}
+
+export async function featureRequestUpdatesCol() {
+  return (await getDbCached()).collection<FeatureRequestUpdateDoc & { _id?: unknown }>("feature_request_updates")
+}
+
+export async function featureRequestInternalNotesCol() {
+  return (await getDbCached()).collection<FeatureRequestInternalNoteDoc & { _id?: unknown }>("feature_request_internal_notes")
 }
 
 // ─── Type Definitions for Firecrawl Cache ────────────────────────────────────
@@ -319,6 +346,28 @@ export async function ensureIndexes() {
   await Promise.all([
     projectGitHub.createIndex({ projectId: 1 }, { unique: true, name: "project_github_project_unique" }),
     projectGitHub.createIndex({ userId: 1 }),
+  ])
+
+
+  const featureRequests = await featureRequestsCol()
+  const featureVotes = await featureRequestVotesCol()
+  const featureHistory = await featureRequestStatusHistoryCol()
+  const featureUpdates = await featureRequestUpdatesCol()
+  const featureNotes = await featureRequestInternalNotesCol()
+  await Promise.all([
+    featureRequests.createIndex({ id: 1 }, { unique: true, sparse: true, name: "feature_requests_id_unique" }),
+    featureRequests.createIndex({ status: 1, voteCount: -1 }),
+    featureRequests.createIndex({ category: 1, createdAt: -1 }),
+    featureRequests.createIndex({ authorId: 1, createdAt: -1 }),
+    featureRequests.createIndex({ updatedAt: -1 }),
+    featureRequests.createIndex({ createdAt: -1 }),
+    featureRequests.createIndex({ hidden: 1, status: 1 }),
+    featureVotes.createIndex({ featureRequestId: 1, userId: 1 }, { unique: true, name: "feature_request_votes_unique" }),
+    featureVotes.createIndex({ userId: 1 }),
+    featureVotes.createIndex({ featureRequestId: 1 }),
+    featureHistory.createIndex({ featureRequestId: 1, createdAt: -1 }),
+    featureUpdates.createIndex({ featureRequestId: 1, createdAt: -1 }),
+    featureNotes.createIndex({ featureRequestId: 1, createdAt: -1 }),
   ])
 
   indexesEnsured = true

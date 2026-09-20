@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react"
 import Link from "next/link"
 import useSWR from "swr"
-import { ArrowRight, Users, CreditCard, FolderKanban, Hammer, ShoppingCart, Activity, Shield, RefreshCw, AlertTriangle, Loader2, User, Key, BarChart3, Megaphone, Briefcase, Globe, Calendar, X, Download, Database, HardDrive, Zap, TrendingUp, MessageSquare, Settings } from "lucide-react"
+import { ArrowRight, Users, CreditCard, FolderKanban, Hammer, ShoppingCart, Activity, Shield, RefreshCw, AlertTriangle, Loader2, User, Key, BarChart3, Megaphone, Briefcase, Globe, Calendar, X, Download, Database, HardDrive, Zap, TrendingUp, MessageSquare, Settings, Lightbulb } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -763,6 +763,12 @@ export default function AdminDashboardPage() {
               title="Doc Feedback"
               description="Vote counts and sentiment per documentation section."
               icon={MessageSquare}
+            />
+            <QuickLink
+              href="/admin/feature-requests"
+              title="Feature Requests"
+              description="Review demand, change status, and publish product updates."
+              icon={Lightbulb}
             />
           </div>
         </section>

@@ -7,6 +7,7 @@ import {
   Building2,
   Compass,
   Home,
+  Lightbulb,
   Menu,
   MessageSquare,
   PanelLeft,
@@ -32,6 +33,7 @@ const NAV = [
   { href: "/projects", label: "Businesses", icon: Building2 },
   { href: "/new", label: "New business", icon: Sparkles },
   { href: "/explore", label: "Explore", icon: Compass },
+  { href: "/feature-requests", label: "Feature requests", icon: Lightbulb },
 ] as const
 
 export function DashboardShell({ children, title = "Home" }: { children: React.ReactNode; title?: string }) {
