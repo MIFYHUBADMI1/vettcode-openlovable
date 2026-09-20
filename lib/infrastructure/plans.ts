@@ -98,9 +98,35 @@ export const PAID_PLAN_ORDER: InfrastructurePlanId[] = ["basic", "starter", "pro
 /** All plans including free tier. */
 export const ALL_PLAN_ORDER: InfrastructurePlanId[] = ["testing", "basic", "starter", "pro", "business", "enterprise"]
 
-/** Get a plan by ID. Returns undefined for unknown IDs. */
+/** Get a plan by ID. Returns undefined for unknown IDs.
+ * NOTE: the returned AtaiPrice is the CODE DEFAULT — for admin-configured
+ * pricing use `getInfrastructurePlanWithRuntimePrice` (async). */
 export function getInfrastructurePlan(id: string): InfrastructurePlan | undefined {
   return INFRASTRUCTURE_PLANS[id as InfrastructurePlanId]
+}
+
+/**
+ * Get a plan by ID with the admin-configured runtime price applied.
+ * Falls back to the code default when the settings store is unavailable.
+ */
+export async function getInfrastructurePlanWithRuntimePrice(
+  id: string,
+): Promise<InfrastructurePlan | undefined> {
+  const plan = INFRASTRUCTURE_PLANS[id as InfrastructurePlanId]
+  if (!plan) return undefined
+  try {
+    const { getInfrastructurePrices } = await import("@/lib/billing/runtime-config")
+    const prices = await getInfrastructurePrices()
+    const price =
+      plan.id === "basic" ? prices.basicPrice :
+      plan.id === "starter" ? prices.starterPrice :
+      plan.id === "pro" ? prices.proPrice :
+      plan.id === "business" ? prices.businessPrice :
+      plan.AtaiPrice // testing = free, enterprise = custom
+    return { ...plan, AtaiPrice: price }
+  } catch {
+    return plan
+  }
 }
 
 /** Format storage bytes to human-readable. */

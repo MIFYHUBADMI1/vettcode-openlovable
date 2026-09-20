@@ -2,6 +2,11 @@
  * Central error-code enum (spec section 28). Every code maps to an HTTP
  * status and a safe, user-facing message. Raw error details (stack traces,
  * driver errors) never reach the client — only `logger.error` sees them.
+ *
+ * Runtime API error codes (runtime_*) are registered additively at module
+ * load by runtime/contracts/errors.ts — see importRuntimeErrorCodes() below.
+ * This keeps the single error framework while letting the runtime module
+ * own its code vocabulary.
  */
 export type ErrorCode =
   | "DATABASE_UNAVAILABLE"
@@ -88,4 +93,17 @@ export function statusForCode(code: ErrorCode): number {
 
 export function messageForCode(code: ErrorCode): string {
   return ERROR_MESSAGES[code] ?? ERROR_MESSAGES.UNKNOWN
+}
+
+// ─── Runtime API additive registration (Phase 2) ──────────────────────────
+// Registers runtime_* codes into the maps above WITHOUT mutating the unions:
+// the shared registry stays source-of-truth, runtime owns its vocabulary.
+try {
+  const { importRuntimeErrorCodes } = require("@/runtime/contracts/errors") as {
+    importRuntimeErrorCodes: () => void
+  }
+  importRuntimeErrorCodes()
+} catch {
+  // Runtime contracts unavailable in this context — safe no-op. Runtime
+  // endpoints still resolve codes via runtimeStatusForCode/runtimeMessageForCode.
 }

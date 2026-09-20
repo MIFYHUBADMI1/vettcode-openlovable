@@ -1,5 +1,6 @@
 import { store, cryptoId } from "@/lib/store/store"
 import { logger } from "@/lib/logging/logger"
+import { getBuildTierCosts, getMirrorPipelineCosts, DEFAULT_MIRROR_PIPELINE_COSTS } from "@/lib/billing/runtime-config"
 
 /**
  * Atai Credit system (spec sections 22 & 23). Atai bills users in
@@ -50,12 +51,23 @@ const HEAVY_TIER_COSTS: Record<string, number> = {
   complex: 100000,
 }
 
-/** Return the credit cost for a given complexity tier and pipeline mode. */
-export function getTierCost(tier: string, pipelineMode?: "legacy" | "heavy"): number {
+/**
+ * Return the credit cost for a given complexity tier and pipeline mode.
+ * Reads the admin-configurable runtime override (lib/billing/runtime-config.ts):
+ * legacy mode uses the build-tier costs, heavy mode scales them ×1.5 (matching
+ * the legacy/heavy default ratio and keeping heavy pricier without its own
+ * separate admin knobs).
+ */
+export async function getTierCost(tier: string, pipelineMode?: "legacy" | "heavy"): Promise<number> {
+  const tiers = await getBuildTierCosts()
+  const base = tier === "simple" ? tiers.simple : tier === "complex" ? tiers.complex : tiers.medium
   if (pipelineMode === "heavy") {
-    return HEAVY_TIER_COSTS[tier] ?? HEAVY_TIER_COSTS.medium
+    const heavyDefault = HEAVY_TIER_COSTS[tier] ?? HEAVY_TIER_COSTS.medium
+    const legacyDefault = TIER_COSTS[tier] ?? TIER_COSTS.medium
+    const heavyScale = heavyDefault / legacyDefault
+    return Math.round(base * heavyScale)
   }
-  return TIER_COSTS[tier] ?? TIER_COSTS.medium
+  return base
 }
 
 /**
@@ -83,35 +95,42 @@ export function classifyComplexity(spec: {
 }
 
 // Legacy mode costs (unchanged)
-export const SCRAPE_COST = 5
-export const PLAN_COST = 5
-export const DEEP_CRAWL_COST = 500
+export const SCRAPE_COST = DEFAULT_MIRROR_PIPELINE_COSTS.scrapeCost
+export const PLAN_COST = DEFAULT_MIRROR_PIPELINE_COSTS.planCost
+export const DEEP_CRAWL_COST = DEFAULT_MIRROR_PIPELINE_COSTS.deepCrawlCost
 
 // Heavy mode costs (20x increase for scrape/plan)
-export const HEAVY_SCRAPE_COST = 100
-export const HEAVY_PLAN_COST = 100
+export const HEAVY_SCRAPE_COST = DEFAULT_MIRROR_PIPELINE_COSTS.heavyScrapeCost
+export const HEAVY_PLAN_COST = DEFAULT_MIRROR_PIPELINE_COSTS.heavyPlanCost
 
 // Deep crawl heavy mode cost (total: 1000 credits = 500 base + 500 heavy pipeline)
-export const DEEP_CRAWL_HEAVY_COST = 1000
+export const DEEP_CRAWL_HEAVY_COST = DEFAULT_MIRROR_PIPELINE_COSTS.heavyDeepCrawlCost
 
-/** Get scrape cost based on pipeline mode */
-export function getScrapeCost(pipelineMode?: "legacy" | "heavy"): number {
-  return pipelineMode === "heavy" ? HEAVY_SCRAPE_COST : SCRAPE_COST
+/**
+ * Get scrape cost based on pipeline mode.
+ * Reads the admin-configurable runtime override (lib/billing/runtime-config.ts),
+ * falling back to the code defaults above when the settings store is unavailable.
+ */
+export async function getScrapeCost(pipelineMode?: "legacy" | "heavy"): Promise<number> {
+  const costs = await getMirrorPipelineCosts()
+  return pipelineMode === "heavy" ? costs.heavyScrapeCost : costs.scrapeCost
 }
 
-/** Get plan cost based on pipeline mode */
-export function getPlanCost(pipelineMode?: "legacy" | "heavy"): number {
-  return pipelineMode === "heavy" ? HEAVY_PLAN_COST : PLAN_COST
+/** Get plan cost based on pipeline mode (admin-configurable). */
+export async function getPlanCost(pipelineMode?: "legacy" | "heavy"): Promise<number> {
+  const costs = await getMirrorPipelineCosts()
+  return pipelineMode === "heavy" ? costs.heavyPlanCost : costs.planCost
 }
 
-/** Get deep crawl cost based on pipeline mode */
-export function getDeepCrawlCost(pipelineMode?: "legacy" | "heavy"): number {
-  return pipelineMode === "heavy" ? DEEP_CRAWL_HEAVY_COST : DEEP_CRAWL_COST
+/** Get deep crawl cost based on pipeline mode (admin-configurable). */
+export async function getDeepCrawlCost(pipelineMode?: "legacy" | "heavy"): Promise<number> {
+  const costs = await getMirrorPipelineCosts()
+  return pipelineMode === "heavy" ? costs.heavyDeepCrawlCost : costs.deepCrawlCost
 }
 
 /** Charge a user for a successful website scrape. */
 export async function chargeScrapeCredits(userId: string, projectId: string, pipelineMode?: "legacy" | "heavy") {
-  const cost = getScrapeCost(pipelineMode)
+  const cost = await getScrapeCost(pipelineMode)
   const modeLabel = pipelineMode === "heavy" ? "Heavy mode" : "Legacy mode"
   await store.addTransaction({
     id: cryptoId(),
@@ -126,7 +145,7 @@ export async function chargeScrapeCredits(userId: string, projectId: string, pip
 
 /** Charge a user for a deep crawl (full-site exact replica mode). */
 export async function chargeDeepCrawlCredits(userId: string, projectId: string, pipelineMode?: "legacy" | "heavy") {
-  const cost = getDeepCrawlCost(pipelineMode)
+  const cost = await getDeepCrawlCost(pipelineMode)
   const modeLabel = pipelineMode === "heavy" ? "Heavy mode" : "Legacy mode"
   await store.addTransaction({
     id: cryptoId(),
@@ -141,7 +160,7 @@ export async function chargeDeepCrawlCredits(userId: string, projectId: string, 
 
 /** Charge a user for a successful plan/specification generation. */
 export async function chargePlanCredits(userId: string, projectId: string, pipelineMode?: "legacy" | "heavy") {
-  const cost = getPlanCost(pipelineMode)
+  const cost = await getPlanCost(pipelineMode)
   const modeLabel = pipelineMode === "heavy" ? "Heavy mode" : "Legacy mode"
   await store.addTransaction({
     id: cryptoId(),

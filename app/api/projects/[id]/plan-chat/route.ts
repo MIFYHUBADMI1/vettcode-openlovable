@@ -71,6 +71,8 @@ export async function POST(
       decisions: project.planUpdateNotes ?? [],
       conversation: project.conversation ?? [],
       activeSection,
+      founderVision: project.idea,
+      sourceUrl: project.sourceUrl,
     })
 
     let reply: string

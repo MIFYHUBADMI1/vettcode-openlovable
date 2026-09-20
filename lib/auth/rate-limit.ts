@@ -14,7 +14,51 @@ import { AppError } from "@/lib/errors"
  *
  * Window reset: when the existing window has expired we use $setOnInsert /
  * $set to atomically reset the document to count=1 for the new window.
+ *
+ * Process-local overlay: if THIS instance has already seen a key exceed its
+ * window, later hits 429 without another Mongo write (attack / hot-key path).
+ * Cross-instance enforcement still uses Mongo on the under-limit path.
  */
+
+type MemoryBucket = { count: number; windowStart: number; windowMs: number; over: boolean }
+
+const memoryBuckets = new Map<string, MemoryBucket>()
+const MEMORY_BUCKET_CAP = 5_000
+
+function pruneMemory(now: number) {
+  if (memoryBuckets.size < 2_000) return
+  for (const [key, bucket] of memoryBuckets) {
+    if (now - bucket.windowStart >= bucket.windowMs) memoryBuckets.delete(key)
+  }
+  if (memoryBuckets.size > MEMORY_BUCKET_CAP) memoryBuckets.clear()
+}
+
+function memoryRejects(key: string, limit: number, windowMs: number, now: number): boolean {
+  const bucket = memoryBuckets.get(key)
+  if (!bucket) return false
+  if (now - bucket.windowStart >= windowMs) {
+    memoryBuckets.delete(key)
+    return false
+  }
+  return bucket.over || bucket.count > limit
+}
+
+function memoryRecord(key: string, windowMs: number, now: number, over: boolean) {
+  pruneMemory(now)
+  const existing = memoryBuckets.get(key)
+  if (!existing || now - existing.windowStart >= windowMs) {
+    memoryBuckets.set(key, { count: 1, windowStart: now, windowMs, over })
+    return
+  }
+  existing.count += 1
+  existing.over = existing.over || over
+}
+
+/** Test-only. */
+export function resetMemoryRateLimitForTests() {
+  memoryBuckets.clear()
+}
+
 export async function checkRateLimit(params: {
   action: string
   identifier: string
@@ -22,10 +66,15 @@ export async function checkRateLimit(params: {
   windowMs: number
   errorCode?: "RATE_LIMITED" | "VERIFICATION_RATE_LIMITED"
 }): Promise<void> {
-  await ensureIndexes()
-  const col = await rateLimitsCol()
   const key = `${params.action}:${params.identifier}`
   const now = Date.now()
+
+  if (memoryRejects(key, params.limit, params.windowMs, now)) {
+    throw new AppError(params.errorCode ?? "RATE_LIMITED")
+  }
+
+  await ensureIndexes()
+  const col = await rateLimitsCol()
   const windowStart = now
   const expiresAt = new Date(now + params.windowMs)
 
@@ -39,8 +88,9 @@ export async function checkRateLimit(params: {
   )
 
   if (inWindow) {
-    // Document existed and was in its active window — check the updated count.
-    if (inWindow.count > params.limit) {
+    const over = inWindow.count > params.limit
+    memoryRecord(key, params.windowMs, now, over)
+    if (over) {
       throw new AppError(params.errorCode ?? "RATE_LIMITED")
     }
     return
@@ -64,4 +114,5 @@ export async function checkRateLimit(params: {
     },
     { upsert: true },
   )
+  memoryRecord(key, params.windowMs, now, false)
 }

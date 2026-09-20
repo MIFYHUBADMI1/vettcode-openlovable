@@ -2,7 +2,7 @@ import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { requireUser } from "@/lib/auth/session"
 import { store } from "@/lib/store/store"
 import { activatePlan, getProjectInfrastructure } from "@/lib/infrastructure/service"
-import { getInfrastructurePlan, INFRASTRUCTURE_PLANS, ALL_PLAN_ORDER } from "@/lib/infrastructure/plans"
+import { getInfrastructurePlanWithRuntimePrice, ALL_PLAN_ORDER } from "@/lib/infrastructure/plans"
 import type { InfrastructurePlanId } from "@/lib/infrastructure/plans"
 
 /**
@@ -19,20 +19,23 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
     const subscription = await getProjectInfrastructure(id)
 
-    // Build available plans list
-    const plans = ALL_PLAN_ORDER.map((planId) => {
-      const plan = INFRASTRUCTURE_PLANS[planId]
-      return {
-        id: plan.id,
-        name: plan.name,
-        storageLabel: plan.storageLabel,
-        storageBytes: plan.storageBytes,
-        AtaiPrice: plan.AtaiPrice,
-        description: plan.description,
-        isPaid: plan.isPaid,
-        isCurrent: subscription?.planId === plan.id,
-      }
-    })
+    // Build available plans list (with admin-configured prices)
+    const plans = (
+      await Promise.all(ALL_PLAN_ORDER.map(async (planId) => {
+        const plan = await getInfrastructurePlanWithRuntimePrice(planId)
+        if (!plan) return null
+        return {
+          id: plan.id,
+          name: plan.name,
+          storageLabel: plan.storageLabel,
+          storageBytes: plan.storageBytes,
+          AtaiPrice: plan.AtaiPrice,
+          description: plan.description,
+          isPaid: plan.isPaid,
+          isCurrent: subscription?.planId === plan.id,
+        }
+      }))
+    ).filter(Boolean)
 
     return ok({
       subscription,
@@ -58,7 +61,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     if (!planId) return fail("VALIDATION", "Plan ID is required.", 422)
 
-    const plan = getInfrastructurePlan(planId)
+    const plan = await getInfrastructurePlanWithRuntimePrice(planId)
     if (!plan) return fail("VALIDATION", "Invalid plan.", 422)
 
     const result = await activatePlan(id, user.id, planId as InfrastructurePlanId)

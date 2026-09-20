@@ -14,7 +14,11 @@ export interface UserOnboarding {
   source?: string
   role?: string
   signalType?: "url" | "idea"
-  completedAt: number
+  /** New founder-focused field (set during onboarding). */
+  businessDescription?: string
+  destination?: string
+  completedAt?: number
+  dismissedAt?: number
 }
 
 /**

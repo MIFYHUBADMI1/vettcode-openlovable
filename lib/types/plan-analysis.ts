@@ -56,17 +56,14 @@ export type PlanAnalysis = z.infer<typeof PlanAnalysisSchema>
  * are static product knowledge, not AI guesses — when the user accepts a
  * change to one section, related sections are surfaced for review. */
 export const SECTION_DEPENDENCIES: Record<string, string[]> = {
-  targetUsers: ["valueProposition", "marketPositioning", "marketingPlan", "features"],
+  targetUsers: ["valueProposition", "marketPositioning", "features"],
   valueProposition: ["marketPositioning", "targetUsers"],
-  marketPositioning: ["marketingPlan", "valueProposition"],
+  marketPositioning: ["valueProposition", "targetUsers"],
   businessModel: ["revenueModel", "marketPositioning"],
   revenueModel: ["businessModel", "marketPositioning"],
   problem: ["solution", "valueProposition"],
   solution: ["features", "flows"],
   overview: ["vision", "targetUsers"],
-  marketingPlan: ["targetUsers", "launchPlan"],
-  launchPlan: ["marketingPlan", "growthPlan"],
-  growthPlan: ["revenueModel", "marketingPlan"],
   features: ["flows", "data"],
   flows: ["data", "features"],
   data: ["features"],

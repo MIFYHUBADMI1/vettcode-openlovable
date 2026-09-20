@@ -1,6 +1,7 @@
 import type { ProjectUnderstanding } from "./understanding"
 import type { ApplicationSpecification } from "./specification"
 import type { PlanAnalysis } from "./plan-analysis"
+import type { RuntimeProvisioningMap } from "@/lib/runtime/provisioning/types"
 
 /** Explicit Atai project lifecycle (spec section 30). State is always
  * persisted server-side and never inferred from frontend state alone. */
@@ -202,6 +203,10 @@ export interface MirrorProject {
   githubZipUrl?: string
   /** Project visibility: private (default) or public. Can only be public if deployed. */
   visibility?: "private" | "public"
+  /** Phase 8: per-environment runtime credential provisioning metadata.
+   * SAFE METADATA ONLY (status/keyId/prefix/timestamps) — never a plaintext
+   * secret or key hash; api_keys remains the credential source of truth. */
+  runtimeProvisioning?: RuntimeProvisioningMap
 }
 
 /** Alias used throughout the frontend; kept distinct from `MirrorProject` so

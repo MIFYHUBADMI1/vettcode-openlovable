@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
+import { ArrowLeft } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
 import { getCurrentUser } from "@/lib/auth/session"
 import { store } from "@/lib/store/store"
@@ -31,9 +32,11 @@ export default async function CollaboratePage({
 
   // App-shell layout: fixed viewport height — every panel scrolls internally,
   // so the plan nav, composer, and launch button are always reachable without
-  // scrolling the page.
+  // scrolling the page. h-dvh first: fallback for browsers without svh
+  // support — without a resolvable height the shell un-clamps and content
+  // escapes the layout instead of scrolling inside its panels.
   return (
-    <main className="h-svh overflow-hidden bg-background text-foreground flex flex-col">
+    <main className="collab-shell h-dvh h-svh overflow-hidden bg-background text-foreground flex flex-col">
       <AppHeader />
 
       {/* Page header */}
@@ -44,7 +47,7 @@ export default async function CollaboratePage({
               href={`/project/${projectId}`}
               className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-accent hover:text-foreground"
             >
-              ← Workspace
+              <ArrowLeft className="size-3.5" aria-hidden /> Workspace
             </Link>
             <div className="min-w-0">
               <h1 className="truncate text-sm font-semibold text-foreground">{project.name}</h1>
@@ -57,6 +60,9 @@ export default async function CollaboratePage({
               <span className="size-1.5 rounded-full bg-primary animate-pulse" />
               {project.state === "plan_ready" ? "Plan ready" : project.state.replace(/_/g, " ")}
             </span>
+            {/* Slot — the client mounts the auto-complete button here via
+                portal, so it lives in the header while keeping its state. */}
+            <div id="collab-header-actions" className="flex items-center" />
           </div>
         </div>
       </div>

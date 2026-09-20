@@ -6,17 +6,28 @@ import {
   BUILD_TIERS,
   SUBSCRIPTION_PLANS,
   DEFAULT_BILLING_CURRENCY,
-  WELCOME_BONUS_CREDITS,
-  REFERRAL_VERIFICATION_REWARD,
-  REFERRAL_MILESTONE_REWARD,
-  REFERRAL_MILESTONE_THRESHOLD,
   CREDITS_PER_BASELINE_UNIT,
   BASELINE_COST_MODEL_V1,
 } from "@/lib/billing/config"
 import {
   getCollaborateCosts,
-  updateCollaborateCosts,
+  getBuildTierCosts,
+  getMirrorPipelineCosts,
+  getDeploymentCosts,
+  getForkPricing,
+  getInfrastructurePrices,
+  updateBillingSettings,
   DEFAULT_COLLABORATE_COSTS,
+  DEFAULT_BUILD_TIER_COSTS,
+  DEFAULT_MIRROR_PIPELINE_COSTS,
+  DEFAULT_DEPLOYMENT_COSTS,
+  DEFAULT_FORK_PRICING,
+  DEFAULT_INFRASTRUCTURE_PRICES,
+  getRewardSettings,
+  DEFAULT_REWARDS,
+  getRuntimePricing,
+  DEFAULT_RUNTIME_PRICING,
+  RUNTIME_PRICING_VERSION,
   invalidateBillingSettings,
 } from "@/lib/billing/runtime-config"
 import { logger } from "@/lib/logging/logger"
@@ -26,6 +37,13 @@ export async function GET() {
     await requireAdmin()
 
     const collaborateCosts = await getCollaborateCosts()
+    const buildTierCosts = await getBuildTierCosts()
+    const mirrorPipelineCosts = await getMirrorPipelineCosts()
+    const deploymentCosts = await getDeploymentCosts()
+    const forkPricing = await getForkPricing()
+    const infrastructurePrices = await getInfrastructurePrices()
+    const rewards = await getRewardSettings()
+    const runtimePricing = await getRuntimePricing()
 
     const configuration = {
       // ── Currency ──
@@ -49,21 +67,75 @@ export async function GET() {
         description: tier.description,
       })),
 
-      // ── System Config ──
+      // ── System Config (runtime values) ──
       systemConfig: {
         currency: DEFAULT_BILLING_CURRENCY,
         creditUnit: "Atai Credits",
-        welcomeBonusCredits: WELCOME_BONUS_CREDITS,
-        referralVerificationReward: REFERRAL_VERIFICATION_REWARD,
-        referralMilestoneReward: REFERRAL_MILESTONE_REWARD,
-        referralMilestoneThreshold: REFERRAL_MILESTONE_THRESHOLD,
+        welcomeBonusCredits: rewards.welcomeBonus,
+        referralVerificationReward: rewards.referralVerificationReward,
+        referralMilestoneReward: rewards.referralMilestoneReward,
+        referralMilestoneThreshold: rewards.referralMilestoneThreshold,
       },
 
       // ── Collaborate AI Co-Founder (runtime-configurable) ──
       collaborateCosts: {
         chatMessageCost: collaborateCosts.chatMessageCost,
         planAnalysisCost: collaborateCosts.planAnalysisCost,
+        autoCompleteSectionCost: collaborateCosts.autoCompleteSectionCost,
         defaults: DEFAULT_COLLABORATE_COSTS,
+      },
+
+      // ── Build tier costs (runtime-configurable) ──
+      buildTierCosts: {
+        simple: buildTierCosts.simple,
+        medium: buildTierCosts.medium,
+        complex: buildTierCosts.complex,
+        defaults: DEFAULT_BUILD_TIER_COSTS,
+      },
+
+      // ── Mirror/crawl pipeline costs (runtime-configurable) ──
+      mirrorPipelineCosts: {
+        scrapeCost: mirrorPipelineCosts.scrapeCost,
+        heavyScrapeCost: mirrorPipelineCosts.heavyScrapeCost,
+        planCost: mirrorPipelineCosts.planCost,
+        heavyPlanCost: mirrorPipelineCosts.heavyPlanCost,
+        deepCrawlCost: mirrorPipelineCosts.deepCrawlCost,
+        heavyDeepCrawlCost: mirrorPipelineCosts.heavyDeepCrawlCost,
+        defaults: DEFAULT_MIRROR_PIPELINE_COSTS,
+      },
+
+      // ── Deployment costs (runtime-configurable) ──
+      deploymentCosts: {
+        deployCost: deploymentCosts.deployCost,
+        defaults: DEFAULT_DEPLOYMENT_COSTS,
+      },
+
+      // ── Fork pricing (runtime-configurable) ──
+      forkPricing: {
+        simpleForkCost: forkPricing.simpleForkCost,
+        mediumForkCost: forkPricing.mediumForkCost,
+        complexForkCost: forkPricing.complexForkCost,
+        simpleOwnerRoyalty: forkPricing.simpleOwnerRoyalty,
+        mediumOwnerRoyalty: forkPricing.mediumOwnerRoyalty,
+        complexOwnerRoyalty: forkPricing.complexOwnerRoyalty,
+        defaults: DEFAULT_FORK_PRICING,
+      },
+
+      // ── Infrastructure plan prices (runtime-configurable) ──
+      infrastructurePrices: {
+        basicPrice: infrastructurePrices.basicPrice,
+        starterPrice: infrastructurePrices.starterPrice,
+        proPrice: infrastructurePrices.proPrice,
+        businessPrice: infrastructurePrices.businessPrice,
+        defaults: DEFAULT_INFRASTRUCTURE_PRICES,
+      },
+
+      // ── Runtime API pricing (runtime-configurable; server-controlled) ──
+      runtimePricing: {
+        ...runtimePricing,
+        defaults: DEFAULT_RUNTIME_PRICING,
+        pricingVersion: RUNTIME_PRICING_VERSION,
+        unit: "credits per 1,000 tokens (web: flat per request)",
       },
 
       // ── Dodo Integration ──
@@ -120,6 +192,63 @@ const PatchSchema = z.object({
     .object({
       chatMessageCost: z.number().int().min(0).max(10_000).optional(),
       planAnalysisCost: z.number().int().min(0).max(100_000).optional(),
+      autoCompleteSectionCost: z.number().int().min(0).max(10_000).optional(),
+    })
+    .optional(),
+  buildTiers: z
+    .object({
+      simple: z.number().int().min(0).max(10_000_000).optional(),
+      medium: z.number().int().min(0).max(10_000_000).optional(),
+      complex: z.number().int().min(0).max(10_000_000).optional(),
+    })
+    .optional(),
+  mirrorPipeline: z
+    .object({
+      scrapeCost: z.number().int().min(0).max(100_000).optional(),
+      heavyScrapeCost: z.number().int().min(0).max(100_000).optional(),
+      heavyPlanCost: z.number().int().min(0).max(100_000).optional(),
+      planCost: z.number().int().min(0).max(100_000).optional(),
+      deepCrawlCost: z.number().int().min(0).max(1_000_000).optional(),
+      heavyDeepCrawlCost: z.number().int().min(0).max(1_000_000).optional(),
+    })
+    .optional(),
+  deployment: z
+    .object({
+      deployCost: z.number().int().min(0).max(1_000_000).optional(),
+    })
+    .optional(),
+  forkPricing: z
+    .object({
+      simpleForkCost: z.number().int().min(0).max(10_000_000).optional(),
+      mediumForkCost: z.number().int().min(0).max(10_000_000).optional(),
+      complexForkCost: z.number().int().min(0).max(10_000_000).optional(),
+      simpleOwnerRoyalty: z.number().int().min(0).max(10_000_000).optional(),
+      mediumOwnerRoyalty: z.number().int().min(0).max(10_000_000).optional(),
+      complexOwnerRoyalty: z.number().int().min(0).max(10_000_000).optional(),
+    })
+    .optional(),
+  infrastructurePrices: z
+    .object({
+      basicPrice: z.number().int().min(0).max(10_000_000).optional(),
+      starterPrice: z.number().int().min(0).max(10_000_000).optional(),
+      proPrice: z.number().int().min(0).max(10_000_000).optional(),
+      businessPrice: z.number().int().min(0).max(10_000_000).optional(),
+    })
+    .optional(),
+  rewards: z
+    .object({
+      welcomeBonus: z.number().int().min(0).max(1_000_000).optional(),
+      referralVerificationReward: z.number().int().min(0).max(1_000_000).optional(),
+      referralMilestoneReward: z.number().int().min(0).max(1_000_000).optional(),
+      referralMilestoneThreshold: z.number().int().min(0).max(100_000_000).optional(),
+    })
+    .optional(),
+  runtimePricing: z
+    .object({
+      aiTextInputPer1k: z.number().int().min(0).max(1_000_000).optional(),
+      aiTextOutputPer1k: z.number().int().min(0).max(1_000_000).optional(),
+      aiEmbedPer1k: z.number().int().min(0).max(1_000_000).optional(),
+      webRequest: z.number().int().min(0).max(1_000_000).optional(),
     })
     .optional(),
 })
@@ -133,19 +262,46 @@ export async function PATCH(req: Request) {
     if (!parsed.success) {
       return fail("VALIDATION", "Invalid configuration values.", 422)
     }
-    if (!parsed.data.collaborate) {
+    if (
+      !parsed.data.collaborate && !parsed.data.buildTiers && !parsed.data.mirrorPipeline &&
+      !parsed.data.deployment && !parsed.data.forkPricing && !parsed.data.infrastructurePrices &&
+      !parsed.data.rewards && !parsed.data.runtimePricing
+    ) {
       return fail("VALIDATION", "No configuration changes provided.", 422)
     }
 
-    const updated = await updateCollaborateCosts(parsed.data.collaborate)
+    const updated = await updateBillingSettings({
+      ...(parsed.data.collaborate ? { collaborate: parsed.data.collaborate } : {}),
+      ...(parsed.data.buildTiers ? { buildTiers: parsed.data.buildTiers } : {}),
+      ...(parsed.data.mirrorPipeline ? { mirrorPipeline: parsed.data.mirrorPipeline } : {}),
+      ...(parsed.data.deployment ? { deployment: parsed.data.deployment } : {}),
+      ...(parsed.data.forkPricing ? { forkPricing: parsed.data.forkPricing } : {}),
+      ...(parsed.data.infrastructurePrices ? { infrastructurePrices: parsed.data.infrastructurePrices } : {}),
+      ...(parsed.data.rewards ? { rewards: parsed.data.rewards } : {}),
+      ...(parsed.data.runtimePricing ? { runtimePricing: parsed.data.runtimePricing } : {}),
+    })
     invalidateBillingSettings()
 
-    logger.info("api.admin.billing.configuration", "collaborate costs updated", {
+    logger.info("api.admin.billing.configuration", "billing settings updated", {
       adminId: admin.id,
-      costs: updated,
+      collaborate: updated.collaborate,
+      buildTiers: updated.buildTiers,
+      mirrorPipeline: updated.mirrorPipeline,
+      deployment: updated.deployment,
+      forkPricing: updated.forkPricing,
+      infrastructurePrices: updated.infrastructurePrices,
+      runtimePricing: updated.runtimePricing,
     })
 
-    return ok({ collaborateCosts: updated })
+    return ok({
+      collaborateCosts: updated.collaborate,
+      buildTierCosts: updated.buildTiers,
+      mirrorPipelineCosts: updated.mirrorPipeline,
+      deploymentCosts: updated.deployment,
+      forkPricing: updated.forkPricing,
+      infrastructurePrices: updated.infrastructurePrices,
+      runtimePricing: updated.runtimePricing,
+    })
   } catch (e) {
     return handleRouteError("api.admin.billing.configuration", e)
   }

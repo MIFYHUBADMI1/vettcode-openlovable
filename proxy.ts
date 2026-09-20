@@ -23,7 +23,8 @@ import type { NextRequest } from "next/server"
 const SESSION_COOKIE = "Atai_session"
 
 // API routes that are intentionally public (no session required).
-const PUBLIC_API_PREFIXES = [
+// Exported for the edge-gate regression tests (proxy.test.ts).
+export const PUBLIC_API_PREFIXES = [
   "/api/auth/login",
   "/api/auth/register",
   "/api/auth/forgot-password",
@@ -34,6 +35,17 @@ const PUBLIC_API_PREFIXES = [
   "/api/auth/google",
   "/api/billing/webhook",
   "/api/internal/", // Internal server-to-server APIs (authenticated via x-internal-key header)
+  // Atai Runtime invocation API (Phase 4): a SEPARATE authentication domain —
+  // customer ATAI_API_KEY via `Authorization: Bearer ...`, never session
+  // cookies. Authentication happens inside the route handler via
+  // authenticateRuntimeRequest() (lib/runtime/auth). Management routes under
+  // /api/runtime/keys/* intentionally stay OUT of this list (session-gated).
+  //
+  // NOTE: the exact path "/api/runtime/v1" (no trailing slash) is matched
+  // separately below — a startsWith("/api/runtime/v1/") prefix alone misses
+  // it, which sent every SDK request to the session gate for a 401 before
+  // Bearer authentication ever ran (Phase 7 audit CRITICAL finding).
+  "/api/runtime/v1/",
 ]
 
 export function proxy(request: NextRequest) {
@@ -45,7 +57,13 @@ export function proxy(request: NextRequest) {
   }
 
   // Allow explicitly public API routes through without a session cookie.
-  if (PUBLIC_API_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+  // The runtime invocation endpoint is matched EXACTLY (no trailing slash in
+  // the SDK's URL construction); exact matching also avoids over-matching a
+  // hypothetical future sibling like /api/runtime/v10.
+  if (
+    pathname === "/api/runtime/v1" ||
+    PUBLIC_API_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+  ) {
     return NextResponse.next()
   }
 

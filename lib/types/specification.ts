@@ -8,24 +8,30 @@ import { z } from "zod"
  * that the user can review and edit before a build is launched (spec 6, 14, 15).
  */
 
+/** Null-tolerant optional text: legacy AI generations sometimes stored null
+ * instead of omitting the field. Accepting and normalizing null → undefined
+ * here keeps every full-spec reparse (section updates, builds) working for
+ * old documents instead of 422-ing all plan edits. */
+const optionalText = z.string().nullish().transform((v) => v ?? undefined)
+
 export const SuggestedFeatureSchema = z.object({
   key: z.string(),
   label: z.string(),
-  description: z.string().optional(),
+  description: optionalText,
   enabled: z.boolean().default(false),
 })
 export type SuggestedFeature = z.infer<typeof SuggestedFeatureSchema>
 
 export const SpecDataEntitySchema = z.object({
   name: z.string(),
-  description: z.string().optional(),
+  description: optionalText,
   fields: z.array(z.string()).default([]),
 })
 export type SpecDataEntity = z.infer<typeof SpecDataEntitySchema>
 
 export const CoreFlowSchema = z.object({
   name: z.string(),
-  description: z.string().optional(),
+  description: optionalText,
 })
 export type CoreFlow = z.infer<typeof CoreFlowSchema>
 

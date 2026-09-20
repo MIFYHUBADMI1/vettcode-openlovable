@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/app-header"
 import { getCurrentUser } from "@/lib/auth/session"
 import { store } from "@/lib/store/store"
 import { EnvManager } from "@/components/env-manager"
-import { EnvPageIcons } from "./env-icons"
+import { EnvPageIcons } from "../env-icons"
 
 export default async function ProjectEnvPage({ params }: { params: Promise<{ projectId: string }> }) {
   const user = await getCurrentUser()

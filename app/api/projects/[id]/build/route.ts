@@ -66,7 +66,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     // 1. Determine tier and reserve credits.
     const tier = project.specification.complexity ?? classifyComplexity(project.specification)
-    const creditsNeeded = getBuildCost(tier)
+    const creditsNeeded = await getBuildCost(tier)
     const run: BuildRun = {
       id: cryptoId(),
       userId,

@@ -19,10 +19,11 @@
  */
 
 import "server-only"
-import { ObjectId } from "mongodb"
+import { ObjectId, type ClientSession } from "mongodb"
 import { usersCol, creditLedgerCol } from "@/lib/db/collections"
 import { cryptoId } from "@/lib/store/id"
 import { logger } from "@/lib/logging/logger"
+import { planCreditConsumption } from "@/lib/billing/consume-plan"
 import {
   PRICING_MODEL_VERSION,
   COST_MODEL_VERSION,
@@ -65,16 +66,6 @@ export async function getBalance(userId: string): Promise<CreditBalance> {
   const users = await usersCol()
   const user = await users.findOne({ id: userId })
 
-  console.log('[getBalance] Query result:', {
-    userId,
-    userFound: !!user,
-    userIdFromDb: user?.id,
-    userEmail: user?.email,
-    subscriptionCredits: user?.subscriptionCredits,
-    permanentCredits: user?.permanentCredits,
-    legacyCredits: user?.credits,
-  })
-
   if (!user) return { total: 0, subscription: 0, permanent: 0 }
 
   // Use new fields if available, otherwise fall back to legacy credits
@@ -86,7 +77,9 @@ export async function getBalance(userId: string): Promise<CreditBalance> {
   // If new fields are populated, use them; otherwise fall back to legacy
   const total = newTotal > 0 ? newTotal : legacyCredits
 
-  // Log divergence for monitoring (don't auto-fix to avoid data corruption)
+  // Log divergence for monitoring (don't auto-fix to avoid data corruption).
+  // Structured logger only — no console.log PII (email) on this hot path:
+  // it runs on every runtime preflight + every credit check (Phase 9.5 audit).
   if (newTotal > 0 && newTotal !== legacyCredits) {
     logger.warn("credit.balance", "Balance divergence detected", {
       userId,
@@ -96,13 +89,6 @@ export async function getBalance(userId: string): Promise<CreditBalance> {
       permanent,
     })
   }
-
-  console.log('[getBalance] Computed balance:', {
-    userId,
-    total,
-    subscription,
-    permanent,
-  })
 
   return { total, subscription, permanent }
 }
@@ -145,6 +131,7 @@ async function recordLedgerEntry(params: {
   balanceAfter: number
   idempotencyKey: string
   metadata?: Record<string, unknown>
+  session?: ClientSession
 }): Promise<CreditLedgerEntry> {
   const col = await creditLedgerCol()
   const entry: CreditLedgerEntry = {
@@ -167,7 +154,7 @@ async function recordLedgerEntry(params: {
   }
 
   try {
-    await col.insertOne(entry)
+    await col.insertOne(entry, params.session ? { session: params.session } : {})
   } catch (err: unknown) {
     // E11000 = duplicate idempotency key — this is expected on retries
     if (err instanceof Error && /E11000|duplicate key/i.test(err.message)) {
@@ -175,7 +162,10 @@ async function recordLedgerEntry(params: {
         idempotencyKey: params.idempotencyKey,
       })
       // Return the existing entry
-      const existing = await col.findOne({ idempotencyKey: params.idempotencyKey })
+      const existing = await col.findOne(
+        { idempotencyKey: params.idempotencyKey },
+        params.session ? { session: params.session } : {},
+      )
       if (existing) return existing
     }
     throw err
@@ -300,6 +290,7 @@ export async function grantCredits(params: {
         balanceAfter: newBalance,
         idempotencyKey: params.idempotencyKey,
         metadata: params.metadata,
+        session,
       })
 
       success = true
@@ -390,88 +381,62 @@ export async function consumeCredits(params: {
   permanentConsumed: number
 }> {
   const users = await usersCol()
-  const user = await users.findOne({ id: params.userId })
-  if (!user) return { success: false, subscriptionConsumed: 0, permanentConsumed: 0 }
-
-  const balance = await getBalance(params.userId)
-
-  if (balance.total < params.amount) {
-    logger.warn("credit.consume", "Insufficient credits", {
-      userId: params.userId,
-      requested: params.amount,
-      available: balance.total,
-    })
-    return { success: false, subscriptionConsumed: 0, permanentConsumed: 0 }
-  }
-
-  // ── Sort buckets oldest-expiry-first, skip already-expired ones ────────────
-  const rawBuckets: import("@/lib/types/db").CreditBucket[] = user.creditBuckets ?? []
-  const now = Date.now()
-
-  // Separate non-expired and expired buckets. Non-expired are consumed first
-  // (oldest first). Expired buckets are consumed only if non-expired are exhausted.
-  const nonExpiredBuckets = rawBuckets.filter((b) => b.expiresAt > now)
-  const expiredBuckets = rawBuckets.filter((b) => b.expiresAt <= now)
-
-  // Sort each group oldest-expiry-first
-  nonExpiredBuckets.sort((a, b) => a.expiresAt - b.expiresAt)
-  expiredBuckets.sort((a, b) => a.expiresAt - b.expiresAt)
-
-  // Consume order: non-expired (oldest first), then expired (oldest first), then permanent
-  const sortedBuckets = [...nonExpiredBuckets, ...expiredBuckets]
-
-  let remaining = params.amount
-  let subConsumed = 0
-  let permConsumed = 0
-
-  // Track how much to deduct from each bucket (for the DB update)
-  const bucketDeductions: Array<{ subscriptionId: string; deduct: number; newAmount: number }> = []
-
-  for (const bucket of sortedBuckets) {
-    if (remaining <= 0) break
-    const toConsume = Math.min(remaining, bucket.amount)
-    if (toConsume > 0) {
-      subConsumed += toConsume
-      remaining -= toConsume
-      bucketDeductions.push({
-        subscriptionId: bucket.subscriptionId,
-        deduct: toConsume,
-        newAmount: bucket.amount - toConsume,
-      })
-    }
-  }
-
-  // If subscription buckets are exhausted, consume from permanent
-  if (remaining > 0 && balance.permanent > 0) {
-    const toConsume = Math.min(remaining, balance.permanent)
-    permConsumed += toConsume
-    remaining -= toConsume
-  }
-
-  // Fallback: no buckets but has legacy subscriptionCredits — consume from flat field
-  if (remaining > 0 && rawBuckets.length === 0 && balance.subscription > 0) {
-    const toConsume = Math.min(remaining, balance.subscription)
-    subConsumed += toConsume
-    remaining -= toConsume
-  }
-
   const client = (await import("@/lib/db/mongodb")).getMongoClient
   const mongoClient = await client()
   const session = mongoClient.startSession()
+
+  let subConsumed = 0
+  let permConsumed = 0
+  let bucketDeductions: Array<{ subscriptionId: string; deduct: number; newAmount: number }> = []
 
   try {
     let success = false
 
     await session.withTransaction(async () => {
-      // Idempotency check
-      const existingLedger = await (await creditLedgerCol()).findOne(
-        { idempotencyKey: params.idempotencyKey },
+      // Idempotency check — consumeCredits writes SUFFIXED keys (`${key}_sub`
+      // and/or `${key}_perm`), so the base key alone is NOT proof of prior
+      // consumption: a replay must check the suffixed keys too, or a duplicate
+      // call could debit the balance a second time (ledger insert would then
+      // fail with E11000 — after the money already moved). Any existing
+      // suffixed entry proves this billable event was already processed.
+      const ledger = await creditLedgerCol()
+      const existingLedger = await ledger.findOne(
+        { idempotencyKey: { $in: [params.idempotencyKey, `${params.idempotencyKey}_sub`, `${params.idempotencyKey}_perm`] } },
         { session },
       )
       if (existingLedger) {
         success = true
         return
       }
+
+      const fresh = await users.findOne({ id: params.userId }, { session })
+      if (!fresh) {
+        success = false
+        return
+      }
+      const plan = planCreditConsumption(
+        {
+          credits: fresh.credits,
+          subscriptionCredits: fresh.subscriptionCredits,
+          permanentCredits: fresh.permanentCredits,
+          creditBuckets: fresh.creditBuckets,
+        },
+        params.amount,
+        Date.now(),
+      )
+      if (!plan.ok) {
+        logger.warn("credit.consume", "Insufficient credits", {
+          userId: params.userId,
+          requested: params.amount,
+          available: plan.available,
+        })
+        success = false
+        return
+      }
+      subConsumed = plan.subConsumed
+      permConsumed = plan.permConsumed
+      bucketDeductions = plan.bucketDeductions
+      const balance = plan.balance
 
       // Build the flat-field update
       const filter: Record<string, unknown> = { id: params.userId, credits: { $gte: params.amount } }
@@ -532,6 +497,7 @@ export async function consumeCredits(params: {
           balanceAfter: newSubBalance,
           idempotencyKey: `${params.idempotencyKey}_sub`,
           metadata: params.metadata,
+          session,
         })
       }
 
@@ -548,6 +514,36 @@ export async function consumeCredits(params: {
           balanceAfter: newPermBalance,
           idempotencyKey: `${params.idempotencyKey}_perm`,
           metadata: params.metadata,
+          session,
+        })
+      }
+
+      // Legacy/diverged balances: when the debited amount came ENTIRELY from
+      // the flat legacy `credits` field (no buckets, no subscription/permanent
+      // split — e.g. accounts predating the dual-field ledger), the two
+      // entries above would both be skipped. The debit itself is real, so the
+      // ledger MUST still record it — the double-entry invariant and the
+      // idempotency guarantee both depend on every debit having an entry:
+      // without one, a retried idempotency key would debit the balance AGAIN
+      // (no entry to prove prior consumption) and the charge would be
+      // invisible to financial reconciliation (Phase 9.5 audit CRITICAL fix).
+      // Recorded against "permanent" (the ledger's durable bucket) with the
+      // BASE idempotency key — the replay guard above checks [base, _sub,
+      // _perm], so a replay of this billable event can never re-debit.
+      if (subConsumed === 0 && permConsumed === 0) {
+        await recordLedgerEntry({
+          userId: params.userId,
+          creditType: "permanent",
+          amount: params.amount,
+          direction: "debit",
+          transactionType: params.transactionType,
+          referenceType: params.referenceType,
+          referenceId: params.referenceId,
+          balanceBefore: balance.total,
+          balanceAfter: balance.total - params.amount,
+          idempotencyKey: params.idempotencyKey,
+          metadata: { ...params.metadata, legacyBalanceDebit: true },
+          session,
         })
       }
 
@@ -781,6 +777,7 @@ export async function grantSubscriptionCredits(params: {
           periodStart: params.periodStart,
           periodEnd: params.periodEnd,
         },
+        session,
       })
 
       success = true
@@ -898,6 +895,7 @@ export async function expireSubscriptionCredits(params: {
           balanceAfter: freshBalance.subscription,
           idempotencyKey,
           metadata: { ...params.metadata, expiredAmount: 0, hadBucket: Boolean(freshMatchingBucket), reason: "no_credits_to_expire" },
+          session,
         })
         success = true
         return
@@ -933,6 +931,7 @@ export async function expireSubscriptionCredits(params: {
           balanceAfter: freshBalance.subscription,
           idempotencyKey,
           metadata: { ...params.metadata, expiredAmount: amount, hadBucket: Boolean(freshMatchingBucket), reason: "update_failed" },
+          session,
         })
         success = true
         return
@@ -954,6 +953,7 @@ export async function expireSubscriptionCredits(params: {
           expiredAmount: amount,
           hadBucket: Boolean(freshMatchingBucket),
         },
+        session,
       })
 
       success = true
@@ -972,10 +972,13 @@ export async function expireSubscriptionCredits(params: {
  * Idempotent per user.
  */
 export async function grantWelcomeBonus(userId: string): Promise<boolean> {
+  // Admin-configurable amount (falls back to the code default).
+  const { getRewardSettings } = await import("@/lib/billing/runtime-config")
+  const rewards = await getRewardSettings()
   const result = await grantCredits({
     userId,
     creditType: "permanent",
-    amount: WELCOME_BONUS_CREDITS,
+    amount: rewards.welcomeBonus,
     transactionType: "signup_bonus",
     idempotencyKey: `welcome_${userId}`,
     referenceType: "signup",
@@ -992,10 +995,12 @@ export async function grantReferralVerificationReward(
   referrerUserId: string,
   referredUserId: string,
 ): Promise<boolean> {
+  const { getRewardSettings } = await import("@/lib/billing/runtime-config")
+  const rewards = await getRewardSettings()
   const result = await grantCredits({
     userId: referrerUserId,
     creditType: "permanent",
-    amount: REFERRAL_VERIFICATION_REWARD,
+    amount: rewards.referralVerificationReward,
     transactionType: "referral_bonus",
     idempotencyKey: `ref_verify_${referrerUserId}_${referredUserId}`,
     referenceType: "referral",
@@ -1013,10 +1018,12 @@ export async function grantReferralMilestoneReward(
   referrerUserId: string,
   referredUserId: string,
 ): Promise<boolean> {
+  const { getRewardSettings } = await import("@/lib/billing/runtime-config")
+  const rewards = await getRewardSettings()
   const result = await grantCredits({
     userId: referrerUserId,
     creditType: "permanent",
-    amount: REFERRAL_MILESTONE_REWARD,
+    amount: rewards.referralMilestoneReward,
     transactionType: "referral_bonus",
     idempotencyKey: `ref_milestone_${referrerUserId}_${referredUserId}`,
     referenceType: "referral",
@@ -1097,6 +1104,7 @@ export async function reverseCredits(params: {
         balanceAfter: available - actualReversal,
         idempotencyKey: params.idempotencyKey,
         metadata: { ...params.metadata, originalAmount: params.amount, actualReversed: actualReversal },
+        session,
       })
 
       success = true

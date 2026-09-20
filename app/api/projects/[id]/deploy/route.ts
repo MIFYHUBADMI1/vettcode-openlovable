@@ -3,13 +3,23 @@ import { store, cryptoId } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { reserveCredits, releaseReservation, getAvailableCredits } from "@/lib/billing/credit-service"
+import { getDeploymentCosts } from "@/lib/billing/runtime-config"
 import { deployProject, isTotalumConfigured, getDeploymentStatus, getProject } from "@/lib/integrations/totalum/service"
 import { publishEventsCol } from "@/lib/db/collections"
 import { logger } from "@/lib/logging/logger"
+import { ensureRuntimeProvisioned, environmentForLifecycle, RuntimeProvisioningError } from "@/lib/runtime/provisioning"
 import type { ProjectEvent } from "@/lib/types/project"
 import type { PublishEventDoc } from "@/lib/types/db"
 
-const DEPLOY_CREDITS = 500
+/**
+ * Deploy credit cost — admin-configurable via runtime settings
+ * (lib/billing/runtime-config.ts). Falls back to 500 when the settings
+ * store is unavailable.
+ */
+async function getDeployCredits(): Promise<number> {
+  const costs = await getDeploymentCosts()
+  return costs.deployCost
+}
 
 function event(stage: string, message: string, level: ProjectEvent["level"] = "info"): ProjectEvent {
   return { id: cryptoId(), at: Date.now(), level, stage, message }
@@ -18,14 +28,14 @@ function event(stage: string, message: string, level: ProjectEvent["level"] = "i
 /**
  * POST /api/projects/:id/deploy
  * Deploy a project to production (hosted subdomain).
- * Charges 500 credits for lifetime hosting.
+ * Charges the admin-configured deploy credits for lifetime hosting.
  */
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireUser()
     const { id } = await params
 
-    // Rate-limit deploy: 10 per day per user (it costs 500 credits per deploy).
+    // Rate-limit deploy: 10 per day per user.
     await checkRateLimit({
       action: "project_deploy",
       identifier: user.id,
@@ -42,8 +52,9 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     if (!isTotalumConfigured()) return fail("PROVIDER_NOT_CONFIGURED", "Deployment service is not connected.", 503)
 
     // Check credits
+    const deployCost = await getDeployCredits()
     const available = await getAvailableCredits(user.id)
-    if (available < DEPLOY_CREDITS) return fail("INSUFFICIENT_CREDITS", `Deploying requires ${DEPLOY_CREDITS} credits. Available: ${available.toLocaleString()}.`, 402)
+    if (available < deployCost) return fail("INSUFFICIENT_CREDITS", `Deploying requires ${deployCost.toLocaleString()} credits. Available: ${available.toLocaleString()}.`, 402)
 
     // Check if already deployed
     try {
@@ -59,7 +70,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
     // Reserve credits
     const runId = cryptoId()
-    const reserved = await reserveCredits({ userId: user.id, amount: DEPLOY_CREDITS, buildId: runId, reason: "Production deployment" })
+    const reserved = await reserveCredits({ userId: user.id, amount: deployCost, buildId: runId, reason: "Production deployment" })
     if (!reserved) return fail("INSUFFICIENT_CREDITS", "Could not reserve credits for deployment.", 402)
 
     // Deploy via Totalum
@@ -76,7 +87,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
           id: runId,
           startedAt: deployStartTime,
           status: "deploying" as const,
-          creditsCharged: DEPLOY_CREDITS,
+          creditsCharged: deployCost,
         }
         await store.appendDeploymentRecord(id, deploymentRecord)
       } catch (err) {
@@ -94,7 +105,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
           projectName: project.name,
           eventType: "subdomain" as const,
           status: "started" as const,
-          creditsCharged: DEPLOY_CREDITS,
+          creditsCharged: deployCost,
           createdAt: deployStartTime,
         })
       } catch (err) {
@@ -106,11 +117,11 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       return ok({
         message: "Deployment started. This typically takes 3-5 minutes.",
         deployRunId: runId,
-        creditsCharged: DEPLOY_CREDITS,
+        creditsCharged: deployCost,
       })
     } catch (providerError) {
       // Refund on failure
-      await releaseReservation({ userId: user.id, amount: DEPLOY_CREDITS, buildId: runId, reason: "Deployment failure" })
+      await releaseReservation({ userId: user.id, amount: deployCost, buildId: runId, reason: "Deployment failure" })
 
       // Better error message for project not found
       const errorMessage = providerError instanceof Error ? providerError.message : "Deployment failed"
@@ -196,6 +207,24 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
           developmentUrl: productionUrl || project.developmentUrl,
         })
         await store.appendEvent(id, event("deploy", `Deployed to production${productionUrl ? `: ${productionUrl}` : ""}`))
+
+        // Phase 8 — automatic runtime provisioning (production). Same
+        // idempotent service as build completion; the deployed application
+        // must hold a production-scoped runtime credential.
+        if (isTotalumConfigured()) {
+          try {
+            const persisted = (await store.getProject(id)) ?? project
+            await ensureRuntimeProvisioned(persisted, environmentForLifecycle("production"))
+          } catch (e) {
+            if (!(e instanceof RuntimeProvisioningError && e.reason === "NO_GENERATED_APP")) {
+              logger.error("api.projects.deploy.status", "runtime provisioning failed (non-fatal)", {
+                id,
+                reason: e instanceof RuntimeProvisioningError ? e.reason : "UNKNOWN",
+              })
+              await store.appendEvent(id, event("runtime", "Runtime setup failed — you can retry from settings.", "warn"))
+            }
+          }
+        }
       } else if (deployStatus.status === "error" && project.state === "deploying") {
         const latestDeploy = [...(project.deploymentHistory || [])].reverse().find(d => d.status === "deploying")
         if (latestDeploy) {

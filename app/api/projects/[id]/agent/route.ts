@@ -50,7 +50,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // Determine the credit cost based on the project's complexity tier,
     // matching the initial build cost — not a flat follow-up rate.
     const tier = project.specification?.complexity ?? classifyComplexity(project.specification!)
-    const creditsNeeded = getBuildCost(tier)
+    const creditsNeeded = await getBuildCost(tier)
 
     const run: BuildRun = {
       id: cryptoId(),

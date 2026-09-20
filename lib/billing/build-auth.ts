@@ -19,6 +19,7 @@ import {
   COST_MODEL_VERSION,
 } from "./config"
 import { getBalance, consumeCredits, releaseReservation } from "./credit-service"
+import { getBuildTierCosts } from "./runtime-config"
 import type { BuildAuthorization } from "./billing-types"
 import type { BuildAuthorizationStatus } from "./config"
 
@@ -27,9 +28,14 @@ import type { BuildAuthorizationStatus } from "./config"
 /**
  * Get the credit cost for a build complexity tier.
  * Server-side authoritative — never trust the client.
+ * Reads the admin-configurable runtime override (lib/billing/runtime-config.ts),
+ * falling back to the code default in lib/billing/config.ts.
  */
-export function getBuildCost(complexity: string): number {
-  return BUILD_TIERS[complexity]?.credits ?? BUILD_TIERS.medium.credits
+export async function getBuildCost(complexity: string): Promise<number> {
+  const tiers = await getBuildTierCosts()
+  if (complexity === "simple") return tiers.simple
+  if (complexity === "complex") return tiers.complex
+  return tiers.medium
 }
 
 /**
@@ -46,7 +52,7 @@ export async function createBuildAuthorization(params: {
   authorization?: BuildAuthorization
   error?: string
 }> {
-  const creditCost = getBuildCost(params.complexity)
+  const creditCost = await getBuildCost(params.complexity)
   const baselineUnits = Math.floor(creditCost / CREDITS_PER_BASELINE_UNIT)
   const balance = await getBalance(params.userId)
 

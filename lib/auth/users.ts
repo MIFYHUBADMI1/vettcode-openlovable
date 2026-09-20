@@ -14,10 +14,19 @@ export interface PublicUser {
   emailVerified: boolean
   imageUrl?: string
   githubUsername?: string
-  githubAccessToken?: string
+  /** Connection STATUS only — the access token itself never leaves the server. */
+  githubConnected?: boolean
   credits: number
   isAdmin?: boolean
-  onboarding?: { source?: string; role?: string; signalType?: string; completedAt: number }
+  onboarding?: {
+    source?: string
+    role?: string
+    signalType?: string
+    businessDescription?: string
+    destination?: string
+    completedAt?: number
+    dismissedAt?: number
+  }
   suspended?: boolean
   banned?: boolean
   createdAt: number
@@ -32,6 +41,8 @@ function toPublicUser(doc: UserDoc): PublicUser {
     authProvider: doc.authProvider,
     emailVerified: doc.emailVerified,
     imageUrl: doc.imageUrl,
+    githubUsername: doc.githubUsername,
+    githubConnected: Boolean(doc.githubAccessToken),
     credits: doc.credits,
     isAdmin: doc.isAdmin,
     onboarding: doc.onboarding,

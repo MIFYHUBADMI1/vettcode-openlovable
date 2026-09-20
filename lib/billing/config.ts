@@ -7,6 +7,8 @@
  * @module lib/billing/config
  */
 
+import type { RuntimeLedgerTransactionType } from "@/runtime/contracts/billing"
+
 // ─── Currency ────────────────────────────────────────────────────────────────
 
 export const DEFAULT_BILLING_CURRENCY = "USD" as const
@@ -334,6 +336,15 @@ export type BuildAuthorizationStatus =
 
 // ─── Ledger Transaction Types ────────────────────────────────────────────────
 
+/**
+ * Ledger Transaction Types
+ *
+ * Runtime API types (runtime_usage, runtime_reservation, runtime_refund) are
+ * defined additively in runtime/contracts/billing.ts and flow through
+ * consumeCredits/grantCredits from Phase 9 (runtime metering); this union
+ * stays the app-side source of truth. Downstream consumers should treat
+ * transaction types as an open vocabulary (see isRuntimeTransactionType).
+ */
 export type LedgerTransactionType =
   | "signup_bonus"
   | "referral_bonus"
@@ -353,6 +364,7 @@ export type LedgerTransactionType =
   | "fork_purchase"
   | "fork_royalty"
   | "ai_collaboration"
+  | RuntimeLedgerTransactionType
 
 // ─── Payment States ──────────────────────────────────────────────────────────
 

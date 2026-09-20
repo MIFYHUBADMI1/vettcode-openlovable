@@ -33,9 +33,10 @@ import type { ProjectSummary } from "@/lib/types/project"
 
 const SESSION_REFRESH_INTERVAL_MS = 120_000 // 2 minutes
 const STALE_THRESHOLD_MS = 60_000 // consider stale after 60s
+let sessionFetchGeneration = 0
 
 async function apiFetch<T>(url: string): Promise<T> {
-  const res = await fetch(url, { headers: { accept: "application/json" }, cache: "no-store" })
+  const res = await fetch(url, { headers: { accept: "application/json" }, cache: "no-store", credentials: "include" })
   const body = await res.json().catch(() => null)
   if (body && typeof body === "object" && "ok" in body) {
     if (body.ok) return body.data as T
@@ -109,13 +110,14 @@ export const useClientStore = create<ClientStore>((set, get) => ({
   _sessionTimer: null,
 
   fetchSession: async () => {
-    // Skip if a fetch is already in flight
-    if (get().sessionLoading) return
+    const generation = ++sessionFetchGeneration
     set({ sessionLoading: true, sessionError: null })
     try {
       const data = await apiFetch<SessionInfo>("/api/me")
+      if (generation !== sessionFetchGeneration) return
       set({ session: data, sessionLoading: false, sessionFetchedAt: Date.now() })
     } catch (e) {
+      if (generation !== sessionFetchGeneration) return
       set({
         sessionLoading: false,
         sessionError: e instanceof Error ? e.message : "Failed to load session",

@@ -133,7 +133,8 @@ export async function setProjectCreditLimits(
 }
 /** GET /projects/:id/versions — list version history. */
 export async function listVersions(projectId: string, limit = 20, skip = 0): Promise<{ versions: VersionItem[]; totalCount: number }> {
-  return totalumFetch<{ versions: VersionItem[]; totalCount: number }>("GET", `/projects/${encodeURIComponent(projectId)}/versions?limit=${limit}&skip=${skip}`)
+  const params = new URLSearchParams({ limit: String(limit), skip: String(skip) })
+  return totalumFetch<{ versions: VersionItem[]; totalCount: number }>("GET", `/projects/${encodeURIComponent(projectId)}/versions?${params.toString()}`)
 }
 
 /** GET /projects/:id/version-diff — unified diff for a version. */

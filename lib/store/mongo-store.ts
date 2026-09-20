@@ -1,8 +1,11 @@
 ﻿import type { DataStore } from "@/lib/store/store"
 import { cryptoId } from "@/lib/store/id"
 import { usersCol, projectsCol, buildRunsCol } from "@/lib/db/collections"
+import { apiKeysCol } from "@/lib/db/runtime-collections"
 import { logger } from "@/lib/logging/logger"
 import type { MirrorProject, BuildRun, CreditTransaction, ProjectEvent, ConversationMessage, DeploymentHistoryEntry } from "@/lib/types/project"
+import type { RuntimeEnvironment } from "@/runtime/contracts/capabilities"
+import type { RuntimeProvisioningRecord } from "@/lib/runtime/provisioning/types"
 import {
   getAvailableCredits,
   getCreditHistory,
@@ -325,6 +328,116 @@ export class MongoStore implements DataStore {
     const result = docs.map(stripMongoId)
     this.cacheSet(cacheKey, result, now)
     return result
+  }
+
+  // ─── Runtime provisioning (Phase 8) — safe metadata only, no secrets ───
+
+  async getRuntimeProvisioning(
+    projectId: string,
+    environment: RuntimeEnvironment,
+  ): Promise<RuntimeProvisioningRecord | null> {
+    const col = await projectsCol()
+    const doc = await col.findOne(
+      { id: projectId },
+      { projection: { runtimeProvisioning: 1 } },
+    )
+    return doc?.runtimeProvisioning?.[environment] ?? null
+  }
+
+  async updateRuntimeProvisioning(
+    projectId: string,
+    environment: RuntimeEnvironment,
+    patch: Partial<RuntimeProvisioningRecord>,
+  ): Promise<void> {
+    const col = await projectsCol()
+    // $set / $unset per field: `undefined` patch values REMOVE the field so a
+    // repaired record never keeps stale apiKeyId/keyPrefix/error entries.
+    const set: Record<string, unknown> = { updatedAt: Date.now() }
+    const unset: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === undefined) unset[`runtimeProvisioning.${environment}.${key}`] = ""
+      else set[`runtimeProvisioning.${environment}.${key}`] = value
+    }
+    const update: Record<string, unknown> = { $set: set }
+    if (Object.keys(unset).length > 0) update.$unset = unset
+    await col.updateOne({ id: projectId }, update)
+    // Invalidate the cached project snapshot — provisioning metadata changed.
+    this.cache.delete(`proj:${projectId}`)
+  }
+
+  async claimRuntimeProvisioning(
+    projectId: string,
+    environment: RuntimeEnvironment,
+    staleClaimMs = 120_000,
+  ): Promise<RuntimeProvisioningRecord | null> {
+    const col = await projectsCol()
+    // ONE atomic document transition: the claim only succeeds from a state
+    // where this environment is not already being provisioned (and the
+    // project still exists). Two concurrent callers — or a retried request —
+    // cannot both hold the slot; the loser's filter matches nothing.
+    //
+    // Crash recovery: a PROVISIONING claim older than staleClaimMs is stale
+    // (its worker died mid-flight) and is safely taken over — the freshest
+    // claim wins the takeover race.
+    const claimFilter: Record<string, unknown> = {
+      id: projectId,
+      $or: [
+        { [`runtimeProvisioning.${environment}.status`]: { $ne: "PROVISIONING" } },
+        { [`runtimeProvisioning.${environment}.claimedAt`]: { $lt: Date.now() - staleClaimMs } },
+        { [`runtimeProvisioning.${environment}.claimedAt`]: { $exists: false } },
+      ],
+    }
+    let result = await col.findOneAndUpdate(
+      claimFilter,
+      {
+        $set: {
+          [`runtimeProvisioning.${environment}.status`]: "PROVISIONING",
+          [`runtimeProvisioning.${environment}.claimedAt`]: Date.now(),
+          updatedAt: Date.now(),
+        },
+      },
+      { returnDocument: "after" },
+    )
+    if (!result) {
+      // Legacy record from before claimedAt existed — allow a takeover if the
+      // only blocker is a PROVISIONING status without a claim timestamp.
+      result = await col.findOneAndUpdate(
+        {
+          id: projectId,
+          [`runtimeProvisioning.${environment}.status`]: "PROVISIONING",
+          [`runtimeProvisioning.${environment}.claimedAt`]: { $exists: false },
+        },
+        {
+          $set: {
+            [`runtimeProvisioning.${environment}.claimedAt`]: Date.now(),
+            updatedAt: Date.now(),
+          },
+        },
+        { returnDocument: "after" },
+      )
+    }
+    if (!result) return null
+    this.cache.delete(`proj:${projectId}`)
+    return result.runtimeProvisioning?.[environment] ?? { status: "PROVISIONING" }
+  }
+
+  async findApiKeyMeta(
+    apiKeyId: string,
+  ): Promise<{ id: string; projectId: string; environment: RuntimeEnvironment; status: string; keyPrefix: string } | null> {
+    const col = await apiKeysCol()
+    // Projection excludes keyHash — non-secret metadata only crosses here.
+    const doc = await col.findOne(
+      { id: apiKeyId },
+      { projection: { id: 1, projectId: 1, environment: 1, status: 1, keyPrefix: 1 } },
+    )
+    if (!doc) return null
+    return {
+      id: doc.id,
+      projectId: doc.projectId,
+      environment: doc.environment,
+      status: doc.status,
+      keyPrefix: doc.keyPrefix,
+    }
   }
 
   async deleteProject(id: string, userId: string): Promise<boolean> {

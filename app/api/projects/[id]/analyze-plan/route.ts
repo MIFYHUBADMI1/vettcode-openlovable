@@ -67,6 +67,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       decisions: project.planUpdateNotes ?? [],
       conversation: project.conversation ?? [],
       historyLimit: 6,
+      founderVision: project.idea,
+      sourceUrl: project.sourceUrl,
     })
 
     let text: string

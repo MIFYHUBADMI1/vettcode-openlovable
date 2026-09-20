@@ -4,7 +4,8 @@ import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { projectForksCol } from "@/lib/db/collections"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { getAvailableCredits, reserveCredits, releaseReservation, grantCredits } from "@/lib/billing/credit-service"
-import { FORK_PRICING, type ForkTier } from "@/lib/billing/config"
+import { type ForkTier } from "@/lib/billing/config"
+import { getForkPricingForTier } from "@/lib/billing/runtime-config"
 import { logger } from "@/lib/logging/logger"
 import { ObjectId } from "mongodb"
 import type { MirrorProject } from "@/lib/types/project"
@@ -30,7 +31,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       return fail("NOT_FOUND", "Project not found.", 404)
     }
     const tier = getForkTier(project)
-    const pricing = FORK_PRICING[tier]
+    const pricing = await getForkPricingForTier(tier)
     return ok({
       tier,
       forkCost: pricing.forkCost,
@@ -88,7 +89,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       const existingFork = await store.getProject(existing.forkedProjectId)
       if (existingFork) {
         const tier = getForkTier(original)
-        const pricing = FORK_PRICING[tier]
+        const pricing = await getForkPricingForTier(tier)
         return ok({
           project: { id: existingFork.id, name: existingFork.name },
           alreadyForked: true,
@@ -100,9 +101,9 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       }
     }
 
-    // ── Determine tier & pricing ───────────────────────────────────────────────
+    // ── Determine tier & pricing (admin-configurable) ──────────────────────
     const tier = getForkTier(original)
-    const pricing = FORK_PRICING[tier]
+    const pricing = await getForkPricingForTier(tier)
 
     // ── Step 1: Balance check ─────────────────────────────────────────────────
     const available = await getAvailableCredits(user.id)

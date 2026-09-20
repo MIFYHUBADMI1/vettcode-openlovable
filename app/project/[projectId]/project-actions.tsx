@@ -3,7 +3,7 @@
 import Link from "next/link"
 import {
   LayoutDashboard, Code2, ScrollText, PenLine,
-  Database, Download, ExternalLink, KeyRound, BookOpen, FolderTree, FileArchive,
+  Database, Download, ExternalLink, KeyRound, BookOpen, FolderTree, FileArchive, Activity,
 } from "lucide-react"
 import { GitHubScrollButton } from "@/components/github-scroll-button"
 import type { Project } from "@/lib/types/project"
@@ -57,6 +57,14 @@ export function ProjectActions({ project, isBuilt }: ProjectActionsProps) {
           Source code
         </Link>
       )}
+
+      <Link
+        href={`/project/${project.id}/runtime`}
+        className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-accent hover:text-foreground"
+      >
+        <Activity className="size-3.5" />
+        Runtime
+      </Link>
 
       {/* Database — only when built */}
       {isBuilt && (

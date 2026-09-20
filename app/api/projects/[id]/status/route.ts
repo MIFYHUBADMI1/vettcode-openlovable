@@ -3,13 +3,14 @@ import { store, cryptoId } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { reconcileCredits } from "@/lib/credits/credits"
 import { processMilestoneCheck } from "@/lib/referrals/referrals"
-import { getAgentStatus, getProject, resolveDevelopmentUrl, getDeploymentStatus, getFullConversation } from "@/lib/integrations/totalum/service"
+import { getAgentStatus, getProject, resolveDevelopmentUrl, getDeploymentStatus, getFullConversation, isTotalumConfigured } from "@/lib/integrations/totalum/service"
 import { publishEventsCol } from "@/lib/db/collections"
 import { logger } from "@/lib/logging/logger"
 import { singleFlight } from "@/lib/cache/single-flight"
 import { captureAppPreview } from "@/lib/screenshots/capture-app-preview"
 import { projectGitHubCol, usersCol } from "@/lib/db/collections"
 import { pushProjectToGitHub } from "@/lib/integrations/github/push"
+import { ensureRuntimeProvisioned, environmentForLifecycle, RuntimeProvisioningError } from "@/lib/runtime/provisioning"
 import type { ConversationMessage, ProjectEvent, BuildSummary } from "@/lib/types/project"
 
 /**
@@ -160,6 +161,28 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
               developmentUrl: productionUrl || project.developmentUrl,
             })
             await store.appendEvent(id, event("deploy", `Deployed to production${productionUrl ? `: ${productionUrl}` : ""}`))
+
+            // Phase 8 — automatic runtime provisioning (production). The
+            // deployed application needs a production-scoped credential; the
+            // development key from build completion must never serve the
+            // production identity (environment isolation). Same idempotent,
+            // crash-safe service; a failure is recorded, never silent.
+            if (isTotalumConfigured()) {
+              try {
+                const persisted = (await store.getProject(id)) ?? project
+                await ensureRuntimeProvisioned(persisted, environmentForLifecycle("production"))
+              } catch (e) {
+                if (e instanceof RuntimeProvisioningError && e.reason === "NO_GENERATED_APP") {
+                  // No generated app — nothing to provision.
+                } else {
+                  logger.error("api.projects.status", "runtime provisioning failed (non-fatal)", {
+                    id,
+                    reason: e instanceof RuntimeProvisioningError ? e.reason : "UNKNOWN",
+                  })
+                  await store.appendEvent(id, event("runtime", "Runtime setup failed — you can retry from settings.", "warn"))
+                }
+              }
+            }
 
             // Fire-and-forget: capture a screenshot of the production URL as the project banner.
             // Prefer production URL over dev URL since it's the real live app.
@@ -329,6 +352,33 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
               ...(buildSummary ? { buildSummary } : {}),
             })
             await store.appendEvent(id, event("build", "Build complete — your app is ready to preview"))
+
+            // Phase 8 — automatic runtime provisioning (development preview).
+            // The generated application should receive its Atai runtime
+            // credential BEFORE it is treated as fully usable. Provisioning
+            // reuses the existing key service + Totalum secrets mechanism and
+            // is idempotent + crash-safe. A provisioning failure does NOT
+            // roll back the build (the application itself succeeded); it is
+            // recorded so the user/owner can retry — never silently ignored.
+            if (isTotalumConfigured()) {
+              try {
+                // Fresh snapshot: provisioning derives ownership from the
+                // persisted project record, not the pre-completion read.
+                const persisted = (await store.getProject(id)) ?? project
+                await ensureRuntimeProvisioned(persisted, environmentForLifecycle("development"))
+              } catch (e) {
+                if (e instanceof RuntimeProvisioningError && e.reason === "NO_GENERATED_APP") {
+                  // No generated app — nothing to provision (unexpected here;
+                  // totalumProjectId exists, but stay safe).
+                } else {
+                  logger.error("api.projects.status", "runtime provisioning failed (non-fatal)", {
+                    id,
+                    reason: e instanceof RuntimeProvisioningError ? e.reason : "UNKNOWN",
+                  })
+                  await store.appendEvent(id, event("runtime", "Runtime setup failed — you can retry from settings.", "warn"))
+                }
+              }
+            }
 
             // Fire-and-forget: capture a screenshot of the built app as the project banner.
             // Never awaited — never blocks the build-complete response.

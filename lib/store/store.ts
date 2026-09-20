@@ -6,6 +6,10 @@ import type {
   ConversationMessage,
   DeploymentHistoryEntry,
 } from "@/lib/types/project"
+import type {
+  RuntimeEnvironment,
+} from "@/runtime/contracts/capabilities"
+import type { RuntimeProvisioningRecord } from "@/lib/runtime/provisioning/types"
 import { MongoStore } from "@/lib/store/mongo-store"
 
 export { cryptoId } from "@/lib/store/id"
@@ -52,6 +56,36 @@ export interface DataStore {
    * deleting anything — if the project doesn't exist or isn't owned by
    * `userId`. */
   deleteProject(id: string, userId: string): Promise<boolean>
+
+  // ─── Runtime provisioning (Phase 8) — safe metadata only, no secrets ───
+
+  /** Read the provisioning record for one (project, environment). */
+  getRuntimeProvisioning(
+    projectId: string,
+    environment: RuntimeEnvironment,
+  ): Promise<RuntimeProvisioningRecord | null>
+  /** Merge a patch into the provisioning record for one environment.
+   * `undefined` values REMOVE the field (crash-repair semantics). */
+  updateRuntimeProvisioning(
+    projectId: string,
+    environment: RuntimeEnvironment,
+    patch: Partial<RuntimeProvisioningRecord>,
+  ): Promise<void>
+  /** Atomically claim the provisioning slot for one (project, environment):
+   * flips the record to PROVISIONING only from a non-PROVISIONING state — or
+   * from a stale claim older than `staleClaimMs` (crash recovery) — in ONE
+   * document transition. Returns null when another live worker holds the
+   * claim or the project vanished — callers must not race it. */
+  claimRuntimeProvisioning(
+    projectId: string,
+    environment: RuntimeEnvironment,
+    staleClaimMs?: number,
+  ): Promise<RuntimeProvisioningRecord | null>
+  /** Non-secret credential metadata lookup used to validate provisioning
+   * records against live api_keys state (reuse/repair decisions). */
+  findApiKeyMeta(
+    apiKeyId: string,
+  ): Promise<{ id: string; projectId: string; environment: RuntimeEnvironment; status: string; keyPrefix: string } | null>
 }
 
 // Persist a single instance across hot reloads in dev.

@@ -1,7 +1,7 @@
 import "server-only"
 import { store } from "@/lib/store/store"
 import { projectsCol, usersCol, ensureIndexes } from "@/lib/db/collections"
-import { getInfrastructurePlan, type InfrastructurePlanId } from "@/lib/infrastructure/plans"
+import { getInfrastructurePlan, getInfrastructurePlanWithRuntimePrice, type InfrastructurePlanId } from "@/lib/infrastructure/plans"
 import { setProjectCreditLimits } from "@/lib/integrations/totalum/service"
 import { consumeCredits } from "@/lib/billing/credit-service"
 import { logger } from "@/lib/logging/logger"
@@ -103,7 +103,8 @@ export async function activatePlan(
 ): Promise<{ success: boolean; message: string }> {
   await ensureIndexes()
 
-  const plan = getInfrastructurePlan(planId)
+  // Admin-configured price is applied here (falls back to code default on failure).
+  const plan = await getInfrastructurePlanWithRuntimePrice(planId)
   if (!plan) return { success: false, message: "Invalid plan." }
   if (plan.id === "enterprise") return { success: false, message: "Enterprise plans require manual setup. Please contact support." }
 

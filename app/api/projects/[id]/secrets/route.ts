@@ -77,6 +77,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // Validate key name — only uppercase letters, digits, underscores
     const name = body.name.trim().toUpperCase().replace(/[^A-Z0-9_]/g, "_")
 
+    // Phase 8: ATAI_API_KEY is RESERVED — automatic runtime provisioning
+    // injects the generated application's runtime credential under this
+    // exact name (lib/runtime/provisioning/service.ts), and Totalum's
+    // POST /secrets is create-or-update (upsert). A user-supplied value
+    // would silently overwrite the provisioned key and break the app's
+    // AI capability, so manual creation under this name is rejected.
+    if (name === "ATAI_API_KEY") {
+      return fail("RESERVED_SECRET_NAME", "ATAI_API_KEY is managed automatically by Atai and cannot be set manually.", 409)
+    }
+
     const secret = await createSecret(project.totalumProjectId, {
       secretName: name,
       secretValue: body.value,
