@@ -45,6 +45,8 @@ export interface SessionInfo {
   }
 }
 
+export type BuildTier = "simple" | "medium" | "complex"
+
 export interface CreditCostTable {
   configured: boolean
   Atai: {
@@ -52,6 +54,10 @@ export interface CreditCostTable {
     followup: { reserve: number; low: number; high: number; basis: string }
   }
   provider: unknown
+  /** Structured per-tier build costs (legacy/heavy pipeline modes) for client display. */
+  buildTiers?: Record<BuildTier, { label: string; legacy: number; heavy: number }>
+  /** Per-tier follow-up edit costs (matches the server's getBuildCost). */
+  followupByTier?: Record<BuildTier, number>
 }
 
 /** Every API route responds with the `{ ok, data }` / `{ ok: false, error }`
@@ -263,8 +269,8 @@ export interface ActivityEvent {
 }
 
 export function useProjectActivity(projectId: string, isBuilding: boolean) {
-  const { data, error, isLoading, mutate } = useSWR<{ ok: boolean; data: { events: ActivityEvent[] } }>(
-    `/api/projects/${projectId}/activity`,
+  const { data, error, isLoading, mutate } = useSWR<{ events?: ActivityEvent[]; data?: { events?: ActivityEvent[] } }>(
+    projectId ? `/api/projects/${projectId}/activity` : null,
     jsonFetcher,
     {
       // Building: 5s — need fast event updates
@@ -276,7 +282,7 @@ export function useProjectActivity(projectId: string, isBuilding: boolean) {
     },
   )
   return {
-    events: data?.data?.events ?? [],
+    events: data?.events ?? data?.data?.events ?? [],
     error,
     isLoading,
     refresh: mutate,

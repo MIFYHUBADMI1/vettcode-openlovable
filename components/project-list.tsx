@@ -52,7 +52,7 @@ export function ProjectList() {
         <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed border-border bg-card/40 px-6 py-12 text-center">
           <p className="text-sm text-foreground">No projects yet.</p>
           <p className="max-w-sm text-pretty text-xs leading-relaxed text-muted-foreground">
-            Enter a URL above to create your first mirror. Analysis is cheap; you only spend build
+            Start with an idea, a website reference, or GitHub. Analysis is inexpensive; you only spend
             credits when you explicitly launch a build.
           </p>
         </div>

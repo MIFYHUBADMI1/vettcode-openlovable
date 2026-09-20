@@ -17,3 +17,6 @@ node_modules
 
 # TypeScript incremental build info
 tsconfig.tsbuildinfo
+
+# One-off agent scratch scripts
+.ohmyagent/tmp-*

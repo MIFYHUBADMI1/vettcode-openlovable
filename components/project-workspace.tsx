@@ -5,6 +5,7 @@ import Link from "next/link"
 import useSWR from "swr"
 import toast, { Toaster } from "react-hot-toast"
 import { cn, ensureProtocol } from "@/lib/utils"
+import { useBuildCosts } from "@/lib/client/build-costs"
 import { ProjectStepper } from "@/components/project-stepper"
 import { ProjectWorkspaceControls } from "@/components/project-workspace-controls"
 import { ProjectActivity } from "@/components/project-activity"
@@ -242,21 +243,7 @@ export function ProjectWorkspace({ projectId, initialState }: ProjectWorkspacePr
   // Project data: prefer project endpoint (full data); /status may have a subset.
   const project = projectData?.data?.project ?? null
 
-  // ── Auto-redirect when plan is ready ──────────────────────────────────────
-  // When the pipeline finishes and sets state → plan_ready, immediately take
-  // the user to the Collaborate page instead of leaving them stranded in the
-  // workspace with no obvious next step.
-  const autoRedirectedRef = useRef(false)
-  useEffect(() => {
-    if (state === "plan_ready" && !autoRedirectedRef.current) {
-      autoRedirectedRef.current = true
-      // Small delay so the user sees the transition rather than an abrupt jump
-      const t = setTimeout(() => {
-        window.location.href = `/project/${projectId}/collaborate`
-      }, 1800)
-      return () => clearTimeout(t)
-    }
-  }, [state, projectId])
+  // Plan-ready continuation is handled by PlanReadyCTA (countdown + cancel).
 
   return (
     <>
@@ -624,13 +611,18 @@ const MAX_HEIGHT = 1200
  * exactly what is happening and where they are going.
  */
 function PlanReadyCTA({ projectId, projectName }: { projectId: string; projectName: string }) {
-  const [seconds, setSeconds] = useState(2)
+  const [seconds, setSeconds] = useState(8)
+  const [cancelled, setCancelled] = useState(false)
 
   useEffect(() => {
-    if (seconds <= 0) return
+    if (cancelled) return
+    if (seconds <= 0) {
+      window.location.href = `/project/${projectId}/collaborate`
+      return
+    }
     const t = setTimeout(() => setSeconds(s => s - 1), 1000)
     return () => clearTimeout(t)
-  }, [seconds])
+  }, [seconds, cancelled, projectId])
 
   return (
     <div className="relative overflow-hidden rounded-2xl border-2 border-primary bg-primary/5 shadow-xl shadow-primary/10">
@@ -657,9 +649,11 @@ function PlanReadyCTA({ projectId, projectName }: { projectId: string; projectNa
                 Review it in plain language, refine it with your AI co-founder, and launch the build when you&apos;re ready.
               </p>
               <p className="mt-2 text-xs text-primary font-medium">
-                {seconds > 0
-                  ? `Taking you to the Collaborate page in ${seconds}…`
-                  : "Redirecting now…"}
+                {cancelled
+                  ? "Stay here and review when you&apos;re ready."
+                  : seconds > 0
+                    ? `Opening Collaborate in ${seconds}… You can cancel.`
+                    : "Opening Collaborate…"}
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 No credits are charged until you click &ldquo;Submit Plan &amp; Start Building&rdquo;.
@@ -675,9 +669,19 @@ function PlanReadyCTA({ projectId, projectName }: { projectId: string; projectNa
               Review &amp; refine plan
               <span>→</span>
             </Link>
-            <p className="text-[10px] text-muted-foreground text-center sm:text-right">
-              You can also edit the raw plan below
-            </p>
+            {!cancelled ? (
+              <button
+                type="button"
+                onClick={() => setCancelled(true)}
+                className="text-xs text-muted-foreground underline-offset-4 hover:underline"
+              >
+                Stay on this page
+              </button>
+            ) : (
+              <p className="text-[10px] text-muted-foreground text-center sm:text-right">
+                You can also edit the raw plan below
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -686,7 +690,7 @@ function PlanReadyCTA({ projectId, projectName }: { projectId: string; projectNa
       <div className="h-1 bg-border/40">
         <div
           className="h-full bg-primary transition-all duration-1000 ease-linear"
-          style={{ width: `${((2 - seconds) / 2) * 100}%` }}
+          style={{ width: cancelled ? "0%" : `${((8 - seconds) / 8) * 100}%` }}
         />
       </div>
     </div>
@@ -703,9 +707,11 @@ function ReadyToBuildCTA({ projectId, project, onBuilding }: {
 
   const spec = project.specification
   const tier = spec?.complexity ?? "medium"
-  const tierCosts: Record<string, number> = { simple: 25_000, medium: 50_000, complex: 75_000 }
-  const buildCost = tierCosts[tier] ?? tierCosts.medium
-  const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1)
+  // Display cost from the server-authoritative cost table — the server
+  // re-checks the real cost at launch (getTierCost with pipeline mode).
+  const { buildCost, tierLabel } = useBuildCosts()
+  const cost = buildCost(tier, project.pipelineMode)
+  const label = tierLabel(tier)
   const isFork = project.events?.some(e => e.stage === "fork")
 
   async function handleBuild() {
@@ -745,10 +751,10 @@ function ReadyToBuildCTA({ projectId, project, onBuilding }: {
                 : tier === "medium" ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
                   : "bg-green-500/10 text-green-600 dark:text-green-400"
                 }`}>
-                {tierLabel} tier
+                {label} tier
               </span>
               <span className="font-mono text-xs text-muted-foreground">
-                {buildCost.toLocaleString()} credits
+                {cost.toLocaleString()} credits
               </span>
             </div>
             {error && <p className="mt-2 text-sm text-destructive">{error}</p>}

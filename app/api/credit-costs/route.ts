@@ -1,6 +1,7 @@
 import { getCreditCosts } from "@/lib/integrations/totalum/service"
 import { isTotalumConfigured } from "@/lib/integrations/totalum/client"
-import { estimateInitialBuild, estimateFollowup } from "@/lib/credits/credits"
+import { estimateInitialBuild, estimateFollowup, getTierCost } from "@/lib/credits/credits"
+import { getBuildCost } from "@/lib/billing/build-auth"
 import { ok, handleRouteError } from "@/lib/api/respond"
 import { singleFlight } from "@/lib/cache/single-flight"
 
@@ -25,6 +26,21 @@ export async function GET() {
           providerCosts = null
         }
       }
+
+      // Per-tier display costs resolved from the same server helpers the
+      // launch path uses (getTierCost / getBuildCost), so UI numbers can
+      // never drift from what the server actually charges.
+      const [simple, medium, complex] = await Promise.all([
+        getTierCost("simple", "legacy"),
+        getTierCost("medium", "legacy"),
+        getTierCost("complex", "legacy"),
+      ])
+      const [simpleHeavy, mediumHeavy, complexHeavy] = await Promise.all([
+        getTierCost("simple", "heavy"),
+        getTierCost("medium", "heavy"),
+        getTierCost("complex", "heavy"),
+      ])
+
       return ok({
         configured,
         Atai: {
@@ -32,6 +48,19 @@ export async function GET() {
           followup: estimateFollowup(),
         },
         provider: providerCosts,
+        // Structured per-tier costs for client display (lib/client/build-costs.ts).
+        buildTiers: {
+          simple: { label: "Simple", legacy: simple, heavy: simpleHeavy },
+          medium: { label: "Medium", legacy: medium, heavy: mediumHeavy },
+          complex: { label: "Complex", legacy: complex, heavy: complexHeavy },
+        },
+        // Follow-ups are charged at the same tier cost as the initial build
+        // (see app/api/projects/[id]/agent/route.ts → getBuildCost).
+        followupByTier: {
+          simple: await getBuildCost("simple"),
+          medium: await getBuildCost("medium"),
+          complex: await getBuildCost("complex"),
+        },
       })
     })
   } catch (e) {

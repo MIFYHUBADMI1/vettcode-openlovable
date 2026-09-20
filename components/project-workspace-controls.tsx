@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { postJson, useProject, useCreditCosts, useSession } from "@/lib/client/api"
+import { postJson, useProject, useSession } from "@/lib/client/api"
+import { useBuildCosts } from "@/lib/client/build-costs"
 import { ensureProtocol } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -32,7 +33,7 @@ export function ProjectWorkspaceControls({ projectId }: { projectId: string }) {
     finally { setBusy(false) }
   }
 
-  const { costs } = useCreditCosts()
+  const { buildCost, tierLabel, followupCost } = useBuildCosts()
 
   // Show warning once if spec was sanitized
   const [sanitizedWarned, setSanitizedWarned] = useState(false)
@@ -50,13 +51,13 @@ export function ProjectWorkspaceControls({ projectId }: { projectId: string }) {
   const canBuild = Boolean(project.specification) && !["building", "deploying"].includes(project.state)
   const canPrompt = Boolean(project.totalumProjectId) && !["building", "deploying"].includes(project.state)
 
-  // Determine tier and cost for display
+  // Display costs from the server-authoritative cost table — the server
+  // re-checks the real cost at launch/send time.
   const spec = project.specification
   const tier = spec?.complexity ?? "medium"
-  const tierCosts: Record<string, number> = { simple: 25_000, medium: 50_000, complex: 75_000 }
-  const buildCost = tierCosts[tier] ?? tierCosts.medium
-  const tierLabel = tier.charAt(0).toUpperCase() + tier.slice(1)
-  const followupCost = costs?.Atai?.followup?.reserve ?? 5_000
+  const buildCostNum = buildCost(tier, project.pipelineMode)
+  const buildTierLabel = tierLabel(tier)
+  const followupCostNum = followupCost(tier)
 
   return <div className="flex flex-col gap-6">
     {error ? <p role="alert" className="border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
@@ -70,14 +71,14 @@ export function ProjectWorkspaceControls({ projectId }: { projectId: string }) {
     ) : null}
     <div className="flex flex-wrap items-center gap-3">
       <Button onClick={build} disabled={!canBuild || busy}>
-        {busy ? "Working…" : project.specification ? `Build ${tierLabel} · ${buildCost.toLocaleString()} credits` : "Waiting for plan"}
+        {busy ? "Working…" : project.specification ? `Build ${buildTierLabel} · ${buildCostNum.toLocaleString()} credits` : "Waiting for plan"}
       </Button>
       {project.developmentUrl ? <a className="font-mono text-xs text-primary hover:underline" href={ensureProtocol(project.developmentUrl)} target="_blank" rel="noreferrer">Open preview</a> : null}
     </div>
     <div className="flex flex-col gap-2">
       <Label htmlFor="workspace-instruction">Continue building</Label>
       <Textarea id="workspace-instruction" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Describe the next change you want to make…" disabled={!canPrompt || busy} />
-      <Button variant="outline" onClick={sendPrompt} disabled={!canPrompt || busy || prompt.trim().length < 3}>Send instruction · {buildCost.toLocaleString()} credits</Button>
+      <Button variant="outline" onClick={sendPrompt} disabled={!canPrompt || busy || prompt.trim().length < 3}>Send instruction · {followupCostNum.toLocaleString()} credits</Button>
     </div>
   </div>
 }

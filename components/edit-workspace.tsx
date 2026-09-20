@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { postJson, patchJson, deleteJson, jsonFetcher, useSession, useProjectActivity } from "@/lib/client/api"
+import { useBuildCosts } from "@/lib/client/build-costs"
 import { ensureProtocol, cn } from "@/lib/utils"
 import { toast } from "sonner"
 
@@ -467,10 +468,11 @@ function PromptPanel({
   tier?: string
   userCredits: number
 }) {
-  const TIER_COSTS: Record<string, number> = { simple: 25_000, medium: 50_000, complex: 75_000 }
-  const TIER_LABELS: Record<string, string> = { simple: "Simple", medium: "Medium", complex: "Complex" }
-  const editCost = TIER_COSTS[tier ?? "medium"] ?? 50_000
-  const tierLabel = TIER_LABELS[tier ?? "medium"] ?? "Medium"
+  // Display cost from the server-authoritative cost table — the server
+  // re-checks the real cost when the instruction is sent.
+  const { buildCost, tierLabel } = useBuildCosts()
+  const editCost = buildCost(tier)
+  const tierLabelStr = tierLabel(tier)
   const canAfford = userCredits >= editCost
 
   return (
@@ -487,13 +489,13 @@ function PromptPanel({
             canAfford ? "text-muted-foreground border-border" : "text-destructive border-destructive/30 bg-destructive/5",
           )}
         >
-          {tierLabel} · {editCost.toLocaleString()} credits
+          {tierLabelStr} · {editCost.toLocaleString()} credits
         </Badge>
       </div>
       {!canAfford && (
         <div className="mb-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2">
           <p className="text-[11px] text-destructive">
-            Insufficient credits. You have {userCredits.toLocaleString()} but need {editCost.toLocaleString()} for a {tierLabel.toLowerCase()} edit.
+            Insufficient credits. You have {userCredits.toLocaleString()} but need {editCost.toLocaleString()} for a {tierLabelStr.toLowerCase()} edit.
           </p>
         </div>
       )}
@@ -1543,7 +1545,7 @@ function ConversationTab({ projectId, isBuilding }: { projectId: string; isBuild
   return (
     <div className="rounded-xl border border-border bg-card p-4 max-h-[700px] overflow-y-auto">
       <ol className="flex flex-col gap-3">
-        {displayEvents.map((event) => (
+        {displayEvents.map((event: { id: string; level: string; stage: string; message: string; at: number }, index: number) => (
           <li key={event.id} className="flex gap-3">
             <span
               className={cn(

@@ -71,7 +71,7 @@ export function ProjectActivity({ projectId, isBuilding = false }: ProjectActivi
 
   return (
     <ol className="flex flex-col gap-4">
-      {displayEvents.map((event, index) => {
+      {displayEvents.map((event: { id: string; level: string; stage: string; message: string; at: number }, index: number) => {
         const icon = levelIcon(event.level)
         return (
           <li key={event.id} className={cn("flex gap-3", index === 0 && "float-in")}>
