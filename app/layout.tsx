@@ -1,7 +1,6 @@
 import { Analytics } from "@vercel/analytics/next"
 import type { Metadata, Viewport } from "next"
 import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google"
-import Script from "next/script"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/components/auth/auth-provider"
 import { Toaster } from "@/components/ui/sonner"
@@ -95,28 +94,23 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
         />
-      </head>
-      <body className="font-sans antialiased">
         {/*
-          Theme init — must run synchronously before first paint to avoid flash.
-          strategy="beforeInteractive" injects as a blocking <script> in <head>,
-          which is the only correct way in Next.js 16 App Router.
-          AC 9: no hardcoded class on <html>. AC 10: suppressHydrationWarning above.
+          Inline in <head> so the theme is applied before first paint.
+          Avoid next/script here — React 19 logs a console error for <script>
+          rendered through that component on the client.
         */}
-        <Script
+        <script
           id="theme-init"
-          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
         />
-
+        <script
+          id="structured-data"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: STRUCTURED_DATA }}
+        />
+      </head>
+      <body className="font-sans antialiased">
         <ThemeProvider>
-          {/* Schema.org structured data */}
-          <Script
-            id="structured-data"
-            type="application/ld+json"
-            strategy="afterInteractive"
-            dangerouslySetInnerHTML={{ __html: STRUCTURED_DATA }}
-          />
           <AuthProvider>
             {children}
             <Toaster />

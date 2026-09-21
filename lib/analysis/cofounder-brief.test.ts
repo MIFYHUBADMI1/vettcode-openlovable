@@ -87,6 +87,21 @@ describe("buildSectionFocusBlock", () => {
   it("returns an empty string for an unknown section", () => {
     expect(buildSectionFocusBlock("not-a-section", makeSpec())).toBe("")
   })
+
+  it("grounds the SEO & Search section in the rest of the plan via related sections", () => {
+    const spec = makeSpec({
+      targetUsers: ["Independent barbershops"],
+      valueProposition: "Booking page live in five minutes.",
+      marketPositioning: "Simpler and cheaper than salon software.",
+    })
+    const block = buildSectionFocusBlock("seo", spec)
+    expect(block).toContain("FOCUS SECTION: SEO & Search")
+    // The related-section hints are what make the draft derive keywords and
+    // audience from the plan instead of generic SEO advice.
+    expect(block).toContain("Target Customers")
+    expect(block).toContain("Value Proposition")
+    expect(block).toContain("Market Positioning")
+  })
 })
 
 describe("parseDraftResponse", () => {

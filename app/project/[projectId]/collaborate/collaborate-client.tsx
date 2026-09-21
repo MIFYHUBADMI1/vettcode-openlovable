@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import type { Project } from "@/lib/types/project"
 import type { ApplicationSpecification } from "@/lib/types/specification"
-import { PLAN_SECTIONS, computePlanHealth, sectionStatus, getPlanSection, isPlaceholderValue, applySectionUpdate, clearSectionUpdate, type PlanSectionId } from "@/lib/analysis/plan-sections"
+import { PLAN_SECTIONS, computePlanHealth, sectionStatus, getPlanSection, isPlaceholderValue, applySectionUpdate, clearSectionUpdate, TEXT_PLAN_SECTIONS, type PlanSectionId } from "@/lib/analysis/plan-sections"
 import type { PlanAnalysis, PlanProposal } from "@/lib/types/plan-analysis"
 import { SECTION_DEPENDENCIES } from "@/lib/types/plan-analysis"
 import {
@@ -33,8 +33,10 @@ import {
   GitBranch,
   Database,
   KeyRound,
+  Search,
   Briefcase,
   Coins,
+  PlugZap,
   PenLine,
   Sparkles,
   Rocket,
@@ -56,8 +58,10 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   GitBranch,
   Database,
   KeyRound,
+  Search,
   Briefcase,
   Coins,
+  PlugZap,
 }
 
 function SectionIcon({ name, className }: { name: string; className?: string }) {
@@ -789,10 +793,21 @@ function ChatPanel({
 
 // ─── Launch (restored from the original collaborate client) ──────────────
 
-function LaunchButton({ projectId, state }: { projectId: string; state: string }) {
+function LaunchButton({
+  projectId,
+  state,
+  spec,
+}: {
+  projectId: string
+  state: string
+  spec: ApplicationSpecification
+}) {
   const router = useRouter()
   const [launching, setLaunching] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const health = useMemo(() => computePlanHealth(spec), [spec])
+  const missingCount = health.missing.length
 
   const canLaunch = state === "plan_ready"
 
@@ -819,6 +834,18 @@ function LaunchButton({ projectId, state }: { projectId: string; state: string }
         <p className="mb-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive" role="alert">
           {error}
         </p>
+      )}
+      {missingCount > 0 && (
+        <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2" role="status">
+          <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
+            {missingCount} plan section{missingCount === 1 ? "" : "s"} still undefined — you can build anyway, but a fuller plan gives the builder more to work with.
+          </p>
+          {health.missing.length > 0 && (
+            <p className="mt-1 text-[11px] leading-4 text-amber-600/80 dark:text-amber-400/80">
+              Missing: {health.missing.map((id) => getPlanSection(id)?.label ?? id).join(", ")}
+            </p>
+          )}
+        </div>
       )}
       <button
         onClick={handleLaunch}
@@ -1854,7 +1881,7 @@ export function CollaborateClient({
             onSpecChanged={setSpec}
           />
         )}
-        {isOwner && !runActive && <LaunchButton projectId={projectId} state={projectState} />}
+        {isOwner && !runActive && <LaunchButton projectId={projectId} state={projectState} spec={spec} />}
       </main>
 
       <aside className="collab-scroll hidden w-80 shrink-0 overflow-y-auto border-l border-border xl:block" aria-label="Plan insights">
@@ -1986,7 +2013,7 @@ export function CollaborateClient({
         </div>
         {/* Pinned below every mobile tab — always reachable, never requires
             scrolling to the end of a long panel. */}
-        {isOwner && !runActive && <LaunchButton projectId={projectId} state={projectState} />}
+        {isOwner && !runActive && <LaunchButton projectId={projectId} state={projectState} spec={spec} />}
         </div>
       </div>
     </div>

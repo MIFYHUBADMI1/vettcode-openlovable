@@ -68,4 +68,20 @@ describe("workspace view model", () => {
     expect(github?.detail).toBe("Not connected")
     expect(view.next.kind).toBe("launch")
   })
+
+  it("does not ask to launch when production is already live", () => {
+    const view = buildWorkspaceView(project({
+      state: "ready",
+      totalumProjectId: "t1",
+      developmentUrl: "https://preview.example",
+      deployment: { id: "d", status: "success", productionUrl: "https://live.example", updatedAt: 1 },
+      deploymentHistory: [{ id: "h1", startedAt: 1, status: "success", productionUrl: "https://live.example" }],
+    }))
+    expect(view.next.kind).toBe("grow")
+    expect(view.next.kicker).not.toMatch(/launch/i)
+    expect(view.canLaunch).toBe(false)
+    expect(view.productionUrl).toBe("https://live.example")
+    expect(view.phase).toBe("launch")
+    expect(view.brief.headline).toMatch(/live/i)
+  })
 })

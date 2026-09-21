@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { ProjectPreferencesDialog } from "@/components/project-preferences-dialog"
 import { CrawlModeDialog, type CrawlMode } from "@/components/crawl-mode-dialog"
-import { PipelineModeSelector, type PipelineMode } from "@/components/pipeline-mode-selector"
 import { peekPendingStart, takePendingStart } from "@/lib/auth/client-intent"
 import { recordOnboardingActivation } from "@/lib/onboarding/activate"
 import { extractWebsiteUrl } from "@/lib/start/detect-input"
@@ -39,7 +38,6 @@ export function CreateProjectForm() {
   const [showCrawlMode, setShowCrawlMode] = useState(false)
   const [pendingPrefs, setPendingPrefs] = useState<ProjectPreferences | null>(null)
   const [pendingCrawlMode, setPendingCrawlMode] = useState<CrawlMode | null>(null)
-  const [pipelineMode, setPipelineMode] = useState<PipelineMode>("heavy")
   const [capturedIntent, setCapturedIntent] = useState<string | null>(null)
 
   useEffect(() => {
@@ -49,40 +47,7 @@ export function CreateProjectForm() {
     takePendingStart()
     setCapturedIntent(pending.prompt)
     setUrl(extractWebsiteUrl(pending.prompt) ?? pending.prompt)
-    if (pending.pipelineMode === "legacy" || pending.pipelineMode === "heavy") {
-      setPipelineMode(pending.pipelineMode)
-    }
   }, [])
-
-  // Apply page-wide visual effect with floating bubbles
-  useEffect(() => {
-    const root = document.documentElement
-    
-    if (pipelineMode === "heavy") {
-      root.classList.add("heavy-mode-active")
-      
-      // Create floating energy bubbles
-      const bubbles: HTMLDivElement[] = []
-      for (let i = 0; i < 8; i++) {
-        const bubble = document.createElement("div")
-        bubble.className = "energy-bubble"
-        bubble.style.setProperty("--size", `${Math.random() * 150 + 80}px`)
-        bubble.style.setProperty("--duration", `${Math.random() * 15 + 15}s`)
-        bubble.style.setProperty("--delay", `${Math.random() * 5}s`)
-        bubble.style.setProperty("--start-x", `${Math.random() * 100}%`)
-        bubble.style.setProperty("--float-x", `${(Math.random() - 0.5) * 200}px`)
-        document.body.appendChild(bubble)
-        bubbles.push(bubble)
-      }
-      
-      return () => {
-        root.classList.remove("heavy-mode-active")
-        bubbles.forEach(b => b.remove())
-      }
-    } else {
-      root.classList.remove("heavy-mode-active")
-    }
-  }, [pipelineMode])
 
   const normalized = normalizeUrl(url)
   const valid = normalized !== null
@@ -97,7 +62,6 @@ export function CreateProjectForm() {
         idea: capturedIntent ?? undefined,
         crawlMode: crawlMode ?? undefined,
         preferences: preferences ?? undefined,
-        pipelineMode,
       })
       await Promise.all([refreshProjects(), refreshSession()])
       try {
@@ -142,7 +106,6 @@ export function CreateProjectForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-      <PipelineModeSelector value={pipelineMode} onChange={setPipelineMode} />
       <div className="flex flex-col gap-2">
         <Label htmlFor="source-url" className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
           Source URL

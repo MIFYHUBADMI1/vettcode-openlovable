@@ -7,16 +7,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { postJson, deleteJson, jsonFetcher } from "@/lib/client/api"
+import { postJson, deleteJson, useProject } from "@/lib/client/api"
 import { ensureProtocol } from "@/lib/utils"
 import { toast } from "sonner"
-import useSWR from "swr"
-
-interface DeployInfo {
-  status: string | null
-  productionUrl?: string
-  customDomain?: { hostname: string; status: string; dnsRecordsToAdd?: Array<{ type: string; name: string; value: string }> } | null
-}
 
 interface PublishMenuProps {
   projectId: string
@@ -39,18 +32,15 @@ export function PublishMenu({ projectId, projectName, totalumProjectId, onDeploy
   } | null>(null)
   const [removingDomain, setRemovingDomain] = useState(false)
 
-  // Poll deployment status
-  const { data: deployData } = useSWR<{ ok: boolean; data: DeployInfo }>(
-    totalumProjectId ? `/api/projects/${projectId}/deploy` : null,
-    jsonFetcher,
-    { refreshInterval: deploying ? 10000 : 0 },
-  )
-
-  const deployInfo = deployData?.data
-  const isDeployed = deployInfo?.status === "success"
-  const isDeploying = deployInfo?.status === "deploying" || deploying
-  const productionUrl = deployInfo?.productionUrl
-  const customDomain = deployInfo?.customDomain
+  const { project } = useProject(totalumProjectId ? projectId : null, { pollWhileBuilding: true })
+  const latestDeploy = [...(project?.deploymentHistory ?? [])].sort((a, b) => b.startedAt - a.startedAt)[0]
+  const deployStatus = project?.deployment?.status ?? latestDeploy?.status ?? null
+  const isDeployed = deployStatus === "success" || project?.state === "deployed"
+  const isDeploying = deployStatus === "deploying" || project?.state === "deploying" || deploying
+  const productionUrl = project?.deployment?.productionUrl ?? latestDeploy?.productionUrl
+  const customDomain = latestDeploy?.customDomain
+    ? { hostname: latestDeploy.customDomain, status: latestDeploy.status === "success" ? "active" : latestDeploy.status }
+    : null
 
   async function handleDeploySubdomain() {
     setDeploying(true)

@@ -24,7 +24,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { VerifyEmailBanner } from "@/components/verify-email-banner"
 import { DashboardNotifications } from "@/components/dashboard/dashboard-notifications"
 import { CofounderPanel, useCofounderPanel } from "@/components/cofounder/cofounder-panel"
-import { workspaceGrowNav } from "@/components/workspace/atai-nav"
+import { workspaceGrowNav, workspaceProjectNav, type AtaiNavItem } from "@/components/workspace/atai-nav"
 import { useProjects } from "@/lib/client/api"
 import { interpretProjectState, selectActiveProject } from "@/lib/dashboard/view-model"
 import type { ProjectSummary } from "@/lib/types/project"
@@ -175,11 +175,13 @@ function SidebarLink({
   pathname,
   collapsed,
 }: {
-  item: { href: string; label: string; icon: typeof Home }
+  item: Pick<AtaiNavItem, "href" | "label" | "icon" | "match">
   pathname: string
   collapsed: boolean
 }) {
-  const activeNav = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
+  const activeNav = item.match
+    ? item.match(pathname)
+    : pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
   const Icon = item.icon
   return (
     <Link
@@ -215,6 +217,7 @@ function SidebarBody({
   workspaceName?: string
 }) {
   if (projectId) {
+    const tools = workspaceProjectNav(projectId)
     const grow = workspaceGrowNav(projectId)
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 py-4">
@@ -228,7 +231,15 @@ function SidebarBody({
           </div>
         ) : null}
         <nav className="flex flex-col gap-1" aria-label="Workspace">
-          <SidebarLink item={{ href: "/dashboard", label: "Dashboard", icon: Home }} pathname={pathname} collapsed={collapsed} />
+          <SidebarLink item={{ href: "/dashboard", label: "Dashboard", icon: Home, match: (p) => p === "/dashboard" }} pathname={pathname} collapsed={collapsed} />
+        </nav>
+        <nav className="flex flex-col gap-1" aria-label="Project tools">
+          {!collapsed ? (
+            <p className="px-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Project tools</p>
+          ) : null}
+          {tools.map((item) => (
+            <SidebarLink key={item.href} item={item} pathname={pathname} collapsed={collapsed} />
+          ))}
         </nav>
         <nav className="flex flex-col gap-1" aria-label="Grow your business">
           {!collapsed ? (

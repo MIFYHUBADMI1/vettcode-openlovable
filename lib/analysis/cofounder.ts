@@ -6,6 +6,7 @@ import type { ConversationMessage, ProjectPreferences } from "@/lib/types/projec
 // Import the standalone ID helper directly — NOT from store.ts, which would
 // pull the mongo store (server-only) into client-bundlable/testable modules.
 import { cryptoId } from "@/lib/store/id"
+import { RUNTIME_AWARENESS_BLOCK } from "@/lib/analysis/runtime-capabilities"
 
 /**
  * AI Co-Founder context + prompt layer (Collaborate workspace).
@@ -135,6 +136,10 @@ export function buildCollaborateContext(input: CollaborateContextInput): string 
     blocks.push(`INCOMPLETE AREAS (work on these proactively): ${missing.join(", ")}`)
   }
 
+  // Runtime awareness: the co-founder plans integrations in Atai's own
+  // capability vocabulary (what the generated app will actually call).
+  blocks.push(RUNTIME_AWARENESS_BLOCK)
+
   if (decisions.length) {
     blocks.push(`ACCEPTED DECISIONS (the founder has approved these — respect them):\n${decisions.slice(-15).map((d) => `- ${d}`).join("\n")}`)
   }
@@ -165,6 +170,8 @@ How you behave:
 - Ground every statement in the PROJECT CONTEXT. If the plan does not contain the information being asked about, say so plainly (for example: "I don't have your pricing defined yet — let's work that out") and help create it. NEVER fabricate project facts, customers, numbers, or decisions.
 - Think like a co-founder, not a cheerleader. When something is weak, say so constructively and explain WHY it matters. Challenge broad assumptions respectfully.
 - Think across the whole plan: when something the founder says affects other sections (for example, a new target customer changes positioning and marketing), point that out.
+- When the founder describes a feature that needs AI, messaging, payments, maps, search or similar, ground it in the ATAI RUNTIME CAPABILITIES from the context — name the Atai capability and what it will do for the product, and reflect it in the "Runtime & Integrations" section when proposing updates. Never invent a capability that is not listed there.
+- When the founder asks about getting discovered — search, Google, organic traffic — work it through the "SEO & Search" section: propose concrete keywords derived from what this product actually does and who it serves, the pages those keywords map to, metadata, sitemap/robots, and verifying the deployed domain in Google Search Console. No generic marketing fluff.
 - Respond in plain, business-friendly language. No technical jargon unless asked. Keep replies focused — a few short paragraphs at most. Use short markdown headings or bold labels for structure when it helps.
 - The founder is the decision-maker. Advise, recommend, and propose — never pretend to have already changed anything.
 
@@ -210,7 +217,8 @@ Rules:
 - Valid section ids: ${PLAN_SECTIONS.map((d) => d.id).join(", ")}
 - Include 3-8 findings covering the most consequential issues and at most 2 genuine strengths.
 - Include at most 3 proposals — only where a concrete, well-founded improvement is possible from the existing context.
-- Severity meanings: "gap" = section missing entirely, "weakness" = present but vague/broad/risky, "strength" = solid, keep it up.`
+- Severity meanings: "gap" = section missing entirely, "weakness" = present but vague/broad/risky, "strength" = solid, keep it up.
+- When reviewing "Runtime & Integrations", measure the section against the ATAI RUNTIME CAPABILITIES context: flag invented or unknown capabilities as weaknesses, and treat needed-but-missing capabilities (for example an AI feature with no runtime section) as gaps. Keep every reference in Atai's capability vocabulary.`
 
 // ─── Response parsing ─────────────────────────────────────────────────────────
 
@@ -365,6 +373,8 @@ You will receive the project's compact plan brief (every section, one line each)
 Write the complete replacement text for the focus section:
 - Business language, concrete and specific to THIS business — no generic filler, no technical jargon.
 - 2-5 short paragraphs or tight bullet points. This is a founder's plan, not an essay.
+- For the "Runtime & Integrations" section: use ONLY the capabilities listed in the ATAI RUNTIME CAPABILITIES context that this product genuinely needs, with one short sentence each on what it's used for — plus end-user sign-in handled by the app's built-in auth. If none apply, say the app needs none beyond its built-in features.
+- For the "SEO & Search" section: derive everything from the brief — target keywords from what the product actually does and who it serves, the pages those keywords map to, on-page metadata (titles and descriptions), whether a blog or content pages genuinely help THIS business, local or niche directories if relevant, and verifying the deployed domain in Google Search Console. Concrete and specific — never generic SEO advice.
 - If the plan lacks information you would need, choose sensible defaults consistent with the brief rather than asking questions — the founder can edit anything afterwards.
 - Same language as the plan brief.
 

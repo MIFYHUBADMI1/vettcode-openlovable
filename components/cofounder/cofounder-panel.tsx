@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Sparkles, X, ArrowUp, Loader2 } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -68,7 +68,6 @@ function greetingForHour(hour: number): string {
 export function CofounderPanel() {
   const router = useRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
 
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<CofounderConversationMessage[]>([])
@@ -293,7 +292,15 @@ export function CofounderPanel() {
             </Button>
           </div>
           <p className="mt-1.5 px-1 text-[11px] text-muted-foreground">
-            I&apos;ll ask before anything consequential — projects, plans, builds, deployments.
+            I&apos;ll ask before anything consequential — projects, plans, builds, deployments.{" "}
+            <a
+              href="/sdk"
+              target="_blank"
+              rel="noreferrer"
+              className="font-medium text-primary underline-offset-2 hover:underline"
+            >
+              What can your app use? See the Atai SDK &amp; API →
+            </a>
           </p>
         </div>
       </DialogContent>

@@ -240,6 +240,9 @@ export function useProject(id: string | null, options?: { pollWhileBuilding?: bo
     id ? `/api/projects/${id}` : null,
     jsonFetcher,
     {
+      keepPreviousData: true,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
       refreshInterval: (latest) => {
         if (!options?.pollWhileBuilding) return 0
         const state = latest?.project?.state
@@ -275,9 +278,9 @@ export interface ActivityEvent {
   message: string
 }
 
-export function useProjectActivity(projectId: string, isBuilding: boolean) {
+export function useProjectActivity(projectId: string, isBuilding: boolean, enabled = true) {
   const { data, error, isLoading, mutate } = useSWR<{ events?: ActivityEvent[]; data?: { events?: ActivityEvent[] } }>(
-    projectId ? `/api/projects/${projectId}/activity` : null,
+    enabled && projectId ? `/api/projects/${projectId}/activity` : null,
     jsonFetcher,
     {
       // Building: 5s — need fast event updates
@@ -311,8 +314,8 @@ export function useProjectStatus(projectId: string, isActive: boolean) {
       refreshInterval: 10000,
       dedupingInterval: 5000,
       keepPreviousData: true,
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
     },
   )
   return { statusData: data, error, refresh: mutate }

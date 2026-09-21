@@ -1,10 +1,45 @@
 {
   "name": "@atai/sdk",
   "version": "1.0.0",
-  "description": "Official Atai Runtime SDK — the typed client generated applications use to talk to the Atai Runtime API.",
+  "description": "Official Atai Runtime SDK — the typed client for the Atai Runtime API. AI, voice, search, scraping, email, SMS, WhatsApp, notifications, maps, calendar, vectors, database and payments behind one API key.",
   "license": "UNLICENSED",
-  "private": true,
+  "author": {
+    "name": "ATAI Enterprises",
+    "url": "https://atai.ink"
+  },
+  "homepage": "https://atai.ink/sdk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MIFYHUBADMI1/vettcode-openlovable.git",
+    "directory": "packages/atai-sdk"
+  },
+  "bugs": {
+    "url": "https://github.com/MIFYHUBADMI1/vettcode-openlovable/issues"
+  },
+  "keywords": [
+    "atai",
+    "ai",
+    "sdk",
+    "runtime",
+    "api",
+    "llm",
+    "chat",
+    "embeddings",
+    "vectors",
+    "email",
+    "sms",
+    "whatsapp",
+    "push-notifications",
+    "maps",
+    "geocoding",
+    "calendar",
+    "payments",
+    "checkout",
+    "web-scraping",
+    "search"
+  ],
   "type": "module",
+  "sideEffects": false,
   "main": "./dist/index.js",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -19,11 +54,15 @@
     "dist",
     "README.md"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution bundler --skipLibCheck tests/type-test/type-consumer.ts"
+    "typecheck": "tsc --noEmit --strict --target ES2022 --module ESNext --moduleResolution bundler --skipLibCheck tests/type-test/type-consumer.ts",
+    "prepublishOnly": "npm run build && npm run test"
   },
   "devDependencies": {
     "typescript": "^5.7.3",

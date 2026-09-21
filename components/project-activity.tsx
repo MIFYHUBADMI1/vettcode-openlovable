@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useProjectActivity } from "@/lib/client/api"
+import { useProjectActivity, type ActivityEvent } from "@/lib/client/api"
 import { relativeTimeShort } from "@/lib/client/format"
 import { cn } from "@/lib/utils"
 
@@ -24,17 +24,17 @@ interface ProjectActivityProps {
   projectId: string
   /** Pass true while a build/deploy is active to increase poll frequency. */
   isBuilding?: boolean
+  /** When provided, skip the extra /activity request and use project events. */
+  events?: ActivityEvent[]
 }
 
-export function ProjectActivity({ projectId, isBuilding = false }: ProjectActivityProps) {
-  // Uses the canonical hook — shares the same SWR cache entry as
-  // edit-workspace.tsx and ConversationTab, so only ONE network request
-  // is ever in flight for this project's activity data.
-  const { events: freshEvents, error } = useProjectActivity(projectId, isBuilding)
+export function ProjectActivity({ projectId, isBuilding = false, events }: ProjectActivityProps) {
+  const { events: remoteEvents, error } = useProjectActivity(projectId, isBuilding, events === undefined)
+  const freshEvents = events ?? remoteEvents
 
   // Stable events: never flash empty if we've already shown data
   const [stableEvents, setStableEvents] = useState(freshEvents)
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(freshEvents.length > 0)
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(events !== undefined || freshEvents.length > 0)
 
   useEffect(() => {
     if (freshEvents.length > 0) {

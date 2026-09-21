@@ -266,7 +266,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
           await store.updateProject(id, { state: "ready" })
           await store.appendEvent(id, event("deploy", "Deployment failed: Project not found in deployment service.", "error"))
         }
-        return fail("TOTALUM_PROJECT_NOT_FOUND", "This project wasn't found in the deployment service. Try rebuilding the project first.", 404)
+        const latest = [...(project.deploymentHistory || [])].reverse().find((d) => d.productionUrl || d.customDomain)
+        return ok({
+          status: project.deployment?.status === "success" ? "success" : project.state === "deploying" ? "deploying" : null,
+          productionUrl: project.deployment?.productionUrl ?? latest?.productionUrl ?? project.developmentUrl,
+          customDomain: latest?.customDomain ? { hostname: latest.customDomain, status: latest.status } : null,
+        })
       }
       return handleRouteError("api.projects.deploy.status", err)
     }

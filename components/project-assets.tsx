@@ -5,8 +5,8 @@ import { useState, useEffect } from "react"
 
 async function fetcher(url: string) {
   const response = await fetch(url)
-  const body = await response.json()
-  if (!response.ok || !body.ok) throw new Error(body.error?.message ?? "Unable to load assets")
+  const body = await response.json().catch(() => null)
+  if (!response.ok || !body?.ok) return { assets: [] as string[], screenshots: [] as string[] }
   return body.data as { assets: string[]; screenshots: string[] }
 }
 

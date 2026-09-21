@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
+import { useSession } from "@/lib/client/api"
 import { GitBranch, RefreshCw, Trash2, Plus, ExternalLink, Loader2, Check, Upload, BookOpen } from "lucide-react"
 import Link from "next/link"
 import { GitHubIcon } from "@/components/github-icon"
@@ -34,12 +35,13 @@ interface Props {
 }
 
 export function ProjectGitHubIntegration({ projectId, isBuilt }: Props) {
+  const { session } = useSession()
+  const hasGitHub = Boolean(session?.user?.githubConnected)
   const [integration, setIntegration] = useState<GitHubIntegration | null>(null)
   const [loading, setLoading] = useState(true)
   const [repos, setRepos] = useState<GitHubRepo[]>([])
   const [reposLoading, setReposLoading] = useState(false)
   const [showConnect, setShowConnect] = useState(false)
-  const [hasGitHub, setHasGitHub] = useState<boolean | null>(null)
 
   // Form state
   const [mode, setMode] = useState<"push" | "build-from">("push")
@@ -50,21 +52,21 @@ export function ProjectGitHubIntegration({ projectId, isBuilt }: Props) {
   const [connecting, setConnecting] = useState(false)
   const [disconnecting, setDisconnecting] = useState(false)
 
-  // Check if user has GitHub connected (no token = need to sign in with GitHub)
   useEffect(() => {
-    fetch("/api/github/repos?page=1")
-      .then(r => {
-        setHasGitHub(r.status !== 401)
-      })
-      .catch(() => setHasGitHub(false))
-  }, [])
-
-  useEffect(() => {
+    let cancelled = false
     fetch(`/api/projects/${projectId}/github`)
-      .then(r => r.json())
-      .then(d => { if (d.ok) setIntegration(d.data) })
-      .catch(() => { })
-      .finally(() => setLoading(false))
+      .then(async (r) => {
+        const d = await r.json().catch(() => null)
+        if (cancelled) return
+        setIntegration(d?.ok ? d.data : { connected: false })
+      })
+      .catch(() => {
+        if (!cancelled) setIntegration({ connected: false })
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => { cancelled = true }
   }, [projectId])
 
   async function loadRepos() {
@@ -138,7 +140,7 @@ export function ProjectGitHubIntegration({ projectId, isBuilt }: Props) {
 
   // Not connected — show connect button or no-github prompt
   if (!integration?.connected) {
-    if (hasGitHub === false) {
+    if (!hasGitHub) {
       return (
         <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-5">
           <div className="flex items-center gap-3">

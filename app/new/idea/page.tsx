@@ -1,8 +1,8 @@
 "use client"
 
 import { Lightbulb, FileText, Hammer } from "lucide-react"
-import { FounderIdeaForm } from "@/components/founder-idea-form"
 import { AuthGate } from "@/components/auth/auth-gate"
+import { LandingComposer } from "@/components/landing/composer"
 import { CreateWorkspaceShell } from "@/components/new-project/create-shell"
 
 const STEPS = [
@@ -20,14 +20,14 @@ export default function NewIdeaProjectPage() {
         description="A sentence is enough. Tell Atai the problem and who it's for. You'll get a plan to review before anything is built."
       >
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_280px] lg:items-start">
-          <div className="rounded-2xl border border-border/80 bg-card/90 p-6 lg:p-8">
-            <div className="mb-6 flex flex-col gap-1.5">
+          <div className="rounded-2xl border border-border/80 bg-card/90 p-5 sm:p-6 lg:p-8">
+            <div className="mb-5 flex flex-col gap-1.5">
               <h2 className="text-xl font-medium tracking-tight">What are you building?</h2>
               <p className="text-sm leading-6 text-muted-foreground">
-                Share what you know. Specifics make a stronger plan.
+                Attach files, pick agents and tools, or speak the idea. Then send it.
               </p>
             </div>
-            <FounderIdeaForm />
+            <LandingComposer lockedMode="idea" showModes={false} showIntro={false} />
           </div>
 
           <aside className="flex flex-col gap-4 lg:sticky lg:top-36">

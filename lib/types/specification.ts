@@ -48,6 +48,13 @@ export const ApplicationSpecificationSchema = z.object({
   valueProposition: z.string().optional(),
   businessModel: z.string().optional(),
   revenueModel: z.string().optional(),
+  /** Atai Runtime capabilities the generated app will consume (@atai/sdk) —
+   * planned in the Collaborate workspace, honored by the build prompt. */
+  runtimeIntegrations: z.string().optional(),
+  /** SEO & search-engine plan for the generated application — drafted in the
+   * Collaborate workspace, carried verbatim into the build prompt. Covers
+   * metadata, sitemap/robots, structured data, and site-verification tags. */
+  seoPlan: z.string().optional(),
   marketPositioning: z.string().optional(),
   marketingPlan: z.string().optional(),
   launchPlan: z.string().optional(),
@@ -76,6 +83,8 @@ export const BUSINESS_PLAN_FIELDS = [
   "valueProposition",
   "businessModel",
   "revenueModel",
+  "runtimeIntegrations",
+  "seoPlan",
   "marketPositioning",
   "marketingPlan",
   "launchPlan",

@@ -1,19 +1,26 @@
 import type { LucideIcon } from "lucide-react"
 import {
-  Compass,
-  LayoutDashboard,
-  Lightbulb,
-  Sparkles,
-  FolderKanban,
-  Swords,
-  TrendingUp,
-  Megaphone,
-  Wallet,
-  GraduationCap,
   BookOpen,
+  Code2,
+  Compass,
+  Database,
+  Download,
+  FileText,
+  FolderKanban,
+  Globe,
+  GraduationCap,
+  LayoutDashboard,
+  ListChecks,
+  LifeBuoy,
+  Lightbulb,
+  Megaphone,
+  Pencil,
   Server,
   Settings,
-  LifeBuoy,
+  Sparkles,
+  Swords,
+  TrendingUp,
+  Wallet,
 } from "lucide-react"
 
 export type AtaiNavKind = "link" | "soon" | "cofounder"
@@ -29,6 +36,23 @@ export interface AtaiNavItem {
 export interface AtaiNavGroup {
   label: string
   items: AtaiNavItem[]
+}
+
+export function workspaceProjectNav(projectId: string): AtaiNavItem[] {
+  const root = `/project/${projectId}`
+  return [
+    { href: root, label: "Workspace", icon: LayoutDashboard, kind: "link", match: (pathname) => pathname === root },
+    { href: `${root}/progress`, label: "Team progress", icon: ListChecks, kind: "link" },
+    { href: `${root}/collaborate`, label: "Collaborate", icon: Sparkles, kind: "link" },
+    { href: `${root}/plan`, label: "Plan", icon: FileText, kind: "link" },
+    { href: `${root}/edit`, label: "Edit plan", icon: Pencil, kind: "link" },
+    { href: `${root}/source`, label: "Source", icon: Code2, kind: "link" },
+    { href: `${root}/runtime`, label: "Runtime", icon: Server, kind: "link" },
+    { href: `${root}/database`, label: "Database", icon: Database, kind: "link" },
+    { href: `${root}/env`, label: "Environment", icon: Settings, kind: "link" },
+    { href: `${root}/hosting`, label: "Hosting", icon: Globe, kind: "link" },
+    { href: `/api/projects/${projectId}/export`, label: "Export snapshot", icon: Download, kind: "link", match: () => false },
+  ]
 }
 
 export function workspaceGrowNav(projectId: string): AtaiNavItem[] {

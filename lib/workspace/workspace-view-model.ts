@@ -223,7 +223,23 @@ export function workspaceBrief(state: ProjectState, mode?: ProjectMode, name?: s
   }
 }
 
-export function workspaceNextStep(state: ProjectState, projectId: string, hasPreview: boolean): WorkspaceNextStep {
+export function workspaceProductionUrl(project: Pick<Project, "deployment" | "deploymentHistory">): string | null {
+  if (project.deployment?.status === "success" && project.deployment.productionUrl) {
+    return project.deployment.productionUrl
+  }
+  const fromHistory = [...(project.deploymentHistory ?? [])]
+    .reverse()
+    .find((entry) => entry.status === "success" && entry.productionUrl)
+  return fromHistory?.productionUrl ?? project.deployment?.productionUrl ?? null
+}
+
+export function workspaceIsPublished(
+  project: Pick<Project, "state" | "deployment" | "deploymentHistory">,
+): boolean {
+  return project.state === "deployed" || Boolean(workspaceProductionUrl(project))
+}
+
+export function workspaceNextStep(state: ProjectState, projectId: string, hasPreview: boolean, isPublished = false): WorkspaceNextStep {
   const collaborate = `/project/${projectId}/collaborate`
   const previewAnchor = "#product-preview"
 
@@ -289,6 +305,18 @@ export function workspaceNextStep(state: ProjectState, projectId: string, hasPre
       }
     case "ready":
     case "build_complete":
+      if (isPublished) {
+        return {
+          kind: "grow",
+          kicker: "You're all set",
+          title: "Your application is live.",
+          body: "Keep improving the product, or grow the business with your co-founder.",
+          actionLabel: "Ask your co-founder",
+          href: "#ask-cofounder",
+          mutation: null,
+          needsYou: false,
+        }
+      }
       if (hasPreview) {
         return {
           kind: "launch",
@@ -400,11 +428,11 @@ export function workspaceCapabilities(project: Pick<
 export function buildWorkspaceView(project: Project, githubConnected?: boolean): WorkspaceViewModel {
   const state = project.state
   const previewUrl = project.developmentUrl ?? null
-  const productionUrl =
-    [...(project.deploymentHistory ?? [])].reverse().find((d) => d.status === "success")?.productionUrl ?? null
+  const productionUrl = workspaceProductionUrl(project)
+  const isPublished = workspaceIsPublished(project)
   const isBuilt = Boolean(project.totalumProjectId)
   const hasSpec = Boolean(project.specification)
-  let next = workspaceNextStep(state, project.id, Boolean(previewUrl))
+  let next = workspaceNextStep(state, project.id, Boolean(previewUrl), isPublished)
   if (next.mutation === "build" && !hasSpec) {
     next = {
       kind: "wait",
@@ -420,14 +448,16 @@ export function buildWorkspaceView(project: Project, githubConnected?: boolean):
 
   return {
     state,
-    phase: journeyPhase(state),
-    brief: workspaceBrief(state, project.mode, project.name),
+    phase: isPublished && (state === "ready" || state === "build_complete") ? "launch" : journeyPhase(state),
+    brief: isPublished && (state === "ready" || state === "build_complete")
+      ? workspaceBrief("deployed", project.mode, project.name)
+      : workspaceBrief(state, project.mode, project.name),
     next,
     capabilities: workspaceCapabilities({ ...project, githubConnected }),
     canPreview: Boolean(previewUrl),
     canBuild: hasSpec && !LIVE.has(state) && state !== "ready" && state !== "deployed" && state !== "build_complete",
     canInstruct: isBuilt && !LIVE.has(state),
-    canLaunch: isBuilt && (state === "ready" || state === "build_complete"),
+    canLaunch: isBuilt && (state === "ready" || state === "build_complete") && !isPublished,
     isBuilt,
     previewUrl,
     productionUrl,

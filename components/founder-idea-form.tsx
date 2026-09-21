@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { ProjectPreferencesDialog } from "@/components/project-preferences-dialog"
-import { PipelineModeSelector, type PipelineMode } from "@/components/pipeline-mode-selector"
 import { cn } from "@/lib/utils"
 import { peekPendingStart, takePendingStart } from "@/lib/auth/client-intent"
 import { recordOnboardingActivation } from "@/lib/onboarding/activate"
@@ -66,7 +65,6 @@ export function FounderIdeaForm() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPrefs, setShowPrefs] = useState(false)
-  const [pipelineMode, setPipelineMode] = useState<PipelineMode>("heavy")
   const [capturedVision, setCapturedVision] = useState<string | null>(null)
   const [audience, setAudience] = useState("")
   const [pendingMeta, setPendingMeta] = useState<{ source?: string; signalType?: "url" | "idea" }>({})
@@ -88,30 +86,6 @@ export function FounderIdeaForm() {
     ? capturedVision.trim().length >= 8 && !busy
     : fields.problem.trim().length >= 8 && fields.solution.trim().length >= 8 && !busy
 
-  useEffect(() => {
-    const root = document.documentElement
-    if (pipelineMode === "heavy") {
-      root.classList.add("heavy-mode-active")
-      const bubbles: HTMLDivElement[] = []
-      for (let i = 0; i < 8; i++) {
-        const bubble = document.createElement("div")
-        bubble.className = "energy-bubble"
-        bubble.style.setProperty("--size", `${Math.random() * 150 + 80}px`)
-        bubble.style.setProperty("--duration", `${Math.random() * 15 + 15}s`)
-        bubble.style.setProperty("--delay", `${Math.random() * 5}s`)
-        bubble.style.setProperty("--start-x", `${Math.random() * 100}%`)
-        bubble.style.setProperty("--float-x", `${(Math.random() - 0.5) * 200}px`)
-        document.body.appendChild(bubble)
-        bubbles.push(bubble)
-      }
-      return () => {
-        root.classList.remove("heavy-mode-active")
-        bubbles.forEach((b) => b.remove())
-      }
-    }
-    root.classList.remove("heavy-mode-active")
-  }, [pipelineMode])
-
   async function doSubmit(preferences?: ProjectPreferences) {
     if (!canSubmit) return
     setBusy(true)
@@ -124,7 +98,6 @@ export function FounderIdeaForm() {
         mode: "scratch",
         idea,
         preferences: preferences ?? undefined,
-        pipelineMode,
       })
       await refresh()
       try {
@@ -161,8 +134,6 @@ export function FounderIdeaForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <PipelineModeSelector value={pipelineMode} onChange={setPipelineMode} />
-
       {capturedVision ? (
         <>
           <div className="rounded-2xl border border-border bg-card p-4">

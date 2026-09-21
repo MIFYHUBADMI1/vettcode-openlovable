@@ -23,6 +23,57 @@ function enabledFeatures(spec: ApplicationSpecification): string[] {
   return spec.suggestedFeatures.filter((f) => f.enabled).map((f) => f.label)
 }
 
+/**
+ * Turn the Collaborate plan's "Runtime & Integrations" section into mandatory
+ * build instructions. The founder's plan is grounded (by the co-founder AI)
+ * in Atai's capability vocabulary, so whatever lands here maps 1:1 to
+ * @atai/sdk namespaces — the generated app learns WHICH capabilities it must
+ * call, HOW to call them (SDK + ATAI_API_KEY), and WHERE to read more.
+ * The free-text is sanitized as reference material (it's plan content, but
+ * the block's own instructions are what the build agent must follow).
+ */
+function buildRuntimeIntegrationsBlock(runtimeIntegrations?: string): string {
+  const text = (runtimeIntegrations ?? "").trim()
+  if (!text) return ""
+  return [
+    "═══ ATAI RUNTIME INTEGRATIONS (MANDATORY) ═══",
+    "The application MUST use the official @atai/sdk (npm package) to consume the Atai Runtime API for the following planned integrations:",
+    sanitizeReference(text),
+    "",
+    "RUNTIME WIRING RULES:",
+    "- Install and import @atai/sdk. Authenticate with the ATAI_API_KEY environment variable (provisioned automatically — never ask the user for a key, never hardcode one).",
+    "- Initialize one shared server-side client: const atai = new Atai({ apiKey: process.env.ATAI_API_KEY! })",
+    "- Call Atai capabilities ONLY from server-side code (route handlers, server components, server actions). Never expose the key or direct SDK calls to the browser — proxy through your own API routes.",
+    "- Map each planned integration to its Atai capability and SDK namespace: AI text → atai.ai (capability ai.text), text-to-speech → atai.voice (ai.speak), web search → atai.search (search.web), URL scraping → atai.web (web.scrape), email → atai.email, SMS → atai.sms, WhatsApp → atai.whatsapp, push notifications → atai.notifications, geocoding → atai.maps, bookings → atai.calendar, semantic search/vectors → atai.vectors, app data → atai.db, checkout → atai.payments. Full contract and examples: https://atai.ink/sdk",
+    "- End-user sign-in stays on the app's built-in auth (Totalum SDK). The Atai Runtime API is for product capabilities, not user identity.",
+    "- If a planned integration cannot be expressed with the capabilities above, implement it with the built-in stack instead — do NOT invent Atai capabilities or require provider accounts.",
+  ].join("\n")
+}
+
+/**
+ * The Collaborate plan's "SEO & Search" section becomes a mandatory build
+ * block. The founder's plan text is carried verbatim; the block's own rules
+ * tell the build agent how to implement it (metadata, sitemap/robots,
+ * structured data, Google site-verification) without reinterpreting it.
+ */
+function buildSeoPlanBlock(seoPlan?: string): string {
+  const text = (seoPlan ?? "").trim()
+  if (!text) return ""
+  return [
+    "═══ SEO & SEARCH DISCOVERABILITY (MANDATORY) ═══",
+    "The application MUST ship search-engine optimized as planned below.",
+    sanitizeReference(text),
+    "",
+    "SEO IMPLEMENTATION RULES:",
+    "- Every page exports proper Next.js App Router metadata: unique title and meta description per page, canonical URLs, Open Graph tags, and Twitter cards.",
+    "- Create app/sitemap.ts (MetadataRoute.Sitemap) listing all public pages, and app/robots.ts (MetadataRoute.Robots) allowing crawlers and pointing at the sitemap.",
+    "- Add JSON-LD structured data appropriate to the app type (e.g. Organization, WebSite, Product, Article, BreadcrumbList).",
+    "- Include a Google site-verification meta tag: <meta name=\"google-site-verification\" content=\"...\" /> rendered in the root layout head so the owner can verify the deployed domain in Google Search Console (read the value from an environment variable when available).",
+    "- Use semantic HTML, descriptive link text, alt text for images, and heading hierarchy — no SEO suppressors.",
+    "- Submit Plan text is authoritative: implement the founder's SEO plan exactly as written; do not replace it with a generic alternative.",
+  ].join("\n")
+}
+
 export function buildInitialBuildPrompt(
   spec: ApplicationSpecification,
   understanding?: ProjectUnderstanding,
@@ -61,6 +112,10 @@ export function buildInitialBuildPrompt(
     "",
     `Application type: ${spec.applicationType}`,
     `Purpose: ${spec.purpose}`,
+    spec.vision ? `Vision: ${spec.vision}` : "",
+    spec.problem ? `Problem being solved: ${spec.problem}` : "",
+    spec.solution ? `Solution: ${spec.solution}` : "",
+    spec.valueProposition ? `Value proposition: ${spec.valueProposition}` : "",
     spec.targetUsers.length ? `Target users: ${spec.targetUsers.join(", ")}` : "",
     spec.userRoles.length ? `User roles: ${spec.userRoles.join(", ")}` : "",
     "",
@@ -70,9 +125,14 @@ export function buildInitialBuildPrompt(
     "",
     flows ? `Core user flows:\n${flows}` : "",
     "",
+    spec.marketPositioning ? `Market positioning: ${spec.marketPositioning}` : "",
+    spec.businessModel ? `Business model: ${spec.businessModel}` : "",
+    spec.revenueModel ? `Revenue model: ${spec.revenueModel}` : "",
     spec.authenticationRequirements ? `Authentication: ${spec.authenticationRequirements}` : "",
     spec.backendRequirements.length ? `Backend: ${spec.backendRequirements.join(", ")}` : "",
     spec.integrations.length ? `Integrations: ${spec.integrations.join(", ")}` : "",
+    buildRuntimeIntegrationsBlock(spec.runtimeIntegrations),
+    buildSeoPlanBlock(spec.seoPlan),
     "",
     spec.designDirection ? `Design direction: ${spec.designDirection}` : "",
     designReference

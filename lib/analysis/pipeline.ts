@@ -529,6 +529,11 @@ function generateCloneSpecification(
     backendRequirements: ["Replicate the original site's structure and content"],
     integrations: [],
     designDirection: `EXACT REPLICA MODE — Reproduce the crawled website's design, layout, colors, typography, and visual structure as closely as possible. Use the following crawled content as the source of truth:\n\nNAVIGATION STRUCTURE:\n${navStructure}\n\nPAGE CONTENT:\n${allContent.slice(0, 15000)}`,
+    // Clone builds auto-launch without passing through the Collaborate
+    // workspace, so they ship with a baseline SEO plan — one page per crawled
+    // URL in the sitemap, crawler-friendly robots, structured data, and a
+    // Google site-verification meta tag slot (build prompt honors seoPlan).
+    seoPlan: `Preserve each crawled page's title and meta description where available. Generate app/sitemap.ts listing every crawled page URL. Add app/robots.ts allowing all crawlers and referencing the sitemap. Include Organization and WebSite JSON-LD. Render a Google site-verification meta tag in the root layout head so the deployed domain can be verified in Google Search Console.`,
     responsiveRequirements: "Match the original site's responsive behavior.",
     additionalInstructions: `DEEP CRAWL CLONE MODE: This project was created by deep-crawling ${evidence.sourceUrl}. The builder should create an EXACT REPLICA of the crawled site — do NOT reinterpret or redesign. Use the crawled page content, navigation structure, and visual patterns as-is. The user expects a pixel-accurate reproduction of the original website's experience, adapted into a working React/Next.js application.
 

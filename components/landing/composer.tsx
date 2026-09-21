@@ -40,6 +40,14 @@ import {
   type ComposerAttachment,
 } from "@/lib/start/composer-prefs"
 import {
+  browserSpeechBlockedReason,
+  getBrowserSpeechRecognition,
+  joinSpoken,
+  speechRecognitionErrorMessage,
+  transcriptFromSpeechEvent,
+  type BrowserSpeechRecognition,
+} from "@/lib/start/browser-speech"
+import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
@@ -194,16 +202,29 @@ function formatSize(size: number) {
   return `${(size / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export function LandingComposer() {
+export function LandingComposer({
+  lockedMode,
+  showModes = true,
+  showIntro = true,
+  className,
+}: {
+  lockedMode?: StartMode
+  showModes?: boolean
+  showIntro?: boolean
+  className?: string
+} = {}) {
   const router = useRouter()
   const { session } = useSession()
   const { openAuth } = useAuthModal()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
-  const recognitionRef = useRef<{ stop: () => void; abort: () => void } | null>(null)
+  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null)
+  const promptRef = useRef("")
+  const listeningRef = useRef(false)
+  const voiceBaseRef = useRef("")
 
   const [prompt, setPrompt] = useState("")
-  const [mode, setMode] = useState<StartMode>("idea")
+  const [mode, setMode] = useState<StartMode>(lockedMode ?? "idea")
   const [agents, setAgents] = useState<string[]>(["atai"])
   const [tool, setTool] = useState<string | null>(null)
   const [auto, setAuto] = useState("auto")
@@ -224,7 +245,7 @@ export function LandingComposer() {
   useEffect(() => {
     const prefs = loadComposerPrefs()
     setPrompt(prefs.prompt)
-    setMode(prefs.mode)
+    setMode(lockedMode ?? prefs.mode)
     setAgents(prefs.agents)
     setTool(prefs.tool)
     setAuto(prefs.auto)
@@ -238,10 +259,15 @@ export function LandingComposer() {
   }, [hydrated, prompt, mode, agents, tool, auto, files])
 
   useEffect(() => {
+    promptRef.current = prompt
+  }, [prompt])
+
+  useEffect(() => {
     resizeTextarea(textareaRef.current)
   }, [prompt])
 
   useEffect(() => () => {
+    listeningRef.current = false
     recognitionRef.current?.abort()
   }, [])
 
@@ -258,6 +284,7 @@ export function LandingComposer() {
   }
 
   function selectMode(next: StartMode) {
+    if (lockedMode) return
     setMode(next)
     setError(null)
   }
@@ -295,42 +322,69 @@ export function LandingComposer() {
     })
   }
 
+  function stopVoice() {
+    listeningRef.current = false
+    setListening(false)
+    recognitionRef.current?.stop()
+  }
+
   function startVoice() {
-    if (!requireAccount()) return
-    const SpeechRecognition =
-      typeof window !== "undefined"
-        ? (window as Window & {
-            SpeechRecognition?: new () => SpeechRecognition
-            webkitSpeechRecognition?: new () => SpeechRecognition
-          }).SpeechRecognition ||
-          (window as Window & { webkitSpeechRecognition?: new () => SpeechRecognition }).webkitSpeechRecognition
-        : undefined
+    if (listeningRef.current) {
+      stopVoice()
+      return
+    }
+    const blocked = browserSpeechBlockedReason()
+    if (blocked) {
+      setError(blocked)
+      return
+    }
+    const SpeechRecognition = getBrowserSpeechRecognition()
     if (!SpeechRecognition) {
-      setError("Voice isn't available in this browser.")
+      setError("Voice dictation isn’t supported in this browser. Use Chrome, Edge, or Safari.")
       return
     }
-    if (listening) {
-      recognitionRef.current?.stop()
-      setListening(false)
-      return
-    }
+
     const recognition = new SpeechRecognition()
-    recognition.lang = "en-US"
-    recognition.continuous = false
-    recognition.interimResults = false
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const spoken = Array.from(event.results)
-        .map((result) => result[0]?.transcript ?? "")
-        .join(" ")
-        .trim()
-      if (spoken) applyPrompt(prompt ? `${prompt.trim()} ${spoken}` : spoken)
+    recognition.lang = typeof navigator !== "undefined" && navigator.language ? navigator.language : "en-US"
+    recognition.continuous = true
+    recognition.interimResults = true
+    voiceBaseRef.current = promptRef.current.trim()
+    recognition.onresult = (event) => {
+      const { finalText, interimText } = transcriptFromSpeechEvent(event)
+      const spoken = [finalText, interimText].filter(Boolean).join(" ")
+      applyPrompt(joinSpoken(voiceBaseRef.current, spoken))
     }
-    recognition.onerror = () => setListening(false)
-    recognition.onend = () => setListening(false)
+    recognition.onerror = (event) => {
+      if (event.error === "no-speech") return
+      if (event.error === "aborted") return
+      const message = speechRecognitionErrorMessage(event.error)
+      listeningRef.current = false
+      setListening(false)
+      if (message) setError(message)
+    }
+    recognition.onend = () => {
+      if (!listeningRef.current) {
+        setListening(false)
+        return
+      }
+      try {
+        recognition.start()
+      } catch {
+        listeningRef.current = false
+        setListening(false)
+      }
+    }
     recognitionRef.current = recognition
+    listeningRef.current = true
     setError(null)
     setListening(true)
-    recognition.start()
+    try {
+      recognition.start()
+    } catch {
+      listeningRef.current = false
+      setListening(false)
+      setError("Couldn’t start the microphone. Try again.")
+    }
   }
 
   function submit() {
@@ -371,19 +425,24 @@ export function LandingComposer() {
 
   return (
     <form
-      className="lp-composer w-full min-w-0 max-w-xl px-0"
+      className={cn("lp-composer w-full min-w-0 px-0", showIntro && "max-w-xl", className)}
       onSubmit={(event) => {
         event.preventDefault()
         submit()
       }}
     >
-      <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Start with Atai</p>
-      <h2 className="mt-1.5 text-base font-semibold tracking-tight sm:text-lg">Tell Atai what you want to build.</h2>
+      {showIntro ? (
+        <>
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Start with Atai</p>
+          <h2 className="mt-1.5 text-base font-semibold tracking-tight sm:text-lg">Tell Atai what you want to build.</h2>
+        </>
+      ) : null}
 
+      {showModes ? (
       <div
         role="tablist"
         aria-label="Starting point"
-        className="mt-3 flex gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className={cn("flex gap-1 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", showIntro && "mt-3")}
       >
         {MODES.map((item) => {
           const Icon = item.icon
@@ -408,6 +467,7 @@ export function LandingComposer() {
           )
         })}
       </div>
+      ) : null}
 
       <div
         className={cn(
@@ -457,7 +517,7 @@ export function LandingComposer() {
                 {autoLabel}
               </span>
             ) : null}
-            {detected && detected !== mode ? (
+            {detected && detected !== mode && !lockedMode ? (
               <button
                 type="button"
                 className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
@@ -621,12 +681,13 @@ export function LandingComposer() {
             type="button"
             className={cn(
               "ml-auto grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:ml-0",
-              listening && "text-destructive",
+              listening && "bg-destructive/10 text-destructive hover:bg-destructive/15 hover:text-destructive",
             )}
+            aria-pressed={listening}
             aria-label={listening ? "Stop listening" : "Voice input"}
             onClick={startVoice}
           >
-            <Mic className="size-3.5" />
+            <Mic className={cn("size-3.5", listening && "animate-pulse")} />
           </button>
 
           <button
@@ -650,12 +711,12 @@ export function LandingComposer() {
           {error}
         </p>
       ) : listening ? (
-        <p className="mt-2 text-sm text-muted-foreground">Listening… speak, then we’ll drop it into the composer.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Listening… words appear as you speak. Tap the mic to stop.</p>
       ) : submitting ? (
         <p className="mt-2 text-sm text-muted-foreground">Preparing Atai...</p>
       ) : !session ? (
         <p className="mt-2 text-[11px] text-muted-foreground">
-          Sign in to unlock the AI team, tools, voice, and attachments. Your draft stays here.
+          Sign in to unlock the AI team, tools, and attachments. Voice works here. Your draft stays here.
         </p>
       ) : null}
 
@@ -678,18 +739,4 @@ export function LandingComposer() {
   )
 }
 
-type SpeechRecognition = {
-  lang: string
-  continuous: boolean
-  interimResults: boolean
-  start: () => void
-  stop: () => void
-  abort: () => void
-  onresult: ((event: SpeechRecognitionEvent) => void) | null
-  onerror: (() => void) | null
-  onend: (() => void) | null
-}
 
-type SpeechRecognitionEvent = {
-  results: ArrayLike<ArrayLike<{ transcript: string }>>
-}

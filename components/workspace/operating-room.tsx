@@ -1,30 +1,18 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 import Link from "next/link"
 import {
   ChevronRight,
-  MoreHorizontal,
   ExternalLink,
   Hammer,
   Rocket,
-  FileText,
-  Code2,
-  Server,
-  Database,
-  Globe,
-  GitBranch,
-  History,
 } from "lucide-react"
 import { toast } from "sonner"
-import Markdown from "react-markdown"
-import { useProject, useProjectActivity, useProjectStatus, postJson, useSession } from "@/lib/client/api"
+import { useProject, useProjectStatus, postJson, useSession } from "@/lib/client/api"
 import { useBuildCosts } from "@/lib/client/build-costs"
-import { useCofounderPanel } from "@/components/cofounder/cofounder-panel"
 import { PublishMenu } from "@/components/publish-menu"
 import { DeploymentHistory } from "@/components/deployment-history"
-import { ProjectGitHubIntegration } from "@/components/project-github-integration"
-import { ProjectVisibilityToggle } from "@/components/project-visibility-toggle"
 import { ProjectAssets } from "@/components/project-assets"
 import { ProjectActivity } from "@/components/project-activity"
 import {
@@ -33,63 +21,23 @@ import {
   buildWorkspaceView,
   journeyTeamStatus,
   workspaceIsLive,
-  type TeamRole,
 } from "@/lib/workspace/workspace-view-model"
+import { TEAM_ROLE_META, roleForStage } from "@/lib/workspace/team-roles"
 import type { ProjectState } from "@/lib/types/project"
 import { ensureProtocol, cn } from "@/lib/utils"
 import { ProductPreview } from "@/components/workspace/product-preview"
-
-const ROLE_LABEL: Record<TeamRole, { title: string; sub: string; initials: string; tone: string }> = {
-  cofounder: { title: "Co-founder", sub: "Business · Strategy", initials: "CF", tone: "bg-rose-400 text-rose-950" },
-  product: { title: "Product", sub: "UX · Features", initials: "PR", tone: "bg-sky-400 text-sky-950" },
-  engineering: { title: "Engineering", sub: "Code · Integrations", initials: "EN", tone: "bg-violet-400 text-violet-950" },
-  launch: { title: "Launch", sub: "Deployment · Growth", initials: "LN", tone: "bg-amber-400 text-amber-950" },
-}
-
-const STATE_LABEL: Record<ProjectState, string> = {
-  created: "Getting started",
-  pending_plan: "Preparing the plan",
-  analyzing: "Understanding",
-  analysis_complete: "Ready to plan",
-  specification_ready: "Plan ready",
-  plan_ready: "Review plan",
-  awaiting_build_confirmation: "Waiting for you",
-  building: "Building",
-  build_complete: "Application ready",
-  build_failed: "Build needs attention",
-  ready: "Ready to preview",
-  deploying: "Launching",
-  deployed: "Live",
-  deployment_failed: "Launch needs attention",
-}
-
-function roleForStage(stage: string): TeamRole {
-  const s = stage.toLowerCase()
-  if (s.includes("deploy") || s.includes("launch")) return "launch"
-  if (s.includes("build") || s.includes("agent") || s.includes("code")) return "engineering"
-  if (s.includes("plan") || s.includes("spec") || s.includes("analy")) return "cofounder"
-  return "product"
-}
-
+import { TeamHandoff } from "@/components/workspace/team-handoff"
 
 export function ProjectWorkspace({ projectId, initialState }: { projectId: string; initialState: ProjectState }) {
-  const liveHint = workspaceIsLive(initialState)
   const { project: fetched, refresh } = useProject(projectId, { pollWhileBuilding: true })
   const projectState = (fetched?.state ?? initialState) as ProjectState
   const active = workspaceIsLive(projectState)
-  const { events } = useProjectActivity(projectId, active || liveHint)
+  const events = fetched?.events ?? []
   const { statusData, refresh: refreshStatus } = useProjectStatus(projectId, active)
   const { refresh: refreshSession } = useSession()
   const { buildCost, tierLabel } = useBuildCosts()
   const [busy, setBusy] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
-
-  useEffect(() => {
-    const terminal = (statusData as { state?: ProjectState } | undefined)?.state
-    if (terminal === "ready" || terminal === "build_failed" || terminal === "deployed" || terminal === "deployment_failed") {
-      void refresh()
-    }
-  }, [statusData, refresh])
 
   const project = fetched
   const state = ((statusData as { state?: ProjectState } | undefined)?.state ?? projectState) as ProjectState
@@ -125,8 +73,6 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
   const next = view.next
   const currentJourney = JOURNEY.findIndex((j) => j.id === view.phase)
   const failed = (view.phase === "build" && state === "build_failed") || (view.phase === "launch" && state === "deployment_failed")
-  const subtitle = project.understanding?.purpose ?? project.idea ?? project.sourceUrl ?? "Your business in Atai"
-  const initial = project.name.slice(0, 1).toUpperCase()
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8 lg:px-8">
@@ -135,53 +81,6 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
         <ChevronRight className="size-3.5" />
         <span className="font-medium text-foreground">{project.name}</span>
       </nav>
-
-      <header className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-5">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-primary text-lg font-semibold text-primary-foreground">
-            {initial}
-          </div>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-xl font-semibold tracking-tight text-foreground">{project.name}</h1>
-              <span className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium",
-                state === "deployed" ? "bg-success/10 text-success" : "bg-muted text-muted-foreground",
-              )}>
-                <span className={cn("size-1.5 rounded-full", state === "deployed" ? "bg-success" : view.brief.live ? "bg-primary" : "bg-muted-foreground")} />
-                {STATE_LABEL[state]}
-              </span>
-            </div>
-            <p className="mt-0.5 truncate text-sm text-muted-foreground">{subtitle}</p>
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {previewHref ? (
-            <a
-              href={previewHref}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground hover:bg-accent"
-            >
-              Open Preview
-              <ExternalLink className="size-3.5" />
-            </a>
-          ) : (
-            <span className="inline-flex items-center rounded-xl border border-border px-3.5 py-2 text-sm text-muted-foreground">
-              Preview when the application is built
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={() => setShowAdvanced((v) => !v)}
-            className="inline-flex size-10 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground hover:bg-accent"
-            aria-expanded={showAdvanced}
-            aria-label="More project tools"
-          >
-            <MoreHorizontal className="size-4" />
-          </button>
-        </div>
-      </header>
 
       <section className={cn("rounded-2xl border p-5 sm:p-6", view.brief.live ? "border-primary/30 bg-primary/5" : "border-border bg-card")}>
         <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Your Atai team</p>
@@ -324,48 +223,33 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
             </section>
           ) : null}
 
-          {project.buildSummary ? (
-            <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">From your team</p>
-              <div className="prose prose-sm mt-3 max-w-none text-sm">
-                <Markdown>{project.buildSummary.message}</Markdown>
+          {project.buildSummary?.message ? (
+            <TeamHandoff message={project.buildSummary.message} />
+          ) : null}
+
+          {(view.canLaunch || view.productionUrl || (project.deploymentHistory?.length ?? 0) > 0) ? (
+            <section id="publish" className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-sm">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">{view.productionUrl ? "Live" : "Launch"}</p>
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                {view.productionUrl
+                  ? "Your application is on production hosting. You can update the domain or publish again."
+                  : "Publish the application to production hosting. This is separate from building."}
+              </p>
+              {project.totalumProjectId ? (
+                <div className="mt-4 min-w-0">
+                  <PublishMenu projectId={projectId} projectName={project.name} totalumProjectId={project.totalumProjectId} onDeployed={() => void refresh()} />
+                </div>
+              ) : null}
+              <div className="mt-6 min-w-0 border-t border-border pt-5">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Deployments</p>
+                <p className="mt-1 text-sm text-muted-foreground">Production publishes for this application.</p>
+                <div className="mt-4 min-w-0">
+                  <DeploymentHistory projectId={projectId} />
+                </div>
               </div>
             </section>
           ) : null}
 
-          {view.canLaunch && project.totalumProjectId ? (
-            <section id="publish" className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 shadow-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Launch</p>
-              <p className="mt-2 text-sm text-muted-foreground">Publish the application to production hosting. This is separate from building.</p>
-              <div className="mt-4">
-                <PublishMenu projectId={projectId} projectName={project.name} totalumProjectId={project.totalumProjectId} onDeployed={() => void refresh()} />
-              </div>
-            </section>
-          ) : null}
-
-          <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Quick access</p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                { href: `/project/${projectId}/plan`, label: "Plan", body: "Review or edit the product plan", show: Boolean(project.specification), icon: FileText },
-                { href: `/project/${projectId}/source`, label: "Source", body: "View generated source", show: view.isBuilt, icon: Code2 },
-                { href: `/project/${projectId}/runtime`, label: "Runtime", body: "Manage application runtime", show: true, icon: Server },
-                { href: `/project/${projectId}/database`, label: "Database", body: "Manage application data", show: view.isBuilt, icon: Database },
-                { href: `/project/${projectId}/hosting`, label: "Hosting", body: "Manage hosting", show: true, icon: Globe },
-                { href: `#github-integration`, label: "GitHub", body: "Connect a repository", show: true, icon: GitBranch },
-                { href: `#publish`, label: "Deployments", body: "View launch history", show: view.canLaunch || Boolean(project.deploymentHistory?.length), icon: History },
-                { href: `#advanced`, label: "More", body: "Advanced project tools", show: true, icon: MoreHorizontal },
-              ]
-                .filter((item) => item.show)
-                .map((item) => (
-                  <Link key={item.label} href={item.href} className="rounded-2xl border border-border bg-muted/70 px-3 py-3 hover:border-primary/30 hover:bg-card">
-                    <item.icon className="mb-2 size-4 text-primary" />
-                    <p className="text-sm font-medium text-foreground">{item.label}</p>
-                    <p className="text-[11px] text-muted-foreground">{item.body}</p>
-                  </Link>
-                ))}
-            </div>
-          </section>
         </div>
 
         <aside className="flex flex-col gap-4 xl:sticky xl:top-20">
@@ -419,9 +303,9 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
           <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Team progress</p>
-              <button type="button" onClick={() => setShowAdvanced(true)} className="text-xs font-medium text-primary hover:underline">
+              <Link href={`/project/${projectId}/progress`} className="text-xs font-medium text-primary hover:underline">
                 View all
-              </button>
+              </Link>
             </div>
             {milestones.length === 0 ? (
               <p className="mt-3 text-sm text-muted-foreground">Meaningful work will show up here as the team moves.</p>
@@ -431,11 +315,11 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
                   const role = roleForStage(event.stage)
                   return (
                     <li key={event.id} className="flex gap-2.5">
-                      <span className={cn("mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold", ROLE_LABEL[role].tone)}>
-                        {ROLE_LABEL[role].initials}
+                      <span className={cn("mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold", TEAM_ROLE_META[role].tone)}>
+                        {TEAM_ROLE_META[role].initials}
                       </span>
                       <div>
-                        <p className="text-xs font-medium text-muted-foreground">{ROLE_LABEL[role].title}</p>
+                        <p className="text-xs font-medium text-muted-foreground">{TEAM_ROLE_META[role].title}</p>
                         <p className="text-sm text-foreground">{event.message}</p>
                       </div>
                     </li>
@@ -470,52 +354,15 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
         <button type="button" onClick={() => setShowAdvanced((v) => !v)} className="flex w-full items-center justify-between text-left">
           <span>
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Advanced project tools</p>
-            <p className="mt-1 text-sm text-muted-foreground">Plan, source, runtime, data, GitHub, visibility, export, and activity — still here, not in the first glance.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Activity and product assets for this project.</p>
           </span>
           <span className="text-xs font-medium text-primary">{showAdvanced ? "Hide" : "Show"}</span>
         </button>
         {showAdvanced ? (
           <div className="mt-6 flex flex-col gap-8">
-            <div className="flex flex-wrap gap-2">
-              {[
-                { href: `/project/${projectId}/collaborate`, label: "Collaborate", show: true },
-                { href: `/project/${projectId}/plan`, label: "Plan", show: Boolean(project.specification) },
-                { href: `/project/${projectId}/edit`, label: "Edit plan", show: true },
-                { href: `/project/${projectId}/source`, label: "Source", show: view.isBuilt },
-                { href: `/project/${projectId}/runtime`, label: "Runtime", show: true },
-                { href: `/project/${projectId}/database`, label: "Database", show: view.isBuilt },
-                { href: `/project/${projectId}/env`, label: "Environment", show: view.isBuilt },
-                { href: `/project/${projectId}/readme`, label: "README", show: Boolean(project.githubReadme) },
-                { href: `/project/${projectId}/tree`, label: "App tree", show: Boolean(project.githubFileTree) },
-                { href: `/project/${projectId}/repo-code`, label: "Repo code", show: Boolean(project.githubZipUrl) },
-                { href: `/api/projects/${projectId}/export`, label: "Export snapshot", show: true },
-              ]
-                .filter((l) => l.show)
-                .map((l) => (
-                  <Link key={l.href} href={l.href} className="rounded-lg border border-border px-3 py-1.5 text-xs text-foreground hover:bg-accent">
-                    {l.label}
-                  </Link>
-                ))}
-            </div>
-            {project.deploymentHistory?.length ? (
-              <div>
-                <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Deployments</p>
-                <DeploymentHistory projectId={projectId} />
-              </div>
-            ) : null}
-            {(state === "ready" || state === "build_complete") && <ProjectVisibilityToggle project={{ ...project, state }} />}
-            <div id="github-integration" className="scroll-mt-24">
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">GitHub</p>
-              <p className="mb-4 text-sm text-muted-foreground">Connect a repository when you want the application synced with GitHub. This is optional — it does not mean the application is incomplete.</p>
-              {(state === "ready" || state === "build_complete" || state === "specification_ready") ? (
-                <ProjectGitHubIntegration projectId={projectId} isBuilt={view.isBuilt} />
-              ) : (
-                <p className="text-sm text-muted-foreground">GitHub connection becomes available once a plan exists.</p>
-              )}
-            </div>
             <div>
               <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Activity</p>
-              <ProjectActivity projectId={projectId} isBuilding={view.brief.live} />
+              <ProjectActivity projectId={projectId} isBuilding={view.brief.live} events={events} />
             </div>
             <div>
               <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Product assets</p>

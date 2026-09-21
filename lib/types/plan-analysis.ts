@@ -67,4 +67,5 @@ export const SECTION_DEPENDENCIES: Record<string, string[]> = {
   features: ["flows", "data"],
   flows: ["data", "features"],
   data: ["features"],
+  seo: ["targetUsers", "valueProposition", "marketPositioning"],
 }

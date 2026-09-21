@@ -1,13 +1,9 @@
 "use client"
 
-import useSWR from "swr"
 import { Clock, Check, X, ExternalLink, Globe, Loader2 } from "lucide-react"
 import { ensureProtocol } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
-import type { DeploymentHistoryEntry } from "@/lib/types/project"
-
-const jsonFetcher = (url: string) =>
-  fetch(url, { headers: { accept: "application/json" } }).then((r) => r.json())
+import { useProject } from "@/lib/client/api"
 
 interface DeploymentHistoryProps {
   projectId: string
@@ -32,21 +28,16 @@ function formatDuration(startMs: number, endMs?: number) {
 }
 
 export function DeploymentHistory({ projectId }: DeploymentHistoryProps) {
-  const { data } = useSWR<{ ok: boolean; data: { deploymentHistory?: DeploymentHistoryEntry[] } }>(
-    `/api/projects/${projectId}`,
-    jsonFetcher,
-    { refreshInterval: 15000 },
-  )
-
-  const history = data?.data?.deploymentHistory ?? []
-
-  // Sort newest first
+  const { project } = useProject(projectId)
+  const history = project?.deploymentHistory ?? []
   const sorted = [...history].sort((a, b) => b.startedAt - a.startedAt)
 
-  if (sorted.length === 0) return null
+  if (sorted.length === 0) {
+    return <p className="text-sm text-muted-foreground">No production publishes yet.</p>
+  }
 
   return (
-    <div className="space-y-3">
+    <div className="grid gap-2">
       {sorted.map((entry) => {
         const isDeploying = entry.status === "deploying"
         const isSuccess = entry.status === "success"
@@ -55,88 +46,85 @@ export function DeploymentHistory({ projectId }: DeploymentHistoryProps) {
         return (
           <div
             key={entry.id}
-            className={`rounded-lg border p-3 ${
+            className={`min-w-0 rounded-xl border p-3 sm:p-4 ${
               isFailed
                 ? "border-destructive/20 bg-destructive/5"
                 : isDeploying
-                ? "border-primary/20 bg-primary/5"
-                : "border-border bg-card"
+                  ? "border-primary/20 bg-primary/5"
+                  : "border-border bg-background"
             }`}
           >
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5">
+            <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-start gap-2.5">
                 {isDeploying ? (
-                  <Loader2 className="size-4 text-primary animate-spin" />
+                  <Loader2 className="mt-0.5 size-4 shrink-0 animate-spin text-primary" />
                 ) : isSuccess ? (
-                  <Check className="size-4 text-green-500" />
+                  <Check className="mt-0.5 size-4 shrink-0 text-emerald-500" />
                 ) : (
-                  <X className="size-4 text-destructive" />
+                  <X className="mt-0.5 size-4 shrink-0 text-destructive" />
                 )}
-                <div>
-                  <div className="flex items-center gap-2">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <span className="text-sm font-medium">
-                      {isDeploying ? "Deploying..." : isSuccess ? "Published" : "Failed"}
+                      {isDeploying ? "Publishing…" : isSuccess ? "Published" : "Failed"}
                     </span>
                     <Badge
                       variant="outline"
                       className={`text-[10px] ${
                         isFailed
-                          ? "text-destructive border-destructive/30"
+                          ? "border-destructive/30 text-destructive"
                           : isDeploying
-                          ? "text-primary border-primary/30"
-                          : "text-green-600 border-green-500/30"
+                            ? "border-primary/30 text-primary"
+                            : "border-emerald-500/30 text-emerald-600 dark:text-emerald-400"
                       }`}
                     >
                       {entry.status}
                     </Badge>
-                    {entry.creditsCharged && (
+                    {entry.creditsCharged ? (
                       <Badge variant="secondary" className="text-[10px]">
                         {entry.creditsCharged} credits
                       </Badge>
-                    )}
+                    ) : null}
                   </div>
-                  <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="size-3" />
-                    <span>{formatTime(entry.startedAt)}</span>
-                    {entry.completedAt && (
-                      <>
-                        <span>·</span>
-                        <span>{formatDuration(entry.startedAt, entry.completedAt)}</span>
-                      </>
-                    )}
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1">
+                      <Clock className="size-3 shrink-0" />
+                      {formatTime(entry.startedAt)}
+                    </span>
+                    {entry.completedAt ? <span>{formatDuration(entry.startedAt, entry.completedAt)}</span> : null}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                {entry.productionUrl && (
-                  <a
-                    href={ensureProtocol(entry.productionUrl)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 rounded-md bg-green-600 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-green-700"
-                  >
-                    <Globe className="size-3" />
-                    Live
-                    <ExternalLink className="size-2.5" />
-                  </a>
-                )}
-                {entry.customDomain && (
-                  <a
-                    href={ensureProtocol(entry.customDomain)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 rounded-md border border-green-500/30 bg-green-500/10 px-2.5 py-1 text-xs font-medium text-green-600 transition-colors hover:bg-green-500/20"
-                  >
-                    <Globe className="size-3" />
-                    {entry.customDomain}
-                  </a>
-                )}
-              </div>
+              {(entry.productionUrl || entry.customDomain) ? (
+                <div className="flex min-w-0 flex-wrap items-center gap-2 sm:justify-end">
+                  {entry.productionUrl ? (
+                    <a
+                      href={ensureProtocol(entry.productionUrl)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex max-w-full items-center gap-1 truncate rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-emerald-700"
+                    >
+                      <Globe className="size-3 shrink-0" />
+                      <span className="truncate">Live</span>
+                      <ExternalLink className="size-2.5 shrink-0" />
+                    </a>
+                  ) : null}
+                  {entry.customDomain ? (
+                    <a
+                      href={ensureProtocol(entry.customDomain)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex max-w-full items-center gap-1 truncate rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20"
+                    >
+                      <Globe className="size-3 shrink-0" />
+                      <span className="truncate">{entry.customDomain}</span>
+                    </a>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
-            {entry.error && (
-              <p className="mt-2 text-xs text-destructive">{entry.error}</p>
-            )}
+            {entry.error ? <p className="mt-2 break-words text-xs text-destructive">{entry.error}</p> : null}
           </div>
         )
       })}

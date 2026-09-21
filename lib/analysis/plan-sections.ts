@@ -1,5 +1,6 @@
 import type { ApplicationSpecification } from "@/lib/types/specification"
-import { BusinessPlanField } from "@/lib/types/specification"
+import type { BusinessPlanField } from "@/lib/types/specification"
+import { RUNTIME_CAPABILITY_SUMMARIES } from "@/lib/analysis/runtime-capabilities"
 
 /**
  * Canonical plan sections for the Collaborate workspace.
@@ -23,6 +24,7 @@ export type PlanSectionId =
   | "flows"
   | "data"
   | "auth"
+  | "seo"
 
 export type PlanSectionStatus = "missing" | "complete" | "needs_work"
 
@@ -135,6 +137,14 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
     read: (spec) => s(spec.authenticationRequirements),
   },
   {
+    id: "seo",
+    label: "SEO & Search",
+    icon: "Search",
+    group: "Product",
+    emptyHint: "Let's plan how your app gets discovered — search metadata, sitemap, and Google verification.",
+    read: (spec) => s(spec.seoPlan),
+  },
+  {
     id: "businessModel",
     label: "Business Model",
     icon: "Briefcase",
@@ -149,6 +159,14 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
     group: "Business",
     emptyHint: "Let's work out how the business makes money.",
     read: (spec) => s(spec.revenueModel),
+  },
+  {
+    id: "runtimeIntegrations",
+    label: "Runtime & Integrations",
+    icon: "PlugZap",
+    group: "Business",
+    emptyHint: "Let's plan the Atai capabilities your app will use — AI, messaging, payments and more.",
+    read: (spec) => s(spec.runtimeIntegrations),
   },
 ]
 
@@ -228,6 +246,24 @@ export const ALLOWED_PROPOSAL_OPERATION = "update_plan_section" as const
  * them directly. */
 export const GENERATOR_MANAGED_SECTIONS: ReadonlySet<string> = new Set(["features", "flows", "data"])
 
+/** Plan sections that map 1:1 to a plain business-plan text field on the
+ * spec — clearable to empty via the businessFields branch of
+ * clearSectionUpdate. Includes SEO (a founder-owned text section). */
+export const TEXT_PLAN_SECTIONS: ReadonlySet<string> = new Set([
+  "vision",
+  "problem",
+  "solution",
+  "valueProposition",
+  "businessModel",
+  "revenueModel",
+  "runtimeIntegrations",
+  "seo",
+  "marketPositioning",
+  "marketingPlan",
+  "launchPlan",
+  "growthPlan",
+])
+
 /** Reset a section to its empty ("not defined") state immutably — used by the
  * undo path for auto-completed sections. Never throws; unknown sections are
  * returned unchanged. */
@@ -237,7 +273,22 @@ export function clearSectionUpdate(
 ): ApplicationSpecification {
   if (sectionId === "targetUsers") return { ...spec, targetUsers: [] }
   if (sectionId === "features" || sectionId === "flows" || sectionId === "data") return spec
-  const businessFields = new Set<string>(["vision", "problem", "solution", "valueProposition", "businessModel", "revenueModel", "marketPositioning", "marketingPlan", "launchPlan", "growthPlan"])
+  // Map plan-section ids to their spec text fields. "seo" (the SEO & Search
+  // section) stores in seoPlan; every other text section shares its id.
+  const businessFields = new Set<string>([
+    "vision",
+    "problem",
+    "solution",
+    "valueProposition",
+    "businessModel",
+    "revenueModel",
+    "runtimeIntegrations",
+    "marketPositioning",
+    "marketingPlan",
+    "launchPlan",
+    "growthPlan",
+  ])
+  if (sectionId === "seo") return { ...spec, seoPlan: "" }
   if (businessFields.has(sectionId)) {
     return { ...spec, [sectionId]: "" }
   }
@@ -257,7 +308,22 @@ export function applySectionUpdate(
   sectionId: PlanSectionId,
   value: string,
 ): ApplicationSpecification {
-  const businessFields = new Set<string>(["vision", "problem", "solution", "valueProposition", "businessModel", "revenueModel", "marketPositioning", "marketingPlan", "launchPlan", "growthPlan"])
+  const businessFields = new Set<string>([
+    "vision",
+    "problem",
+    "solution",
+    "valueProposition",
+    "businessModel",
+    "revenueModel",
+    "runtimeIntegrations",
+    "marketPositioning",
+    "launchPlan",
+    "marketingPlan",
+    "growthPlan",
+  ])
+  // The SEO & Search section stores under seoPlan — the plan content itself
+  // is kept verbatim and becomes mandatory build instructions.
+  if (sectionId === "seo") return { ...spec, seoPlan: value }
   if (businessFields.has(sectionId)) {
     return { ...spec, [sectionId]: value }
   }
