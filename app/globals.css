@@ -27,6 +27,9 @@
   --border: oklch(0.9 0 0);
   --input: oklch(0.9 0 0);
   --ring: oklch(0.64 0.17 42);
+  --atai-chrome: oklch(0.18 0.018 42);
+  --atai-chrome-fg: oklch(0.98 0.006 70);
+  --atai-chrome-muted: oklch(0.74 0.03 50);
 }
 
 .dark {
@@ -52,6 +55,9 @@
   --border: oklch(0.269 0 0);
   --input: oklch(0.269 0 0);
   --ring: oklch(0.73 0.16 45);
+  --atai-chrome: oklch(0.12 0.01 0);
+  --atai-chrome-fg: oklch(0.97 0 0);
+  --atai-chrome-muted: oklch(0.7 0.01 0);
 }
 
 /* ── Light Blue theme ── */
@@ -77,6 +83,9 @@
   --border: oklch(0.86 0.03 240);
   --input: oklch(0.86 0.03 240);
   --ring: oklch(0.55 0.2 250);
+  --atai-chrome: oklch(0.22 0.06 250);
+  --atai-chrome-fg: oklch(0.98 0.01 240);
+  --atai-chrome-muted: oklch(0.78 0.04 240);
 }
 
 /* ── Glass (Glassmorphism) theme ──
@@ -109,6 +118,9 @@
     radial-gradient(ellipse 80% 60% at 15% 10%, oklch(0.55 0.22 280 / 0.35), transparent 55%),
     radial-gradient(ellipse 70% 50% at 85% 90%, oklch(0.52 0.2 200 / 0.3), transparent 55%),
     radial-gradient(ellipse 60% 40% at 50% 50%, oklch(0.48 0.18 240 / 0.2), transparent 60%);
+  --atai-chrome: oklch(0.16 0.03 250 / 0.82);
+  --atai-chrome-fg: oklch(0.96 0.01 240);
+  --atai-chrome-muted: oklch(0.74 0.03 250);
 }
 
 /* Glass surfaces: cards, popovers, borders get the frosted-glass treatment */
@@ -167,6 +179,9 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-atai-chrome: var(--atai-chrome);
+  --color-atai-chrome-fg: var(--atai-chrome-fg);
+  --color-atai-chrome-muted: var(--atai-chrome-muted);
   --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --radius-sm: calc(var(--radius) - 4px);
@@ -174,6 +189,27 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
+
+.atai-chrome {
+  background-color: var(--atai-chrome);
+  color: var(--atai-chrome-fg);
+}
+
+.theme-glass .atai-chrome {
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+}
+
+.atai-team-brief {
+  background: linear-gradient(
+    105deg,
+    var(--primary),
+    color-mix(in oklab, var(--primary) 62%, var(--accent)),
+    color-mix(in oklab, var(--primary) 35%, var(--ring))
+  );
+  color: var(--primary-foreground);
+}
+
 
 @layer base {
   * {

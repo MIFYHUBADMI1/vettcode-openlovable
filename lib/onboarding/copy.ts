@@ -1,10 +1,19 @@
 export const ONBOARDING_COPY = {
-  eyebrow: "01 / Your vision",
-  contextEyebrow: "02 / Context",
+  eyebrow: "Your vision",
+  contextEyebrow: "A bit more",
   readyEyebrow: "Ready",
+  timeHint: "About 30 seconds",
+  verifyHeading: "Verify your email to unlock Atai",
+  verifyDescription:
+    "Open the link we sent, then come back here. Until you verify, your account stays locked and bonus credits won't apply.",
+  verifyResend: "Resend email",
+  verifyDone: "I've verified",
+  verifySpam: "Check spam or promotions if you don't see it within a minute.",
+  skipHint: "Skip for now",
+  selectToContinue: "Tap an option to continue",
   visionHeading: "What are you building?",
   visionDescription:
-    "Give Atai the idea, business, product, or problem you're working on. It doesn't need to be perfect. Start with what you know.",
+    "A sentence is enough. Atai uses this to shape your first plan — you can refine it later.",
   visionPlaceholder: "I'm building...",
   visionLabel: "Your vision",
   examples: [
@@ -18,7 +27,7 @@ export const ONBOARDING_COPY = {
   capabilities: ["Product direction", "Business model", "Technical plan", "Build requirements", "Launch strategy"],
   primaryCta: "Let's get to work",
   enoughCta: "I've got enough to get started",
-  secondaryCta: "I'll do this later",
+  secondaryCta: "Skip for now",
   continueToPlan: "Build the plan",
   skipError: "Couldn't save that. Try again, or refresh the page.",
   emptyHeading: "What are you building?",

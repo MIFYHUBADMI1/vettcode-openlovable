@@ -24,6 +24,13 @@ export interface PublicUser {
     signalType?: string
     businessDescription?: string
     destination?: string
+    businessGoal?: string
+    revenueTarget?: string
+    targetUsers?: string
+    effortScale?: number
+    hoursPerDay?: string
+    intent?: string
+    selectedPlanId?: string
     completedAt?: number
     dismissedAt?: number
   }

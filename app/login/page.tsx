@@ -13,9 +13,9 @@ export const metadata: Metadata = {
 export default function LoginPage() {
   return (
     <AuthShell
-      title="Welcome back, founder."
-      subtitle="Your team is ready. Pick up where you left off."
-      footer={{ prompt: "Don't have an account?", linkLabel: "Start building free →", href: "/register" }}
+      title="Welcome back."
+      subtitle="Sign in to continue your work."
+      footer={{ prompt: "Don't have an account?", linkLabel: "Create one", href: "/register" }}
       marketing={<LoginMarketing />}
     >
       <Suspense>

@@ -10,6 +10,7 @@ import {
   reverseCredits,
 } from "@/lib/billing/credit-service"
 import { SUBSCRIPTION_PLANS } from "@/lib/billing/config"
+import { activatePaidSubscription } from "@/lib/billing/activate-subscription"
 import { logger } from "@/lib/logging/logger"
 import { cryptoId } from "@/lib/store/id"
 import type { WebhookEventDoc } from "@/lib/types/db"
@@ -355,95 +356,22 @@ async function handleSubscriptionActive(data: Record<string, unknown> | undefine
 
   const subscriptionId = data.subscription_id as string
   const customer = data.customer as Record<string, unknown> | undefined
-  const customerId = customer?.customer_id as string
-  const productId = data.product_id as string
-  const status = data.status as string
-  const metadata = data.metadata as Record<string, unknown> | undefined
-  const nextBillingDate = data.next_billing_date as string
-
-  const userId = metadata?.userId as string | undefined
-  const planId = metadata?.planId as string | undefined
-  const plan = planId ? SUBSCRIPTION_PLANS.find((p) => p.id === planId) : undefined
-  const credits = plan?.mirrorCredits ?? (metadata?.credits as number | undefined) ?? 0
-
-  logger.info("webhook.dodo", "subscription.active received", { subscriptionId, userId, planId, credits, status })
-
-  if (!userId || !credits) {
-    logger.warn("webhook.dodo", "subscription.active: missing userId or credits", { subscriptionId })
-    return
-  }
-
-  const now = Date.now()
-  const periodEnd = nextBillingDate ? new Date(nextBillingDate).getTime() : now + 30 * 24 * 60 * 60 * 1000
-
-  // ── Idempotency check: has this exact subscription+period already been granted? ──
-  const grantKey = `sub_grant_${subscriptionId}_period_${Math.floor(periodEnd / 86400000)}`
-  const ledger = await creditLedgerCol()
-  const alreadyGranted = await ledger.findOne({ idempotencyKey: grantKey })
-  if (alreadyGranted) {
-    logger.info("webhook.dodo", "subscription.active: duplicate — grant already exists, skipping", { subscriptionId, grantKey })
-    return
-  }
-
-  // ── Mark old subscription record as switched-away-from (no credit change) ──
-  const subCol = await subscriptionRecordsCol()
-  const prevSub = await subCol.findOne({
-    userId,
-    status: { $in: ["active", "trialing"] },
-    dodoSubscriptionId: { $ne: subscriptionId },
+  const result = await activatePaidSubscription({
+    subscriptionId,
+    customerId: customer?.customer_id as string | undefined,
+    productId: data.product_id as string | undefined,
+    status: data.status as string | undefined,
+    metadata: data.metadata as Record<string, unknown> | undefined,
+    nextBillingDate: data.next_billing_date as string | undefined,
   })
-  if (prevSub) {
-    logger.info("webhook.dodo", "Plan switch detected — old credits KEPT, new credits ADDED on top", {
-      userId, prevPlan: prevSub.planId, newPlan: planId,
-      prevSubId: prevSub.dodoSubscriptionId, newSubId: subscriptionId,
-    })
-    await subCol.updateOne(
-      { dodoSubscriptionId: prevSub.dodoSubscriptionId },
-      { $set: { status: "cancelled", cancelAtPeriodEnd: true, updatedAt: now } },
-    )
-  }
-
-  // ── Grant new plan credits on top of existing balance ──
-  const granted = await grantSubscriptionCredits({
-    userId, amount: credits, subscriptionId,
-    planId: planId ?? "unknown", periodStart: now, periodEnd,
-    metadata: { dodoCustomerId: customerId, productId, event: "activation" },
-  })
-
-  if (granted) {
-    await recordSubscription({
-      userId,
-      dodoSubscriptionId: subscriptionId,
-      dodoCustomerId: customerId,
-      planId: planId ?? "unknown",
-      planName: plan?.name ?? "Unknown",
-      priceUSD: plan?.priceUSD ?? 0,
-      mirrorCredits: credits,
-      status: "active",
-      currentPeriodStart: now,
-      currentPeriodEnd: periodEnd,
-      nextBillingDate: nextBillingDate ? new Date(nextBillingDate).getTime() : undefined,
-      cancelAtPeriodEnd: false,
-      createdAt: now,
-      updatedAt: now,
-    })
-    logger.info("webhook.dodo", "subscription.active: credits granted", { subscriptionId, userId, credits, planId })
+  if (!result.ok) {
+    logger.warn("webhook.dodo", "subscription.active: could not record", { subscriptionId, reason: result.reason })
   }
 }
 
 /**
  * subscription.renewed — fires every month when Dodo successfully charges
  * for the next billing period.
- *
- * ONLY fires for the SAME subscription renewing (not for plan switches —
- * those fire subscription.active on a new subscription ID).
- *
- * Flow:
- * 1. Idempotency check — skip if already granted for this period
- * 2. Expire the CURRENT period's bucket for this subscription
- * 3. Grant fresh credits for the new period
- *
- * We do NOT expire credits from other subscriptions (plan switches) here.
  */
 async function handleSubscriptionRenewed(data: Record<string, unknown> | undefined) {
   if (!data) { logger.warn("webhook.dodo", "subscription.renewed: missing data"); return }

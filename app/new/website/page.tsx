@@ -1,71 +1,59 @@
 "use client"
 
-import Link from "next/link"
-import { ArrowLeft, Globe, ScanSearch, FileText, Hammer } from "lucide-react"
-import { AppHeader } from "@/components/app-header"
+import { Globe, ScanSearch, FileText, Hammer } from "lucide-react"
 import { CreateProjectForm } from "@/components/create-project-form"
 import { AuthGate } from "@/components/auth/auth-gate"
+import { CreateWorkspaceShell } from "@/components/new-project/create-shell"
 
 const STEPS = [
-  { icon: Globe, label: "Crawl", body: "We fetch the live site: pages, navigation, screenshots, and copy." },
-  { icon: ScanSearch, label: "Understand", body: "An analysis pass infers purpose, roles, flows, and data entities." },
-  { icon: FileText, label: "Specify", body: "You review and edit a full application plan before anything is built." },
-  { icon: Hammer, label: "Build", body: "Approve the plan and we scaffold the working app from it." },
+  { icon: Globe, label: "Study", body: "Atai reads the live site: pages, structure, and what it offers." },
+  { icon: ScanSearch, label: "Understand", body: "Purpose, users, and the product behind the pages." },
+  { icon: FileText, label: "Plan", body: "You review an editable plan before anything is built." },
+  { icon: Hammer, label: "Build", body: "Approve it, and Atai builds your application." },
 ]
 
 export default function NewWebsiteProjectPage() {
   return (
-    <main className="min-h-svh bg-background text-foreground">
-      <AppHeader />
-      <AuthGate next="/new/website">
-      <section className="mx-auto flex w-full max-w-5xl flex-col gap-12 px-6 py-10 lg:px-10 lg:py-14">
-        <div className="flex flex-col gap-6">
-          <Link href="/dashboard" className="inline-flex w-fit items-center gap-2 font-mono text-xs uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground">
-            <ArrowLeft className="size-3.5" />
-            Back to dashboard
-          </Link>
-          <div className="flex flex-col gap-4 border-b border-border pb-10">
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">Website mode</p>
-            <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-6xl">Mirror an existing site.</h1>
-            <p className="max-w-2xl text-pretty text-lg leading-8 text-muted-foreground">
-              Point us at a live website. We crawl it, build a structured understanding of what it does, then turn that
-              into an editable plan for the real application it should become — before a single line of the build is written.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="order-2 flex flex-col gap-6 border border-border bg-card p-6 lg:order-1 lg:p-8">
-            <div className="flex flex-col gap-2">
-              <h2 className="text-xl font-medium">Enter the source URL</h2>
+    <AuthGate next="/new/website">
+      <CreateWorkspaceShell
+        kicker="A competitor's website"
+        title="Start from a competitor's website."
+        description="Paste a live URL. Atai reads the product, understands what it does, and drafts a plan for the business you want to build — not a clone of theirs."
+      >
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_280px] lg:items-start">
+          <div className="rounded-2xl border border-border/80 bg-card/90 p-6 lg:p-8">
+            <div className="mb-6 flex flex-col gap-2">
+              <h2 className="text-xl font-medium tracking-tight">Website URL</h2>
               <p className="text-sm leading-6 text-muted-foreground">
-                Works best on marketing sites, dashboards, and app front-ends with a handful of representative pages.
+                A marketing site, dashboard, or app with a few real pages works best.
               </p>
             </div>
             <CreateProjectForm />
           </div>
 
-          <div className="order-1 flex flex-col gap-5 lg:order-2">
-            {STEPS.map((step, i) => (
-              <div key={step.label} className="flex gap-4 border-l border-border pl-5">
-                <div className="flex flex-col items-center">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-primary/40 bg-primary/10 font-mono text-xs text-primary">
-                    {i + 1}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-1 pb-1">
-                  <div className="flex items-center gap-2">
-                    <step.icon className="size-4 text-primary" />
-                    <p className="font-medium">{step.label}</p>
-                  </div>
-                  <p className="text-sm leading-6 text-muted-foreground">{step.body}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+          <aside className="flex flex-col gap-4 lg:sticky lg:top-36">
+            <div className="rounded-2xl border border-border/80 bg-card/90 p-5">
+              <p className="pb-4 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">On this path</p>
+              <ol className="flex flex-col gap-5">
+                {STEPS.map((step, i) => (
+                  <li key={step.label} className="flex gap-3">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-primary/40 bg-primary/10 font-mono text-xs text-primary">
+                      {i + 1}
+                    </span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <step.icon className="size-3.5 text-primary" />
+                        <p className="text-sm font-medium">{step.label}</p>
+                      </div>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{step.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </aside>
         </div>
-      </section>
-      </AuthGate>
-    </main>
+      </CreateWorkspaceShell>
+    </AuthGate>
   )
 }

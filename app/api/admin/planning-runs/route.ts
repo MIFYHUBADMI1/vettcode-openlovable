@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     } else if (projectId) {
       runs = await tracker.getByProjectId(projectId, limit)
     } else {
-      return fail("INVALID_REQUEST", "Must provide userId or projectId parameter", 400)
+      runs = await tracker.listRecent(Math.min(Math.max(limit, 1), 100))
     }
 
     return ok({ runs })

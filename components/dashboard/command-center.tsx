@@ -18,6 +18,7 @@ import { ProjectThumbnail } from "@/components/project-thumbnail"
 import { GitHubIcon } from "@/components/github-icon"
 import { Skeleton } from "@/components/ui/skeleton"
 import { buttonVariants } from "@/components/ui/button"
+import { CofounderLauncherInline } from "@/components/cofounder/cofounder-launcher"
 import { relativeTime } from "@/lib/client/format"
 import { useProjectActivity, useProjects, useSession, type ActivityEvent } from "@/lib/client/api"
 import {
@@ -61,7 +62,7 @@ function severityClass(severity: ActionSeverity): string {
 }
 
 export function DashboardCommandCenter() {
-  const { session, isLoading: sessionLoading, error: sessionError } = useSession()
+  const { session, error: sessionError } = useSession()
   const { projects, isLoading: projectsLoading, error: projectsError } = useProjects()
   const firstName = session?.user.name?.trim().split(/\s+/)[0] || "there"
   const greeting = greetingForHour(new Date().getHours())
@@ -80,7 +81,7 @@ export function DashboardCommandCenter() {
     Boolean(session?.user.onboarding?.dismissedAt) &&
     !session?.user.onboarding?.completedAt
 
-  if (sessionLoading || !session) {
+  if (!session) {
     return (
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-8 lg:px-8">
         <Skeleton className="h-8 w-56" />
@@ -103,6 +104,22 @@ export function DashboardCommandCenter() {
           </p>
           <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">Here's where your business stands.</h2>
         </header>
+
+        <CofounderLauncherInline />
+
+        <section className="flex flex-col gap-3 rounded-2xl border border-border bg-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Shape Atai</p>
+            <p className="mt-1 text-sm">Have an idea for Atai? Request it, vote with other founders, and follow it through to shipped.</p>
+          </div>
+          <Link
+            href="/feature-requests"
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "shrink-0")}
+          >
+            <Lightbulb className="size-3.5" />
+            Feature requests
+          </Link>
+        </section>
 
         {sessionError || projectsError ? (
           <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
@@ -144,18 +161,16 @@ export function DashboardCommandCenter() {
 
         {projects.length > 0 ? <BusinessesList projects={projects} /> : null}
 
-        {projects.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <UsageCard
-              available={session.credits.available}
-              balance={session.credits.balance}
-              emailVerified={session.user.emailVerified}
-            />
-            <DiscoverCard />
-            <ShapeAtaiCard />
-            <ReferralCard />
-          </div>
-        ) : null}
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <UsageCard
+            available={session.credits.available}
+            balance={session.credits.balance}
+            emailVerified={session.user.emailVerified}
+          />
+          <DiscoverCard />
+          <ShapeAtaiCard />
+          <ReferralCard />
+        </div>
       </div>
     </>
   )

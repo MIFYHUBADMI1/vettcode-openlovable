@@ -18,6 +18,13 @@ interface AdminUserItem {
     source?: string
     role?: string
     signalType?: string
+    businessGoal?: string
+    revenueTarget?: string
+    targetUsers?: string
+    effortScale?: number
+    hoursPerDay?: string
+    intent?: string
+    selectedPlanId?: string
     completedAt?: number
   }
 }
@@ -49,6 +56,13 @@ export async function GET() {
         source: u.onboarding.source,
         role: u.onboarding.role,
         signalType: u.onboarding.signalType,
+        businessGoal: u.onboarding.businessGoal,
+        revenueTarget: u.onboarding.revenueTarget,
+        targetUsers: u.onboarding.targetUsers,
+        effortScale: u.onboarding.effortScale,
+        hoursPerDay: u.onboarding.hoursPerDay,
+        intent: u.onboarding.intent,
+        selectedPlanId: u.onboarding.selectedPlanId,
         completedAt: u.onboarding.completedAt,
       } : undefined,
     }))

@@ -46,6 +46,12 @@ interface AdminStats {
     bySource: OnboardingBreakdown[]
     byRole: OnboardingBreakdown[]
     bySignalType: OnboardingBreakdown[]
+    byRevenueTarget: OnboardingBreakdown[]
+    byTargetUsers: OnboardingBreakdown[]
+    byEffortScale: OnboardingBreakdown[]
+    byHoursPerDay: OnboardingBreakdown[]
+    byIntent: OnboardingBreakdown[]
+    bySelectedPlan: OnboardingBreakdown[]
   }
   publishing: {
     total: number
@@ -209,46 +215,47 @@ export async function GET(request: NextRequest) {
       $and: onboardingBaseMatch,
     })
 
-    const onboardingSourceMatch: Record<string, unknown>[] = [
-      { deletedAt: { $exists: false } },
-      { "onboarding.source": { $exists: true, $ne: null } },
-    ]
-    if (onboardingFrom) onboardingSourceMatch.push({ "onboarding.completedAt": { $gte: onboardingFrom } })
-    if (onboardingTo) onboardingSourceMatch.push({ "onboarding.completedAt": { $lte: onboardingTo } })
+    const groupOnboarding = async (field: string) => {
+      const match: Record<string, unknown>[] = [
+        { deletedAt: { $exists: false } },
+        { [`onboarding.${field}`]: { $exists: true, $ne: null } },
+      ]
+      if (onboardingFrom) match.push({ "onboarding.completedAt": { $gte: onboardingFrom } })
+      if (onboardingTo) match.push({ "onboarding.completedAt": { $lte: onboardingTo } })
+      return usersCol_
+        .aggregate<{ _id?: unknown; count: number }>([
+          { $match: { $and: match } },
+          { $group: { _id: `$onboarding.${field}`, count: { $sum: 1 } } },
+          { $sort: { count: -1 } },
+          { $limit: 12 },
+        ])
+        .toArray()
+    }
 
-    const onboardingSourceAgg = await usersCol_.aggregate([
-      { $match: { $and: onboardingSourceMatch } },
-      { $group: { _id: "$onboarding.source", count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 10 },
-    ]).toArray()
+    const toBreakdown = (rows: { _id?: unknown; count: number }[]) =>
+      rows.map((d) => ({ label: String(d._id ?? "Unknown"), count: d.count }))
 
-    const onboardingRoleMatch: Record<string, unknown>[] = [
-      { deletedAt: { $exists: false } },
-      { "onboarding.role": { $exists: true, $ne: null } },
-    ]
-    if (onboardingFrom) onboardingRoleMatch.push({ "onboarding.completedAt": { $gte: onboardingFrom } })
-    if (onboardingTo) onboardingRoleMatch.push({ "onboarding.completedAt": { $lte: onboardingTo } })
-
-    const onboardingRoleAgg = await usersCol_.aggregate([
-      { $match: { $and: onboardingRoleMatch } },
-      { $group: { _id: "$onboarding.role", count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 10 },
-    ]).toArray()
-
-    const onboardingSignalMatch: Record<string, unknown>[] = [
-      { deletedAt: { $exists: false } },
-      { "onboarding.signalType": { $exists: true, $ne: null } },
-    ]
-    if (onboardingFrom) onboardingSignalMatch.push({ "onboarding.completedAt": { $gte: onboardingFrom } })
-    if (onboardingTo) onboardingSignalMatch.push({ "onboarding.completedAt": { $lte: onboardingTo } })
-
-    const onboardingSignalAgg = await usersCol_.aggregate([
-      { $match: { $and: onboardingSignalMatch } },
-      { $group: { _id: "$onboarding.signalType", count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-    ]).toArray()
+    const [
+      onboardingSourceAgg,
+      onboardingRoleAgg,
+      onboardingSignalAgg,
+      onboardingRevenueAgg,
+      onboardingUsersAgg,
+      onboardingEffortAgg,
+      onboardingHoursAgg,
+      onboardingIntentAgg,
+      onboardingPlanAgg,
+    ] = await Promise.all([
+      groupOnboarding("source"),
+      groupOnboarding("role"),
+      groupOnboarding("signalType"),
+      groupOnboarding("revenueTarget"),
+      groupOnboarding("targetUsers"),
+      groupOnboarding("effortScale"),
+      groupOnboarding("hoursPerDay"),
+      groupOnboarding("intent"),
+      groupOnboarding("selectedPlanId"),
+    ])
 
     // Publishing analytics
     const publishTotal = await publishCol_.countDocuments({})
@@ -403,9 +410,15 @@ export async function GET(request: NextRequest) {
       },
       onboarding: {
         completed: onboardingCompleted,
-        bySource: onboardingSourceAgg.map((d) => ({ label: d._id ?? "Unknown", count: d.count })),
-        byRole: onboardingRoleAgg.map((d) => ({ label: d._id ?? "Unknown", count: d.count })),
-        bySignalType: onboardingSignalAgg.map((d) => ({ label: d._id ?? "Unknown", count: d.count })),
+        bySource: toBreakdown(onboardingSourceAgg),
+        byRole: toBreakdown(onboardingRoleAgg),
+        bySignalType: toBreakdown(onboardingSignalAgg),
+        byRevenueTarget: toBreakdown(onboardingRevenueAgg),
+        byTargetUsers: toBreakdown(onboardingUsersAgg),
+        byEffortScale: toBreakdown(onboardingEffortAgg),
+        byHoursPerDay: toBreakdown(onboardingHoursAgg),
+        byIntent: toBreakdown(onboardingIntentAgg),
+        bySelectedPlan: toBreakdown(onboardingPlanAgg),
       },
       publishing: {
         total: publishTotal,

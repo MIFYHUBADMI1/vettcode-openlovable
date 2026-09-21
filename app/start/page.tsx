@@ -9,6 +9,7 @@ import { peekPendingStart, restorePendingStart, takePendingStart } from "@/lib/a
 import { useProjects, useSession } from "@/lib/client/api"
 import { recordOnboardingActivation } from "@/lib/onboarding/activate"
 import { createProjectFromPending } from "@/lib/projects/continue-start"
+import { applyCheckoutReturn } from "@/lib/billing/checkout-return-client"
 import { START_HREF } from "@/lib/start/detect-input"
 
 const STEPS = [
@@ -39,6 +40,10 @@ function StartContinueInner() {
     void run()
 
     async function run() {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get("subscription_id")) {
+        await applyCheckoutReturn(params)
+      }
       const pending = await restorePendingStart()
       if (!pending?.prompt) {
         router.replace("/new")

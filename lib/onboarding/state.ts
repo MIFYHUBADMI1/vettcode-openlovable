@@ -16,6 +16,77 @@ export type OnboardingSource =
 
 export type FirstMissionSurface = "hide" | "redirect-pending" | "mission" | "empty-cta"
 
+export type MissionBeat =
+  | "vision"
+  | "verify"
+  | "context"
+  | "source"
+  | "role"
+  | "win"
+  | "users"
+  | "pace"
+  | "intent"
+  | "plan"
+
+export type FirstMissionDraft = {
+  vision?: string
+  followUp?: string
+  mode?: StartMode
+  modeTouched?: boolean
+  beat?: MissionBeat
+  source?: string
+  role?: string
+  building?: "url" | "idea" | ""
+  revenueTarget?: string
+  targetUsers?: string
+  effortScale?: number | null
+  hoursPerDay?: string
+  intent?: string
+  selectedPlanId?: string
+}
+
+export function missionBeatList(includeContext: boolean, includeVerify = false): MissionBeat[] {
+  const beats: MissionBeat[] = ["vision"]
+  if (includeVerify) beats.push("verify")
+  if (includeContext) beats.push("context")
+  beats.push("source", "role", "win", "users", "pace", "intent", "plan")
+  return beats
+}
+
+export function missionProgress(beat: MissionBeat, includeContext: boolean, includeVerify = false) {
+  const beats = missionBeatList(includeContext, includeVerify)
+  const index = Math.max(0, beats.indexOf(beat))
+  return {
+    step: index + 1,
+    total: beats.length,
+    percent: Math.round(((index + 1) / beats.length) * 100),
+  }
+}
+
+export function pathWithoutMissionParam(pathname: string, search: string): string {
+  const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search)
+  params.delete("mission")
+  const query = params.toString()
+  const path = pathname || "/dashboard"
+  return query ? `${path}?${query}` : path
+}
+
+export function parseFirstMissionDraft(raw: string | null): FirstMissionDraft | null {
+  if (!raw) return null
+  const trimmed = raw.trim()
+  if (!trimmed) return null
+  if (trimmed.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(trimmed) as FirstMissionDraft
+      if (!parsed || typeof parsed !== "object") return null
+      return parsed
+    } catch {
+      return null
+    }
+  }
+  return { vision: trimmed }
+}
+
 export function sourceForMode(mode: StartMode, origin: "landing" | "dashboard" | "direct"): OnboardingSource {
   if (origin === "direct") return "direct_project_creation"
   const prefix = origin === "landing" ? "landing" : "dashboard"

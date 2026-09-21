@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth/session"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { usersCol } from "@/lib/db/collections"
 import type { UserOnboarding } from "@/lib/types/db"
+import { parseOnboardingProfile } from "@/lib/onboarding/profile"
 
 /**
  * POST /api/auth/onboarding
@@ -21,6 +22,13 @@ export async function POST(req: Request) {
       destination?: string
       source?: string
       signalType?: "url" | "idea"
+      businessGoal?: string
+      revenueTarget?: string
+      targetUsers?: string
+      effortScale?: number
+      hoursPerDay?: string
+      intent?: string
+      selectedPlanId?: string
       dismissed?: boolean
       activated?: boolean
     }
@@ -29,17 +37,25 @@ export async function POST(req: Request) {
       return fail("VALIDATION", "Cannot dismiss and activate in the same request.", 422)
     }
 
+    const parsed = parseOnboardingProfile(body)
     const col = await usersCol()
     const existing = (user.onboarding ?? {}) as UserOnboarding
     const now = Date.now()
 
     const next: UserOnboarding = {
       ...existing,
-      businessDescription: body.businessDescription?.trim() || existing.businessDescription,
-      role: body.role?.trim() || existing.role,
+      businessDescription: parsed.businessDescription || existing.businessDescription,
+      role: parsed.role || existing.role,
       destination: body.destination || existing.destination,
-      source: body.source || existing.source,
-      signalType: body.signalType || existing.signalType,
+      source: parsed.source || existing.source,
+      signalType: parsed.signalType || existing.signalType,
+      businessGoal: parsed.businessGoal || existing.businessGoal,
+      revenueTarget: parsed.revenueTarget || existing.revenueTarget,
+      targetUsers: parsed.targetUsers || existing.targetUsers,
+      effortScale: parsed.effortScale ?? existing.effortScale,
+      hoursPerDay: parsed.hoursPerDay || existing.hoursPerDay,
+      intent: parsed.intent || existing.intent,
+      selectedPlanId: parsed.selectedPlanId || existing.selectedPlanId,
     }
 
     if (body.dismissed) {

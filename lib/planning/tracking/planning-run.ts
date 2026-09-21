@@ -407,4 +407,31 @@ export class PlanningRunTracker {
       return []
     }
   }
+
+  async listRecent(limit = 40): Promise<PlanningRun[]> {
+    try {
+      const col = await planningRunsCol()
+      const docs = await col.find({}).sort({ startedAt: -1 }).limit(limit).toArray()
+      return docs.map((doc) => ({
+        id: doc.id,
+        projectId: doc.projectId,
+        userId: doc.userId,
+        mode: doc.mode,
+        startedAt: doc.startedAt,
+        completedAt: doc.completedAt,
+        status: doc.status,
+        stageResults: doc.stageResults as StageResult[],
+        totalTokens: doc.totalTokens,
+        totalDurationMs: doc.totalDurationMs,
+        outcome: doc.outcome as RunOutcome | undefined,
+        error: doc.error,
+        createdAt: doc.createdAt,
+      }))
+    } catch (error) {
+      logger.error("planning.run.list_recent_failed", "Failed to list recent planning runs", {
+        error: error instanceof Error ? error.message : String(error),
+      })
+      return []
+    }
+  }
 }

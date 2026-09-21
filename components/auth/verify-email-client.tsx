@@ -53,7 +53,7 @@ export function VerifyEmailClient({
             <p className="mt-2 text-sm text-muted-foreground text-pretty">
               Your email address has been confirmed. You&apos;re all set.
             </p>
-            <Link href="/" className={`${buttonVariants({ size: "lg" })} mt-6 w-full`}>Go to dashboard</Link>
+            <Link href="/dashboard?mission=1" className={`${buttonVariants({ size: "lg" })} mt-6 w-full`}>Continue onboarding</Link>
           </>
         )}
         {(status === "error" || status === "missing") && (
@@ -64,7 +64,7 @@ export function VerifyEmailClient({
                 ? "This link is missing a verification token."
                 : message ?? "This verification link is invalid or has expired."}
             </p>
-            <Link href="/" className={`${buttonVariants({ size: "lg" })} mt-6 w-full`}>Go to dashboard</Link>
+            <Link href="/dashboard" className={`${buttonVariants({ size: "lg" })} mt-6 w-full`}>Go to dashboard</Link>
           </>
         )}
       </div>

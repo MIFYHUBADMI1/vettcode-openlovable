@@ -8,6 +8,7 @@ import type {
   FeatureRequestVoteDoc,
 } from "@/lib/feature-requests/types"
 import type { MirrorProject, BuildRun } from "@/lib/types/project"
+import type { CofounderConversationMongoDoc, PendingActionRecord } from "@/lib/cofounder/types"
 import type { CreditLedgerEntry, BuildAuthorization, PaymentRecord, SubscriptionRecord } from "@/lib/billing/billing-types"
 
 /** Cache the Db reference across hot reloads so we don't re-resolve per call. */
@@ -125,6 +126,16 @@ export async function featureRequestUpdatesCol() {
 
 export async function featureRequestInternalNotesCol() {
   return (await getDbCached()).collection<FeatureRequestInternalNoteDoc & { _id?: unknown }>("feature_request_internal_notes")
+}
+
+// ─── Co-founder workspace collections ────────────────────────────────────────
+
+export async function cofounderConversationsCol() {
+  return (await getDbCached()).collection<CofounderConversationMongoDoc>("cofounder_conversations")
+}
+
+export async function cofounderPendingActionsCol() {
+  return (await getDbCached()).collection<PendingActionRecord>("cofounder_pending_actions")
 }
 
 // ─── Type Definitions for Firecrawl Cache ────────────────────────────────────
@@ -354,6 +365,20 @@ export async function ensureIndexes() {
   const featureHistory = await featureRequestStatusHistoryCol()
   const featureUpdates = await featureRequestUpdatesCol()
   const featureNotes = await featureRequestInternalNotesCol()
+
+  // Co-founder workspace indexes: per-user conversation lookups and
+  // efficient, ownership-scoped pending-action claims.
+  const cofounderConversations = await cofounderConversationsCol()
+  const cofounderPendingActions = await cofounderPendingActionsCol()
+  await Promise.all([
+    cofounderConversations.createIndex({ id: 1 }, { unique: true, sparse: true, name: "cofounder_conversations_id_unique" }),
+    cofounderConversations.createIndex({ userId: 1, updatedAt: -1 }),
+    cofounderPendingActions.createIndex({ id: 1 }, { unique: true, name: "cofounder_pending_actions_id_unique" }),
+    cofounderPendingActions.createIndex({ userId: 1, status: 1, createdAt: -1 }),
+    cofounderPendingActions.createIndex({ conversationId: 1, status: 1 }),
+    cofounderPendingActions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0, sparse: true }),
+  ])
+
   await Promise.all([
     featureRequests.createIndex({ id: 1 }, { unique: true, sparse: true, name: "feature_requests_id_unique" }),
     featureRequests.createIndex({ status: 1, voteCount: -1 }),

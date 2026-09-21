@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/auth/session"
-import { getDodoConfig, getAppUrl } from "@/lib/env"
+import { getDodoConfig } from "@/lib/env"
 import { SUBSCRIPTION_PLANS, PERMANENT_CREDIT_PACKS } from "@/lib/billing/config"
 import { logger } from "@/lib/logging/logger"
 import {
@@ -9,6 +9,7 @@ import {
 } from "@/lib/billing/dodo-service"
 import { checkoutSessionLocks, checkoutRateLimiter } from "@/lib/cache/locks"
 import { detectCountryFromRequest, resolveBillingCurrency } from "@/lib/billing/currency"
+import { checkoutReturnUrl } from "@/lib/billing/checkout-return"
 
 /**
  * Create a Dodo Payments checkout session.
@@ -37,6 +38,7 @@ interface CheckoutRequest {
   type: "subscription" | "permanent"
   /** Plan ID (for subscriptions) or pack ID (for permanent credits) */
   productId: string
+  returnPath?: string
 }
 
 export async function POST(req: Request) {
@@ -92,7 +94,7 @@ export async function POST(req: Request) {
       environment: environment as "test_mode" | "live_mode",
     })
 
-    const returnUrl = `${getAppUrl()}/settings/billing`
+    const returnUrl = checkoutReturnUrl(body.returnPath)
 
     // Use a lock to deduplicate concurrent checkout requests for the same user+product.
     // acquire() returns null if the lock is already held — we return 429 and the

@@ -1,0 +1,6 @@
+feat: add feature requests board with voting and admin review
+
+Give founders a secondary Shape Atai loop: submit ideas, vote once per
+request, and follow status through review to shipped. Admins get a
+needs-review workspace with internal notes, public updates, and
+server-enforced permissions.

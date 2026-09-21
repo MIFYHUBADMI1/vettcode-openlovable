@@ -31,6 +31,13 @@ interface AdminUser {
     source?: string
     role?: string
     signalType?: string
+    businessGoal?: string
+    revenueTarget?: string
+    targetUsers?: string
+    effortScale?: number
+    hoursPerDay?: string
+    intent?: string
+    selectedPlanId?: string
     completedAt?: number
   }
 }
@@ -654,6 +661,27 @@ export default function AdminUsersPage() {
                   )}
                   {selectedUser.onboarding?.signalType && (
                     <div className="flex justify-between"><span className="text-muted-foreground">Building</span><span>{selectedUser.onboarding.signalType === "url" ? "Website mirroring" : selectedUser.onboarding.signalType === "idea" ? "From scratch" : selectedUser.onboarding.signalType}</span></div>
+                  )}
+                  {selectedUser.onboarding?.businessGoal && (
+                    <div className="flex justify-between gap-4"><span className="text-muted-foreground">Goal</span><span className="text-right">{selectedUser.onboarding.businessGoal}</span></div>
+                  )}
+                  {selectedUser.onboarding?.revenueTarget && (
+                    <div className="flex justify-between"><span className="text-muted-foreground">Revenue target</span><span>{selectedUser.onboarding.revenueTarget}</span></div>
+                  )}
+                  {selectedUser.onboarding?.targetUsers && (
+                    <div className="flex justify-between"><span className="text-muted-foreground">Users wanted</span><span>{selectedUser.onboarding.targetUsers}</span></div>
+                  )}
+                  {selectedUser.onboarding?.effortScale && (
+                    <div className="flex justify-between"><span className="text-muted-foreground">Effort</span><span>{selectedUser.onboarding.effortScale}/10</span></div>
+                  )}
+                  {selectedUser.onboarding?.hoursPerDay && (
+                    <div className="flex justify-between"><span className="text-muted-foreground">Hours / day</span><span>{selectedUser.onboarding.hoursPerDay}</span></div>
+                  )}
+                  {selectedUser.onboarding?.intent && (
+                    <div className="flex justify-between"><span className="text-muted-foreground">Intent</span><span>{selectedUser.onboarding.intent}</span></div>
+                  )}
+                  {selectedUser.onboarding?.selectedPlanId && (
+                    <div className="flex justify-between"><span className="text-muted-foreground">Plan chosen</span><span>{selectedUser.onboarding.selectedPlanId}</span></div>
                   )}
                   {selectedUser.lastLoginAt && (
                     <div className="flex justify-between"><span className="text-muted-foreground">Last login</span><span>{formatDate(selectedUser.lastLoginAt)}</span></div>

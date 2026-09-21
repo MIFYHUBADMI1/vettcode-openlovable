@@ -11,6 +11,8 @@ interface CheckoutButtonProps {
   children: React.ReactNode
   className?: string
   disabled?: boolean
+  returnPath?: string
+  onBeforeCheckout?: () => void | Promise<void>
 }
 
 /**
@@ -28,6 +30,8 @@ export function CheckoutButton({
   children,
   className,
   disabled = false,
+  returnPath,
+  onBeforeCheckout,
 }: CheckoutButtonProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -38,10 +42,11 @@ export function CheckoutButton({
     setError(null)
 
     try {
+      await onBeforeCheckout?.()
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, productId }),
+        body: JSON.stringify({ type, productId, returnPath }),
       })
 
       const json = await res.json()
@@ -63,7 +68,7 @@ export function CheckoutButton({
   return (
     <div className="flex flex-col gap-1.5">
       <button
-        onClick={handleCheckout}
+        onClick={() => void handleCheckout()}
         disabled={loading || disabled}
         className={cn(
           "inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors",

@@ -162,5 +162,5 @@ export async function requestPasswordReset(email: string) {
 }
 
 export async function resendVerificationEmail() {
-  await postJson("/api/auth/resend-verification")
+  return postJson<{ sent?: boolean; alreadyVerified?: boolean; reason?: string }>("/api/auth/resend-verification")
 }

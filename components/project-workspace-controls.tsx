@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { postJson, useProject, useSession } from "@/lib/client/api"
+
 import { useBuildCosts } from "@/lib/client/build-costs"
 import { ensureProtocol } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -35,18 +36,6 @@ export function ProjectWorkspaceControls({ projectId }: { projectId: string }) {
 
   const { buildCost, tierLabel, followupCost } = useBuildCosts()
 
-  // Show warning once if spec was sanitized
-  const [sanitizedWarned, setSanitizedWarned] = useState(false)
-  useEffect(() => {
-    if (project?.specSanitized && !sanitizedWarned) {
-      toast.warning("Plan adjusted", {
-        description: "Some unsupported technologies (e.g. PostgreSQL, Prisma) were automatically replaced with Totalum SDK equivalents.",
-        duration: 8000,
-      })
-      setSanitizedWarned(true)
-    }
-  }, [project?.specSanitized, sanitizedWarned])
-
   if (!project) return null
   const canBuild = Boolean(project.specification) && !["building", "deploying"].includes(project.state)
   const canPrompt = Boolean(project.totalumProjectId) && !["building", "deploying"].includes(project.state)
@@ -59,8 +48,8 @@ export function ProjectWorkspaceControls({ projectId }: { projectId: string }) {
   const buildTierLabel = tierLabel(tier)
   const followupCostNum = followupCost(tier)
 
-  return <div className="flex flex-col gap-6">
-    {error ? <p role="alert" className="border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
+  return <div className="mt-4 flex flex-col gap-5">
+    {error ? <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
     {project.specSanitized ? (
       <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
         <p className="text-sm font-medium text-amber-600 dark:text-amber-400">⚠️ Plan auto-adjusted</p>
@@ -76,7 +65,7 @@ export function ProjectWorkspaceControls({ projectId }: { projectId: string }) {
       {project.developmentUrl ? <a className="font-mono text-xs text-primary hover:underline" href={ensureProtocol(project.developmentUrl)} target="_blank" rel="noreferrer">Open preview</a> : null}
     </div>
     <div className="flex flex-col gap-2">
-      <Label htmlFor="workspace-instruction">Continue building</Label>
+      <Label htmlFor="workspace-instruction">Tell the engineering team what to do next</Label>
       <Textarea id="workspace-instruction" value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Describe the next change you want to make…" disabled={!canPrompt || busy} />
       <Button variant="outline" onClick={sendPrompt} disabled={!canPrompt || busy || prompt.trim().length < 3}>Send instruction · {followupCostNum.toLocaleString()} credits</Button>
     </div>

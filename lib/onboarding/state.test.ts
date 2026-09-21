@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest"
 import {
   composeVision,
+  missionProgress,
   needsFollowUp,
+  parseFirstMissionDraft,
+  pathWithoutMissionParam,
   resolveFirstMissionSurface,
   signalForMode,
   sourceForMode,
@@ -79,5 +82,26 @@ describe("onboarding state", () => {
   it("keeps the original vision when composing follow-up", () => {
     expect(composeVision("Build a waste platform", "Independent restaurants")).toContain("Build a waste platform")
     expect(composeVision("Build a waste platform", "Independent restaurants")).toContain("Independent restaurants")
+  })
+
+  it("reports step progress so founders can see when onboarding ends", () => {
+    expect(missionProgress("vision", false)).toMatchObject({ step: 1, total: 8 })
+    expect(missionProgress("win", false)).toMatchObject({ step: 4, total: 8 })
+    expect(missionProgress("plan", false)).toMatchObject({ step: 8, total: 8 })
+    expect(missionProgress("context", true).step).toBe(2)
+    expect(missionProgress("verify", false, true)).toMatchObject({ step: 2, total: 9 })
+  })
+
+  it("drops mission=1 from the dashboard url so skip can stick", () => {
+    expect(pathWithoutMissionParam("/dashboard", "mission=1")).toBe("/dashboard")
+    expect(pathWithoutMissionParam("/dashboard", "?mission=1&tab=activity")).toBe("/dashboard?tab=activity")
+  })
+
+  it("restores a JSON draft without dropping the current beat", () => {
+    expect(parseFirstMissionDraft(JSON.stringify({ vision: "Clinic OS", beat: "win" }))).toMatchObject({
+      vision: "Clinic OS",
+      beat: "win",
+    })
+    expect(parseFirstMissionDraft("plain vision text")).toMatchObject({ vision: "plain vision text" })
   })
 })

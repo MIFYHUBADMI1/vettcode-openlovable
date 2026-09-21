@@ -285,6 +285,124 @@ export function getDashboardAttentionItems(input: {
   return items
 }
 
+export type InboxKind = "action" | "progress" | "update"
+
+export interface InboxItem {
+  id: string
+  at: number
+  title: string
+  description: string
+  href: string
+  actionLabel: string
+  severity: ActionSeverity
+  kind: InboxKind
+}
+
+const SEVERITY_RANK: Record<ActionSeverity, number> = {
+  error: 0,
+  warning: 1,
+  success: 2,
+  info: 3,
+  neutral: 4,
+}
+
+const RECENT_MS = 14 * 24 * 60 * 60 * 1000
+
+export function buildNotificationInbox(input: {
+  projects: ProjectSummary[]
+  emailVerified: boolean
+  creditsAvailable?: number
+  now?: number
+  featureRequests?: { id: string; title: string; status: string; updatedAt: number }[]
+}): InboxItem[] {
+  const now = input.now ?? Date.now()
+  const items: InboxItem[] = []
+  const covered = new Set<string>()
+
+  for (const item of getDashboardAttentionItems(input)) {
+    const project = item.projectId ? input.projects.find((p) => p.id === item.projectId) : undefined
+    items.push({
+      id: item.id,
+      at: project?.updatedAt ?? now,
+      title: item.title,
+      description: item.description,
+      href: item.href,
+      actionLabel: item.actionLabel,
+      severity: item.severity,
+      kind: "action",
+    })
+    if (item.projectId) covered.add(item.projectId)
+  }
+
+  for (const project of input.projects) {
+    if (covered.has(project.id)) continue
+    if (project.state === "building" || project.state === "analyzing" || project.state === "deploying") {
+      const status = interpretProjectState(project.state, project.id)
+      items.push({
+        id: `progress-${project.id}-${project.state}`,
+        at: project.updatedAt,
+        title: status.headline,
+        description: `${project.name}: ${status.description}`,
+        href: status.primaryAction.href,
+        actionLabel: status.primaryAction.label,
+        severity: "info",
+        kind: "progress",
+      })
+      covered.add(project.id)
+      continue
+    }
+    if (
+      (project.state === "ready" || project.state === "deployed" || project.state === "build_complete") &&
+      now - project.updatedAt <= RECENT_MS
+    ) {
+      const status = interpretProjectState(project.state, project.id)
+      items.push({
+        id: `ready-${project.id}-${project.state}-${project.updatedAt}`,
+        at: project.updatedAt,
+        title: status.headline,
+        description: `${project.name}: ${status.description}`,
+        href: status.primaryAction.href,
+        actionLabel: status.primaryAction.label,
+        severity: "success",
+        kind: "update",
+      })
+    }
+  }
+
+  const requestStatusCopy: Record<string, { title: string; action: string }> = {
+    under_review: { title: "Atai is reviewing your request", action: "View request" },
+    planned: { title: "Atai plans to build this", action: "View request" },
+    in_progress: { title: "Atai is building your request", action: "View request" },
+    shipped: { title: "Your request shipped", action: "See what's new" },
+    declined: { title: "Atai decided not to pursue this", action: "View request" },
+  }
+  const requests = [...(input.featureRequests ?? [])]
+    .filter((r) => requestStatusCopy[r.status])
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .slice(0, 3)
+  for (const request of requests) {
+    const copy = requestStatusCopy[request.status]!
+    items.push({
+      id: `fr-${request.id}-${request.status}-${request.updatedAt}`,
+      at: request.updatedAt,
+      title: copy.title,
+      description: request.title,
+      href: `/feature-requests/${request.id}`,
+      actionLabel: copy.action,
+      severity: request.status === "shipped" ? "success" : request.status === "declined" ? "neutral" : "info",
+      kind: "update",
+    })
+  }
+
+  return items
+    .sort((a, b) => {
+      const sr = SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]
+      if (sr !== 0) return sr
+      return b.at - a.at
+    })
+    .slice(0, 12)
+}
+
 const NOISY_STAGES = new Set(["heartbeat", "poll", "status"])
 
 export function filterMeaningfulActivity(

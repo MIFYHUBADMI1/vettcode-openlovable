@@ -16,6 +16,10 @@ export async function recordOnboardingActivation(input: {
   })
 }
 
+export async function saveOnboardingProfile(input: Record<string, unknown>) {
+  await postJson("/api/auth/onboarding", input)
+}
+
 export async function recordOnboardingDismissed() {
   await postJson("/api/auth/onboarding", { dismissed: true })
 }

@@ -23,6 +23,8 @@ import { CreditMeter } from "@/components/credit-meter"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { VerifyEmailBanner } from "@/components/verify-email-banner"
 import { DashboardNotifications } from "@/components/dashboard/dashboard-notifications"
+import { CofounderPanel, useCofounderPanel } from "@/components/cofounder/cofounder-panel"
+import { workspaceGrowNav } from "@/components/workspace/atai-nav"
 import { useProjects } from "@/lib/client/api"
 import { interpretProjectState, selectActiveProject } from "@/lib/dashboard/view-model"
 import type { ProjectSummary } from "@/lib/types/project"
@@ -32,17 +34,30 @@ const NAV = [
   { href: "/dashboard", label: "Home", icon: Home },
   { href: "/projects", label: "Businesses", icon: Building2 },
   { href: "/new", label: "New business", icon: Sparkles },
+] as const
+
+const DISCOVER_NAV = [
   { href: "/explore", label: "Explore", icon: Compass },
   { href: "/feature-requests", label: "Feature requests", icon: Lightbulb },
 ] as const
 
-export function DashboardShell({ children, title = "Home" }: { children: React.ReactNode; title?: string }) {
+export function DashboardShell({
+  children,
+  title = "Home",
+  projectId,
+}: {
+  children: React.ReactNode
+  title?: string
+  projectId?: string
+}) {
   const pathname = usePathname()
   const { projects } = useProjects()
+  const resolvedProjectId = projectId ?? pathname.match(/^\/project\/([^/]+)/)?.[1]
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const drawerId = useId()
-  const active = selectActiveProject(projects)
+  const workspaceProject = resolvedProjectId ? projects.find((p) => p.id === resolvedProjectId) ?? null : null
+  const active = workspaceProject ?? selectActiveProject(projects)
   const askHref = active ? `/project/${active.id}/collaborate` : "/new"
 
   useEffect(() => {
@@ -53,6 +68,7 @@ export function DashboardShell({ children, title = "Home" }: { children: React.R
 
   return (
     <div className="min-h-svh bg-background text-foreground">
+      <CofounderPanel />
       <div className="flex min-h-svh">
         <aside
           className={cn(
@@ -66,6 +82,8 @@ export function DashboardShell({ children, title = "Home" }: { children: React.R
             recent={recent}
             active={active}
             askHref={askHref}
+            projectId={resolvedProjectId}
+            workspaceName={title}
           />
           <button
             type="button"
@@ -103,7 +121,7 @@ export function DashboardShell({ children, title = "Home" }: { children: React.R
                   <X className="size-4" />
                 </button>
               </div>
-              <SidebarBody collapsed={false} pathname={pathname} recent={recent} active={active} askHref={askHref} />
+              <SidebarBody collapsed={false} pathname={pathname} recent={recent} active={active} askHref={askHref} projectId={resolvedProjectId} workspaceName={title} />
             </aside>
           </div>
         ) : null}
@@ -128,14 +146,14 @@ export function DashboardShell({ children, title = "Home" }: { children: React.R
                 </div>
               </div>
               <div className="flex items-center gap-2 sm:gap-3">
-                <ProjectSearch projects={projects} />
+                {resolvedProjectId ? <WorkspaceAskButton /> : <ProjectSearch projects={projects} />}
                 <Link
                   href="/docs"
                   className="hidden rounded-lg border border-border px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-accent hover:text-foreground sm:inline-flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   Help
                 </Link>
-                <DashboardNotifications project={active} />
+                <DashboardNotifications />
                 <div className="hidden lg:block">
                   <CreditMeter />
                 </div>
@@ -152,19 +170,97 @@ export function DashboardShell({ children, title = "Home" }: { children: React.R
   )
 }
 
+function SidebarLink({
+  item,
+  pathname,
+  collapsed,
+}: {
+  item: { href: string; label: string; icon: typeof Home }
+  pathname: string
+  collapsed: boolean
+}) {
+  const activeNav = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
+  const Icon = item.icon
+  return (
+    <Link
+      href={item.href}
+      title={item.label}
+      className={cn(
+        "inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        collapsed && "justify-center px-0",
+        activeNav ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+      )}
+    >
+      <Icon className="size-4 shrink-0" />
+      {collapsed ? <span className="sr-only">{item.label}</span> : item.label}
+    </Link>
+  )
+}
+
 function SidebarBody({
   collapsed,
   pathname,
   recent,
   active,
   askHref,
+  projectId,
+  workspaceName,
 }: {
   collapsed: boolean
   pathname: string
   recent: ProjectSummary[]
   active: ProjectSummary | null
   askHref: string
+  projectId?: string
+  workspaceName?: string
 }) {
+  if (projectId) {
+    const grow = workspaceGrowNav(projectId)
+    return (
+      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 py-4">
+        <div className={cn("px-1", collapsed && "flex justify-center")}>
+          <BrandLogo size={28} href="/dashboard" withWordmark={!collapsed} />
+        </div>
+        {!collapsed ? (
+          <div className="rounded-xl border border-border bg-background px-3 py-2">
+            <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">This workspace</p>
+            <p className="mt-1 truncate text-sm font-medium">{active?.name ?? workspaceName ?? "Workspace"}</p>
+          </div>
+        ) : null}
+        <nav className="flex flex-col gap-1" aria-label="Workspace">
+          <SidebarLink item={{ href: "/dashboard", label: "Dashboard", icon: Home }} pathname={pathname} collapsed={collapsed} />
+        </nav>
+        <nav className="flex flex-col gap-1" aria-label="Grow your business">
+          {!collapsed ? (
+            <p className="px-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Grow your business</p>
+          ) : null}
+          {grow.map((item) => {
+            const Icon = item.icon
+            const activeNav = pathname === item.href || pathname.startsWith(`${item.href}/`)
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                title={item.label}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  collapsed && "justify-center px-0",
+                  activeNav ? "bg-accent text-foreground" : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+                )}
+              >
+                <Icon className="size-4 shrink-0" />
+                {collapsed ? <span className="sr-only">{item.label}</span> : <span className="flex-1 truncate">{item.label}</span>}
+                {!collapsed ? (
+                  <span className="rounded-full bg-muted px-1.5 py-px text-[9px] font-medium uppercase tracking-wider text-muted-foreground">Soon</span>
+                ) : null}
+              </Link>
+            )
+          })}
+        </nav>
+      </div>
+    )
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 py-4">
       <div className={cn("px-1", collapsed && "flex justify-center")}>
@@ -182,28 +278,18 @@ function SidebarBody({
       ) : null}
 
       <nav className="flex flex-col gap-1" aria-label="Primary">
-        {NAV.map((item) => {
-          const activeNav =
-            pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))
-          const Icon = item.icon
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={item.label}
-              className={cn(
-                "inline-flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                collapsed && "justify-center px-0",
-                activeNav
-                  ? "bg-accent text-foreground"
-                  : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
-              )}
-            >
-              <Icon className="size-4 shrink-0" />
-              {collapsed ? <span className="sr-only">{item.label}</span> : item.label}
-            </Link>
-          )
-        })}
+        {NAV.map((item) => (
+          <SidebarLink key={item.href} item={item} pathname={pathname} collapsed={collapsed} />
+        ))}
+      </nav>
+
+      <nav className="flex flex-col gap-1" aria-label="Discover">
+        {!collapsed ? (
+          <p className="px-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Discover</p>
+        ) : null}
+        {DISCOVER_NAV.map((item) => (
+          <SidebarLink key={item.href} item={item} pathname={pathname} collapsed={collapsed} />
+        ))}
       </nav>
 
       {!collapsed ? (
@@ -265,6 +351,21 @@ function SidebarBody({
         </Link>
       </div>
     </div>
+  )
+}
+
+function WorkspaceAskButton() {
+  const { open } = useCofounderPanel()
+  return (
+    <button
+      type="button"
+      onClick={open}
+      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
+    >
+      <Sparkles className="size-3.5" />
+      <span className="hidden sm:inline">Ask your AI co-founder</span>
+      <span className="sm:hidden">Ask</span>
+    </button>
   )
 }
 

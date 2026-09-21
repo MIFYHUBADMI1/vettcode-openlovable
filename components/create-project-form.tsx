@@ -165,7 +165,7 @@ export function CreateProjectForm() {
             aria-invalid={url.length > 0 && !valid}
           />
           <Button type="submit" disabled={!valid || submitting} className="h-11 shrink-0 px-6">
-            {submitting ? "Creating…" : "Mirror site"}
+            {submitting ? "Starting…" : "Start from this site"}
           </Button>
         </div>
       </div>
@@ -173,7 +173,7 @@ export function CreateProjectForm() {
         <p className="font-mono text-xs text-destructive">Enter a valid website URL (e.g. example.com).</p>
       ) : (
         <p className="font-mono text-xs text-muted-foreground">
-          Choose between AI-powered analysis or deep crawl for an exact replica.
+          Atai studies the site and drafts a plan for your product. Choose a deeper crawl if you want a closer match.
         </p>
       )}
       {error ? (

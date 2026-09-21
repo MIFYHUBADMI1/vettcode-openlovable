@@ -11,7 +11,14 @@ import { cn } from "@/lib/utils"
 import { CheckoutButton } from "@/components/billing/checkout-button"
 import { PlanCard } from "@/components/billing/plan-card"
 import { CancelSubscriptionButton } from "@/components/billing/cancel-subscription-button"
+import { BillingCheckoutReturn } from "@/components/billing/billing-checkout-return"
 import useSWR from "swr"
+
+type BillingOverview = {
+  balance: { total: number; subscription: number; permanent: number }
+  history: Array<{ id: string; reason: string; creditType: string; createdAt: number; amount: number }>
+  subscription: { planId: string; currentPeriodEnd: number | null; cancelAtPeriodEnd: boolean } | null
+}
 
 function formatCredits(amount: number): string {
   const abs = Math.abs(amount)
@@ -47,7 +54,7 @@ export default function BillingSettingsPage() {
   const router = useRouter()
   const { session, isLoading } = useSession()
 
-  const { data: billingData } = useSWR<{ ok: boolean; data: { balance: { total: number; subscription: number; permanent: number }; history: unknown[]; subscription: { planId: string; currentPeriodEnd: number | null; cancelAtPeriodEnd: boolean } | null } }>(
+  const { data: billingData } = useSWR<BillingOverview>(
     session ? "/api/billing/overview" : null,
     jsonFetcher,
   )
@@ -58,9 +65,9 @@ export default function BillingSettingsPage() {
 
   if (isLoading || !session) return null
 
-  const balance = billingData?.data?.balance ?? { total: 0, subscription: 0, permanent: 0 }
-  const creditHistory = (billingData?.data?.history ?? []) as Array<{ id: string; reason: string; creditType: string; createdAt: number; amount: number }>
-  const activeSubscription = billingData?.data?.subscription ?? null
+  const balance = billingData?.balance ?? { total: 0, subscription: 0, permanent: 0 }
+  const creditHistory = billingData?.history ?? []
+  const activeSubscription = billingData?.subscription ?? null
 
   const FREE_PLAN = SUBSCRIPTION_PLANS.find((p) => p.id === "free")!
   const activePlan = activeSubscription
@@ -83,6 +90,7 @@ export default function BillingSettingsPage() {
           </p>
           <h1 className="mt-3 text-4xl font-semibold tracking-tight">Atai Billing</h1>
         </header>
+        <BillingCheckoutReturn />
 
         {/* ── Credit Balance Card ── */}
         <section className="border border-border bg-card p-6">

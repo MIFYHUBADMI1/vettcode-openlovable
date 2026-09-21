@@ -14,7 +14,7 @@ export default function RegisterPage() {
   return (
     <AuthShell
       title="Create your account"
-      subtitle="Start turning ideas into working apps."
+      subtitle="Start with an idea. Review a plan. Then build."
       footer={{ prompt: "Already have an account?", linkLabel: "Sign in", href: "/login" }}
       marketing={<RegisterMarketing />}
     >

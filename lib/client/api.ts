@@ -26,6 +26,13 @@ export interface SessionUser {
     businessDescription?: string
     role?: string
     destination?: string
+    businessGoal?: string
+    revenueTarget?: string
+    targetUsers?: string
+    effortScale?: number
+    hoursPerDay?: string
+    intent?: string
+    selectedPlanId?: string
     /** Always set when onboarding is complete */
     completedAt?: number
     dismissedAt?: number
@@ -236,7 +243,7 @@ export function useProject(id: string | null, options?: { pollWhileBuilding?: bo
       refreshInterval: (latest) => {
         if (!options?.pollWhileBuilding) return 0
         const state = latest?.project?.state
-        return state === "building" || state === "analyzing" ? 3000 : 0
+        return state === "building" || state === "analyzing" || state === "deploying" ? 3000 : 0
       },
     },
   )

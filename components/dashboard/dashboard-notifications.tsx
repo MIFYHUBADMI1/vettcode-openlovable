@@ -1,18 +1,22 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Bell } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useProjectActivity } from "@/lib/client/api"
-import { filterMeaningfulActivity, interpretProjectState } from "@/lib/dashboard/view-model"
-import type { ProjectSummary } from "@/lib/types/project"
+import { jsonFetcher, useProjects, useSession } from "@/lib/client/api"
+import { relativeTimeShort } from "@/lib/client/format"
+import { buildNotificationInbox, type InboxItem } from "@/lib/dashboard/view-model"
+import type { PublicFeatureRequest } from "@/lib/feature-requests/types"
+import useSWR from "swr"
 
 const STORAGE_KEY = "atai:dashboard-notifications-read"
 
@@ -29,82 +33,75 @@ function loadRead(): Set<string> {
 
 function saveRead(ids: Set<string>) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids].slice(-80)))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([...ids].slice(-120)))
   } catch {
     /* ignore quota */
   }
 }
 
-function relativeTime(at: number): string {
-  const min = Math.max(0, Math.round((Date.now() - at) / 60000))
-  if (min < 1) return "Just now"
-  if (min < 60) return `${min}m ago`
-  const hr = Math.round(min / 60)
-  if (hr < 24) return `${hr}h ago`
-  return `${Math.round(hr / 24)}d ago`
+const KIND_LABEL: Record<InboxItem["kind"], string> = {
+  action: "Needs you",
+  progress: "In progress",
+  update: "Update",
 }
 
-export function DashboardNotifications({ project }: { project: ProjectSummary | null }) {
-  const isBuilding = Boolean(
-    project && (project.state === "building" || project.state === "analyzing" || project.state === "deploying"),
+export function DashboardNotifications() {
+  const router = useRouter()
+  const { projects } = useProjects()
+  const { session } = useSession()
+  const { data: mine } = useSWR<{ items: PublicFeatureRequest[] }>(
+    session ? "/api/feature-requests?mine=1&sort=updated" : null,
+    jsonFetcher,
+    { revalidateOnFocus: true, dedupingInterval: 30_000 },
   )
-  const { events } = useProjectActivity(project?.id ?? "", Boolean(project) && isBuilding)
   const [read, setRead] = useState<Set<string>>(new Set())
-  const [open, setOpen] = useState(false)
 
   useEffect(() => {
     setRead(loadRead())
   }, [])
 
-  const items = useMemo(() => {
-    if (!project) return []
-    const fromEvents = filterMeaningfulActivity(Array.isArray(events) ? events : [], project, 6)
-    const stateNote = interpretProjectState(project.state, project.id)
-    const synthetic =
-      project.state === "plan_ready" ||
-      project.state === "build_failed" ||
-      project.state === "deployment_failed" ||
-      project.state === "deployed" ||
-      project.state === "build_complete"
-        ? [
-            {
-              id: `state-${project.id}-${project.state}-${project.updatedAt}`,
-              at: project.updatedAt,
-              title: stateNote.headline,
-              href: stateNote.primaryAction.href,
-              level: stateNote.severity === "error" ? "error" : stateNote.severity === "warning" ? "warn" : "info",
-            },
-          ]
-        : []
-    const merged = [...synthetic, ...fromEvents]
-    const seen = new Set<string>()
-    return merged.filter((item) => {
-      if (seen.has(item.id)) return false
-      seen.add(item.id)
-      return true
-    })
-  }, [events, project])
+  const items = useMemo(
+    () =>
+      buildNotificationInbox({
+        projects,
+        emailVerified: session?.user.emailVerified ?? true,
+        creditsAvailable: session?.credits.available,
+        featureRequests: mine?.items,
+      }),
+    [projects, session, mine],
+  )
 
   const unread = items.filter((item) => !read.has(item.id)).length
 
-  function markAllRead() {
-    const next = new Set(read)
-    for (const item of items) next.add(item.id)
+  function persist(next: Set<string>) {
     setRead(next)
     saveRead(next)
   }
 
+  function markRead(id: string) {
+    const next = new Set(read)
+    next.add(id)
+    persist(next)
+  }
+
+  function markAllRead() {
+    const next = new Set(read)
+    for (const item of items) next.add(item.id)
+    persist(next)
+  }
+
+  function openItem(item: InboxItem) {
+    markRead(item.id)
+    router.push(item.href)
+  }
+
   return (
-    <DropdownMenu
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next)
-        if (next) markAllRead()
-      }}
-    >
+    <DropdownMenu>
       <DropdownMenuTrigger className="relative rounded-lg border border-border p-2 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <Bell className="size-4" />
-        <span className="sr-only">Notifications</span>
+        <span className="sr-only">
+          {unread > 0 ? `${unread} unread notifications` : "Notifications"}
+        </span>
         {unread > 0 ? (
           <span className="absolute -right-1 -top-1 grid min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] text-primary-foreground">
             {unread > 9 ? "9+" : unread}
@@ -112,27 +109,61 @@ export function DashboardNotifications({ project }: { project: ProjectSummary | 
         ) : null}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80">
-        <DropdownMenuLabel>While you were away</DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="flex items-center justify-between gap-2 text-foreground">
+            <span>Inbox</span>
+            {unread > 0 ? (
+              <button
+                type="button"
+                className="text-[11px] font-medium text-primary hover:underline"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  markAllRead()
+                }}
+              >
+                Mark all read
+              </button>
+            ) : null}
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        {!project ? (
-          <p className="px-2 py-3 text-sm text-muted-foreground">No business activity yet.</p>
-        ) : items.length === 0 ? (
-          <p className="px-2 py-3 text-sm text-muted-foreground">No meaningful updates for {project.name} yet.</p>
-        ) : (
-          <ul className="max-h-80 overflow-y-auto">
-            {items.map((item) => (
-              <li key={item.id}>
-                <Link
-                  href={item.href}
-                  className="block rounded-md px-2 py-2 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        <DropdownMenuGroup>
+          {items.length === 0 ? (
+            <>
+              <DropdownMenuItem disabled className="items-start whitespace-normal">
+                You&apos;re all caught up. When a plan needs review, a build fails, or a request ships, it shows up here.
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/new")}>Start a business</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push("/feature-requests")}>Shape Atai</DropdownMenuItem>
+            </>
+          ) : (
+            items.map((item) => {
+              const unseen = !read.has(item.id)
+              return (
+                <DropdownMenuItem
+                  key={item.id}
+                  className="items-start"
+                  onClick={() => openItem(item)}
                 >
-                  <p className="text-[11px] text-muted-foreground">{relativeTime(item.at)}</p>
-                  <p className="text-sm">{item.title}</p>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      {unseen ? (
+                        <span className="size-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
+                      ) : null}
+                      <span>{KIND_LABEL[item.kind]}</span>
+                      <span>·</span>
+                      <span>{relativeTimeShort(item.at)}</span>
+                    </span>
+                    <span className="text-sm font-medium leading-snug">{item.title}</span>
+                    <span className="line-clamp-2 text-xs text-muted-foreground">{item.description}</span>
+                    <span className="text-xs text-primary">{item.actionLabel}</span>
+                  </span>
+                </DropdownMenuItem>
+              )
+            })
+          )}
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   )

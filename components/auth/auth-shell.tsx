@@ -4,13 +4,6 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 import { BrandLogo } from "@/components/brand-logo"
 
-/**
- * Premium glassmorphism two-sided auth layout.
- * Left: form with frosted glass card + animated gradient borders.
- * Right: marketing panel with aurora orbs, floating particles, and animated content.
- *
- * Uses CSS Grid for precise two-column layout that doesn't collapse or overflow.
- */
 export function AuthShell({
   title,
   subtitle,
@@ -28,24 +21,20 @@ export function AuthShell({
     <main className="workspace-environment min-h-screen w-full">
       <span className="workspace-signal" aria-hidden="true" />
 
-      {/* ── Mobile: single column. Desktop: two equal columns via CSS Grid ── */}
-      <div className="grid min-h-screen w-full lg:grid-cols-[1fr_1fr]">
-        {/* ── Left: Form side ── */}
+      <div className="grid min-h-screen w-full lg:grid-cols-[minmax(22rem,28rem)_minmax(0,1fr)]">
         <div className="relative z-10 flex flex-col items-center justify-center px-6 py-12">
-          <BrandLogo href="/" size={40} className="mb-10 hero-console" />
+          <BrandLogo href="/" size={40} className="mb-10" />
 
-          {/* Glass card */}
-          <div className="w-full max-w-sm hero-console" style={{ animationDelay: "0.1s" }}>
+          <div className="w-full max-w-sm">
             <div className="auth-glass-card rounded-2xl p-8">
               <div className="mb-7 flex flex-col gap-2">
-                <h1 className="text-xl font-bold tracking-tight text-foreground">{title}</h1>
+                <h1 className="text-xl font-semibold tracking-tight text-foreground">{title}</h1>
                 <p className="text-sm leading-relaxed text-muted-foreground">{subtitle}</p>
               </div>
               {children}
             </div>
 
-            {/* Footer link */}
-            <p className="mt-6 text-center text-sm text-muted-foreground hero-copy">
+            <p className="mt-6 text-center text-sm text-muted-foreground">
               {footer.prompt}{" "}
               <Link
                 href={footer.href}
@@ -57,35 +46,14 @@ export function AuthShell({
           </div>
         </div>
 
-        {/* ── Right: Marketing side (hidden on mobile) ── */}
-        {marketing && (
-          <div
-            className="relative z-10 hidden flex-col justify-center overflow-hidden px-10 py-12 2xl:px-16 lg:flex hero-console"
-            style={{ animationDelay: "0.2s" }}
-          >
-            {/* Gradient divider — absolute left edge of marketing panel */}
-            <div className="auth-gradient-divider absolute left-0 top-[10%] bottom-[10%] hidden lg:block" aria-hidden="true" />
-
-            {/* Aurora background effects */}
+        {marketing ? (
+          <div className="relative z-10 hidden items-center overflow-hidden px-10 py-16 lg:flex 2xl:px-16">
+            <div className="auth-gradient-divider absolute bottom-[10%] left-0 top-[10%]" aria-hidden />
             <div className="auth-aurora auth-aurora-1" />
             <div className="auth-aurora auth-aurora-2" />
-
-            {/* Ambient orbs */}
-            <div className="auth-orb auth-orb-1" />
-            <div className="auth-orb auth-orb-2" />
-            <div className="auth-orb auth-orb-3" />
-
-            {/* Floating particles */}
-            <div className="auth-particle" style={{ top: "15%", left: "10%" }} />
-            <div className="auth-particle" style={{ top: "60%", left: "80%" }} />
-            <div className="auth-particle" style={{ top: "35%", left: "65%" }} />
-            <div className="auth-particle" style={{ top: "75%", left: "25%" }} />
-            <div className="auth-particle" style={{ top: "20%", left: "90%" }} />
-
-            {/* Marketing content — fill the full panel width */}
-            <div className="w-full">{marketing}</div>
+            <div className="relative w-full">{marketing}</div>
           </div>
-        )}
+        ) : null}
       </div>
     </main>
   )

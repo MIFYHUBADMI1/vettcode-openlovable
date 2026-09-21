@@ -2,20 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useProjectActivity } from "@/lib/client/api"
+import { relativeTimeShort } from "@/lib/client/format"
 import { cn } from "@/lib/utils"
-
-function relativeTime(at: number): string {
-  const diffMs = Date.now() - at
-  const diffSec = Math.round(diffMs / 1000)
-  if (diffSec < 10) return "just now"
-  if (diffSec < 60) return `${diffSec}s ago`
-  const diffMin = Math.round(diffSec / 60)
-  if (diffMin < 60) return `${diffMin}m ago`
-  const diffHour = Math.round(diffMin / 60)
-  if (diffHour < 24) return `${diffHour}h ago`
-  const diffDay = Math.round(diffHour / 24)
-  return `${diffDay}d ago`
-}
 
 function levelIcon(level: string) {
   if (level === "error") return { glyph: "!", className: "border-destructive/40 bg-destructive/15 text-destructive" }
@@ -87,7 +75,7 @@ export function ProjectActivity({ projectId, isBuilding = false }: ProjectActivi
             <div className="flex flex-1 flex-col gap-0.5">
               <p className="text-sm leading-relaxed text-foreground">{event.message}</p>
               <p className="font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
-                {event.stage} · {relativeTime(event.at)}
+                {event.stage} · {relativeTimeShort(event.at)}
               </p>
             </div>
           </li>

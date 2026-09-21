@@ -50,15 +50,12 @@ export function ProjectCard({ project, onDeleted }: { project: ProjectSummary; o
 
   async function handleDelete() {
     setDeleting(true)
-    console.log("[v0] project-card: delete requested", { id: project.id })
     try {
       await deleteJson(`/api/projects/${project.id}`)
-      console.log("[v0] project-card: delete succeeded", { id: project.id })
       toast.success("Project deleted")
       setDialogOpen(false)
       onDeleted?.()
     } catch (e) {
-      console.log("[v0] project-card: delete failed", { id: project.id, error: (e as Error).message })
       toast.error((e as Error).message || "Failed to delete project")
     } finally {
       setDeleting(false)
