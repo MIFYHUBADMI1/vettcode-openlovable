@@ -1,5 +1,5 @@
 /**
- * @atai/sdk — health capability tests.
+ * @atai-group/sdk — health capability tests.
  *
  * The runtime API boundary is mocked at `fetch` level: the SDK under test
  * issues real Requests through its transport, and the mock verifies exactly

@@ -43,7 +43,7 @@ Headline findings for a future redesign:
 
 **UNKNOWN / NOT IMPLEMENTED (searched, absent):**
 
-- Atai SDK (`@atai/sdk`), `app/api/atai/` router, `atai_proj_` API keys — pivot spec Requirement 8. `grep atai_proj_` → 0 matches.
+- Atai SDK (`@atai-group/sdk`), `app/api/atai/` router, `atai_proj_` API keys — pivot spec Requirement 8. `grep atai_proj_` → 0 matches.
 - Business_Overview_Tab, "Customer Data" tab rename, Domain_SEO_Panel — pivot spec Requirement 9. Database page is still titled "Database" (`app/project/[projectId]/database/page.tsx`).
 - Pivot-spec 4-step Onboarding_Dialog (roles, destination routing, video step) — implemented onboarding is instead the "First Mission" overlay (`components/onboarding/first-mission.tsx`).
 - Generated-app health checks against `developmentUrl` for dashboard metrics (Requirement 9.3) — only a user-triggered screenshot capture exists (`/api/projects/[id]/capture-preview`).

@@ -22,6 +22,27 @@ import type { NextRequest } from "next/server"
 
 const SESSION_COOKIE = "Atai_session"
 
+/**
+ * Developer portal subdomain (developers.atai.ink) — served by the SAME app
+ * via a host-based rewrite into the /developers route subtree. One deployment,
+ * one DB, one session cookie (widened to the shared domain in production —
+ * see lib/auth/session.ts). On other hosts (atai.ink, localhost) /developers
+ * is also reachable directly, so local dev needs no DNS or hosts-file edits.
+ *
+ * NEXT_PUBLIC_DEV_PORTAL_HOST overrides the host in non-production deploys
+ * (e.g. developers.staging.atai.ink). It is read from the env object — edge
+ * proxy cannot be async.
+ */
+export function developerPortalHost(): string {
+  const override = process.env.NEXT_PUBLIC_DEV_PORTAL_HOST
+  if (override) return override.toLowerCase()
+  return process.env.NODE_ENV === "production" ? "developers.atai.ink" : ""
+}
+
+function isDeveloperHost(hostname: string): boolean {
+  const portal = developerPortalHost()
+  return portal !== "" && (hostname === portal || hostname.endsWith(`.${portal}`))
+}
 // API routes that are intentionally public (no session required).
 // Exported for the edge-gate regression tests (proxy.test.ts).
 export const PUBLIC_API_PREFIXES = [
@@ -49,7 +70,17 @@ export const PUBLIC_API_PREFIXES = [
 ]
 
 export function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl
+  const { pathname, hostname } = request.nextUrl
+
+  // Developer portal subdomain → rewrite PAGE paths into the /developers
+  // route subtree. (Same app, same session; only the URL surface differs.)
+  // /api/* and /_next/* are EXCLUDED: relative fetches from portal pages must
+  // hit the real API routes (session-gated below), and static assets are
+  // host-relative — rewriting either would break the portal.
+  if (isDeveloperHost(hostname) && !pathname.startsWith("/api/") && !pathname.startsWith("/_next/")) {
+    const target = pathname === "/" ? "/developers" : `/developers${pathname}`
+    return NextResponse.rewrite(new URL(target, request.url))
+  }
 
   // Only gate /api/* routes — page routes handle their own redirects client-side.
   if (!pathname.startsWith("/api/")) {

@@ -127,7 +127,7 @@ export function DocsContent() {
             <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Quick links — all pages</p>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {[
-                { href: "/sdk", icon: Code2, label: "Atai SDK & API", desc: "@atai/sdk + Runtime API reference — keys, endpoints, limits", color: "text-cyan-600 dark:text-cyan-400", bg: "bg-cyan-500/10" },
+                { href: "/sdk", icon: Code2, label: "Atai SDK & API", desc: "@atai-group/sdk + Runtime API reference — keys, endpoints, limits", color: "text-cyan-600 dark:text-cyan-400", bg: "bg-cyan-500/10" },
                 { href: "/pricing", icon: DollarSign, label: "Pricing", desc: "Plans, credit packs & build costs", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10" },
                 { href: "/modes-comparison", icon: GitCompare, label: "Modes Comparison", desc: "Legacy vs Heavy pipeline breakdown", color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-500/10" },
                 { href: "/dashboard", icon: Rocket, label: "Dashboard", desc: "Your projects & activity", color: "text-primary", bg: "bg-primary/10" },
@@ -446,7 +446,7 @@ export function DocsContent() {
 
               <h3 className="text-lg font-semibold text-foreground">Runtime &amp; Integrations — the plan-to-SDK connection</h3>
               <p>
-                When you describe a feature that needs AI, messaging, payments, search, maps or similar, the AI plans it in Atai&apos;s own capability vocabulary and writes it into the <strong className="text-foreground">Runtime &amp; Integrations</strong> plan section. That section isn&apos;t just documentation — the build honors it: the generated application is wired to the official <strong className="text-foreground">@atai/sdk</strong> with a project-scoped runtime API key (<code className="rounded bg-muted px-1 font-mono text-xs">ATAI_API_KEY</code>) provisioned automatically, so the features you planned actually call Atai. Curious what your app can call? Read the{" "}
+                When you describe a feature that needs AI, messaging, payments, search, maps or similar, the AI plans it in Atai&apos;s own capability vocabulary and writes it into the <strong className="text-foreground">Runtime &amp; Integrations</strong> plan section. That section isn&apos;t just documentation — the build honors it: the generated application is wired to the official <strong className="text-foreground">@atai-group/sdk</strong> with a project-scoped runtime API key (<code className="rounded bg-muted px-1 font-mono text-xs">ATAI_API_KEY</code>) provisioned automatically, so the features you planned actually call Atai. Curious what your app can call? Read the{" "}
                 <Link href="/sdk" className="font-medium text-primary underline-offset-2 hover:underline">Atai SDK &amp; Runtime API reference →</Link>
               </p>
 

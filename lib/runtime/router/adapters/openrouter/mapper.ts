@@ -60,12 +60,21 @@ export const ChatInputSchema = z
 export type ChatInput = z.infer<typeof ChatInputSchema>
 
 /**
+ * Platform-recommended default when the caller does not select a model and
+ * OPENROUTER_DEFAULT_MODEL is not configured. A constant (not a required env
+ * var) so chat always resolves — first calls from unconfigured projects and
+ * the developer-portal playground work out of the box.
+ */
+export const RECOMMENDED_DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
+
+/**
  * Server-side default when the caller does not select a model (§16). Read
  * lazily at request time (module-load capture would freeze the value before
- * tests set the environment).
+ * tests set the environment). Env override wins; otherwise the recommended
+ * default applies.
  */
-function defaultModel(): string | undefined {
-  return process.env.OPENROUTER_DEFAULT_MODEL || undefined
+function defaultModel(): string {
+  return process.env.OPENROUTER_DEFAULT_MODEL || RECOMMENDED_DEFAULT_MODEL
 }
 
 /**
@@ -104,7 +113,7 @@ export function toOpenRouterRequest(
         : "The request body is invalid for this capability.",
       resolved.error === "model_not_allowed"
         ? "model not in project allowlist"
-        : "no model specified and no OPENROUTER_DEFAULT_MODEL configured",
+        : "no model could be resolved (caller, project policy, and platform default)",
     )
   }
   const model = resolved.model

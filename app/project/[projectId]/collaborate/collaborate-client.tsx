@@ -4,7 +4,10 @@ import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
-import Markdown from "react-markdown"
+import { CofounderMarkdown } from "@/components/cofounder/markdown"
+import { PricingTierBuilder } from "@/components/collaborate/pricing-tier-builder"
+import { ThemeBuilder } from "@/components/collaborate/theme-builder"
+import { ExpectedVisuals } from "@/components/collaborate/expected-visuals"
 import { postJson, patchJson, jsonFetcher } from "@/lib/client/api"
 import {
   AlertDialog,
@@ -18,7 +21,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import type { Project } from "@/lib/types/project"
 import type { ApplicationSpecification } from "@/lib/types/specification"
-import { PLAN_SECTIONS, computePlanHealth, sectionStatus, getPlanSection, isPlaceholderValue, applySectionUpdate, clearSectionUpdate, TEXT_PLAN_SECTIONS, type PlanSectionId } from "@/lib/analysis/plan-sections"
+import { PLAN_SECTIONS, computePlanHealth, sectionStatus, getPlanSection, isPlaceholderValue, applySectionUpdate, clearSectionUpdate, TEXT_PLAN_SECTIONS, calculatePlanQuality, calculateSectionQuality, type PlanSectionId } from "@/lib/analysis/plan-sections"
 import type { PlanAnalysis, PlanProposal } from "@/lib/types/plan-analysis"
 import { SECTION_DEPENDENCIES } from "@/lib/types/plan-analysis"
 import {
@@ -41,6 +44,9 @@ import {
   Sparkles,
   Rocket,
   ClipboardList,
+  DollarSign,
+  Palette,
+  Monitor,
   type LucideIcon,
 } from "lucide-react"
 
@@ -62,6 +68,9 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   Briefcase,
   Coins,
   PlugZap,
+  DollarSign,
+  Palette,
+  Monitor,
 }
 
 function SectionIcon({ name, className }: { name: string; className?: string }) {
@@ -157,6 +166,7 @@ function PlanNav({
             <ul className="flex flex-col gap-0.5">
               {defs.map((def) => {
                 const status = statusFor(def.id, spec)
+                const qualityScore = calculateSectionQuality(def.id, spec)
                 const flags = findingBySection.get(def.id) ?? 0
                 const active = activeSection === def.id
                 return (
@@ -173,6 +183,19 @@ function PlanNav({
                     >
                       <SectionIcon name={def.icon} className="size-4 shrink-0" />
                       <span className="flex-1 truncate">{def.label}</span>
+                      {qualityScore > 0 && status !== "missing" && (
+                        <span
+                          className={cx(
+                            "rounded px-1.5 py-0.5 font-mono text-[9px] font-semibold",
+                            qualityScore >= 75 ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" :
+                              qualityScore >= 60 ? "bg-blue-500/15 text-blue-600 dark:text-blue-400" :
+                                "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+                          )}
+                          title={`Quality score: ${qualityScore}%`}
+                        >
+                          {qualityScore}%
+                        </span>
+                      )}
                       {flags > 0 && (
                         <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 font-mono text-[9px] font-semibold text-amber-600 dark:text-amber-400" title={`${flags} insight${flags > 1 ? "s" : ""}`}>
                           {flags}
@@ -210,6 +233,9 @@ function SectionDetail({
   /** Draft lives at the root so switching sections never loses unsaved text. */
   draft,
   onDraftChange,
+  projectId,
+  userCredits,
+  onCreditsUpdated,
 }: {
   spec: ApplicationSpecification
   sectionId: PlanSectionId
@@ -220,6 +246,9 @@ function SectionDetail({
   onSave: (section: PlanSectionId, value: string) => Promise<void>
   draft: string
   onDraftChange: (value: string) => void
+  projectId: string
+  userCredits: number
+  onCreditsUpdated: (newBalance: number) => void
 }) {
   const def = getPlanSection(sectionId)
   // Hooks must run before any early return (rules of hooks).
@@ -230,6 +259,16 @@ function SectionDetail({
   // Deferred escape action (close/section switch) resumed if the founder
   // chooses to discard their unsaved draft.
   const pendingActionRef = useRef<(() => void) | null>(null)
+
+  const qualityScore = useMemo(() => calculateSectionQuality(sectionId, spec), [sectionId, spec])
+  const sectionContent = useMemo(() => {
+    if (!def) return ""
+    const read = def.read(spec)
+    return typeof read === "string" ? read : ""
+  }, [def, spec])
+  const wordCount = useMemo(() => {
+    return sectionContent.trim().split(/\s+/).filter(w => w.length > 0).length
+  }, [sectionContent])
 
   useEffect(() => {
     if (editing) editRef.current?.focus()
@@ -299,13 +338,31 @@ function SectionDetail({
   return (
     <div className="flex flex-col gap-4 p-6">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="flex items-center gap-2">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
             <SectionIcon name={def.icon} className="size-4.5 text-primary" />
             <h2 className="text-lg font-semibold text-foreground">{def.label}</h2>
             <span className={cx("rounded-full border px-2 py-0.5 text-[10px] font-medium", STATUS_STYLES[status])}>
               {STATUS_LABELS[status]}
             </span>
+            {qualityScore > 0 && status !== "missing" && (
+              <span
+                className={cx(
+                  "rounded-full border px-2 py-0.5 text-[10px] font-medium",
+                  qualityScore >= 75 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" :
+                    qualityScore >= 60 ? "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20" :
+                      "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
+                )}
+                title="Quality score based on depth and completeness"
+              >
+                Quality: {qualityScore}%
+              </span>
+            )}
+            {wordCount > 0 && (
+              <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground" title="Word count">
+                {wordCount} words
+              </span>
+            )}
             {dirty && (
               <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
                 Unsaved changes
@@ -333,43 +390,78 @@ function SectionDetail({
       </div>
 
       {editing ? (
-        <div className="flex flex-col gap-2">
-          <textarea
-            ref={editRef}
-            value={draft}
-            onChange={(e) => onDraftChange(e.target.value)}
-            onKeyDown={(e) => {
-              // Esc = abandon edit — confirms first when the draft is dirty;
-              // plain Enter inserts a newline.
-              if (e.key === "Escape") {
-                e.preventDefault()
-                requestClose(() => setEditing(false))
-              }
-            }}
-            rows={12}
-            placeholder={`Write the ${def.label.toLowerCase()} for your plan…`}
-            aria-label={`Edit ${def.label} section`}
-            className="collab-scroll w-full resize-y rounded-xl border border-primary/40 bg-background px-4 py-3 text-sm leading-6 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
-          <div className="flex items-center gap-2">
-            <button
-              onClick={save}
-              disabled={saving || !draft.trim()}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
-            >
-              {saving ? "Saving…" : "Save to plan"}
-            </button>
-            <button
-              onClick={() => requestClose(() => setEditing(false))}
-              disabled={saving}
-              className="rounded-lg border border-border bg-background px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent disabled:opacity-40"
-            >
-              Cancel
-            </button>
-            <span className="ml-auto font-mono text-[10px] text-muted-foreground">{draft.trim().length}/8000</span>
+        sectionId === "pricingTiers" || sectionId === "themePreferences" ? (
+          <div className="space-y-3">
+            {sectionId === "pricingTiers" ? (
+              <PricingTierBuilder
+                value={draft}
+                onChange={onDraftChange}
+                readonly={false}
+              />
+            ) : (
+              <ThemeBuilder
+                value={draft}
+                onChange={onDraftChange}
+                readonly={false}
+              />
+            )}
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                onClick={save}
+                disabled={saving || !draft.trim()}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
+              >
+                {saving ? "Saving…" : "Save to plan"}
+              </button>
+              <button
+                onClick={() => requestClose(() => setEditing(false))}
+                disabled={saving}
+                className="rounded-lg border border-border bg-background px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent disabled:opacity-40"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <textarea
+              ref={editRef}
+              value={draft}
+              onChange={(e) => onDraftChange(e.target.value)}
+              onKeyDown={(e) => {
+                // Esc = abandon edit — confirms first when the draft is dirty;
+                // plain Enter inserts a newline.
+                if (e.key === "Escape") {
+                  e.preventDefault()
+                  requestClose(() => setEditing(false))
+                }
+              }}
+              rows={12}
+              placeholder={`Write the ${def.label.toLowerCase()} for your plan…`}
+              aria-label={`Edit ${def.label} section`}
+              className="collab-scroll w-full resize-y rounded-xl border border-primary/40 bg-background px-4 py-3 text-sm leading-6 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={save}
+                disabled={saving || !draft.trim()}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
+              >
+                {saving ? "Saving…" : "Save to plan"}
+              </button>
+              <button
+                onClick={() => requestClose(() => setEditing(false))}
+                disabled={saving}
+                className="rounded-lg border border-border bg-background px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent disabled:opacity-40"
+              >
+                Cancel
+              </button>
+              <span className="ml-auto font-mono text-[10px] text-muted-foreground">{draft.trim().length}/8000</span>
+            </div>
+          </div>
+        )
       ) : missing ? (
+        <>
         <div className="rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center">
           <p className="text-sm font-medium text-foreground">Not defined yet.</p>
           <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">{def.emptyHint}</p>
@@ -390,13 +482,101 @@ function SectionDetail({
             </div>
           )}
         </div>
+
+        {/* Expected Visuals — every segment gets a visuals area, even empty ones */}
+        {canEdit && (
+          <div className="rounded-xl border border-border bg-card p-5">
+            <ExpectedVisuals
+              projectId={projectId}
+              sectionId={sectionId}
+              sectionLabel={def.label}
+              userCredits={userCredits}
+              onCreditsUpdated={onCreditsUpdated}
+            />
+          </div>
+        )}
+        </>
       ) : (
-        <div className="prose prose-sm dark:prose-invert max-w-none rounded-xl border border-border bg-card p-5 text-sm leading-7 text-foreground">
-          <Markdown>{raw}</Markdown>
-        </div>
+        <>
+          {sectionId === "pricingTiers" && raw ? (
+            <div className="space-y-3">
+              <PricingTierBuilder
+                value={raw}
+                onChange={() => { }}
+                readonly={true}
+              />
+              <div className="rounded-xl border border-border bg-card p-4">
+                <details className="text-xs">
+                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground font-medium">
+                    View as markdown
+                  </summary>
+                  <div className="mt-3">
+                    <CofounderMarkdown>{raw}</CofounderMarkdown>
+                  </div>
+                </details>
+              </div>
+            </div>
+          ) : sectionId === "themePreferences" && raw ? (
+            <div className="space-y-3">
+              <ThemeBuilder
+                value={raw}
+                onChange={() => { }}
+                readonly={true}
+              />
+              <div className="rounded-xl border border-border bg-card p-4">
+                <details className="text-xs">
+                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground font-medium">
+                    View as markdown
+                  </summary>
+                  <div className="mt-3">
+                    <CofounderMarkdown>{raw}</CofounderMarkdown>
+                  </div>
+                </details>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-border bg-card p-5">
+              <CofounderMarkdown>{raw}</CofounderMarkdown>
+            </div>
+          )}
+
+          {/* Expand with AI button - show when section exists but quality could improve */}
+          {canEdit && qualityScore < 75 && qualityScore > 0 && (
+            <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+              <div className="flex items-start gap-3">
+                <Sparkles className="size-4 shrink-0 text-primary mt-0.5" aria-hidden />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-foreground">Want more detail?</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground leading-relaxed">
+                    Ask your AI co-founder to expand specific parts of this section with more depth and examples.
+                  </p>
+                </div>
+                <button
+                  onClick={() => requestClose(onWorkOnThis)}
+                  className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  Expand with AI
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Expected Visuals - available for all sections with content */}
+          {canEdit && (
+            <div className="mt-4 rounded-xl border border-border bg-card p-5">
+              <ExpectedVisuals
+                projectId={projectId}
+                sectionId={sectionId}
+                sectionLabel={def.label}
+                userCredits={userCredits}
+                onCreditsUpdated={onCreditsUpdated}
+              />
+            </div>
+          )}
+        </>
       )}
 
-      {!editing && canEdit && (
+      {!editing && canEdit && !missing && (
         <p className="text-[11px] text-muted-foreground">
           Prefer brainstorming first? Ask your co-founder in the chat — proposed changes always land here for your review
           before anything is saved.
@@ -697,16 +877,14 @@ function ChatPanel({
                 </div>
                 <div
                   className={cx(
-                    "max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-6",
+                    "max-w-[92%] rounded-2xl px-4 py-3 text-sm leading-6",
                     m.role === "user"
                       ? "rounded-tr-sm bg-primary text-primary-foreground"
                       : "rounded-tl-sm border border-border bg-card text-foreground",
                   )}
                 >
                   {m.role === "assistant" ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none [&>:first-child]:mt-0 [&>:last-child]:mb-0">
-                      <Markdown>{m.content}</Markdown>
-                    </div>
+                    <CofounderMarkdown>{m.content}</CofounderMarkdown>
                   ) : (
                     m.content
                   )}
@@ -805,11 +983,22 @@ function LaunchButton({
   const router = useRouter()
   const [launching, setLaunching] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showQualityDetails, setShowQualityDetails] = useState(false)
 
   const health = useMemo(() => computePlanHealth(spec), [spec])
+  const quality = useMemo(() => calculatePlanQuality(spec), [spec])
   const missingCount = health.missing.length
 
   const canLaunch = state === "plan_ready"
+
+  // Quality level styling
+  const qualityStyles = {
+    excellent: { bg: "bg-emerald-500/10", border: "border-emerald-500/30", text: "text-emerald-600 dark:text-emerald-400" },
+    good: { bg: "bg-blue-500/10", border: "border-blue-500/30", text: "text-blue-600 dark:text-blue-400" },
+    acceptable: { bg: "bg-amber-500/10", border: "border-amber-500/30", text: "text-amber-600 dark:text-amber-400" },
+    needs_work: { bg: "bg-orange-500/10", border: "border-orange-500/30", text: "text-orange-600 dark:text-orange-400" },
+  }
+  const qStyle = qualityStyles[quality.readinessLevel]
 
   async function handleLaunch() {
     if (!canLaunch || launching) return
@@ -835,6 +1024,51 @@ function LaunchButton({
           {error}
         </p>
       )}
+
+      {/* Quality Score Card */}
+      <div className={cx("mb-3 rounded-lg border", qStyle.border, qStyle.bg)}>
+        <button
+          onClick={() => setShowQualityDetails(!showQualityDetails)}
+          className="w-full px-3 py-2 text-left"
+          type="button"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Star className={cx("size-4", qStyle.text)} aria-hidden />
+              <span className={cx("text-xs font-semibold", qStyle.text)}>
+                Plan Quality: {quality.overallScore}%
+              </span>
+              <span className={cx("text-[10px] uppercase tracking-wide", qStyle.text, "opacity-80")}>
+                {quality.readinessLevel.replace('_', ' ')}
+              </span>
+            </div>
+            <ClipboardList className={cx("size-3", qStyle.text, "opacity-60")} aria-hidden />
+          </div>
+          <p className={cx("mt-1 text-[11px] leading-4", qStyle.text, "opacity-80")}>
+            {quality.readinessMessage}
+          </p>
+        </button>
+
+        {showQualityDetails && quality.sectionsWithIssues.length > 0 && (
+          <div className="border-t border-current/10 px-3 py-2 space-y-1.5">
+            <p className={cx("text-[10px] font-semibold uppercase tracking-wider", qStyle.text)}>
+              Sections needing more detail:
+            </p>
+            {quality.sectionsWithIssues.slice(0, 5).map((section) => (
+              <div key={section.id} className="flex items-center justify-between text-[11px]">
+                <span className={cx(qStyle.text, "opacity-90")}>{section.label}</span>
+                <span className={cx(qStyle.text, "font-mono opacity-70")}>{section.score}%</span>
+              </div>
+            ))}
+            {quality.sectionsWithIssues.length > 5 && (
+              <p className={cx("text-[10px]", qStyle.text, "opacity-70")}>
+                +{quality.sectionsWithIssues.length - 5} more sections
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
       {missingCount > 0 && (
         <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2" role="status">
           <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
@@ -1237,26 +1471,26 @@ function AutoCompleteRunView({
               : run.phase === "working"
                 ? "Your co-founder is working on your plan…"
                 : run.phase === "paused"
-                ? "Paused — out of credits"
-                : run.stoppedByUser
-                  ? "Stopped — your co-founder stepped back"
-                  : run.failedCount > 0
-                    ? "Finished — some sections need a retry"
-                    : "Your co-founder finished the plan"}
+                  ? "Paused — out of credits"
+                  : run.stoppedByUser
+                    ? "Stopped — your co-founder stepped back"
+                    : run.failedCount > 0
+                      ? "Finished — some sections need a retry"
+                      : "Your co-founder finished the plan"}
           </h2>
         </div>
         <p className="mt-1.5 text-sm leading-6 text-muted-foreground">
           {run.phase === "working" && run.suggestionsPhase
-            ? "First, the improvements you two already discussed are going into the plan — then anything still missing gets drafted." 
+            ? "First, the improvements you two already discussed are going into the plan — then anything still missing gets drafted."
             : run.phase === "working"
-            ? working
-              ? `Drafting ${working.label} — grounded in everything already in your plan. You'll review each section when it's done.`
-              : "Getting started…"
-            : run.phase === "paused"
-              ? `Completed ${run.doneCount} section${run.doneCount === 1 ? "" : "s"} before running out. Top up your credits and continue — ${run.remaining.length} section${run.remaining.length === 1 ? "" : "s"} left.`
-              : run.failedCount > 0
-                ? `${run.doneCount} section${run.doneCount === 1 ? "" : "s"} drafted. ${run.failedCount} couldn't be completed — you can retry just those.`
-                : `All ${run.doneCount} missing section${run.doneCount === 1 ? "" : "s"} drafted and added to your plan. Review them below — undo or rewrite anything.`}
+              ? working
+                ? `Drafting ${working.label} — grounded in everything already in your plan. You'll review each section when it's done.`
+                : "Getting started…"
+              : run.phase === "paused"
+                ? `Completed ${run.doneCount} section${run.doneCount === 1 ? "" : "s"} before running out. Top up your credits and continue — ${run.remaining.length} section${run.remaining.length === 1 ? "" : "s"} left.`
+                : run.failedCount > 0
+                  ? `${run.doneCount} section${run.doneCount === 1 ? "" : "s"} drafted. ${run.failedCount} couldn't be completed — you can retry just those.`
+                  : `All ${run.doneCount} missing section${run.doneCount === 1 ? "" : "s"} drafted and added to your plan. Review them below — undo or rewrite anything.`}
         </p>
       </div>
 
@@ -1267,53 +1501,53 @@ function AutoCompleteRunView({
             className="flex flex-col rounded-lg border border-border bg-card px-3 py-2"
           >
             <div className="flex items-center gap-2.5">
-            <span className="w-4 shrink-0 text-center" aria-hidden>
-              {r.status === "working" ? (
-                <span className="inline-block size-3 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
-              ) : r.status === "done" ? (
-                <span className="text-emerald-500">✓</span>
-              ) : r.status === "failed" ? (
-                <span className="text-destructive">!</span>
-              ) : r.status === "skipped" ? (
-                <span className="text-muted-foreground/60">–</span>
-              ) : (
-                <span className="inline-block size-1.5 rounded-full bg-muted-foreground/30" />
-              )}
-            </span>
-            <span
-              className={cx(
-                "flex-1 truncate text-sm",
-                r.status === "pending" || r.status === "skipped" ? "text-muted-foreground" : "text-foreground",
-                r.status === "working" && "font-medium",
-              )}
-            >
-              {r.label}
-              {r.status === "working" && <span className="ml-2 text-xs text-muted-foreground">drafting…</span>}
-            </span>
-            {r.status === "done" && (
-              <span className="flex shrink-0 items-center gap-1.5">
-                <button
-                  onClick={() => setExpanded(expanded === r.id ? null : r.id)}
-                  aria-expanded={expanded === r.id}
-                  className="text-[11px] font-medium text-primary hover:underline"
-                >
-                  {expanded === r.id ? "Hide" : "Review"}
-                </button>
-                <button
-                  onClick={() => onOpenSection(r.id)}
-                  className="text-[11px] text-muted-foreground hover:text-foreground hover:underline"
-                >
-                  Open
-                </button>
-                <button
-                  onClick={() => onUndo(r.id)}
-                  disabled={undoing === r.id}
-                  className="text-[11px] text-muted-foreground hover:text-foreground hover:underline disabled:opacity-40"
-                >
-                  {undoing === r.id ? "Undoing…" : "Undo"}
-                </button>
+              <span className="w-4 shrink-0 text-center" aria-hidden>
+                {r.status === "working" ? (
+                  <span className="inline-block size-3 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+                ) : r.status === "done" ? (
+                  <span className="text-emerald-500">✓</span>
+                ) : r.status === "failed" ? (
+                  <span className="text-destructive">!</span>
+                ) : r.status === "skipped" ? (
+                  <span className="text-muted-foreground/60">–</span>
+                ) : (
+                  <span className="inline-block size-1.5 rounded-full bg-muted-foreground/30" />
+                )}
               </span>
-            )}
+              <span
+                className={cx(
+                  "flex-1 truncate text-sm",
+                  r.status === "pending" || r.status === "skipped" ? "text-muted-foreground" : "text-foreground",
+                  r.status === "working" && "font-medium",
+                )}
+              >
+                {r.label}
+                {r.status === "working" && <span className="ml-2 text-xs text-muted-foreground">drafting…</span>}
+              </span>
+              {r.status === "done" && (
+                <span className="flex shrink-0 items-center gap-1.5">
+                  <button
+                    onClick={() => setExpanded(expanded === r.id ? null : r.id)}
+                    aria-expanded={expanded === r.id}
+                    className="text-[11px] font-medium text-primary hover:underline"
+                  >
+                    {expanded === r.id ? "Hide" : "Review"}
+                  </button>
+                  <button
+                    onClick={() => onOpenSection(r.id)}
+                    className="text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    Open
+                  </button>
+                  <button
+                    onClick={() => onUndo(r.id)}
+                    disabled={undoing === r.id}
+                    className="text-[11px] text-muted-foreground hover:text-foreground hover:underline disabled:opacity-40"
+                  >
+                    {undoing === r.id ? "Undoing…" : "Undo"}
+                  </button>
+                </span>
+              )}
             </div>
             {expanded === r.id && (
               <p className="mt-2 whitespace-pre-wrap border-t border-border/60 pt-2 text-sm leading-6 text-muted-foreground">
@@ -1364,18 +1598,30 @@ function AutoCompleteRunView({
 
 // ─── Root client ──────────────────────────────────────────────────────────────
 
+interface SavedVisual {
+  id: string
+  imageUrl: string
+  model: string
+  creditsConsumed: number
+  createdAt: Date | string
+  prompt: string
+}
+
 export function CollaborateClient({
   projectId,
   initialProject,
   isOwner,
+  initialCredits = 0,
 }: {
   projectId: string
   initialProject: Project
   isOwner: boolean
+  initialCredits?: number
 }) {
   const [spec, setSpec] = useState<ApplicationSpecification | undefined>(initialProject.specification)
   const [analysis, setAnalysis] = useState<PlanAnalysis | null>(initialProject.planAnalysis ?? null)
   const [activeSection, setActiveSection] = useState<PlanSectionId | null>(null)
+  const [userCredits, setUserCredits] = useState(initialCredits)
   // When true, the chat is shown while a section is selected — the composer
   // shows the "Working on" chip and the AI receives the focus section.
   const [chatWithFocus, setChatWithFocus] = useState(false)
@@ -1501,26 +1747,26 @@ export function CollaborateClient({
       setAutoRun((prev) =>
         prev
           ? {
-              ...prev,
-              phase: "working",
-              stoppedByUser: false,
-              outOfCredits: false,
-              remaining: sections,
-              sectionCost,
-              totalCost: prev.totalCost + sections.length * sectionCost,
-              results: prev.results.map((r) =>
-                sections.some((s) => s.id === r.id) ? { ...r, status: "pending" } : r,
-              ),
-            }
+            ...prev,
+            phase: "working",
+            stoppedByUser: false,
+            outOfCredits: false,
+            remaining: sections,
+            sectionCost,
+            totalCost: prev.totalCost + sections.length * sectionCost,
+            results: prev.results.map((r) =>
+              sections.some((s) => s.id === r.id) ? { ...r, status: "pending" } : r,
+            ),
+          }
           : {
-              phase: "working",
-              results: sections.map((s) => ({ id: s.id, label: s.label, status: "pending", prevValue: "" })),
-              remaining: sections,
-              sectionCost,
-              totalCost: sections.length * sectionCost,
-              failedCount: 0,
-              doneCount: 0,
-            },
+            phase: "working",
+            results: sections.map((s) => ({ id: s.id, label: s.label, status: "pending", prevValue: "" })),
+            remaining: sections,
+            sectionCost,
+            totalCost: sections.length * sectionCost,
+            failedCount: 0,
+            doneCount: 0,
+          },
       )
       setActiveSection(null)
       setChatWithFocus(false)
@@ -1540,11 +1786,11 @@ export function CollaborateClient({
           setAutoRun((prev) =>
             prev
               ? {
-                  ...prev,
-                  results: prev.results.map((r) =>
-                    r.id === s.section ? { ...r, status: "working" } : r,
-                  ),
-                }
+                ...prev,
+                results: prev.results.map((r) =>
+                  r.id === s.section ? { ...r, status: "working" } : r,
+                ),
+              }
               : prev,
           )
           try {
@@ -1557,12 +1803,12 @@ export function CollaborateClient({
             setAutoRun((prev) =>
               prev
                 ? {
-                    ...prev,
-                    doneCount: prev.doneCount + 1,
-                    results: prev.results.map((r) =>
-                      r.id === s.section ? { ...r, status: "done" } : r,
-                    ),
-                  }
+                  ...prev,
+                  doneCount: prev.doneCount + 1,
+                  results: prev.results.map((r) =>
+                    r.id === s.section ? { ...r, status: "done" } : r,
+                  ),
+                }
                 : prev,
             )
           } catch {
@@ -1571,12 +1817,12 @@ export function CollaborateClient({
             setAutoRun((prev) =>
               prev
                 ? {
-                    ...prev,
-                    failedCount: prev.failedCount + 1,
-                    results: prev.results.map((r) =>
-                      r.id === s.section ? { ...r, status: "failed" } : r,
-                    ),
-                  }
+                  ...prev,
+                  failedCount: prev.failedCount + 1,
+                  results: prev.results.map((r) =>
+                    r.id === s.section ? { ...r, status: "failed" } : r,
+                  ),
+                }
                 : prev,
             )
           }
@@ -1591,14 +1837,14 @@ export function CollaborateClient({
           setAutoRun((prev) =>
             prev
               ? {
-                  ...prev,
-                  phase: "done",
-                  stoppedByUser: true,
-                  remaining: queue.slice(i),
-                  results: prev.results.map((r) =>
-                    r.status === "pending" ? { ...r, status: "skipped" } : r,
-                  ),
-                }
+                ...prev,
+                phase: "done",
+                stoppedByUser: true,
+                remaining: queue.slice(i),
+                results: prev.results.map((r) =>
+                  r.status === "pending" ? { ...r, status: "skipped" } : r,
+                ),
+              }
               : prev,
           )
           return
@@ -1607,11 +1853,11 @@ export function CollaborateClient({
         setAutoRun((prev) =>
           prev
             ? {
-                ...prev,
-                results: prev.results.map((r) =>
-                  r.id === target.id ? { ...r, status: "working" } : r,
-                ),
-              }
+              ...prev,
+              results: prev.results.map((r) =>
+                r.id === target.id ? { ...r, status: "working" } : r,
+              ),
+            }
             : prev,
         )
         try {
@@ -1627,13 +1873,13 @@ export function CollaborateClient({
           setAutoRun((prev) =>
             prev
               ? {
-                  ...prev,
-                  doneCount: prev.doneCount + 1,
-                  remaining: data.remainingSections,
-                  results: prev.results.map((r) =>
-                    r.id === target.id ? { ...r, status: "done" } : r,
-                  ),
-                }
+                ...prev,
+                doneCount: prev.doneCount + 1,
+                remaining: data.remainingSections,
+                results: prev.results.map((r) =>
+                  r.id === target.id ? { ...r, status: "done" } : r,
+                ),
+              }
               : prev,
           )
         } catch (err) {
@@ -1642,14 +1888,14 @@ export function CollaborateClient({
             setAutoRun((prev) =>
               prev
                 ? {
-                    ...prev,
-                    phase: "paused",
-                    outOfCredits: true,
-                    remaining: queue.slice(i),
-                    results: prev.results.map((r) =>
-                      r.id === target.id ? { ...r, status: "skipped" } : r,
-                    ),
-                  }
+                  ...prev,
+                  phase: "paused",
+                  outOfCredits: true,
+                  remaining: queue.slice(i),
+                  results: prev.results.map((r) =>
+                    r.id === target.id ? { ...r, status: "skipped" } : r,
+                  ),
+                }
                 : prev,
             )
             return
@@ -1657,13 +1903,13 @@ export function CollaborateClient({
           setAutoRun((prev) =>
             prev
               ? {
-                  ...prev,
-                  failedCount: prev.failedCount + 1,
-                  remaining: queue.slice(i + 1),
-                  results: prev.results.map((r) =>
-                    r.id === target.id ? { ...r, status: "failed" } : r,
-                  ),
-                }
+                ...prev,
+                failedCount: prev.failedCount + 1,
+                remaining: queue.slice(i + 1),
+                results: prev.results.map((r) =>
+                  r.id === target.id ? { ...r, status: "failed" } : r,
+                ),
+              }
               : prev,
           )
         }
@@ -1715,12 +1961,12 @@ export function CollaborateClient({
         setAutoRun((prev) =>
           prev
             ? {
-                ...prev,
-                doneCount: Math.max(0, prev.doneCount - 1),
-                results: prev.results.map((r) =>
-                  r.id === sectionId ? { ...r, status: "skipped" } : r,
-                ),
-              }
+              ...prev,
+              doneCount: Math.max(0, prev.doneCount - 1),
+              results: prev.results.map((r) =>
+                r.id === sectionId ? { ...r, status: "skipped" } : r,
+              ),
+            }
             : prev,
         )
         toast(`${getPlanSection(sectionId)?.label ?? "Section"} cleared — your co-founder's draft was removed.`)
@@ -1756,10 +2002,10 @@ export function CollaborateClient({
       setAutoRun((prev) =>
         prev
           ? {
-              ...prev,
-              doneCount: 0,
-              results: prev.results.map((r) => (r.status === "done" ? { ...r, status: "skipped" } : r)),
-            }
+            ...prev,
+            doneCount: 0,
+            results: prev.results.map((r) => (r.status === "done" ? { ...r, status: "skipped" } : r)),
+          }
           : prev,
       )
       toast(`Removed ${restored} drafted section${restored === 1 ? "" : "s"}.`)
@@ -1808,269 +2054,275 @@ export function CollaborateClient({
           isn't active. */}
       {isOwner && autoEstimate && autoEstimate.missingSections.length > 0 && !runActive && autoHeaderSlot
         ? createPortal(
-            <button
-              onClick={startAutoComplete}
-              className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-1.5 text-xs font-semibold text-white shadow-md shadow-fuchsia-600/20 transition-all hover:shadow-lg hover:shadow-fuchsia-600/30 hover:brightness-110"
-            >
-              <Sparkles className="size-3.5" aria-hidden />
-              Auto-complete {autoEstimate.missingSections.length} section{autoEstimate.missingSections.length === 1 ? "" : "s"}
-              {autoEstimate.sectionCost > 0 && (
-                <span className="font-mono text-[11px] font-medium text-white/85">· {autoEstimate.totalCost}</span>
-              )}
-              <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide">New</span>
-            </button>,
-            autoHeaderSlot,
-          )
+          <button
+            onClick={startAutoComplete}
+            className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-1.5 text-xs font-semibold text-white shadow-md shadow-fuchsia-600/20 transition-all hover:shadow-lg hover:shadow-fuchsia-600/30 hover:brightness-110"
+          >
+            <Sparkles className="size-3.5" aria-hidden />
+            Auto-complete {autoEstimate.missingSections.length} section{autoEstimate.missingSections.length === 1 ? "" : "s"}
+            {autoEstimate.sectionCost > 0 && (
+              <span className="font-mono text-[11px] font-medium text-white/85">· {autoEstimate.totalCost}</span>
+            )}
+            <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide">New</span>
+          </button>,
+          autoHeaderSlot,
+        )
         : null}
       <div className="flex min-h-0 flex-1 overflow-hidden">
-      {/* Desktop: 3 areas — plan (left), AI (center, dominant), insights (right) */}
-      <aside className="collab-scroll hidden w-64 shrink-0 overflow-y-auto border-r border-border lg:block" aria-label="My plan">
-        <PlanNav
-          spec={spec}
-          activeSection={activeSection}
-          onSelect={(id) => {
-            setActiveSection((cur) => (cur === id ? null : id))
-            setChatWithFocus(false)
-          }}
-          analysis={analysis}
-        />
-      </aside>
+        {/* Desktop: 3 areas — plan (left), AI (center, dominant), insights (right) */}
+        <aside className="collab-scroll hidden w-64 shrink-0 overflow-y-auto border-r border-border lg:block" aria-label="My plan">
+          <PlanNav
+            spec={spec}
+            activeSection={activeSection}
+            onSelect={(id) => {
+              setActiveSection((cur) => (cur === id ? null : id))
+              setChatWithFocus(false)
+            }}
+            analysis={analysis}
+          />
+        </aside>
 
-      {/* Desktop center column — hidden below lg so the mobile container is
+        {/* Desktop center column — hidden below lg so the mobile container is
           the single source of these components (no duplicate mounts). */}
-      <main className="hidden min-w-0 flex-1 flex-col overflow-hidden lg:flex">
-        {runActive && autoRun ? (
-          <AutoCompleteRunView
-            run={autoRun}
-            spec={spec}
-            onStop={stopAutoRun}
-            onContinue={startAutoComplete}
-            onDismiss={dismissAutoRun}
-            onOpenSection={openAutoSection}
-            onUndo={undoAutoSection}
-            onDiscardAll={() => setAutoDiscardConfirm(true)}
-            undoing={undoingSection}
-          />
-        ) : activeSection && !chatWithFocus ? (
-          <div className="min-h-0 flex-1 overflow-y-auto collab-scroll">
-            <SectionDetail
-              spec={spec}
-              sectionId={activeSection}
-              canEdit={isOwner}
-              onSave={saveSection}
-              draft={drafts[activeSection] ?? ""}
-              onDraftChange={(value) => setDraft(activeSection, value)}
-              onWorkOnThis={() => {
-                // Keep the section selected — the composer shows the
-                // "Working on" chip and the AI receives the focus section.
-                setChatWithFocus(true)
-                toast(`Working on ${getPlanSection(activeSection)?.label ?? "this section"} — tell your co-founder what you want to change.`)
-              }}
-              onClose={() => {
-                setActiveSection(null)
-                setChatWithFocus(false)
-              }}
-            />
-          </div>
-        ) : (
-          <ChatPanel
-            projectId={projectId}
-            isOwner={isOwner}
-            spec={spec}
-            activeSection={chatWithFocus ? activeSection : null}
-            onSpecChanged={setSpec}
-          />
-        )}
-        {isOwner && !runActive && <LaunchButton projectId={projectId} state={projectState} spec={spec} />}
-      </main>
-
-      <aside className="collab-scroll hidden w-80 shrink-0 overflow-y-auto border-l border-border xl:block" aria-label="Plan insights">
-        <InsightsPanel
-          spec={spec}
-          analysis={analysis}
-          analyzing={analyzing}
-          onAnalyze={runAnalysis}
-          onRefresh={() => runAnalysis(true)}
-          onWorkOn={(id) => {
-            setActiveSection(id)
-            setChatWithFocus(false)
-          }}
-          isOwner={isOwner}
-          projectId={projectId}
-          onSpecChanged={setSpec}
-          onAnalysisUpdated={setAnalysis}
-        />
-      </aside>
-
-      {/* Mobile / tablet: single-column flow with view switcher. The only
-          mount of chat/section/launch below lg — the desktop column is hidden.
-          min-h-0 keeps the flex chain height-constrained so each tab panel
-          scrolls internally and the launch button stays pinned. */}
-      <div className="flex w-full min-h-0 flex-col lg:hidden">
-        {runActive && autoRun && (
-          <div className="flex min-h-0 flex-1 flex-col">
+        <main className="hidden min-w-0 flex-1 flex-col overflow-hidden lg:flex">
+          {runActive && autoRun ? (
             <AutoCompleteRunView
               run={autoRun}
               spec={spec}
               onStop={stopAutoRun}
               onContinue={startAutoComplete}
               onDismiss={dismissAutoRun}
-              onOpenSection={(id) => {
-                openAutoSection(id)
-                setMobileView("plan")
-              }}
+              onOpenSection={openAutoSection}
               onUndo={undoAutoSection}
               onDiscardAll={() => setAutoDiscardConfirm(true)}
               undoing={undoingSection}
             />
-          </div>
-        )}
-        <div className={cx("flex w-full min-h-0 flex-col", runActive && "hidden")}>
-        <div className="flex border-b border-border bg-card" role="tablist" aria-label="Workspace views">
-          {(["plan", "chat", "insights"] as const).map((v) => (
-            <button
-              key={v}
-              id={`collab-tab-${v}`}
-              role="tab"
-              aria-selected={mobileView === v}
-              aria-controls={`collab-panel-${v}`}
-              onClick={() => setMobileView(v)}
-              className={cx(
-                "flex-1 px-3 py-2.5 text-xs font-medium capitalize transition-colors",
-                mobileView === v ? "border-b-2 border-primary text-foreground" : "text-muted-foreground",
-              )}
-            >
-              {v === "plan" ? "My Plan" : v === "chat" ? "AI Co-Founder" : "Insights"}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-1 min-h-0 flex-col">
-          {mobileView === "plan" && (
-            <div id="collab-panel-plan" role="tabpanel" aria-labelledby="collab-tab-plan" className="min-h-0 flex-1 overflow-y-auto collab-scroll">
-              <PlanNav
+          ) : activeSection && !chatWithFocus ? (
+            <div className="min-h-0 flex-1 overflow-y-auto collab-scroll">
+              <SectionDetail
                 spec={spec}
-                activeSection={activeSection}
-                onSelect={(id) => {
-                  const selecting = activeSection !== id
-                  setActiveSection(selecting ? id : null)
-                  setChatWithFocus(false)
-                  if (selecting) setMobileView("chat")
-                }}
-                analysis={analysis}
-                collapsedOnMobile
-              />
-            </div>
-          )}
-          {mobileView === "chat" && (
-            <div id="collab-panel-chat" role="tabpanel" aria-labelledby="collab-tab-chat" className="flex min-h-0 flex-1 flex-col">
-              <div className={cx("min-h-0 flex-1", activeSection && !chatWithFocus && "collab-scroll overflow-y-auto")}>
-                {activeSection && !chatWithFocus ? (
-                  <SectionDetail
-                    spec={spec}
-                    sectionId={activeSection}
-                    canEdit={isOwner}
-                    onSave={saveSection}
-                    draft={drafts[activeSection] ?? ""}
-                    onDraftChange={(value) => setDraft(activeSection, value)}
-                    onWorkOnThis={() => setChatWithFocus(true)}
-                    onClose={() => {
-                      setActiveSection(null)
-                      setChatWithFocus(false)
-                    }}
-                  />
-                ) : (
-                  <ChatPanel
-                    projectId={projectId}
-                    isOwner={isOwner}
-                    spec={spec}
-                    activeSection={chatWithFocus ? activeSection : null}
-                    onSpecChanged={setSpec}
-                  />
-                )}
-              </div>
-            </div>
-          )}
-          {mobileView === "insights" && (
-            <div id="collab-panel-insights" role="tabpanel" aria-labelledby="collab-tab-insights" className="min-h-0 flex-1 overflow-y-auto collab-scroll">
-              <InsightsPanel
-                spec={spec}
-                analysis={analysis}
-                analyzing={analyzing}
-                onAnalyze={runAnalysis}
-                onRefresh={() => runAnalysis(true)}
-                onWorkOn={(id) => {
-                  setActiveSection(id)
-                  setChatWithFocus(false)
-                  setMobileView("chat")
-                }}
-                isOwner={isOwner}
+                sectionId={activeSection}
+                canEdit={isOwner}
+                onSave={saveSection}
+                draft={drafts[activeSection] ?? ""}
+                onDraftChange={(value) => setDraft(activeSection, value)}
                 projectId={projectId}
-                onSpecChanged={setSpec}
-                onAnalysisUpdated={setAnalysis}
+                userCredits={userCredits}
+                onCreditsUpdated={setUserCredits}
+                onWorkOnThis={() => {
+                  // Keep the section selected — the composer shows the
+                  // "Working on" chip and the AI receives the focus section.
+                  setChatWithFocus(true)
+                  toast(`Working on ${getPlanSection(activeSection)?.label ?? "this section"} — tell your co-founder what you want to change.`)
+                }}
+                onClose={() => {
+                  setActiveSection(null)
+                  setChatWithFocus(false)
+                }}
+              />
+            </div>
+          ) : (
+            <ChatPanel
+              projectId={projectId}
+              isOwner={isOwner}
+              spec={spec}
+              activeSection={chatWithFocus ? activeSection : null}
+              onSpecChanged={setSpec}
+            />
+          )}
+          {isOwner && !runActive && <LaunchButton projectId={projectId} state={projectState} spec={spec} />}
+        </main>
+
+        <aside className="collab-scroll hidden w-80 shrink-0 overflow-y-auto border-l border-border xl:block" aria-label="Plan insights">
+          <InsightsPanel
+            spec={spec}
+            analysis={analysis}
+            analyzing={analyzing}
+            onAnalyze={runAnalysis}
+            onRefresh={() => runAnalysis(true)}
+            onWorkOn={(id) => {
+              setActiveSection(id)
+              setChatWithFocus(false)
+            }}
+            isOwner={isOwner}
+            projectId={projectId}
+            onSpecChanged={setSpec}
+            onAnalysisUpdated={setAnalysis}
+          />
+        </aside>
+
+        {/* Mobile / tablet: single-column flow with view switcher. The only
+          mount of chat/section/launch below lg — the desktop column is hidden.
+          min-h-0 keeps the flex chain height-constrained so each tab panel
+          scrolls internally and the launch button stays pinned. */}
+        <div className="flex w-full min-h-0 flex-col lg:hidden">
+          {runActive && autoRun && (
+            <div className="flex min-h-0 flex-1 flex-col">
+              <AutoCompleteRunView
+                run={autoRun}
+                spec={spec}
+                onStop={stopAutoRun}
+                onContinue={startAutoComplete}
+                onDismiss={dismissAutoRun}
+                onOpenSection={(id) => {
+                  openAutoSection(id)
+                  setMobileView("plan")
+                }}
+                onUndo={undoAutoSection}
+                onDiscardAll={() => setAutoDiscardConfirm(true)}
+                undoing={undoingSection}
               />
             </div>
           )}
-        </div>
-        {/* Pinned below every mobile tab — always reachable, never requires
+          <div className={cx("flex w-full min-h-0 flex-col", runActive && "hidden")}>
+            <div className="flex border-b border-border bg-card" role="tablist" aria-label="Workspace views">
+              {(["plan", "chat", "insights"] as const).map((v) => (
+                <button
+                  key={v}
+                  id={`collab-tab-${v}`}
+                  role="tab"
+                  aria-selected={mobileView === v}
+                  aria-controls={`collab-panel-${v}`}
+                  onClick={() => setMobileView(v)}
+                  className={cx(
+                    "flex-1 px-3 py-2.5 text-xs font-medium capitalize transition-colors",
+                    mobileView === v ? "border-b-2 border-primary text-foreground" : "text-muted-foreground",
+                  )}
+                >
+                  {v === "plan" ? "My Plan" : v === "chat" ? "AI Co-Founder" : "Insights"}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-1 min-h-0 flex-col">
+              {mobileView === "plan" && (
+                <div id="collab-panel-plan" role="tabpanel" aria-labelledby="collab-tab-plan" className="min-h-0 flex-1 overflow-y-auto collab-scroll">
+                  <PlanNav
+                    spec={spec}
+                    activeSection={activeSection}
+                    onSelect={(id) => {
+                      const selecting = activeSection !== id
+                      setActiveSection(selecting ? id : null)
+                      setChatWithFocus(false)
+                      if (selecting) setMobileView("chat")
+                    }}
+                    analysis={analysis}
+                    collapsedOnMobile
+                  />
+                </div>
+              )}
+              {mobileView === "chat" && (
+                <div id="collab-panel-chat" role="tabpanel" aria-labelledby="collab-tab-chat" className="flex min-h-0 flex-1 flex-col">
+                  <div className={cx("min-h-0 flex-1", activeSection && !chatWithFocus && "collab-scroll overflow-y-auto")}>
+                    {activeSection && !chatWithFocus ? (
+                      <SectionDetail
+                        spec={spec}
+                        sectionId={activeSection}
+                        canEdit={isOwner}
+                        onSave={saveSection}
+                        draft={drafts[activeSection] ?? ""}
+                        onDraftChange={(value) => setDraft(activeSection, value)}
+                        projectId={projectId}
+                        userCredits={userCredits}
+                        onCreditsUpdated={setUserCredits}
+                        onWorkOnThis={() => setChatWithFocus(true)}
+                        onClose={() => {
+                          setActiveSection(null)
+                          setChatWithFocus(false)
+                        }}
+                      />
+                    ) : (
+                      <ChatPanel
+                        projectId={projectId}
+                        isOwner={isOwner}
+                        spec={spec}
+                        activeSection={chatWithFocus ? activeSection : null}
+                        onSpecChanged={setSpec}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+              {mobileView === "insights" && (
+                <div id="collab-panel-insights" role="tabpanel" aria-labelledby="collab-tab-insights" className="min-h-0 flex-1 overflow-y-auto collab-scroll">
+                  <InsightsPanel
+                    spec={spec}
+                    analysis={analysis}
+                    analyzing={analyzing}
+                    onAnalyze={runAnalysis}
+                    onRefresh={() => runAnalysis(true)}
+                    onWorkOn={(id) => {
+                      setActiveSection(id)
+                      setChatWithFocus(false)
+                      setMobileView("chat")
+                    }}
+                    isOwner={isOwner}
+                    projectId={projectId}
+                    onSpecChanged={setSpec}
+                    onAnalysisUpdated={setAnalysis}
+                  />
+                </div>
+              )}
+            </div>
+            {/* Pinned below every mobile tab — always reachable, never requires
             scrolling to the end of a long panel. */}
-        {isOwner && !runActive && <LaunchButton projectId={projectId} state={projectState} spec={spec} />}
+            {isOwner && !runActive && <LaunchButton projectId={projectId} state={projectState} spec={spec} />}
+          </div>
         </div>
       </div>
-    </div>
 
-    {/* Confirm the co-founder's auto-complete run before any credits move */}
-    <AlertDialog open={autoConfirm} onOpenChange={setAutoConfirm}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Let your co-founder finish the plan?</AlertDialogTitle>
-          <AlertDialogDescription>
-            {autoEstimate
-              ? `${autoEstimate.missingSections.length} section${autoEstimate.missingSections.length === 1 ? "" : "s"} still need attention. Your co-founder first adds the suggestions you've already been shown, then drafts whatever is still missing — grounded in your plan. You review and can undo anything afterwards.`
-              : "Your co-founder will draft the missing sections, grounded in your plan — you review and can undo anything afterwards."}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        {autoEstimate && autoEstimate.suggestionsAvailable ? (
-          <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-muted-foreground">
-            <Sparkles className="mr-1 inline size-3.5 text-primary" aria-hidden />
-            {autoEstimate.suggestionsAvailable} suggestion{autoEstimate.suggestionsAvailable === 1 ? "" : "s"} you've already reviewed will be added first — free.
-          </div>
-        ) : null}
-        {autoEstimate && autoEstimate.sectionCost > 0 && (
-          <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-            About <span className="font-semibold text-foreground">{autoEstimate.totalCost} credit{autoEstimate.totalCost === 1 ? "" : "s"}</span> ({autoEstimate.missingSections.length} × {autoEstimate.sectionCost}) · balance {autoEstimate.availableCredits}
-            {!autoEstimate.canAfford &&
-              ` — you can afford the first ${autoEstimate.affordableSections}, and your co-founder will pause until you top up.`}
-          </div>
-        )}
-        <AlertDialogFooter>
-          <AlertDialogCancel>Not now</AlertDialogCancel>
-          <AlertDialogAction onClick={confirmAutoComplete}>Yes — work on it all</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      {/* Confirm the co-founder's auto-complete run before any credits move */}
+      <AlertDialog open={autoConfirm} onOpenChange={setAutoConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Let your co-founder finish the plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {autoEstimate
+                ? `${autoEstimate.missingSections.length} section${autoEstimate.missingSections.length === 1 ? "" : "s"} still need attention. Your co-founder first adds the suggestions you've already been shown, then drafts whatever is still missing — grounded in your plan. You review and can undo anything afterwards.`
+                : "Your co-founder will draft the missing sections, grounded in your plan — you review and can undo anything afterwards."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {autoEstimate && autoEstimate.suggestionsAvailable ? (
+            <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-muted-foreground">
+              <Sparkles className="mr-1 inline size-3.5 text-primary" aria-hidden />
+              {autoEstimate.suggestionsAvailable} suggestion{autoEstimate.suggestionsAvailable === 1 ? "" : "s"} you've already reviewed will be added first — free.
+            </div>
+          ) : null}
+          {autoEstimate && autoEstimate.sectionCost > 0 && (
+            <div className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+              About <span className="font-semibold text-foreground">{autoEstimate.totalCost} credit{autoEstimate.totalCost === 1 ? "" : "s"}</span> ({autoEstimate.missingSections.length} × {autoEstimate.sectionCost}) · balance {autoEstimate.availableCredits}
+              {!autoEstimate.canAfford &&
+                ` — you can afford the first ${autoEstimate.affordableSections}, and your co-founder will pause until you top up.`}
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Not now</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmAutoComplete}>Yes — work on it all</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-    {/* Discard-all confirmation — removes only the co-founder's drafts */}
-    <AlertDialog open={autoDiscardConfirm} onOpenChange={setAutoDiscardConfirm}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Remove all drafted sections?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Every section your co-founder just drafted will be reset to "not defined". Sections you wrote yourself stay untouched.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => setAutoDiscardConfirm(false)}>Keep the drafts</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() => {
-              setAutoDiscardConfirm(false)
-              void discardAllAutoSections()
-            }}
-          >
-            Remove them
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      {/* Discard-all confirmation — removes only the co-founder's drafts */}
+      <AlertDialog open={autoDiscardConfirm} onOpenChange={setAutoDiscardConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove all drafted sections?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Every section your co-founder just drafted will be reset to "not defined". Sections you wrote yourself stay untouched.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setAutoDiscardConfirm(false)}>Keep the drafts</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setAutoDiscardConfirm(false)
+                void discardAllAutoSections()
+              }}
+            >
+              Remove them
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

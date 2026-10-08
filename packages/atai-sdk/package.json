@@ -1,5 +1,5 @@
 {
-  "name": "@atai/sdk",
+  "name": "@atai-group/sdk",
   "version": "1.0.0",
   "description": "Official Atai Runtime SDK — the typed client for the Atai Runtime API. AI, voice, search, scraping, email, SMS, WhatsApp, notifications, maps, calendar, vectors, database and payments behind one API key.",
   "license": "UNLICENSED",

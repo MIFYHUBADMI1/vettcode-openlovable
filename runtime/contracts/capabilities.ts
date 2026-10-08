@@ -35,6 +35,9 @@ export const CAPABILITY_IDS = [
   "ai.video",
   "ai.transcribe",
   "ai.speak",
+  // Dedicated TTS endpoint capability (OpenRouter /audio/speech) — distinct
+  // from ai.speak (voice-native audio reasoning models).
+  "ai.speech",
   "ai.embed",
   "ai.models",
   // Search / web

@@ -3,6 +3,7 @@ import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
 import { getCurrentUser } from "@/lib/auth/session"
+import { getBalance } from "@/lib/billing/credit-service"
 import { store } from "@/lib/store/store"
 import { CollaborateClient } from "./collaborate-client"
 
@@ -24,22 +25,17 @@ export default async function CollaboratePage({
   const project = await store.getProject(projectId)
   if (!project) notFound()
 
-  // AC 11: Private projects are restricted to the owning user
   const isOwner = user?.id === project.userId
   if (project.visibility !== "public" && !isOwner) {
     redirect(`/login?next=/project/${projectId}/collaborate`)
   }
 
-  // App-shell layout: fixed viewport height — every panel scrolls internally,
-  // so the plan nav, composer, and launch button are always reachable without
-  // scrolling the page. h-dvh first: fallback for browsers without svh
-  // support — without a resolvable height the shell un-clamps and content
-  // escapes the layout instead of scrolling inside its panels.
+  const userCredits = user ? (await getBalance(user.id)).total : 0
+
   return (
     <main className="collab-shell h-dvh h-svh overflow-hidden bg-background text-foreground flex flex-col">
       <AppHeader />
 
-      {/* Page header */}
       <div className="border-b border-border bg-card/50">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-6 py-4 lg:px-10">
           <div className="flex items-center gap-3 min-w-0">
@@ -60,18 +56,16 @@ export default async function CollaboratePage({
               <span className="size-1.5 rounded-full bg-primary animate-pulse" />
               {project.state === "plan_ready" ? "Plan ready" : project.state.replace(/_/g, " ")}
             </span>
-            {/* Slot — the client mounts the auto-complete button here via
-                portal, so it lives in the header while keeping its state. */}
             <div id="collab-header-actions" className="flex items-center" />
           </div>
         </div>
       </div>
 
-      {/* 60 / 40 split — plan left, chat right */}
       <CollaborateClient
         projectId={projectId}
         initialProject={project}
         isOwner={isOwner}
+        initialCredits={userCredits}
       />
     </main>
   )

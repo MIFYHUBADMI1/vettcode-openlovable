@@ -165,7 +165,7 @@ export interface ProjectAssetDoc {
   id: string
   userId: string
   projectId?: string
-  kind: "avatar" | "screenshot" | "asset" | "upload"
+  kind: "avatar" | "screenshot" | "asset" | "upload" | "visual"
   fileId: string
   filePath: string
   fileName: string
@@ -175,6 +175,8 @@ export interface ProjectAssetDoc {
   width?: number
   height?: number
   createdAt: number
+  /** Optional metadata for visual mockups and other generated content */
+  metadata?: Record<string, unknown>
 }
 
 export interface ProviderUsageDoc {

@@ -1,7 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import {
-  ArrowRight,
   Shield,
   Database,
   Globe,
@@ -12,7 +11,6 @@ import {
   Eye,
   Lock,
   Trash2,
-  HelpCircle,
   FileText,
   AlertTriangle,
   CheckCircle2,
@@ -21,55 +19,41 @@ import {
   Cpu,
   Send,
   Key,
+  Phone,
 } from "lucide-react"
-import { buttonVariants } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { SITE_URL } from "@/lib/env"
 
-/* ═══════════════════════════════════════════════════════════════
-   SEO METADATA
-   ═══════════════════════════════════════════════════════════════ */
-
 export const metadata: Metadata = {
-  title: "Atai Privacy Policy | Data & Privacy",
+  title: "Privacy Policy | Atai",
   description:
-    "Learn how Atai collects, processes, stores and protects account, project, AI, website-analysis, billing and technical information when you use the platform.",
+    "Learn how Atai collects, uses, stores, and protects your information. We are committed to keeping your personal data safe while helping you build and grow your business.",
   alternates: { canonical: "/privacy" },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: `${SITE_URL}/privacy`,
     siteName: "Atai",
-    title: "Atai Privacy Policy | Data & Privacy",
-    description:
-      "Learn how Atai collects, processes, stores and protects your information.",
+    title: "Privacy Policy | Atai",
+    description: "Learn how Atai collects, uses, stores, and protects your information.",
     images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai Privacy Policy" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Atai Privacy Policy | Data & Privacy",
-    description: "Learn how Atai collects, processes, stores and protects your information.",
+    title: "Privacy Policy | Atai",
+    description: "Learn how Atai collects, uses, stores, and protects your information.",
     images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai Privacy Policy" }],
   },
 }
-
-/* ═══════════════════════════════════════════════════════════════
-   STRUCTURED DATA
-   ═══════════════════════════════════════════════════════════════ */
 
 const privacyPageStructuredData = {
   "@context": "https://schema.org",
   "@type": "WebPage",
   name: "Atai Privacy Policy",
-  description:
-    "Learn how Atai collects, processes, stores and protects account, project, AI, website-analysis, billing and technical information.",
+  description: "How Atai collects, processes, stores, and protects your information when you use the platform.",
   url: `${SITE_URL}/privacy`,
-  isPartOf: {
-    "@type": "WebSite",
-    name: "Atai",
-    url: SITE_URL,
-  },
+  isPartOf: { "@type": "WebSite", name: "Atai", url: SITE_URL },
 }
 
 const faqStructuredData = {
@@ -81,23 +65,23 @@ const faqStructuredData = {
       name: "What information does Atai collect?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Atai collects account information (name, email, authentication details), project information (ideas, prompts, URLs, generated code), payment information (transaction records via mobile money providers), technical information (IP address, browser type, device information), and usage data necessary to operate the service.",
+        text: "Atai collects account information (name, email, authentication details), project information (ideas, prompts, generated applications), billing information (transaction records via payment providers), technical information (IP address, browser type, device info), and usage data necessary to operate the service.",
       },
     },
     {
       "@type": "Question",
-      name: "Does Atai store my projects?",
+      name: "Does Atai sell my personal information?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. Atai stores project information including your ideas, prompts, website references, generated specifications, application code, and project metadata. This information is stored to provide the service and maintain your project history.",
+        text: "No. Atai does not sell personal information to third parties under any circumstances. Information is shared only with service providers necessary to operate the platform, as described in this Privacy Policy.",
       },
     },
     {
       "@type": "Question",
-      name: "Does Atai send my project information to AI providers?",
+      name: "Who owns my projects and business data?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. Atai may transmit project inputs (prompts, ideas, website analysis data, and project context) to third-party AI infrastructure providers when necessary to provide requested functionality such as application generation and analysis.",
+        text: "You do. You retain ownership of the content you submit and the applications you create. Atai processes your project information to provide the service but does not claim ownership of your personal information, ideas, or project content.",
       },
     },
     {
@@ -105,31 +89,15 @@ const faqStructuredData = {
       name: "Is my data used to train AI models?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Atai may rely on third-party AI providers to process information necessary to provide requested functionality. Whether those providers retain or use submitted information for model improvement may depend on the applicable provider's terms and configuration. Atai does not independently use your data to train AI models.",
+        text: "Atai relies on third-party AI providers to process information and provide platform functionality. Whether those providers retain or use submitted data for model improvement depends on their own terms. Atai does not independently use your data to train AI models.",
       },
     },
     {
       "@type": "Question",
-      name: "Does Atai collect payment card information?",
+      name: "Can I delete my account and data?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Atai does not directly collect or store credit card numbers. Payments are processed via mobile money providers (MTN and Airtel). Atai receives transaction confirmation data (transaction ID, amount, status) from the payment verification process but not raw card details.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "What happens when I submit a website URL?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "When you submit a website URL, Atai uses a third-party website analysis service to crawl and analyze publicly accessible content from that URL. The system extracts page structure, layout, navigation, content, and visual patterns to create structured development context for building an application.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Can I delete my account?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes. You can request account deletion through your account settings or by contacting support. Account deletion performs a soft-delete that removes your ability to log in and strips personally identifiable information from your account record. Some information may be retained where required by law, fraud prevention, or legitimate business records.",
+        text: "Yes. You can request account deletion through your account settings or by contacting support@atai.ink. Deletion removes your ability to log in and strips personally identifiable information from your account. Some information may be retained where required by law or legitimate business records.",
       },
     },
     {
@@ -137,160 +105,96 @@ const faqStructuredData = {
       name: "Does Atai use cookies?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. Atai uses essential cookies for authentication (session cookies) and security. The session cookie is httpOnly, secure, and has a 30-day expiry. Atai also uses Vercel Analytics in production to understand usage patterns.",
+        text: "Yes. Atai uses essential cookies for authentication and session management. The session cookie is httpOnly, secure, and expires after 30 days. We also use analytics tools to understand how the platform is used.",
       },
     },
     {
       "@type": "Question",
-      name: "Is my information shared with third parties?",
+      name: "How do I contact Atai about privacy?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Atai shares information with service providers necessary to operate the service, including hosting providers, database services, AI processing providers, website analysis services, email delivery services, payment processors, and analytics services. Information may also be disclosed for legal compliance, safety, or to enforce terms of service.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Does Atai sell personal information?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "No. Atai does not sell personal information to third parties. Information is shared only with service providers necessary to operate the service or as described in this Privacy Policy.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "How long does Atai retain my information?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Atai retains information for as long as reasonably necessary to provide the service, maintain legitimate business records, comply with applicable legal requirements, resolve disputes, prevent abuse and enforce agreements. Session tokens expire after 30 days. Specific retention periods for other data categories may be finalized by legal counsel.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Who owns my project?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "You retain ownership of the content you submit and the applications you create. Atai processes your project information to provide the service but does not claim ownership of your personal information or project content.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Does Atai replace developers?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "No. Atai is designed to give developers leverage by handling repetitive scaffolding and boilerplate. Users remain responsible for reviewing, customizing, and securing generated applications before production use.",
+        text: "Contact us at support@atai.ink, by phone or WhatsApp at +256761819885, or through our YouTube channel at https://www.youtube.com/@mirrorsiteai.",
       },
     },
   ],
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   TABLE OF CONTENTS DATA
-   ═══════════════════════════════════════════════════════════════ */
-
 const tocSections = [
-  { id: "about", label: "About This Privacy Policy" },
-  { id: "who-we-are", label: "Who We Are" },
-  { id: "info-collect", label: "Information We Collect" },
-  { id: "info-provide", label: "Information You Provide" },
-  { id: "project-ai", label: "Project, Prompt and AI Data" },
-  { id: "website-analysis", label: "Website URLs and Analysis" },
-  { id: "payment", label: "Payment and Billing" },
-  { id: "referral", label: "Referral Information" },
-  { id: "auto-collect", label: "Automatically Collected Information" },
-  { id: "cookies", label: "Cookies" },
-  { id: "how-use", label: "How We Use Information" },
-  { id: "ai-processing", label: "AI Processing" },
-  { id: "sharing", label: "How Information Is Shared" },
-  { id: "third-party", label: "Third-Party Services" },
-  { id: "security", label: "Data Security" },
-  { id: "retention", label: "Data Retention" },
-  { id: "deletion", label: "Account and Data Deletion" },
-  { id: "rights", label: "Your Privacy Rights" },
-  { id: "children", label: "Children's Privacy" },
-  { id: "international", label: "International Data Processing" },
-  { id: "changes", label: "Changes to This Policy" },
-  { id: "contact", label: "Contact" },
+  { id: "about", label: "1. About This Policy" },
+  { id: "who-we-are", label: "2. Who We Are" },
+  { id: "info-collect", label: "3. Information We Collect" },
+  { id: "info-provide", label: "4. Information You Provide" },
+  { id: "project-ai", label: "5. Project, Prompt & AI Data" },
+  { id: "website-analysis", label: "6. Website Analysis Data" },
+  { id: "payment", label: "7. Payment & Billing Information" },
+  { id: "referral", label: "8. Referral Information" },
+  { id: "auto-collect", label: "9. Automatically Collected Information" },
+  { id: "cookies", label: "10. Cookies" },
+  { id: "how-use", label: "11. How We Use Your Information" },
+  { id: "ai-processing", label: "12. AI Processing" },
+  { id: "sharing", label: "13. How Information Is Shared" },
+  { id: "third-party", label: "14. Third-Party Service Providers" },
+  { id: "security", label: "15. Data Security" },
+  { id: "retention", label: "16. Data Retention" },
+  { id: "deletion", label: "17. Account & Data Deletion" },
+  { id: "rights", label: "18. Your Privacy Rights" },
+  { id: "children", label: "19. Children's Privacy" },
+  { id: "international", label: "20. International Data Processing" },
+  { id: "changes", label: "21. Changes to This Policy" },
+  { id: "contact", label: "22. Contact Us" },
   { id: "faq", label: "Privacy FAQ" },
 ]
-
-/* ═══════════════════════════════════════════════════════════════
-   FAQ DATA
-   ═══════════════════════════════════════════════════════════════ */
 
 const faqItems = [
   {
     q: "What information does Atai collect?",
-    a: "Atai collects account information (name, email, authentication details), project information (ideas, prompts, URLs, generated code), payment information (transaction records via mobile money providers), technical information (IP address, browser type, device information), and usage data necessary to operate the service.",
+    a: "Atai collects account information (name, email, authentication details), project information (ideas, prompts, generated applications), billing information (transaction records via payment providers), technical information (IP address, browser type, device info), and usage data necessary to operate the service.",
+  },
+  {
+    q: "Does Atai sell my personal information?",
+    a: "No. Atai does not sell personal information to third parties under any circumstances. Information is shared only with service providers necessary to operate the platform.",
+  },
+  {
+    q: "Who owns my projects and business data?",
+    a: "You do. You retain ownership of the content you submit and the applications you create. Atai processes your project information to provide the service but does not claim ownership of your ideas or project content.",
   },
   {
     q: "Does Atai store my projects?",
-    a: "Yes. Atai stores project information including your ideas, prompts, website references, generated specifications, application code, and project metadata. This information is stored to provide the service and maintain your project history.",
+    a: "Yes. Atai stores project information including your ideas, prompts, website references, generated specifications, application code, and project metadata. This is stored to provide the service and maintain your project history.",
   },
   {
-    q: "Does Atai process my prompts?",
-    a: "Yes. Prompts and ideas you submit are processed to generate application plans, code, and project context. They may be transmitted to third-party AI providers for processing as described in this policy.",
-  },
-  {
-    q: "Does Atai send my project information to AI providers?",
-    a: "Yes. Atai may transmit project inputs (prompts, ideas, website analysis data, and project context) to third-party AI infrastructure providers when necessary to provide requested functionality such as application generation and analysis.",
+    q: "Does Atai send my project data to AI providers?",
+    a: "Yes. Atai transmits project inputs (prompts, ideas, website analysis data, and project context) to third-party AI infrastructure providers when necessary to generate applications and provide platform functionality.",
   },
   {
     q: "Is my data used to train AI models?",
-    a: "Atai may rely on third-party AI providers to process information necessary to provide requested functionality. Whether those providers retain or use submitted information for model improvement may depend on the applicable provider's terms and configuration. Atai does not independently use your data to train AI models.",
+    a: "Atai relies on third-party AI providers to process information. Whether those providers retain or use submitted data for model improvement depends on their own terms. Atai does not independently use your data to train AI models.",
   },
   {
     q: "Does Atai collect payment card information?",
-    a: "No. Atai does not directly collect or store credit card numbers. Payments are processed via mobile money providers (MTN and Airtel). Atai receives transaction confirmation data from the payment verification process but not raw card details.",
+    a: "No. Atai does not directly collect or store card numbers. Payments are processed via secure providers (Dodo Payments, MTN, and Airtel). Atai receives transaction confirmation data (transaction ID, amount, status) but not raw card details.",
   },
   {
-    q: "What information does Atai receive from payment providers?",
-    a: "Atai receives transaction confirmation data including transaction ID, amount, currency, payment status, payment reference, and timestamps. This information is used to verify payments and credit your account.",
-  },
-  {
-    q: "What happens when I submit a website URL?",
-    a: "When you submit a website URL, Atai uses a third-party website analysis service to crawl and analyze publicly accessible content. The system extracts page structure, layout, navigation, content, and visual patterns to create structured development context for building an application.",
-  },
-  {
-    q: "Can Atai analyze private websites?",
-    a: "No. Atai analyzes publicly accessible website content. You should not submit URLs to private areas you are not authorized to access. Users are responsible for ensuring they have authorization to analyze the websites they submit.",
-  },
-  {
-    q: "Who owns my project?",
-    a: "You retain ownership of the content you submit and the applications you create. Atai processes your project information to provide the service but does not claim ownership of your personal information or project content.",
-  },
-  {
-    q: "How long does Atai retain my information?",
-    a: "Atai retains information for as long as reasonably necessary to provide the service, maintain legitimate business records, comply with applicable legal requirements, resolve disputes, prevent abuse and enforce agreements. Session tokens expire after 30 days.",
-  },
-  {
-    q: "Can I delete my account?",
-    a: "Yes. You can request account deletion through your account settings or by contacting support. Account deletion performs a soft-delete that removes your ability to log in and strips personally identifiable information from your account record.",
-  },
-  {
-    q: "Can I request deletion of my data?",
-    a: "Yes. You may request access to, correction of, or deletion of your personal information by contacting Atai support. Some information may be retained where required by law, fraud prevention, security, accounting, dispute resolution, or legitimate business records.",
+    q: "Can I delete my account and data?",
+    a: "Yes. You can request account deletion through your account settings or by contacting support@atai.ink. Deletion removes your ability to log in and strips personally identifiable information. Some data may be retained where required by law.",
   },
   {
     q: "Does Atai use cookies?",
-    a: "Yes. Atai uses essential cookies for authentication (session cookies) and security. The session cookie is httpOnly, secure, and has a 30-day expiry. Atai also uses Vercel Analytics in production.",
-  },
-  {
-    q: "Does Atai use analytics?",
-    a: "Yes. Atai uses Vercel Analytics in production to understand usage patterns and improve the service. Analytics data is collected in aggregate and does not personally identify individual users.",
+    a: "Yes. Atai uses essential cookies for authentication (session cookies) and security. The session cookie is httpOnly, secure, and expires after 30 days. We also use analytics to understand how the platform is used.",
   },
   {
     q: "Is my information shared with third parties?",
-    a: "Atai shares information with service providers necessary to operate the service, including hosting, database, AI processing, website analysis, email, payment, and analytics providers. Information may also be disclosed for legal compliance, safety, or to enforce terms of service.",
+    a: "Atai shares information only with service providers necessary to operate the platform, including hosting, database, AI processing, website analysis, email, payment, and analytics providers. We do not sell your data.",
   },
   {
-    q: "Does Atai sell personal information?",
-    a: "No. Atai does not sell personal information to third parties. Information is shared only with service providers necessary to operate the service or as described in this Privacy Policy.",
+    q: "How long does Atai keep my information?",
+    a: "Atai retains information for as long as reasonably necessary to provide the service, maintain legitimate business records, comply with legal requirements, and prevent abuse. Session tokens expire after 30 days.",
+  },
+  {
+    q: "How do I contact Atai about privacy?",
+    a: "Email support@atai.ink, call or WhatsApp +256761819885, or visit our YouTube channel at https://www.youtube.com/@mirrorsiteai.",
   },
 ]
-
-/* ═══════════════════════════════════════════════════════════════
-   PAGE
-   ═══════════════════════════════════════════════════════════════ */
 
 export default function PrivacyPage() {
   return (
@@ -303,127 +207,127 @@ export default function PrivacyPage() {
 
         <SiteHeader activePage="/privacy" links={[{ href: "/", label: "Home" }, { href: "/pricing", label: "Pricing" }, { href: "/about", label: "About" }]} />
 
-        {/* ═══════════════════════════════════════════════════════
-           PAGE HEADER
-           ═══════════════════════════════════════════════════════ */}
+        {/* PAGE HEADER */}
         <section className="mx-auto max-w-4xl px-6 pt-12 pb-8 lg:px-10">
           <div className="flex items-center gap-3 mb-4">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10"><Shield className="size-5 text-primary" /></div>
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">Privacy</p>
+            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+              <Shield className="size-5 text-primary" />
+            </div>
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">Legal</p>
           </div>
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-            Privacy Policy
-          </h1>
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Privacy Policy</h1>
           <p className="mt-5 text-lg leading-8 text-muted-foreground max-w-2xl">
-            This Privacy Policy explains how Atai collects, uses, stores, protects and shares information when you use our services.
+            This Privacy Policy explains how Atai collects, uses, stores, protects, and shares information when you use our platform to build and grow your business.
           </p>
-          <p className="mt-3 font-mono text-sm text-muted-foreground">
-            Last Updated: September 1, 2026
-          </p>
+          <p className="mt-3 font-mono text-sm text-muted-foreground">Last Updated: September 21, 2026</p>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
-           PRIVACY AT A GLANCE
-           ═══════════════════════════════════════════════════════ */}
+        {/* PRIVACY AT A GLANCE */}
         <section className="mx-auto max-w-4xl px-6 pb-12 lg:px-10">
           <div className="rounded-xl border border-primary/20 bg-primary/5 p-6">
             <h2 className="text-lg font-semibold mb-3">Privacy at a Glance</h2>
             <p className="text-sm leading-6 text-muted-foreground mb-4">
-              Atai collects information needed to provide your account, process your projects, operate AI-powered application development features, process payments, maintain security, provide support, and improve the service.
+              We collect the information needed to power your account, build your applications, process payments, keep you secure, and improve the platform. Here is the short version:
             </p>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> We collect information you provide directly.</li>
-              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> We collect some information automatically when you use the service.</li>
-              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> We process project and prompt information to provide the requested functionality.</li>
-              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> Third-party providers may process information when required to operate specific services.</li>
-              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> We do not sell your personal information.</li>
-              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> You remain responsible for ensuring you do not submit information you are not authorized to provide.</li>
-              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> You should review this Policy together with the <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link>.</li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> We collect information you provide and some information automatically as you use the platform.</li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> We use your data to provide the service — not to sell it.</li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> We do not sell your personal information. Ever.</li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> Your projects, ideas, and business content belong to you.</li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> Third-party providers may process some information to deliver platform features.</li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> You can access, correct, and delete your data at any time.</li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> Read this Policy alongside the <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link> for the complete picture.</li>
             </ul>
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
-           TABLE OF CONTENTS
-           ═══════════════════════════════════════════════════════ */}
+        {/* TABLE OF CONTENTS */}
         <section className="mx-auto max-w-4xl px-6 pb-8 lg:px-10">
           <details open className="rounded-xl border border-border bg-card">
             <summary className="flex cursor-pointer items-center justify-between px-6 py-4 text-sm font-medium select-none hover:text-foreground [&::-webkit-details-marker]:hidden">
               Table of Contents
-              <span className="ml-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-45">
+              <span className="ml-4 shrink-0 text-muted-foreground">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
               </span>
             </summary>
             <div className="px-6 pb-5 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {tocSections.map((s) => (
-                <a key={s.id} href={`#${s.id}`} className="text-sm text-muted-foreground hover:text-primary transition-colors py-0.5">
-                  {s.label}
-                </a>
+                <a key={s.id} href={`#${s.id}`} className="text-sm text-muted-foreground hover:text-primary transition-colors py-0.5">{s.label}</a>
               ))}
             </div>
           </details>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
-           CONTENT
-           ═══════════════════════════════════════════════════════ */}
+        {/* CONTENT */}
         <article className="mx-auto max-w-4xl px-6 pb-24 lg:px-10 prose-custom">
 
-          {/* ── 1. About This Privacy Policy ── */}
+          {/* 1. About This Policy */}
           <section id="about" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
               <FileText className="size-5 text-primary" /> 1. About This Privacy Policy
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>
-                This Privacy Policy describes how Atai handles information when users visit the website, create an account, use the platform, create projects, submit prompts, provide URLs, use AI features, purchase credits, participate in referrals, or contact support.
-              </p>
-              <p>
-                The exact information processed depends on how you interact with the platform. Separate notices may apply to specific features where required.
-              </p>
-              <p>
-                By using Atai, you acknowledge that you have read and understood this Privacy Policy. We encourage you to review this Policy and the <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link> regularly.
-              </p>
+              <p>This Privacy Policy describes how Atai handles your information when you visit the website, create an account, use the platform, create and build projects, submit prompts or website references, use AI features, purchase a plan or credits, participate in referrals, or contact support.</p>
+              <p>The information we process depends on how you interact with the platform. Separate notices may apply to specific features where required by law.</p>
+              <p>By using Atai, you acknowledge that you have read and understood this Privacy Policy. We encourage you to review this Policy together with the <Link href="/terms" className="text-primary hover:underline">Terms of Service</Link> regularly.</p>
             </div>
           </section>
 
-          {/* ── 2. Who We Are ── */}
+          {/* 2. Who We Are */}
           <section id="who-we-are" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
               <Users className="size-5 text-primary" /> 2. Who We Are
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>
-                Atai is a product created and operated by ATAI — Advanced Technologies and AI Enterprises. ATAI focuses on building practical AI-powered technology that transforms complex technical workflows into accessible, automated experiences.
-              </p>
-              <p>
-                [LEGAL ENTITY DETAILS TO BE CONFIRMED BY ATAI/LEGAL COUNSEL]
-              </p>
+              <p>Atai is a product created and operated by <strong className="text-foreground">ATAI — Advanced Technologies and AI Enterprises</strong>. We build AI-powered technology that transforms complex technical workflows into accessible, automated experiences — making it possible for anyone with a great idea to launch and grow a real business.</p>
+              <p>Our platform is available at <a href="https://atai.ink" className="text-primary hover:underline">atai.ink</a>.</p>
+              <p>For any privacy-related questions, contact us at <a href="mailto:support@atai.ink" className="text-primary hover:underline">support@atai.ink</a>.</p>
             </div>
           </section>
 
-          {/* ── 3. Information We Collect ── */}
+          {/* 3. Information We Collect */}
           <section id="info-collect" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
               <Eye className="size-5 text-primary" /> 3. Information We Collect
             </h2>
-            <p className="text-base leading-7 text-muted-foreground mb-6">
-              Atai processes different categories of information depending on how you use the service:
-            </p>
-
+            <p className="text-base leading-7 text-muted-foreground mb-6">Atai processes different categories of information depending on how you use the platform:</p>
             <div className="grid gap-4 sm:grid-cols-2">
               {[
-                { icon: Key, title: "Account Information", items: ["Email address", "Name", "Authentication provider (password or Google)", "Google ID (if using Google sign-in)", "Profile image URL (if using Google sign-in)", "Email verification status", "Account status", "Referral code"] },
-                { icon: Database, title: "Project Information", items: ["Project name and description", "Project mode (website or idea)", "Source URLs", "Ideas and prompts", "Project preferences", "Generated specifications", "Application code", "Build history"] },
-                { icon: Cpu, title: "AI and Processing Data", items: ["Prompts and instructions", "Website analysis results", "Generated application plans", "Project understanding", "Conversation history", "Build summaries"] },
-                { icon: CreditCard, title: "Transaction Information", items: ["Credit balance and history", "Top-up records", "Payment references", "Transaction status", "Package selections"] },
-                { icon: Globe, title: "Website Analysis Data", items: ["Submitted URLs", "Crawled page content", "Page structure and navigation", "Screenshots", "Visual patterns", "Content structure"] },
-                { icon: Server, title: "Technical Information", items: ["IP address", "Browser type and version", "Device type", "Operating system", "Session identifiers", "Timestamps"] },
+                {
+                  icon: Key,
+                  title: "Account Information",
+                  items: ["Email address", "Name", "Authentication method (password or Google)", "Google ID (if using Google sign-in)", "Profile image URL (if using Google)", "Email verification status", "Account status and role", "Referral code"],
+                },
+                {
+                  icon: Database,
+                  title: "Project Information",
+                  items: ["Project name and description", "Project mode (website or idea)", "Source URLs submitted", "Ideas, prompts, and requirements", "Project preferences and settings", "Generated specifications", "Generated application code", "Build history"],
+                },
+                {
+                  icon: Cpu,
+                  title: "AI & Processing Data",
+                  items: ["Prompts and instructions", "Website analysis results", "Generated application plans", "Conversation history with AI", "Build summaries and outputs"],
+                },
+                {
+                  icon: CreditCard,
+                  title: "Billing & Transaction Information",
+                  items: ["Credit balance and history", "Plan subscription details", "Payment references and transaction IDs", "Transaction status and amounts", "Package or plan selections"],
+                },
+                {
+                  icon: Globe,
+                  title: "Website Analysis Data",
+                  items: ["Submitted URLs", "Crawled page content (publicly accessible)", "Page structure and navigation", "Screenshots", "Visual patterns and layout information"],
+                },
+                {
+                  icon: Server,
+                  title: "Technical Information",
+                  items: ["IP address", "Browser type and version", "Device type and operating system", "Session identifiers", "Access timestamps", "Error logs"],
+                },
               ].map(({ icon: Icon, title, items }) => (
                 <div key={title} className="rounded-xl border border-border bg-card p-5">
                   <div className="flex items-center gap-2 mb-3">
                     <Icon className="size-4 text-primary" />
-                    <h3 className="text-sm font-medium">{title}</h3>
+                    <h3 className="text-sm font-medium text-foreground">{title}</h3>
                   </div>
                   <ul className="space-y-1.5">
                     {items.map((item) => (
@@ -438,501 +342,390 @@ export default function PrivacyPage() {
             </div>
           </section>
 
-          {/* ── 4. Information You Provide ── */}
+          {/* 4. Information You Provide */}
           <section id="info-provide" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
               <Send className="size-5 text-primary" /> 4. Information You Provide
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>
-                You voluntarily provide information when you:
-              </p>
+              <p>You voluntarily provide information when you:</p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>Create an account (email, name, password)</li>
                 <li>Complete your profile</li>
-                <li>Submit prompts, ideas, or application requirements</li>
-                <li>Provide website URLs for analysis</li>
+                <li>Submit prompts, ideas, or business requirements</li>
+                <li>Provide website URLs for analysis and reference</li>
                 <li>Create and configure projects</li>
                 <li>Upload files or assets</li>
                 <li>Submit support requests or feedback</li>
                 <li>Participate in the referral program</li>
-                <li>Purchase credits</li>
+                <li>Purchase a plan or credits</li>
               </ul>
               <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 flex items-start gap-3">
                 <AlertTriangle className="size-4 text-amber-500 mt-0.5 shrink-0" />
-                <p className="text-sm">
-                  Please do not submit sensitive personal information into prompts, projects or uploads unless it is necessary and you are authorized to provide it.
-                </p>
+                <p className="text-sm">Please do not submit sensitive personal information about third parties into prompts, projects, or uploads unless it is necessary for your project and you are authorized to provide it.</p>
               </div>
             </div>
           </section>
 
-          {/* ── 5. Project and AI Data ── */}
+          {/* 5. Project and AI Data */}
           <section id="project-ai" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
-              <Cpu className="size-5 text-primary" /> 5. Project, Prompt and AI Processing
+              <Cpu className="size-5 text-primary" /> 5. Project, Prompt & AI Processing
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>
-                Users may submit product ideas, prompts, application requirements, project information, website references, code, configuration, and other development-related content to Atai.
-              </p>
-              <p>
-                Atai may process this information to:
-              </p>
+              <p>When you submit ideas, prompts, business requirements, project information, website references, or other development content to Atai, we process that information to:</p>
               <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Understand the requested application</li>
-                <li>Create structured project context</li>
+                <li>Understand the application or business you want to build</li>
+                <li>Create structured project context and planning</li>
                 <li>Generate project plans and specifications</li>
-                <li>Generate application code</li>
-                <li>Create application components</li>
-                <li>Provide development previews</li>
-                <li>Configure supported infrastructure</li>
-                <li>Perform requested AI functions</li>
-                <li>Maintain project state and history</li>
+                <li>Generate application code, UI, and infrastructure configuration</li>
+                <li>Provide development previews and deployment</li>
+                <li>Support AI-assisted iteration after launch</li>
+                <li>Maintain your project state and history</li>
               </ul>
-              <p>
-                Your prompts and project inputs may be transmitted to third-party AI infrastructure providers when necessary to provide the requested functionality. The specific providers and processing arrangements may change as the service evolves.
-              </p>
+              <p>Your prompts and project inputs may be transmitted to third-party AI infrastructure providers when necessary to provide the requested functionality. The specific providers and processing arrangements may change as the platform evolves.</p>
               <div className="rounded-lg border border-border bg-card p-4">
-                <p className="text-sm font-medium mb-1">AI Training</p>
-                <p className="text-sm text-muted-foreground">
-                  Atai may rely on third-party AI providers to process information necessary to provide requested functionality. Whether those providers retain or use submitted information for model improvement may depend on the applicable provider&apos;s terms and configuration. Atai does not independently use your data to train AI models.
-                </p>
+                <p className="text-sm font-medium text-foreground mb-1">AI Training</p>
+                <p className="text-sm text-muted-foreground">Atai relies on third-party AI providers to process information and power platform features. Whether those providers retain or use submitted data for their own model improvement depends on their terms and configuration. Atai does not independently use your data to train AI models.</p>
               </div>
             </div>
           </section>
 
-          {/* ── 6. Website URLs and Analysis ── */}
+          {/* 6. Website Analysis */}
           <section id="website-analysis" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
-              <Globe className="size-5 text-primary" /> 6. Website URLs and Website Analysis
+              <Globe className="size-5 text-primary" /> 6. Website Analysis Data
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>
-                When you submit a website URL, the following may occur:
-              </p>
-              <ol className="list-decimal list-inside space-y-1 ml-4">
-                <li>Atai receives the URL you submitted.</li>
-                <li>The system requests and analyzes publicly accessible website information as required by the requested feature.</li>
-                <li>Relevant information may be processed to understand the website&apos;s structure, layout, navigation, content, and functionality.</li>
-                <li>Structured information may be generated from the analysis.</li>
-                <li>That information may be used to produce project context or application output.</li>
-              </ol>
-              <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 flex items-start gap-3">
-                <AlertTriangle className="size-4 text-amber-500 mt-0.5 shrink-0" />
-                <div className="text-sm">
-                  <p className="font-medium mb-1">Important</p>
-                  <p>Submitting a URL does not transfer ownership of the referenced website to Atai or the user. Users should not submit URLs to private areas they are not authorized to access.</p>
-                </div>
-              </div>
-              <p>
-                Website analysis may encounter information that appears on publicly accessible webpages. Users should avoid using the platform to intentionally collect personal information from third-party websites without an appropriate legal basis or authorization.
-              </p>
+              <p>When you submit a website URL for analysis, Atai uses a third-party website analysis service to crawl and analyze publicly accessible content from that URL. The system extracts page structure, layout, navigation, content patterns, and visual information to create structured development context.</p>
+              <p>This data is used to:</p>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>Understand the reference product you want to build from</li>
+                <li>Generate an application plan and specification</li>
+                <li>Inform the build process</li>
+              </ul>
+              <p>Website analysis is performed on publicly accessible content only. You are responsible for ensuring you have the appropriate rights to submit any URL for analysis.</p>
             </div>
           </section>
 
-          {/* ── 7. Payment and Billing ── */}
+          {/* 7. Payment Information */}
           <section id="payment" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
-              <CreditCard className="size-5 text-primary" /> 7. Payment and Billing Information
+              <CreditCard className="size-5 text-primary" /> 7. Payment & Billing Information
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>
-                Atai uses mobile money payment processing (MTN and Airtel) for credit purchases. Payment information is processed as follows:
-              </p>
+              <p>Atai processes payments through Dodo Payments and mobile money providers (MTN and Airtel). <strong className="text-foreground">Atai does not directly collect or store credit card numbers.</strong></p>
+              <p>Atai receives the following transaction confirmation data from payment providers:</p>
               <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>You submit a payment confirmation screenshot for verification.</li>
-                <li>An AI-powered analysis system extracts transaction details from the screenshot for verification purposes.</li>
-                <li>Atai receives transaction confirmation data including: transaction ID, amount, currency, payment status, payment reference, and timestamps.</li>
-                <li>Atai does not directly collect or store credit card numbers.</li>
+                <li>Transaction ID and reference</li>
+                <li>Amount and currency</li>
+                <li>Payment status</li>
+                <li>Timestamps</li>
+                <li>Plan or package selected</li>
               </ul>
-              <p>
-                Credit balances, usage information, and transaction history are associated with your account in order to provide the service and enforce applicable usage limits.
-              </p>
+              <p>This information is used to verify payments, credit your account, resolve disputes, and maintain financial records. Payment provider data is governed by the applicable provider&apos;s privacy policy.</p>
             </div>
           </section>
 
-          {/* ── 8. Referral Information ── */}
+          {/* 8. Referral Information */}
           <section id="referral" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
               <Users className="size-5 text-primary" /> 8. Referral Information
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>
-                If you participate in the referral program, the following information may be processed:
-              </p>
-              <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Referral code and referral relationships</li>
-                <li>Referring account and referred account identifiers</li>
-                <li>Qualifying events and verification status</li>
-                <li>Reward credit issuance</li>
-                <li>Anti-fraud signals and fraud detection flags</li>
-              </ul>
-              <p>
-                Referral information is processed to attribute referrals, issue qualifying rewards, prevent fraud, and enforce referral program rules. We use the minimum data necessary for these purposes.
-              </p>
+              <p>If you participate in the Atai referral program, we collect and process referral information including your referral code, the accounts registered using your code, and the referral reward credits earned.</p>
+              <p>We use this information to track referral eligibility, apply earned credits to your account, and prevent fraudulent referral activity.</p>
             </div>
           </section>
 
-          {/* ── 9. Automatically Collected Information ── */}
+          {/* 9. Automatically Collected Information */}
           <section id="auto-collect" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
-              <BarChart3 className="size-5 text-primary" /> 9. Automatically Collected Information
+              <Server className="size-5 text-primary" /> 9. Automatically Collected Information
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>
-                When you use Atai, certain information may be collected automatically, including:
-              </p>
+              <p>When you use Atai, we automatically collect certain technical information, including:</p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>IP address</li>
                 <li>Browser type and version</li>
                 <li>Device type and operating system</li>
-                <li>Language and timezone settings</li>
-                <li>Pages visited and navigation patterns</li>
-                <li>Referrer information</li>
-                <li>Timestamps of activity</li>
-                <li>Session data</li>
-                <li>Error and performance information</li>
+                <li>Pages visited and actions taken on the platform</li>
+                <li>Session identifiers and access timestamps</li>
+                <li>Error and performance data</li>
               </ul>
-              <p>
-                This information is used for security, authentication, abuse prevention, analytics, debugging, performance monitoring, and service improvement.
-              </p>
+              <p>This information is used to operate the platform securely, diagnose technical issues, prevent abuse, and improve performance and user experience.</p>
             </div>
           </section>
 
-          {/* ── 10. Cookies ── */}
+          {/* 10. Cookies */}
           <section id="cookies" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
-              <Cookie className="size-5 text-primary" /> 10. Cookies and Similar Technologies
+              <Cookie className="size-5 text-primary" /> 10. Cookies
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>
-                Atai uses the following types of cookies:
-              </p>
-              <div className="rounded-xl border border-border bg-card overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/40">
-                      <th className="px-4 py-3 text-left font-medium">Type</th>
-                      <th className="px-4 py-3 text-left font-medium">Purpose</th>
-                      <th className="px-4 py-3 text-left font-medium">Duration</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-b border-border/50">
-                      <td className="px-4 py-3 font-medium">Session Cookie</td>
-                      <td className="px-4 py-3">Authentication and security. Named <code className="text-xs bg-muted px-1 py-0.5 rounded">Atai_session</code>. HttpOnly, secure, SameSite: lax.</td>
-                      <td className="px-4 py-3">30 days</td>
-                    </tr>
-                    <tr>
-                      <td className="px-4 py-3 font-medium">Analytics</td>
-                      <td className="px-4 py-3">Vercel Analytics (production only). Used to understand usage patterns in aggregate.</td>
-                      <td className="px-4 py-3">Varies</td>
-                    </tr>
-                  </tbody>
-                </table>
+              <p>Atai uses cookies and similar technologies to operate the platform effectively:</p>
+              <div className="rounded-lg border border-border bg-card p-5">
+                <p className="text-sm font-medium text-foreground mb-2">Session Cookie</p>
+                <p className="text-sm text-muted-foreground">Used for authentication and session management. This cookie is httpOnly, secure, and expires after 30 days. It is essential for keeping you logged in to your account.</p>
               </div>
-              <p>
-                The session cookie is essential for authentication and cannot be disabled while logged in. Atai does not use marketing or advertising cookies.
-              </p>
+              <div className="rounded-lg border border-border bg-card p-5">
+                <p className="text-sm font-medium text-foreground mb-2">Analytics</p>
+                <p className="text-sm text-muted-foreground">Atai uses analytics tools (including Vercel Analytics and PostHog) in production to understand how the platform is used. Analytics data helps us improve the experience for every user. This data is collected at an aggregate level and is not used to identify individual users.</p>
+              </div>
+              <div className="rounded-lg border border-border bg-card p-5">
+                <p className="text-sm font-medium text-foreground mb-2">Preferences</p>
+                <p className="text-sm text-muted-foreground">We store user preferences such as theme selection in localStorage to maintain a consistent experience across sessions.</p>
+              </div>
             </div>
           </section>
 
-          {/* ── 11. How We Use Information ── */}
+          {/* 11. How We Use Your Information */}
           <section id="how-use" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
-              <Lock className="size-5 text-primary" /> 11. How We Use Information
+              <Eye className="size-5 text-primary" /> 11. How We Use Your Information
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>Atai may use information to:</p>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                {[
-                  { title: "Provide the service", items: ["Authenticate accounts", "Create and manage projects", "Generate applications", "Process AI requests", "Provide infrastructure", "Process payments"] },
-                  { title: "Improve the service", items: ["Understand product usage", "Improve workflows", "Identify bugs", "Improve performance", "Develop new features"] },
-                  { title: "Maintain security", items: ["Detect abuse", "Prevent fraud", "Secure accounts", "Investigate suspicious activity", "Enforce rate limits"] },
-                  { title: "Support users", items: ["Respond to requests", "Troubleshoot issues", "Communicate about service changes", "Send transactional emails"] },
-                ].map(({ title, items }) => (
-                  <div key={title} className="rounded-lg border border-border bg-card p-4">
-                    <p className="text-sm font-medium mb-2">{title}</p>
-                    <ul className="space-y-1">
-                      {items.map((item) => (
-                        <li key={item} className="text-sm text-muted-foreground flex items-start gap-2">
-                          <span className="size-1 rounded-full bg-primary/40 mt-2 shrink-0" />
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
+              <p>We use the information we collect to:</p>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>Create and manage your account</li>
+                <li>Provide, operate, and improve the Atai platform</li>
+                <li>Process your project and application build requests</li>
+                <li>Power AI planning, generation, and analysis features</li>
+                <li>Process payments and manage your plan or credits</li>
+                <li>Deliver email notifications and platform communications</li>
+                <li>Provide customer support and respond to enquiries</li>
+                <li>Maintain platform security and prevent fraud and abuse</li>
+                <li>Comply with applicable legal obligations</li>
+                <li>Improve platform performance, reliability, and user experience</li>
+                <li>Analyze usage patterns to guide product development</li>
+              </ul>
+              <p>We do not use your information for advertising to third parties or sell it to data brokers.</p>
             </div>
           </section>
 
-          {/* ── 12. AI Processing ── */}
+          {/* 12. AI Processing */}
           <section id="ai-processing" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
               <Cpu className="size-5 text-primary" /> 12. AI Processing
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>
-                Atai uses artificial intelligence capabilities across multiple stages of the application-building process. AI processing may involve:
-              </p>
-              <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Analyzing submitted prompts and ideas to understand requirements</li>
-                <li>Interpreting website structure and content from submitted URLs</li>
-                <li>Creating structured project context from analysis results</li>
-                <li>Planning application architecture and components</li>
-                <li>Generating application code and configuration</li>
-                <li>Reasoning about dependencies and technical requirements</li>
-                <li>Verifying payment screenshots for transaction confirmation</li>
-              </ul>
-              <p>
-                Atai may transmit certain project inputs to third-party AI infrastructure providers when necessary to provide requested functionality. The specific providers and processing arrangements may change as the service evolves.
-              </p>
-            </div>
-          </section>
-
-          {/* ── 13. How Information Is Shared ── */}
-          <section id="sharing" className="scroll-mt-20">
-            <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
-              <Globe className="size-5 text-primary" /> 13. How Information Is Shared
-            </h2>
-            <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>Information may be shared with:</p>
-
-              <h3 className="text-base font-medium text-foreground mt-6">Service Providers</h3>
-              <p>Providers needed to operate the service, including hosting, databases, authentication, AI processing, email delivery, payments, file storage, analytics, and monitoring.</p>
-
-              <h3 className="text-base font-medium text-foreground mt-6">Legal and Safety Reasons</h3>
-              <p>Information may be disclosed when reasonably necessary to comply with law, respond to lawful requests, enforce our Terms of Service, prevent fraud, protect users, or protect the service.</p>
-
-              <h3 className="text-base font-medium text-foreground mt-6">Business Transfers</h3>
-              <p>If the business undergoes merger, acquisition, restructuring, or asset transfer, data may be transferred as part of the relevant transaction, subject to applicable law.</p>
-
-              <p className="mt-4">
-                Atai does not sell personal information to third parties.
-              </p>
-            </div>
-          </section>
-
-          {/* ── 14. Third-Party Services ── */}
-          <section id="third-party" className="scroll-mt-20">
-            <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
-              <Server className="size-5 text-primary" /> 14. Third-Party Services
-            </h2>
-            <p className="text-base leading-7 text-muted-foreground mb-6">
-              Atai uses the following categories of third-party service providers:
-            </p>
-            <div className="rounded-xl border border-border bg-card overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/40">
-                    <th className="px-4 py-3 text-left font-medium">Category</th>
-                    <th className="px-4 py-3 text-left font-medium">Purpose</th>
-                    <th className="px-4 py-3 text-left font-medium">Data Potentially Processed</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    { cat: "Database", purpose: "Data storage", data: "Account, project, and application data" },
-                    { cat: "Website Analysis", purpose: "Website crawling and analysis", data: "Submitted URLs, page content, screenshots" },
-                    { cat: "Application Generation", purpose: "Code generation and building", data: "Prompts, project context, specifications" },
-                    { cat: "AI Processing", purpose: "AI reasoning and generation", data: "Prompts, project inputs, payment screenshots" },
-                    { cat: "Hosting", purpose: "Application hosting and deployment", data: "Technical and service data" },
-                    { cat: "Email", purpose: "Transactional email delivery", data: "Email address, account data" },
-                    { cat: "File Storage", purpose: "Asset and file management", data: "Uploaded files, project assets" },
-                    { cat: "Analytics", purpose: "Usage measurement", data: "Aggregate usage data" },
-                    { cat: "Authentication", purpose: "Google sign-in (optional)", data: "Email, name, profile image" },
-                  ].map(({ cat, purpose, data }) => (
-                    <tr key={cat} className="border-b border-border/50 last:border-0">
-                      <td className="px-4 py-3 font-medium">{cat}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{purpose}</td>
-                      <td className="px-4 py-3 text-muted-foreground">{data}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="text-base leading-7 text-muted-foreground mt-4">
-              Atai may link to third-party websites or services. Their privacy practices are governed by their own policies. We do not assume responsibility for third-party privacy practices.
-            </p>
-          </section>
-
-          {/* ── 15. Data Security ── */}
-          <section id="security" className="scroll-mt-20">
-            <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
-              <Lock className="size-5 text-primary" /> 15. How We Protect Information
-            </h2>
-            <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>
-                Atai implements security measures designed to protect information, including:
-              </p>
-              <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Password hashing using bcrypt with a cost factor of 12</li>
-                <li>Session tokens stored as SHA-256 hashes (raw tokens are never stored server-side)</li>
-                <li>HttpOnly, secure session cookies with SameSite protection</li>
-                <li>Authentication-based access controls on all project and account data</li>
-                <li>Rate limiting on sensitive endpoints (registration, login, etc.)</li>
-                <li>Structured logging with automatic secret redaction</li>
-                <li>Server-side session management with automatic expiration</li>
-              </ul>
-              <p>
-                No method of transmission or storage can be guaranteed to be completely secure. While we take reasonable measures to protect information, we cannot guarantee absolute security.
-              </p>
-            </div>
-          </section>
-
-          {/* ── 16. Data Retention ── */}
-          <section id="retention" className="scroll-mt-20">
-            <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
-              <Database className="size-5 text-primary" /> 16. Data Retention
-            </h2>
-            <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>
-                We retain information for as long as reasonably necessary for the purposes described in this Policy, subject to applicable legal requirements and operational needs.
-              </p>
-              <p>Specific retention details:</p>
-              <ul className="list-disc list-inside space-y-1 ml-4">
-                <li><strong className="text-foreground">Session tokens:</strong> Expire after 30 days and are deleted on logout.</li>
-                <li><strong className="text-foreground">Account data:</strong> Retained while the account is active. Soft-deleted accounts have PII stripped but records may be retained for legitimate business purposes.</li>
-                <li><strong className="text-foreground">Project data:</strong> Retained while the project exists and as needed for service operation.</li>
-                <li><strong className="text-foreground">Transaction records:</strong> Retained for billing, accounting, and fraud prevention purposes.</li>
-                <li><strong className="text-foreground">Server logs:</strong> Retained for operational and debugging purposes.</li>
-              </ul>
-              <p>
-                Specific retention periods for jurisdictions requiring formal schedules should be finalized by legal counsel.
-              </p>
-            </div>
-          </section>
-
-          {/* ── 17. Account and Data Deletion ── */}
-          <section id="deletion" className="scroll-mt-20">
-            <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
-              <Trash2 className="size-5 text-primary" /> 17. Account and Data Deletion
-            </h2>
-            <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>
-                You may request account deletion through your account settings or by contacting support. Account deletion performs a soft-delete that:
-              </p>
-              <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Removes your ability to log in</li>
-                <li>Strips personally identifiable information from your account record (email replaced, name anonymized)</li>
-                <li>Revokes all active sessions</li>
-              </ul>
-              <p>
-                Some information may need to be retained where required by law, fraud prevention, security, accounting, dispute resolution, or legitimate business records.
-              </p>
+              <p>Atai uses advanced AI systems — including third-party AI providers via OpenRouter — to power application planning, generation, and iteration. When you submit a prompt, idea, or project input, that information is transmitted to the AI processing infrastructure necessary to generate your application.</p>
+              <p>We select AI providers based on performance, security, and reliability. The specific providers used may change as the platform evolves.</p>
               <div className="rounded-lg border border-border bg-card p-4">
-                <p className="text-sm">
-                  You may also contact Atai support to request access to, correction of, or deletion of your personal information. We will respond to reasonable requests in accordance with applicable law.
-                </p>
+                <p className="text-sm font-medium text-foreground mb-1">Important note on AI training</p>
+                <p className="text-sm text-muted-foreground">Atai does not independently use your project data to train AI models. Third-party AI providers may have their own data retention and usage policies — their practices are governed by their terms, not solely by ours.</p>
               </div>
             </div>
           </section>
 
-          {/* ── 18. Your Privacy Rights ── */}
+          {/* 13. How Information Is Shared */}
+          <section id="sharing" className="scroll-mt-20">
+            <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
+              <Users className="size-5 text-primary" /> 13. How Information Is Shared
+            </h2>
+            <div className="space-y-4 text-base leading-7 text-muted-foreground">
+              <p>We share information only in the following circumstances:</p>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li><strong className="text-foreground">Service providers.</strong> We share necessary information with third-party providers who help us operate the platform (see Section 14).</li>
+                <li><strong className="text-foreground">Legal compliance.</strong> We may disclose information if required to do so by law, court order, or governmental authority.</li>
+                <li><strong className="text-foreground">Safety and security.</strong> We may share information to protect the rights, property, or safety of Atai, our users, or the public.</li>
+                <li><strong className="text-foreground">Terms enforcement.</strong> We may share information to investigate and enforce violations of our Terms of Service.</li>
+                <li><strong className="text-foreground">Business transfers.</strong> In the event of a merger, acquisition, or sale of assets, user information may be transferred as part of that transaction, subject to applicable privacy protections.</li>
+              </ul>
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+                <p className="text-sm font-medium text-foreground mb-1">We do not sell your data.</p>
+                <p className="text-sm text-muted-foreground">Atai does not sell personal information to third parties for advertising or any other purpose. Your data is used to power your experience on the platform — full stop.</p>
+              </div>
+            </div>
+          </section>
+
+          {/* 14. Third-Party Providers */}
+          <section id="third-party" className="scroll-mt-20">
+            <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
+              <Server className="size-5 text-primary" /> 14. Third-Party Service Providers
+            </h2>
+            <div className="space-y-4 text-base leading-7 text-muted-foreground">
+              <p>Atai works with carefully selected third-party providers to deliver a high-quality platform. These providers may process certain information on our behalf:</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[
+                  { category: "Hosting & Infrastructure", desc: "Vercel (platform hosting and deployment)" },
+                  { category: "Database", desc: "MongoDB Atlas (application database)" },
+                  { category: "AI Processing", desc: "OpenRouter (AI model routing and generation)" },
+                  { category: "Application Build", desc: "Totalum (application generation and infrastructure)" },
+                  { category: "Website Analysis", desc: "Firecrawl (website crawling and analysis)" },
+                  { category: "Payment Processing", desc: "Dodo Payments, MTN, Airtel (payments)" },
+                  { category: "Email", desc: "Resend (transactional email delivery)" },
+                  { category: "Analytics", desc: "Vercel Analytics, PostHog (usage analytics)" },
+                  { category: "Authentication", desc: "Atai platform auth (session management)" },
+                  { category: "Storage", desc: "Cloudflare R2 / S3-compatible (file storage)" },
+                ].map(({ category, desc }) => (
+                  <div key={category} className="rounded-lg border border-border bg-card p-4">
+                    <p className="text-sm font-medium text-foreground">{category}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{desc}</p>
+                  </div>
+                ))}
+              </div>
+              <p>These providers are selected for reliability, security, and data protection standards. They are authorized to process information only as necessary to deliver the service. The specific providers used may change over time.</p>
+            </div>
+          </section>
+
+          {/* 15. Data Security */}
+          <section id="security" className="scroll-mt-20">
+            <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
+              <Lock className="size-5 text-primary" /> 15. Data Security
+            </h2>
+            <div className="space-y-4 text-base leading-7 text-muted-foreground">
+              <p>Atai implements technical and organizational security measures to protect your information, including:</p>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>Password hashing using industry-standard algorithms</li>
+                <li>Secure, httpOnly session tokens with expiry</li>
+                <li>Rate limiting and abuse prevention controls</li>
+                <li>HTTPS encryption for all data in transit</li>
+                <li>Access controls limiting internal data access to authorized personnel</li>
+                <li>Infrastructure security through our hosting and database providers</li>
+              </ul>
+              <p>No method of data transmission or storage is 100% secure. While we implement strong measures, we cannot guarantee absolute security. If you suspect unauthorized access to your account, contact us immediately at <a href="mailto:support@atai.ink" className="text-primary hover:underline">support@atai.ink</a>.</p>
+            </div>
+          </section>
+
+          {/* 16. Data Retention */}
+          <section id="retention" className="scroll-mt-20">
+            <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
+              <Server className="size-5 text-primary" /> 16. Data Retention
+            </h2>
+            <div className="space-y-4 text-base leading-7 text-muted-foreground">
+              <p>Atai retains information for as long as reasonably necessary to:</p>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>Provide and improve the service</li>
+                <li>Maintain your account and project history</li>
+                <li>Maintain legitimate financial and business records</li>
+                <li>Comply with applicable legal requirements</li>
+                <li>Resolve disputes and prevent abuse</li>
+                <li>Enforce these agreements</li>
+              </ul>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>Session tokens expire after 30 days</li>
+                <li>Account and project data is retained while your account is active</li>
+                <li>On account deletion, personally identifiable information is stripped from your account record</li>
+                <li>Some information (e.g. financial transaction records) may be retained longer where required by law</li>
+              </ul>
+            </div>
+          </section>
+
+          {/* 17. Deletion */}
+          <section id="deletion" className="scroll-mt-20">
+            <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
+              <Trash2 className="size-5 text-primary" /> 17. Account & Data Deletion
+            </h2>
+            <div className="space-y-4 text-base leading-7 text-muted-foreground">
+              <p>You can request account deletion at any time through your account settings or by contacting <a href="mailto:support@atai.ink" className="text-primary hover:underline">support@atai.ink</a>.</p>
+              <p>Account deletion:</p>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>Removes your ability to log in to the platform</li>
+                <li>Strips personally identifiable information from your account record</li>
+                <li>Removes access to your projects and generated applications</li>
+              </ul>
+              <p>Some information may be retained after deletion where required by law, for fraud prevention, security, dispute resolution, or legitimate financial record-keeping obligations. We will always be transparent with you about what we retain and why.</p>
+            </div>
+          </section>
+
+          {/* 18. Your Rights */}
           <section id="rights" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
               <Shield className="size-5 text-primary" /> 18. Your Privacy Rights
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>
-                Depending on where you live and applicable law, you may have certain rights regarding your personal information, which could include:
-              </p>
+              <p>Depending on your location and applicable law, you may have rights including:</p>
               <ul className="list-disc list-inside space-y-1 ml-4">
-                <li>Access to your personal information</li>
-                <li>Correction of inaccurate information</li>
-                <li>Deletion of your personal information</li>
-                <li>Data portability</li>
-                <li>Restriction of processing</li>
-                <li>Objection to processing</li>
-                <li>Withdrawal of consent</li>
-                <li>Lodge a complaint with a supervisory authority</li>
+                <li><strong className="text-foreground">Access.</strong> Request a copy of the personal information we hold about you.</li>
+                <li><strong className="text-foreground">Correction.</strong> Request correction of inaccurate or incomplete information.</li>
+                <li><strong className="text-foreground">Deletion.</strong> Request deletion of your personal information, subject to legal retention requirements.</li>
+                <li><strong className="text-foreground">Portability.</strong> Request a portable copy of your data where technically feasible.</li>
+                <li><strong className="text-foreground">Restriction.</strong> Request restriction of processing in certain circumstances.</li>
+                <li><strong className="text-foreground">Objection.</strong> Object to certain processing activities.</li>
               </ul>
-              <p>
-                To exercise any of these rights, please contact Atai support. We will respond to reasonable requests in accordance with applicable law.
-              </p>
+              <p>To exercise any of these rights, contact us at <a href="mailto:support@atai.ink" className="text-primary hover:underline">support@atai.ink</a>. We will respond to all requests in a timely manner in accordance with applicable law. We will never make it difficult for you to exercise your rights.</p>
             </div>
           </section>
 
-          {/* ── 19. Children's Privacy ── */}
+          {/* 19. Children */}
           <section id="children" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
-              <Shield className="size-5 text-primary" /> 19. Children&apos;s Privacy
+              <Users className="size-5 text-primary" /> 19. Children&apos;s Privacy
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>
-                Atai is not intentionally designed to collect personal information from children in circumstances where doing so would violate applicable law. If we become aware that we have collected personal information from a child without appropriate consent, we will take steps to delete that information.
-              </p>
+              <p>Atai is designed for adults and is not directed at children under the age of 16 (or the applicable age of digital consent in your jurisdiction). We do not knowingly collect personal information from children.</p>
+              <p>If you believe a child has created an account or submitted personal information, please contact us at <a href="mailto:support@atai.ink" className="text-primary hover:underline">support@atai.ink</a> and we will take prompt action to remove that information.</p>
             </div>
           </section>
 
-          {/* ── 20. International Data Processing ── */}
+          {/* 20. International */}
           <section id="international" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
               <Globe className="size-5 text-primary" /> 20. International Data Processing
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>
-                Atai and its service providers may process information in countries other than the country where you live. These countries may have data protection laws that differ from the laws of your country.
-              </p>
-              <p>
-                By using Atai, you acknowledge that your information may be transferred to and processed in other countries. We take reasonable measures to ensure that adequate protections are in place.
-              </p>
+              <p>Atai operates globally and serves users around the world. Your information may be processed in countries outside your country of residence, including countries that may have different data protection laws.</p>
+              <p>We take steps to ensure that your information is protected regardless of where it is processed. When we work with third-party providers located in other countries, we rely on appropriate safeguards to protect your data.</p>
+              <p>By using Atai, you acknowledge that your information may be transferred to and processed in other countries as described in this Privacy Policy.</p>
             </div>
           </section>
 
-          {/* ── 21. Changes to This Policy ── */}
+          {/* 21. Changes */}
           <section id="changes" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
-              <FileText className="size-5 text-primary" /> 21. Changes to This Privacy Policy
+              <FileText className="size-5 text-primary" /> 21. Changes to This Policy
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>
-                We may update this Privacy Policy as the service evolves, features are added, providers change, legal requirements change, or privacy practices change.
-              </p>
-              <p>
-                When we make material changes to this policy, we will update the &quot;Last Updated&quot; date at the top of this page and, where appropriate, notify users through reasonable means.
-              </p>
-              <p>
-                We encourage you to review this Policy periodically. Your continued use of Atai after changes are posted constitutes acceptance of the updated policy.
-              </p>
+              <p>We may update this Privacy Policy from time to time. When we make material changes, we will:</p>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>Update the &quot;Last Updated&quot; date at the top of this page</li>
+                <li>Notify you via email or a platform notification for significant changes</li>
+              </ul>
+              <p>Your continued use of Atai after the updated Policy becomes effective constitutes your acceptance of the changes. We encourage you to review this Policy regularly.</p>
             </div>
           </section>
 
-          {/* ── 22. Contact ── */}
+          {/* 22. Contact */}
           <section id="contact" className="scroll-mt-20">
             <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
-              <Mail className="size-5 text-primary" /> 22. Contact
+              <Phone className="size-5 text-primary" /> 22. Contact Us
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>
-                If you have questions about this Privacy Policy or Atai&apos;s privacy practices, please contact us through the Atai platform or reach out to ATAI — Advanced Technologies and AI Enterprises.
-              </p>
-              <p>
-                [OFFICIAL PRIVACY CONTACT TO BE CONFIRMED BY ATAI]
-              </p>
+              <p>If you have any questions about this Privacy Policy, want to exercise your privacy rights, or have a privacy-related concern, we are here to help:</p>
+              <div className="grid gap-4 sm:grid-cols-3 my-4">
+                <div className="rounded-xl border border-border bg-card p-5">
+                  <p className="font-medium text-sm text-foreground mb-2">Email</p>
+                  <a href="mailto:support@atai.ink" className="text-sm text-primary hover:underline break-all">support@atai.ink</a>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-5">
+                  <p className="font-medium text-sm text-foreground mb-2">Phone / WhatsApp</p>
+                  <a href="tel:+256761819885" className="text-sm text-primary hover:underline">+256 761 819 885</a>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-5">
+                  <p className="font-medium text-sm text-foreground mb-2">YouTube</p>
+                  <a href="https://www.youtube.com/@mirrorsiteai" target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline break-all">@mirrorsiteai</a>
+                </div>
+              </div>
+              <p>We aim to respond to all privacy enquiries within 5 business days.</p>
             </div>
           </section>
 
-          {/* ── 23. Privacy FAQ ── */}
-          <section id="faq" className="scroll-mt-20">
-            <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-6 flex items-center gap-3">
-              <HelpCircle className="size-5 text-primary" /> 23. Privacy FAQ
+          {/* FAQ */}
+          <section id="faq" className="scroll-mt-20 mt-16">
+            <h2 className="text-2xl font-semibold tracking-tight mb-8 flex items-center gap-3">
+              <Shield className="size-5 text-primary" /> Privacy FAQ
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {faqItems.map(({ q, a }) => (
                 <details key={q} className="group rounded-xl border border-border bg-card">
-                  <summary className="flex cursor-pointer items-center justify-between px-6 py-4 text-sm font-medium select-none hover:text-foreground [&::-webkit-details-marker]:hidden">
+                  <summary className="flex cursor-pointer items-center justify-between px-6 py-4 text-sm font-medium select-none [&::-webkit-details-marker]:hidden">
                     {q}
-                    <span className="ml-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-45">
+                    <span className="ml-4 shrink-0 text-muted-foreground">
                       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
                     </span>
                   </summary>
-                  <div className="px-6 pb-5 text-sm leading-6 text-muted-foreground">
-                    {a}
-                  </div>
+                  <div className="px-6 pb-5 text-sm text-muted-foreground leading-7">{a}</div>
                 </details>
               ))}
             </div>
@@ -940,7 +733,7 @@ export default function PrivacyPage() {
 
         </article>
 
-        <SiteFooter activePage="/privacy" />
+        <SiteFooter />
       </main>
     </>
   )

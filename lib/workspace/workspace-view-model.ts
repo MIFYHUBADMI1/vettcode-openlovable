@@ -53,6 +53,9 @@ export function workspaceIsLive(state: ProjectState): boolean {
 }
 
 export function journeyPhase(state: ProjectState): JourneyPhase {
+  // Unknown states fall back to the first phase rather than crashing callers
+  // that index journey UI from this value.
+  const DEFAULT: JourneyPhase = "understand"
   switch (state) {
     case "created":
     case "pending_plan":
@@ -74,6 +77,7 @@ export function journeyPhase(state: ProjectState): JourneyPhase {
     case "deployment_failed":
       return "launch"
   }
+  return DEFAULT
 }
 
 export function teamRoleForState(state: ProjectState): TeamRole {
@@ -220,6 +224,12 @@ export function workspaceBrief(state: ProjectState, mode?: ProjectMode, name?: s
         support: "The application could not be deployed. Preview is still available while you retry.",
         live,
       }
+  }
+  return {
+    role: "cofounder",
+    headline: "Current status is unavailable.",
+    support: "The project's current phase could not be established from its record. Reopen your workspace to refresh it.",
+    live: false,
   }
 }
 

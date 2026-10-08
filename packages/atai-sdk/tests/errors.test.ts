@@ -1,5 +1,5 @@
 /**
- * @atai/sdk — HTTP error mapping tests (Phase 7 §47.16–25, §28).
+ * @atai-group/sdk — HTTP error mapping tests (Phase 7 §47.16–25, §28).
  */
 
 import { afterEach, describe, expect, it, vi } from "vitest"

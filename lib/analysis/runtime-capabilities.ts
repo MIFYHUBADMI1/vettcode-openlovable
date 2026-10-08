@@ -2,7 +2,7 @@
  * Atai Runtime capability vocabulary for the Collaborate workspace.
  *
  * Single source of truth for what the FINISHED application can consume from
- * Atai: the Runtime API capabilities and the @atai/sdk namespaces that wrap
+ * Atai: the Runtime API capabilities and the @atai-group/sdk namespaces that wrap
  * them. The co-founder AI uses this block to ground integration advice in
  * what actually exists (spec section 50 — never invent capabilities), and to
  * keep the plan's Runtime & Integrations section aligned with the runtime
@@ -134,7 +134,29 @@ export const RUNTIME_CAPABILITY_SUMMARIES: readonly RuntimeCapabilitySummary[] =
  * complete enough that the AI never invents a capability Atai doesn't have.
  */
 export const RUNTIME_AWARENESS_BLOCK = `ATAI RUNTIME CAPABILITIES (what the finished application can use):
-Every application built from this plan talks to Atai through the official @atai/sdk with a project-scoped runtime API key (ATAI_API_KEY) that Atai provisions automatically — no provider accounts or provider keys are ever needed. Capabilities the plan names are wired into the generated app and billed as part of its runtime usage:
+Every application built from this plan talks to Atai through the official @atai-group/sdk with a project-scoped runtime API key (ATAI_API_KEY) that Atai provisions automatically — no provider accounts or provider keys are ever needed. Capabilities the plan names are wired into the generated app and billed as part of its runtime usage:
 ${RUNTIME_CAPABILITY_SUMMARIES.map((c) => `- ${c.capability} (${c.sdk}.${c.operations[0]}) — ${c.description} e.g. ${c.examples.slice(0, 2).join(", ")}.`).join("\n")}
 End-user sign-in inside the generated app is handled by its built-in auth (Totalum SDK), not a runtime capability.
-When the founder describes a feature that needs one of these capabilities, ground it in this exact vocabulary and reflect it in the "Runtime & Integrations" plan section — name the capabilities, what each is used for, and keep it in business language.`
+When the founder describes a feature that needs one of these capabilities, ground it in this exact vocabulary and reflect it in the "Runtime & Integrations" plan section — name the capabilities, what each is used for, and keep it in business language.
+
+HOW TO CALL ATAI (never invent alternatives):
+- Package: @atai-group/sdk — import { Atai } from "@atai-group/sdk"
+- Client: new Atai({ apiKey: process.env.ATAI_API_KEY }) — Atai provisions ATAI_API_KEY. Never ask for OpenAI, Stripe, Twilio, Resend, or other provider keys.
+- Default origin https://atai.ink, path /api/runtime/v1 (the SDK sets this). Do not hardcode api.openai.com, stripe.com, or any other provider URL.
+- Auth header: Authorization: Bearer atai_<environment>_<secret>
+- Call capabilities only from server-side code. Full contract: https://atai.ink/sdk
+The "Runtime & Integrations" section is this product's Atai runtime contract. It MUST name @atai-group/sdk, ATAI_API_KEY, /api/runtime/v1, and only catalog capabilities this product needs. Generic infrastructure lists (data storage, file storage, websockets, background jobs, admin dashboards, unnamed third-party APIs) are wrong.`
+
+/** True when Runtime & Integrations is the Atai contract, not generic infra. */
+export function isRuntimeIntegrationsGrounded(text: string): boolean {
+  const value = text.trim()
+  if (!value) return false
+  const hasContract =
+    /@atai-group\/sdk/i.test(value) ||
+    /ATAI_API_KEY/i.test(value) ||
+    /\/api\/runtime\/v1/i.test(value)
+  const hasCapability = RUNTIME_CAPABILITY_SUMMARIES.some(
+    (c) => value.includes(c.capability) || value.includes(c.sdk),
+  )
+  return hasContract && hasCapability
+}

@@ -1,4 +1,5 @@
 import { PLAN_SECTIONS } from "@/lib/analysis/plan-sections"
+import { RUNTIME_AWARENESS_BLOCK } from "@/lib/analysis/runtime-capabilities"
 
 /**
  * Co-founder system prompt for the tool-calling agent loop (spec section 30).
@@ -23,6 +24,7 @@ ACTIONS AND CONFIRMATIONS
 - Consequential actions (creating projects, changing plans, builds, deployments, deletions) require confirmation. Call the tool; if it returns a pending confirmation, tell the founder what you prepared and wait. NEVER describe a confirmed action as done unless a tool result says it executed.
 - When a tool returns an error, say what failed in plain language. Never pretend success.
 - If the user asks to buy credits or change billing, explain you can't do that from the co-founder and point them to the Billing page (use the navigate tool with target "billing").
+- If the founder asks how the product should call AI, payments, email, or similar, follow HOW TO CALL ATAI in the workspace context. Never invent OpenAI/Stripe endpoints or provider keys.
 
 PROJECT IDENTITY
 - The WORKSPACE CONTEXT names the founder's currently open project and recent projects. When the founder says "this project" or "my project", use the active project unless they clearly mean another one.
@@ -82,6 +84,7 @@ export function buildAgentContextBlock(input: {
   } else {
     lines.push(`Active project: none — the founder is not viewing a specific project right now.`)
   }
+  lines.push(RUNTIME_AWARENESS_BLOCK)
   if (input.recentProjects?.length) {
     lines.push(
       `Recent projects:\n${input.recentProjects.map((p) => `- ${p.name} (id: ${p.id}, state: ${p.state})`).join("\n")}`,

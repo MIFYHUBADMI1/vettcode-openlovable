@@ -5,7 +5,7 @@
  *
  *   ensureRuntimeProvisioned (real service, mocked store/Totalum)
  *        ↓ captured plaintext (the ONLY place it exists in the test)
- *   @atai/sdk (real dist build — imported exactly as a generated app would)
+ *   @atai-group/sdk (real dist build — imported exactly as a generated app would)
  *        ↓ HTTP
  *   POST /api/runtime/v1 (real route: Phase 4 auth → Phase 5 router → adapter)
  *        ↓
@@ -184,7 +184,7 @@ describe("Phase 8 END-TO-END: provisioning → SDK → runtime API → adapter (
       return null
     })
 
-    // 2. The generated application uses @atai/sdk exactly as documented.
+    // 2. The generated application uses @atai-group/sdk exactly as documented.
     //    A single URL-aware fetch shim connects the two halves of the chain:
     //      - SDK → https://atai.ink/api/runtime/v1  → the REAL route handler
     //        (Phase 4 auth → Phase 5 router → adapter),

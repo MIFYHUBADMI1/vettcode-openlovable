@@ -11,6 +11,7 @@ import {
   buildProposal,
 } from "@/lib/analysis/cofounder"
 import { chargeChatCredits, refundCollaboration } from "@/lib/analysis/collaborate-credits"
+import { getPlanSection } from "@/lib/analysis/plan-sections"
 
 function event(stage: string, message: string, level: ProjectEvent["level"] = "info"): ProjectEvent {
   return { id: cryptoId(), at: Date.now(), level, stage, message }
@@ -80,8 +81,13 @@ export async function POST(
       const result = await generateText({
         model: MODEL,
         system: COFOUNDER_CHAT_SYSTEM,
-        prompt: `${context}\n\n---\nFOUNDER MESSAGE:\n${message}`,
-        maxOutputTokens: 4096,
+        prompt: `${context}\n\n---\nFOUNDER MESSAGE:\n${activeSection
+            ? `[Working on: ${getPlanSection(activeSection)?.label ?? activeSection} (${activeSection})]\n`
+            : ""
+          }${message}`,
+        maxOutputTokens: 4096, // Increased from 2048 to allow detailed, production-ready responses
+        maxRetries: 0,
+        abortSignal: AbortSignal.timeout(120_000), // Increased timeout for longer responses
       })
       reply = result.text
     } catch (aiError) {

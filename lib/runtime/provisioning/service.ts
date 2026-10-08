@@ -22,7 +22,7 @@ import type {
  *
  *   Atai project (existing lifecycle) → runtime API key (existing Phase 3
  *   key service) → generated application's secure secret store (existing
- *   Totalum secrets mechanism) → @atai/sdk → Runtime API.
+ *   Totalum secrets mechanism) → @atai-group/sdk → Runtime API.
  *
  * SECURITY MODEL (verified by tests):
  *   - The plaintext runtime key is created here, injected into the generated
@@ -63,7 +63,7 @@ import type {
 
 /**
  * The ONE canonical secret name inside the generated application. Matches
- * the @atai/sdk documentation contract (`process.env.ATAI_API_KEY`). No
+ * the @atai-group/sdk documentation contract (`process.env.ATAI_API_KEY`). No
  * aliases are created (Phase 8 §40).
  */
 export const ATAI_RUNTIME_SECRET_NAME = "ATAI_API_KEY" as const

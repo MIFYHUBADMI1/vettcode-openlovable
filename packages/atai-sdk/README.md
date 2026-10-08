@@ -1,4 +1,4 @@
-# @atai/sdk
+# @atai-group/sdk
 
 Official Atai Runtime SDK — the typed client generated applications use to
 communicate with the **Atai Runtime API**.
@@ -10,13 +10,13 @@ and storage are Atai infrastructure concerns and never appear in the SDK.
 ## Installation
 
 ```bash
-npm install @atai/sdk
+npm install @atai-group/sdk
 ```
 
 ## Initialization
 
 ```ts
-import { Atai } from "@atai/sdk"
+import { Atai } from "@atai-group/sdk"
 
 const atai = new Atai({
   apiKey: process.env.ATAI_API_KEY!, // atai_<environment>_<secret>
@@ -105,7 +105,7 @@ Every failure is an `AtaiError` with a normalized code, the HTTP status when
 one exists, and the server-provided `requestId` for support correlation:
 
 ```ts
-import { AtaiError, isAuthenticationError, isRateLimitError } from "@atai/sdk"
+import { AtaiError, isAuthenticationError, isRateLimitError } from "@atai-group/sdk"
 
 try {
   await atai.ai.chat({ messages: [{ role: "user", content: "Hello" }] })

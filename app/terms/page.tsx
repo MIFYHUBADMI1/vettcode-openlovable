@@ -1,90 +1,67 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import {
-  ArrowRight,
   FileText,
   Shield,
   Users,
   CreditCard,
   Globe,
-  Database,
   Server,
   Eye,
   Lock,
-  Trash2,
-  HelpCircle,
   AlertTriangle,
   CheckCircle2,
   Cpu,
   Key,
   Zap,
   AlertCircle,
-  BookOpen,
   Scale,
-  Mail,
   ExternalLink,
-  ChevronDown,
   Clock,
   Ban,
-  Code2,
   Layers3,
   Rocket,
   DollarSign,
   Gift,
   ShieldCheck,
-  Building2,
   Lightbulb,
-  TerminalSquare,
+  Handshake,
+  Phone,
 } from "lucide-react"
-import { buttonVariants } from "@/components/ui/button"
-import { AuthTrigger } from "@/components/auth/auth-trigger"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { SITE_URL } from "@/lib/env"
 
-/* ═══════════════════════════════════════════════════════════════
-   SEO METADATA
-   ═══════════════════════════════════════════════════════════════ */
-
 export const metadata: Metadata = {
-  title: "Atai Terms of Service | Terms & Conditions",
+  title: "Terms of Service | Atai",
   description:
-    "Read the Atai Terms of Service covering accounts, AI-generated applications, website analysis, credits, payments, referrals, intellectual property, acceptable use, early access and service limitations.",
+    "Read the Atai Terms of Service. Understand your rights, our commitments, billing, credits, intellectual property, acceptable use, and how we support your business journey.",
   alternates: { canonical: "/terms" },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: `${SITE_URL}/terms`,
     siteName: "Atai",
-    title: "Atai Terms of Service | Terms & Conditions",
+    title: "Terms of Service | Atai",
     description:
-      "Read the Atai Terms of Service covering accounts, AI-generated applications, website analysis, credits, payments, referrals, intellectual property, acceptable use, early access and service limitations.",
+      "Read the Atai Terms of Service — covering accounts, AI-generated applications, plans, billing, intellectual property, acceptable use, and our commitments to you.",
     images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai Terms of Service" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Atai Terms of Service | Terms & Conditions",
+    title: "Terms of Service | Atai",
     description: "Read the Atai Terms of Service.",
     images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai Terms of Service" }],
   },
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   STRUCTURED DATA
-   ═══════════════════════════════════════════════════════════════ */
-
 const termsPageStructuredData = {
   "@context": "https://schema.org",
   "@type": "WebPage",
   name: "Atai Terms of Service",
-  description:
-    "Terms of Service governing access to and use of Atai, including accounts, AI-generated applications, website analysis, credits, payments, referrals, intellectual property, acceptable use, early access and service limitations.",
+  description: "Terms of Service governing access to and use of Atai — the AI-powered business launch platform.",
   url: `${SITE_URL}/terms`,
-  isPartOf: {
-    "@type": "WebSite",
-    name: "Atai",
-    url: SITE_URL,
-  },
+  isPartOf: { "@type": "WebSite", name: "Atai", url: SITE_URL },
 }
 
 const faqStructuredData = {
@@ -96,39 +73,23 @@ const faqStructuredData = {
       name: "What is Atai?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Atai is an AI-powered application development platform that helps users turn ideas, product concepts, and authorized website references into working full-stack applications using AI-powered analysis, planning, generation and infrastructure capabilities.",
+        text: "Atai (Advanced Technologies and AI Enterprises) is an AI-powered business launch platform that helps founders, entrepreneurs, and small businesses go from idea to a live, fully functional product — without writing code.",
       },
     },
     {
       "@type": "Question",
-      name: "Do I need permission to analyze a website?",
+      name: "Who owns the application I build with Atai?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. You must have the appropriate rights, permissions, or lawful basis to analyze and reproduce content from any website you submit to Atai. You are responsible for ensuring you have authorization to analyze the websites you submit.",
+        text: "You do. Subject to these Terms and applicable third-party rights, you retain full ownership of the application and business you build using Atai. Atai does not claim ownership of your ideas, your brand, or the products you launch.",
       },
     },
     {
       "@type": "Question",
-      name: "Who owns the application I create?",
+      name: "Is Atai suitable for non-technical founders?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Subject to these Terms, applicable third-party rights, and the rights in any third-party materials incorporated into the output, you retain your rights in the application or project you create using Atai.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Is AI-generated code guaranteed to be error-free?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "No. AI-generated code may contain mistakes, incomplete implementations, security vulnerabilities, dependency issues, or unexpected behavior. Users must independently review, test, and verify generated output before production use.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Can I use Atai to build commercial applications?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes. Atai is a development and prototyping tool. You may use it to build commercial applications, subject to these Terms and applicable law. You remain responsible for the legality and compliance of your application.",
+        text: "Absolutely. Atai is designed specifically for non-technical founders, entrepreneurs, startup operators, and small business owners. You do not need a technical background to plan, launch, and grow a real business on Atai.",
       },
     },
     {
@@ -136,161 +97,132 @@ const faqStructuredData = {
       name: "What are Atai Credits?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Atai Credits are an internal usage unit consumed when Atai generates applications, analyzes websites, or performs other platform actions. New users receive 500 free credits upon account verification. Credits can be purchased via Dodo Payments or earned through subscriptions.",
+        text: "Atai Credits are an internal usage unit that powers platform actions such as building applications, analyzing websites, and generating plans. New users receive 500 free credits upon account verification.",
       },
     },
     {
       "@type": "Question",
-      name: "Can credits be exchanged for cash?",
+      name: "Can I use Atai to build a commercial business?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "No. Atai Credits have no cash value and cannot be exchanged for cash, transferred to other accounts, or redeemed for money, except where required by applicable law.",
+        text: "Yes — that is exactly what Atai is built for. You can use Atai to build and launch commercial products and businesses. You remain responsible for the legality and compliance of your business.",
       },
     },
     {
       "@type": "Question",
-      name: "What happens if I violate the Terms?",
+      name: "Does Atai take equity in my business?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Atai may restrict, suspend, or terminate your account if you violate these Terms. This may include loss of access to projects, credits, and platform features. Serious violations may result in permanent account termination.",
+        text: "Atai does not take automatic equity in your business. In the future, Atai may introduce an optional partnership program for users who achieve significant success using the platform. Any such arrangement will always be disclosed in advance, is entirely optional, and will never be a condition of platform access.",
       },
     },
     {
       "@type": "Question",
-      name: "Is Atai currently in early access?",
+      name: "How does Atai support me after I launch?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. Atai may currently be in early access. Features may change, functionality may be incomplete, performance may vary, and bugs may occur. We continuously improve the service based on testing, usage and user feedback.",
+        text: "Atai is built for the full business lifecycle. After you launch, you can manage customers, monitor revenue, iterate on your product, connect a custom domain, track analytics, and keep building — all from one place. Our support team is reachable at support@atai.ink or +256761819885.",
       },
     },
     {
       "@type": "Question",
-      name: "Does Atai guarantee that my application will work in production?",
+      name: "How do I contact Atai?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "No. Atai generates application foundations as a starting point. Users must independently evaluate generated output, perform testing, security review, and configure production environments. Atai does not guarantee production readiness for every generated application.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Does Atai own my idea?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "No. Atai does not claim ownership of your ideas, concepts, prompts, or the applications you create. You retain your rights in your own content, subject to the limited license needed to operate the service.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Can I use my own infrastructure?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Atai provides managed infrastructure options for generated applications. Users may deploy generated applications to their own infrastructure subject to the applicable licensing and technical requirements of the generated output.",
+        text: "You can reach us by email at support@atai.ink, by phone or WhatsApp at +256761819885, or through our YouTube channel at https://www.youtube.com/@mirrorsiteai.",
       },
     },
   ],
 }
-
-/* ═══════════════════════════════════════════════════════════════
-   TABLE OF CONTENTS DATA
-   ═══════════════════════════════════════════════════════════════ */
 
 const tocSections = [
   { id: "acceptance", label: "1. Acceptance of These Terms" },
   { id: "about", label: "2. About Atai" },
   { id: "eligibility", label: "3. Eligibility" },
   { id: "account", label: "4. Your Account" },
-  { id: "service", label: "5. The Atai Service" },
-  { id: "ai-output", label: "6. AI-Generated Output" },
-  { id: "website-analysis", label: "7. Website Analysis and Reproduction" },
-  { id: "user-content", label: "8. User Content" },
+  { id: "service", label: "5. The Atai Platform" },
+  { id: "ai-output", label: "6. AI-Generated Applications & Output" },
+  { id: "website-analysis", label: "7. Website Analysis" },
+  { id: "user-content", label: "8. Your Content" },
   { id: "intellectual-property", label: "9. Intellectual Property" },
-  { id: "generated-apps", label: "10. Your Applications and Projects" },
-  { id: "credits", label: "11. Credits and Usage" },
-  { id: "pricing", label: "12. Pricing" },
+  { id: "generated-apps", label: "10. Your Applications & Business" },
+  { id: "credits", label: "11. Atai Credits" },
+  { id: "pricing", label: "12. Plans & Pricing" },
   { id: "payments", label: "13. Payments" },
   { id: "refunds", label: "14. Refunds" },
   { id: "referrals", label: "15. Referral Program" },
-  { id: "third-party", label: "16. Third-Party Services" },
-  { id: "infrastructure", label: "17. Infrastructure and Hosting" },
-  { id: "early-access", label: "18. Early Access" },
-  { id: "beta", label: "19. Beta and Experimental Features" },
-  { id: "acceptable-use", label: "20. Acceptable Use" },
-  { id: "prohibited", label: "21. Prohibited Activities" },
-  { id: "security", label: "22. Security" },
-  { id: "availability", label: "23. Service Availability" },
-  { id: "disclaimers", label: "24. Disclaimers" },
-  { id: "liability", label: "25. Limitation of Liability" },
-  { id: "indemnification", label: "26. Indemnification" },
-  { id: "suspension", label: "27. Account Suspension and Termination" },
-  { id: "privacy", label: "28. Data and Privacy" },
-  { id: "changes-service", label: "29. Changes to Atai" },
-  { id: "changes-terms", label: "30. Changes to These Terms" },
-  { id: "governing-law", label: "31. Governing Law and Disputes" },
-  { id: "general", label: "32. General Provisions" },
-  { id: "contact", label: "33. Contact" },
+  { id: "partnership", label: "16. Future Partnership Program" },
+  { id: "third-party", label: "17. Third-Party Services" },
+  { id: "infrastructure", label: "18. Infrastructure & Hosting" },
+  { id: "early-access", label: "19. Early Access" },
+  { id: "beta", label: "20. Beta Features" },
+  { id: "acceptable-use", label: "21. Acceptable Use" },
+  { id: "prohibited", label: "22. Prohibited Activities" },
+  { id: "security", label: "23. Security" },
+  { id: "availability", label: "24. Service Availability" },
+  { id: "disclaimers", label: "25. Disclaimers" },
+  { id: "liability", label: "26. Limitation of Liability" },
+  { id: "indemnification", label: "27. Indemnification" },
+  { id: "suspension", label: "28. Account Suspension & Termination" },
+  { id: "privacy-ref", label: "29. Privacy" },
+  { id: "changes-service", label: "30. Changes to Atai" },
+  { id: "changes-terms", label: "31. Changes to These Terms" },
+  { id: "governing-law", label: "32. Governing Law & Disputes" },
+  { id: "general", label: "33. General Provisions" },
+  { id: "contact", label: "34. Contact Us" },
   { id: "faq", label: "Frequently Asked Questions" },
 ]
-
-/* ═══════════════════════════════════════════════════════════════
-   FAQ DATA
-   ═══════════════════════════════════════════════════════════════ */
 
 const faqItems = [
   {
     q: "What is Atai?",
-    a: "Atai is an AI-powered application development platform that helps users turn ideas, product concepts, and authorized website references into working full-stack applications using AI-powered analysis, planning, generation and infrastructure capabilities.",
+    a: "Atai (Advanced Technologies and AI Enterprises) is an AI-powered business launch platform that helps founders, entrepreneurs, and small businesses go from idea to a live, fully functional product — without writing code.",
   },
   {
-    q: "Do I need permission to analyze a website?",
-    a: "Yes. You must have the appropriate rights, permissions, or lawful basis to analyze and reproduce content from any website you submit. You are responsible for ensuring you have authorization to analyze the websites you submit.",
+    q: "Who owns the application I build with Atai?",
+    a: "You do. Subject to these Terms and applicable third-party rights, you retain full ownership of the application and business you build using Atai. Atai does not claim ownership of your ideas, your brand, or the products you launch.",
   },
   {
-    q: "Who owns the application I create?",
-    a: "Subject to these Terms, applicable third-party rights, and the rights in any third-party materials incorporated into the output, you retain your rights in the application or project you create using Atai.",
-  },
-  {
-    q: "Is AI-generated code guaranteed to be error-free?",
-    a: "No. AI-generated code may contain mistakes, incomplete implementations, security vulnerabilities, dependency issues, or unexpected behavior. You must independently review, test, and verify generated output before production use.",
-  },
-  {
-    q: "Can I use Atai to build commercial applications?",
-    a: "Yes. Atai is a development and prototyping tool. You may use it to build commercial applications, subject to these Terms and applicable law. You remain responsible for the legality and compliance of your application.",
+    q: "Is Atai suitable for non-technical founders?",
+    a: "Absolutely. Atai is designed for non-technical founders, entrepreneurs, startup operators, and small business owners. No coding required.",
   },
   {
     q: "What are Atai Credits?",
-    a: "Atai Credits are an internal usage unit consumed when Atai generates applications, analyzes websites, or performs other platform actions. New users receive 500 free credits upon account verification. Credits can be purchased via Dodo Payments or earned through subscriptions.",
+    a: "Atai Credits power platform actions such as building applications, analyzing websites, and generating plans. New users receive 500 free credits upon account verification.",
   },
   {
-    q: "Can credits be exchanged for cash?",
-    a: "No. Atai Credits have no cash value and cannot be exchanged for cash, transferred to other accounts, or redeemed for money, except where required by applicable law.",
+    q: "Can I use Atai to build a commercial business?",
+    a: "Yes — that is exactly what Atai is built for. You remain responsible for the legality and compliance of your business.",
   },
   {
-    q: "What happens if I violate the Terms?",
-    a: "Atai may restrict, suspend, or terminate your account if you violate these Terms. This may include loss of access to projects, credits, and platform features.",
+    q: "Does Atai take equity in my business?",
+    a: "No — not automatically and never as a condition of service. In the future, Atai may introduce an optional partnership program for high-growth users. Any arrangement will be disclosed in advance, is entirely voluntary, and will never affect your platform access.",
   },
   {
-    q: "Is Atai currently in early access?",
-    a: "Yes. Atai may currently be in early access. Features may change, functionality may be incomplete, performance may vary, and bugs may occur. We continuously improve the service based on testing, usage and user feedback.",
+    q: "How does Atai support me after launch?",
+    a: "After launch you can manage customers, monitor revenue, iterate, connect a custom domain, track analytics, and keep building — all from one place. Support is available at support@atai.ink or +256761819885.",
   },
   {
-    q: "Does Atai guarantee that my application will work in production?",
-    a: "No. Atai generates application foundations as a starting point. Users must independently evaluate generated output, perform testing, security review, and configure production environments.",
+    q: "What plans does Atai offer?",
+    a: "Atai offers six plans: Free, Explorer, Launch, Growth, Scale, and Enterprise. Full plan details are on the Atai pricing page.",
   },
   {
-    q: "Does Atai own my idea?",
-    a: "No. Atai does not claim ownership of your ideas, concepts, prompts, or the applications you create. You retain your rights in your own content, subject to the limited license needed to operate the service.",
+    q: "How do I get support?",
+    a: "Email support@atai.ink, WhatsApp/call +256761819885, or visit our YouTube channel at https://www.youtube.com/@mirrorsiteai.",
   },
   {
-    q: "Can I use my own infrastructure?",
-    a: "Atai provides managed infrastructure options for generated applications. Users may deploy generated applications to their own infrastructure subject to applicable licensing and technical requirements.",
+    q: "Can I use my own domain?",
+    a: "Yes. Atai supports custom domain connections on paid plans. You manage domain, SSL, and SEO directly from your workspace.",
   },
 ]
 
-/* ═══════════════════════════════════════════════════════════════
-   HELPER: Section wrapper
-   ═══════════════════════════════════════════════════════════════ */
-
-function Section({ id, number, icon: Icon, title, children }: {
+function Section({
+  id,
+  number,
+  icon: Icon,
+  title,
+  children,
+}: {
   id: string
   number: string
   icon: React.ComponentType<{ className?: string }>
@@ -302,16 +234,10 @@ function Section({ id, number, icon: Icon, title, children }: {
       <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-4 flex items-center gap-3">
         <Icon className="size-5 text-primary" /> {number}. {title}
       </h2>
-      <div className="space-y-4 text-base leading-7 text-muted-foreground">
-        {children}
-      </div>
+      <div className="space-y-4 text-base leading-7 text-muted-foreground">{children}</div>
     </section>
   )
 }
-
-/* ═══════════════════════════════════════════════════════════════
-   PAGE
-   ═══════════════════════════════════════════════════════════════ */
 
 export default function TermsPage() {
   return (
@@ -324,819 +250,502 @@ export default function TermsPage() {
 
         <SiteHeader activePage="/terms" links={[{ href: "/", label: "Home" }, { href: "/pricing", label: "Pricing" }, { href: "/about", label: "About" }]} />
 
-        {/* ═══════════════════════════════════════════════════════
-           PAGE HEADER
-           ═══════════════════════════════════════════════════════ */}
+        {/* PAGE HEADER */}
         <section className="mx-auto max-w-4xl px-6 pt-12 pb-8 lg:px-10">
           <div className="flex items-center gap-3 mb-4">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10"><FileText className="size-5 text-primary" /></div>
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">Terms of Service</p>
+            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+              <FileText className="size-5 text-primary" />
+            </div>
+            <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary">Legal</p>
           </div>
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-            Terms of Service
-          </h1>
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Terms of Service</h1>
           <p className="mt-5 text-lg leading-8 text-muted-foreground max-w-2xl">
-            These Terms of Service govern your access to and use of Atai and its related services.
+            These Terms govern your access to and use of Atai — the AI-powered platform that helps you turn ideas into real, live businesses.
           </p>
-          <p className="mt-3 font-mono text-sm text-muted-foreground">
-            Last Updated: September 1, 2026
-          </p>
+          <p className="mt-3 font-mono text-sm text-muted-foreground">Last Updated: September 21, 2026</p>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
-           QUICK SUMMARY — BEFORE YOU USE Atai
-           ═══════════════════════════════════════════════════════ */}
+        {/* QUICK SUMMARY */}
         <section className="mx-auto max-w-4xl px-6 pb-12 lg:px-10">
           <div className="rounded-xl border border-primary/20 bg-primary/5 p-6">
-            <h2 className="text-lg font-semibold mb-3">Before You Use Atai</h2>
+            <h2 className="text-lg font-semibold mb-3">Before You Start Building</h2>
             <p className="text-sm leading-6 text-muted-foreground mb-4">
-              Atai helps users turn ideas, product concepts, and authorized website references into application projects using AI-powered analysis, planning, generation and infrastructure capabilities.
+              Atai is here to help you build, launch, and grow a real business — no code required. Here is a quick summary. The full legal terms are below.
             </p>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> You are responsible for what you build.</li>
-              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> You must have permission to analyze or reproduce websites or content.</li>
-              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> AI-generated output should be reviewed and tested before production use.</li>
-              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> Credits and payments are subject to the applicable pricing rules.</li>
-              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> Atai may be updated, changed, limited, suspended or discontinued.</li>
-              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> Users must comply with applicable laws.</li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> You own everything you build — your ideas, your brand, your application.</li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> Atai is designed to give you every advantage to succeed. We want to see you win.</li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> You are responsible for how you use the platform and what you build.</li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> AI-generated output should be reviewed before going live — we make it strong, you make it yours.</li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> Credits and subscriptions are governed by the pricing terms below.</li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> We may update the platform and these Terms — we will always keep you informed.</li>
+              <li className="flex items-start gap-2"><CheckCircle2 className="size-4 text-primary mt-0.5 shrink-0" /> Questions? Reach us at <a href="mailto:support@atai.ink" className="text-primary hover:underline">support@atai.ink</a> or <a href="tel:+256761819885" className="text-primary hover:underline">+256761819885</a>.</li>
             </ul>
-            <p className="mt-4 text-xs text-muted-foreground italic">
-              This summary is for convenience only. The legally operative Terms are set out in the sections below.
-            </p>
+            <p className="mt-4 text-xs text-muted-foreground italic">This summary is for convenience only. The legally operative Terms are in the sections below.</p>
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
-           TABLE OF CONTENTS
-           ═══════════════════════════════════════════════════════ */}
+        {/* TABLE OF CONTENTS */}
         <section className="mx-auto max-w-4xl px-6 pb-8 lg:px-10">
           <details open className="rounded-xl border border-border bg-card">
             <summary className="flex cursor-pointer items-center justify-between px-6 py-4 text-sm font-medium select-none hover:text-foreground [&::-webkit-details-marker]:hidden">
               Table of Contents
-              <span className="ml-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-45">
+              <span className="ml-4 shrink-0 text-muted-foreground">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
               </span>
             </summary>
             <div className="px-6 pb-5 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {tocSections.map((s) => (
-                <a key={s.id} href={`#${s.id}`} className="text-sm text-muted-foreground hover:text-primary transition-colors py-0.5">
-                  {s.label}
-                </a>
+                <a key={s.id} href={`#${s.id}`} className="text-sm text-muted-foreground hover:text-primary transition-colors py-0.5">{s.label}</a>
               ))}
             </div>
           </details>
         </section>
 
-        {/* ═══════════════════════════════════════════════════════
-           CONTENT
-           ═══════════════════════════════════════════════════════ */}
+        {/* CONTENT */}
         <article className="mx-auto max-w-4xl px-6 pb-24 lg:px-10 prose-custom">
 
-          {/* ── 1. Acceptance of These Terms ── */}
           <Section id="acceptance" number="1" icon={CheckCircle2} title="Acceptance of These Terms">
-            <p>
-              By accessing or using Atai (&quot;the Service&quot;), you agree to be bound by these Terms of Service (&quot;Terms&quot;). If you do not agree to these Terms, do not use the Service.
-            </p>
-            <p>
-              These Terms form a legally binding agreement between you and Atai, operated by ATAI — Advanced Technologies and AI Enterprises (&quot;ATAI,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;).
-            </p>
-            <p>
-              Additional policies may also apply to your use of the Service, including:
-            </p>
+            <p>By accessing or using Atai (&quot;the Service&quot; or &quot;the Platform&quot;), you agree to be bound by these Terms of Service (&quot;Terms&quot;). If you do not agree, do not use the Service.</p>
+            <p>These Terms form a legally binding agreement between you and <strong className="text-foreground">ATAI — Advanced Technologies and AI Enterprises</strong> (&quot;ATAI,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;).</p>
+            <p>The following additional policies are incorporated by reference:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li><Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link></li>
-              <li><Link href="/terms" className="text-primary hover:underline">Terms of Service</Link> (these Terms)</li>
+              <li><Link href="/refund-policy" className="text-primary hover:underline">Refund Policy</Link></li>
               <li><Link href="/database-terms" className="text-primary hover:underline">Database &amp; Infrastructure Terms</Link></li>
             </ul>
-            <p>
-              Where a separate policy applies, that policy forms part of your agreement with us. Only policies that actually exist are linked above.
-            </p>
           </Section>
 
-          {/* ── 2. About Atai ── */}
           <Section id="about" number="2" icon={Layers3} title="About Atai">
-            <p>
-              Atai is an AI-powered application development platform designed to reduce the distance between an idea and a working full-stack MVP.
-            </p>
-            <p>
-              Depending on the features available, Atai may:
-            </p>
+            <p>Atai — short for Advanced Technologies and AI Enterprises — is an AI-powered business launch platform. We exist to eliminate the technical barrier between a great idea and a real, live business. Whether you are a first-time founder, a seasoned entrepreneur, or a small business owner looking to go digital, Atai gives you everything you need: plan, build, launch, manage, and grow — all in one place.</p>
+            <p>We believe that every great idea deserves a real shot. That belief is built into every feature we ship.</p>
+            <p>Depending on features and plan availability, Atai may:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Analyze websites you submit for reference</li>
-              <li>Create structured project context from your inputs</li>
-              <li>Generate project plans and specifications</li>
-              <li>Generate application code and components</li>
-              <li>Create application infrastructure including authentication, database, storage, and deployment</li>
-              <li>Provide previews and development environments</li>
-              <li>Support deployment to free subdomains or custom domains</li>
+              <li>Help you refine and plan your business idea with AI collaboration</li>
+              <li>Analyze reference websites to understand the product space</li>
+              <li>Generate full-stack application code, UI, and infrastructure</li>
+              <li>Set up authentication, database, storage, hosting, and payment scaffolding automatically</li>
+              <li>Deploy your application live with a subdomain or custom domain</li>
+              <li>Provide a business control panel for managing customers, revenue, and operations</li>
+              <li>Enable ongoing AI-assisted iteration after launch</li>
             </ul>
-            <p>
-              Users may provide ideas, descriptions, website URLs, references, and project requirements as starting points for application generation.
-            </p>
-            <p>
-              Features may vary by plan, product version, availability, project configuration and infrastructure.
-            </p>
+            <p>Features may vary by plan, product version, project configuration, and availability. We are constantly improving the platform to deliver more value to every builder on Atai.</p>
           </Section>
 
-          {/* ── 3. Eligibility ── */}
           <Section id="eligibility" number="3" icon={Users} title="Eligibility">
-            <p>
-              You may use Atai only if you are legally capable of entering into a binding agreement and are permitted to use the service under applicable law.
-            </p>
-            <p>
-              If you use Atai on behalf of an organization, you represent that you have the authority to bind that organization to these Terms.
-            </p>
+            <p>You may use Atai if you are legally capable of entering into a binding agreement and are permitted to do so under applicable law.</p>
+            <p>If you are using Atai on behalf of an organization, startup, or business, you represent that you have the authority to bind that organization to these Terms.</p>
+            <p>Atai is open to founders, entrepreneurs, startups, small and medium businesses, product managers, co-founders, and anyone with an idea they want to turn into reality.</p>
           </Section>
 
-          {/* ── 4. Your Account ── */}
           <Section id="account" number="4" icon={Key} title="Your Account">
-            <p>
-              To use certain features of Atai, you may need to create an account. When creating an account, you agree to:
-            </p>
+            <p>To access the full platform, you need a free Atai account. When you register, you agree to:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Provide accurate and complete information</li>
               <li>Keep your credentials secure and confidential</li>
-              <li>Maintain the security of your account</li>
-              <li>Accept responsibility for all activity that occurs under your account</li>
-              <li>Immediately notify us of any suspected unauthorized access</li>
+              <li>Accept responsibility for all activity under your account</li>
+              <li>Notify us immediately if you suspect unauthorized access</li>
             </ul>
-            <p>
-              You must not share your account credentials, create fraudulent accounts, impersonate others, or attempt unauthorized access to other accounts.
-            </p>
-            <p>
-              Atai supports sign-in via email/password and Google authentication. Account verification may be required for certain features.
-            </p>
+            <p>You may sign in via email and password or via Google. Account verification unlocks your 500 free credits to start building straight away.</p>
+            <p>You must not share account credentials, create fraudulent accounts, impersonate others, or attempt unauthorized access to any account or system.</p>
           </Section>
 
-          {/* ── 5. The Atai Service ── */}
-          <Section id="service" number="5" icon={Zap} title="The Atai Service">
-            <p>
-              Atai provides an AI-powered platform for application development. The Service may include capabilities such as:
-            </p>
-            <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>AI-assisted application development and code generation</li>
-              <li>Website analysis and structured project context creation</li>
-              <li>Application planning and specification generation</li>
-              <li>Full-stack application generation including frontend, backend, authentication, and database</li>
-              <li>Project management and workspace tools</li>
-              <li>Application infrastructure including authentication, database, storage, and hosting</li>
-              <li>Deployment to free subdomains and custom domain connections</li>
-              <li>AI-powered development prompts and follow-up modifications</li>
-            </ul>
-            <p>
-              Features, workflows, capabilities, and availability may change as the Service evolves. Atai may add, modify, or discontinue features at any time.
-            </p>
+          <Section id="service" number="5" icon={Zap} title="The Atai Platform">
+            <p>The Atai platform is your complete business-building environment. From your first idea to a live, growing business, we are with you at every stage:</p>
+            <div className="grid gap-3 sm:grid-cols-2 my-4">
+              {[
+                { step: "01 — Idea", desc: "Share your business vision. Describe what you want to build in plain language." },
+                { step: "02 — Plan", desc: "Collaborate with AI to map out your product, users, features, and business model before a single line of code is written." },
+                { step: "03 — Build", desc: "AI agents generate your full-stack application — frontend, backend, auth, database, and payment scaffolding included." },
+                { step: "04 — Launch", desc: "Deploy live with a subdomain or your own domain. Infrastructure configured automatically." },
+                { step: "05 — Manage", desc: "Run your business from one control panel — customers, revenue, analytics, and operations." },
+                { step: "06 — Grow", desc: "Iterate with AI, track growth, and scale your product as your business expands." },
+              ].map(({ step, desc }) => (
+                <div key={step} className="rounded-lg border border-border bg-card p-4">
+                  <p className="font-mono text-xs text-primary mb-1">{step}</p>
+                  <p className="text-sm text-muted-foreground">{desc}</p>
+                </div>
+              ))}
+            </div>
           </Section>
 
-          {/* ── 6. AI-Generated Output ── */}
-          <Section id="ai-output" number="6" icon={Cpu} title="AI-Generated Content and Applications">
-            <p>
-              Atai uses AI systems to generate or assist with code, application structures, user interfaces, content, configurations, plans, technical recommendations, and other outputs.
-            </p>
+          <Section id="ai-output" number="6" icon={Cpu} title="AI-Generated Applications & Output">
+            <p>Atai uses advanced AI systems to generate application code, user interfaces, database structures, infrastructure configurations, business plans, and other outputs based on your inputs.</p>
+            <p>We take output quality seriously. The platform includes AI quality gates and production-readiness checks designed to make every generated application immediately launchable with real users in mind.</p>
             <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 flex items-start gap-3">
               <AlertTriangle className="size-4 text-amber-500 mt-0.5 shrink-0" />
               <div className="text-sm">
-                <p className="font-medium mb-1">AI output may not be perfect.</p>
-                <p>AI-generated content may contain mistakes, outdated information, incomplete implementations, incorrect assumptions, security vulnerabilities, dependency issues, or unexpected behavior.</p>
+                <p className="font-medium text-foreground mb-1">AI output is powerful — your review makes it perfect.</p>
+                <p>Our generated applications are designed to be strong starting points ready for production. Before going live with real users or real transactions, we recommend reviewing the application, testing your key flows, and verifying it meets your specific business needs. No platform can predict every nuance of your unique vision — that final step is yours.</p>
               </div>
             </div>
-            <p>
-              You must:
-            </p>
+            <p>As a user of Atai, your role includes:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Review generated code before use</li>
-              <li>Test functionality in a development environment</li>
-              <li>Verify dependencies and their licenses</li>
-              <li>Inspect for security vulnerabilities</li>
-              <li>Validate business logic and data handling</li>
-              <li>Review third-party integrations</li>
-              <li>Test production behavior before deploying</li>
+              <li>Reviewing your generated application before going live</li>
+              <li>Testing key user flows and business logic</li>
+              <li>Configuring your production environment and secrets</li>
+              <li>Inspecting third-party integrations and dependencies</li>
+              <li>Verifying data handling and security configuration</li>
             </ul>
-            <p>
-              Atai does not claim that generated output is error-free, guaranteed to be secure, guaranteed to be compatible with all systems, or guaranteed to achieve any particular commercial result.
-            </p>
-            <p>
-              You remain responsible for determining whether generated output is appropriate for your intended use, including production deployment.
-            </p>
+            <p>Our support team is available to help you through the review and launch process. We are in your corner.</p>
           </Section>
 
-          {/* ── 7. Website Analysis and Reproduction ── */}
-          <Section id="website-analysis" number="7" icon={Globe} title="Website Analysis and Reproduction">
-            <p>
-              Atai may provide capabilities for analyzing websites where users submit URLs. When you submit a URL for analysis, you represent that you have the appropriate rights, permissions, licenses, or lawful basis to analyze and reproduce the relevant materials.
-            </p>
-            <p>
-              You must not use Atai to:
-            </p>
+          <Section id="website-analysis" number="7" icon={Globe} title="Website Analysis">
+            <p>Atai may allow you to submit a URL as a reference or starting point for your project. When you do so, you represent that you have the appropriate rights, permissions, or lawful basis to analyze and reference that content.</p>
+            <p>Website analysis is a tool for inspiration and reference — not for reproducing businesses or content you do not own. You must not use Atai to:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Infringe copyright or violate intellectual property rights</li>
-              <li>Violate trademarks or trade dress</li>
-              <li>Steal proprietary content or trade secrets</li>
-              <li>Bypass access controls, authentication, or paywalls</li>
-              <li>Obtain private or restricted information without authorization</li>
-              <li>Circumvent technical access restrictions</li>
+              <li>Infringe copyright, trademark, or intellectual property rights</li>
+              <li>Bypass paywalls, authentication, or access controls</li>
+              <li>Collect personal data from third-party websites without authorization</li>
               <li>Violate applicable website terms of service</li>
-              <li>Abuse websites through excessive or automated requests</li>
-              <li>Perform unlawful scraping or data collection</li>
+              <li>Perform unauthorized scraping or automated data collection</li>
             </ul>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-sm font-medium mb-1">Important distinction</p>
-              <p className="text-sm text-muted-foreground">
-                Atai provides technical capabilities for analysis. It does not grant you ownership of or licensing rights to third-party websites or content. Submitting a URL does not transfer any rights in the referenced website.
-              </p>
-            </div>
+            <p>Submitting a URL does not transfer any rights in that website to you or to Atai. You remain responsible for ensuring your use of reference materials complies with applicable law.</p>
           </Section>
 
-          {/* ── 8. User Content ── */}
-          <Section id="user-content" number="8" icon={FileText} title="User Content">
-            <p>
-              &quot;User Content&quot; includes any content you submit to Atai, such as prompts, text, ideas, website URLs, uploaded files, project specifications, designs, code, images, and other materials.
-            </p>
-            <p>
-              You are responsible for ensuring you have the necessary rights and permissions to submit any User Content. You must not submit content that you are not authorized to provide.
-            </p>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-sm font-medium mb-1">User Content License</p>
-              <p className="text-sm text-muted-foreground">
-                You grant Atai the rights reasonably necessary to host, process, analyze, transmit and otherwise use your submitted content for the purpose of providing, maintaining, securing and improving the Service, subject to the <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link> and applicable law.
-              </p>
-            </div>
-            <p>
-              This limited license is granted solely for the purpose of operating the Service. Atai does not claim ownership of your User Content beyond what is necessary to provide the Service.
-            </p>
+          <Section id="user-content" number="8" icon={FileText} title="Your Content">
+            <p>&quot;Your Content&quot; includes everything you submit to Atai — your ideas, prompts, business descriptions, uploaded files, project configurations, code, images, and any other materials you provide.</p>
+            <p>Your Content belongs to you. You grant Atai the limited rights reasonably necessary to host, process, transmit, and use your content for the purpose of providing and improving the Service — nothing beyond that.</p>
+            <p>You are responsible for ensuring you have the right to submit any content you provide. Please do not submit sensitive personal information about third parties unless it is necessary and you are authorized to do so.</p>
           </Section>
 
-          {/* ── 9. Intellectual Property ── */}
           <Section id="intellectual-property" number="9" icon={Shield} title="Intellectual Property">
-            <p>
-              Intellectual property in connection with Atai falls into several categories:
-            </p>
+            <h3 className="text-base font-medium text-foreground mt-4">Atai platform</h3>
+            <p>The Atai platform, technology, interfaces, branding, and proprietary systems are owned by or licensed to ATAI. These Terms do not grant you rights to use Atai&apos;s trademarks or platform IP beyond what is necessary to use the Service.</p>
 
-            <h3 className="text-base font-medium text-foreground mt-6">Atai intellectual property</h3>
-            <p>
-              Atai, including its platform, software, interface, branding, logos, and proprietary technology, is owned by or licensed to ATAI. These Terms do not grant you any rights to use Atai&apos;s trademarks, branding, or intellectual property except as necessary to use the Service.
-            </p>
+            <h3 className="text-base font-medium text-foreground mt-4">Your content and ideas</h3>
+            <p>You retain all rights to your ideas, business concepts, prompts, and creative work. Atai does not acquire ownership of any of it through your use of the platform.</p>
 
-            <h3 className="text-base font-medium text-foreground mt-6">User content</h3>
-            <p>
-              You retain the rights you already have in your own content and materials. Atai does not acquire ownership of your ideas, concepts, prompts, or creative work through your use of the Service.
-            </p>
+            <h3 className="text-base font-medium text-foreground mt-4">Your generated application</h3>
+            <p>Subject to these Terms and applicable third-party rights, you own the application you build on Atai. Third-party libraries and dependencies remain owned by their respective owners under their own licenses.</p>
 
-            <h3 className="text-base font-medium text-foreground mt-6">Third-party content</h3>
-            <p>
-              Third-party materials, libraries, dependencies, and content remain owned by their respective owners. Use of the Service does not automatically transfer ownership of third-party content to you or to Atai.
-            </p>
-
-            <h3 className="text-base font-medium text-foreground mt-6">AI-generated output</h3>
-            <p>
-              AI-generated output is produced based on your inputs and the training of the AI systems used. Your rights in AI-generated output are subject to these Terms, applicable third-party rights, and the rights in any third-party materials incorporated into the output.
-            </p>
+            <h3 className="text-base font-medium text-foreground mt-4">Third-party content</h3>
+            <p>Third-party materials incorporated into generated output remain owned by their respective owners. Atai does not grant you licensing rights to third-party content beyond what those owners have made available.</p>
           </Section>
 
-          {/* ── 10. Your Applications and Projects ── */}
-          <Section id="generated-apps" number="10" icon={Rocket} title="Your Applications and Projects">
-            <p>
-              When you use Atai to create an application or project, ownership of the generated output works as follows:
-            </p>
-            <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-              <p className="text-sm">
-                Subject to these Terms, applicable third-party rights, and the rights in any third-party materials incorporated into the output, you retain your rights in the application or project you create using Atai.
-              </p>
+          <Section id="generated-apps" number="10" icon={Rocket} title="Your Applications & Business">
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-5 mb-4">
+              <p className="text-sm font-medium text-foreground mb-1">Your business is yours.</p>
+              <p className="text-sm text-muted-foreground">Subject to these Terms and applicable third-party rights, you own the application and business you build using Atai. We do not claim your idea, your brand, your customers, or your revenue. Atai is a platform that works for you.</p>
             </div>
-            <p>
-              This means:
-            </p>
+            <p>This means:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>You own the application you create, subject to applicable third-party rights</li>
-              <li>Third-party code, libraries, and dependencies remain owned by their respective owners</li>
-              <li>Atai does not claim ownership of your generated applications</li>
-              <li>You are responsible for compliance with applicable licenses for any third-party components</li>
+              <li>You own the application you create</li>
+              <li>You own your customer relationships and business data</li>
+              <li>Third-party libraries remain owned by their respective owners</li>
+              <li>Atai does not take a share of your business revenue</li>
+              <li>You are responsible for the legal compliance of your business and application</li>
             </ul>
-            <p>
-              Atai does not claim ownership of your ideas or the applications you create. However, Atai may retain copies of project data for service operation, backups, and as described in the <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
-            </p>
+            <p>Atai may retain project data for service operation, backups, and support as described in the <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.</p>
           </Section>
 
-          {/* ── 11. Credits and Usage ── */}
-          <Section id="credits" number="11" icon={CreditCard} title="Credits and Usage">
-            <p>
-              Atai uses an internal credit system. Key aspects of the credit system:
-            </p>
+          <Section id="credits" number="11" icon={CreditCard} title="Atai Credits">
+            <p>Atai Credits are the internal usage unit that powers the platform. Credits are consumed when you build applications, run AI planning sessions, analyze websites, and perform other platform actions.</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Credits are an internal usage unit for the Atai platform</li>
-              <li>Atai Credits are consumed when building applications</li>
-              <li>Credits are consumed for actions such as website analysis, plan generation, and application generation</li>
-              <li>Different actions may consume different amounts of credits</li>
               <li>New users receive 500 free credits upon account verification</li>
-              <li>Displayed credit requirements may change as the Service evolves</li>
+              <li>Credits are included in paid subscription plans</li>
+              <li>Additional credits can be purchased</li>
+              <li>Credits can be earned through the referral program</li>
             </ul>
-            <p>
-              Credits:
-            </p>
+            <p>Credits:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Have no cash value unless required by applicable law</li>
-              <li>Cannot be transferred between accounts unless the product explicitly permits it</li>
-              <li>Are not currency and are not redeemable for money</li>
-              <li>Are consumed when Atai performs credit-consuming actions on your behalf</li>
+              <li>Are not currency and cannot be redeemed for money</li>
+              <li>Cannot be transferred between accounts unless the platform explicitly permits it</li>
+              <li>Are consumed when Atai performs actions on your behalf</li>
             </ul>
-            <p>
-              Atai Credits are conceptually separate from any third-party infrastructure or provider credits. Internal cost structures and provider economics are not exposed to users.
-            </p>
           </Section>
 
-          {/* ── 12. Pricing ── */}
-          <Section id="pricing" number="12" icon={DollarSign} title="Pricing">
-            <p>
-              Atai uses a credit-based pricing model. Application generation is priced at three tiers:
-            </p>
-            <div className="grid gap-3 sm:grid-cols-3 my-4">
+          <Section id="pricing" number="12" icon={DollarSign} title="Plans & Pricing">
+            <p>Atai offers six subscription plans designed to meet you wherever you are in your business journey:</p>
+            <div className="grid gap-3 sm:grid-cols-2 my-4">
               {[
-                { tier: "Simple", credits: "25,000 credits", desc: "For smaller applications and straightforward experiences" },
-                { tier: "Medium", credits: "50,000 credits", desc: "For more capable full-stack applications" },
-                { tier: "Complex", credits: "75,000 credits", desc: "For advanced application projects" },
-              ].map(({ tier, credits, desc }) => (
-                <div key={tier} className="rounded-lg border border-border bg-card p-4">
-                  <p className="font-medium text-sm">{tier}</p>
-                  <p className="font-mono text-xs text-primary mt-1">{credits}</p>
+                { plan: "Free", desc: "1 project, 1 build attempt, 30-day hosted trial. Perfect for exploring the platform." },
+                { plan: "Explorer — $20/mo", desc: "3 projects, 5 builds/month, full database management, custom domain, standard support." },
+                { plan: "Launch — $99/mo", desc: "10 projects, unlimited builds, database with backups, payment integration, priority builds, 2 team seats." },
+                { plan: "Growth — $399/mo", desc: "25 projects, unlimited builds, advanced database, analytics, payment integration, 5 team seats." },
+                { plan: "Scale — $599/mo", desc: "Unlimited projects, unlimited builds, dedicated infrastructure, 10 team seats, direct support." },
+                { plan: "Enterprise", desc: "Everything in Scale plus SLA uptime, dedicated account manager, white-glove onboarding, and custom pricing." },
+              ].map(({ plan, desc }) => (
+                <div key={plan} className="rounded-lg border border-border bg-card p-4">
+                  <p className="font-medium text-sm text-foreground">{plan}</p>
                   <p className="text-xs text-muted-foreground mt-1">{desc}</p>
                 </div>
               ))}
             </div>
-            <p>
-              Prices, plans, features, and credit requirements may change. Promotional offers may have additional terms. Applicable taxes may apply.
-            </p>
-            <p>
-              Current prices and plan details are available on the <Link href="/pricing" className="text-primary hover:underline">Atai pricing page</Link>.
-            </p>
+            <p>All paid plans are currently available at promotional prices — the current discounted rate and original list price are both shown on the <Link href="/pricing" className="text-primary hover:underline">Atai pricing page</Link>. Annual plans include free months. Prices and plan features may change with notice.</p>
           </Section>
 
-          {/* ── 13. Payments ── */}
           <Section id="payments" number="13" icon={CreditCard} title="Payments">
-            <p>
-              Atai currently supports credit purchases via mobile money (MTN and Airtel). When you make a payment:
-            </p>
+            <p>Atai processes payments via Dodo Payments and mobile money providers (MTN and Airtel). When you make a payment:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>You authorize the payment for the selected credit package</li>
-              <li>Payment is processed through the applicable mobile money provider</li>
-              <li>Atai receives transaction confirmation data for verification purposes</li>
-              <li>Credits are awarded to your account upon successful verification</li>
-              <li>Failed, duplicate, or fraudulent transactions may be investigated and reversed</li>
+              <li>You authorize the payment for the selected plan or credit package</li>
+              <li>Payment is processed through the applicable payment provider</li>
+              <li>Credits or plan benefits are applied to your account upon successful verification</li>
+              <li>Failed, duplicate, or fraudulent transactions will be investigated and resolved</li>
             </ul>
-            <p>
-              You are responsible for ensuring that your payment information is accurate and that you have sufficient funds for the transaction. Atai does not directly collect or store credit card numbers.
-            </p>
-            <p>
-              Credit packages are available in various amounts as displayed on the <Link href="/pricing" className="text-primary hover:underline">pricing page</Link>.
-            </p>
+            <p>You are responsible for ensuring your payment details are accurate and sufficient funds are available. Atai does not directly collect or store card numbers — payment details are handled by our secure payment processors.</p>
           </Section>
 
-          {/* ── 14. Refunds ── */}
           <Section id="refunds" number="14" icon={AlertCircle} title="Refunds">
-            <p>
-              Refund eligibility depends on the applicable purchase, payment method, promotional terms, and applicable law. For full details, see the <Link href="/refund-policy" className="text-primary hover:underline">Refund Policy</Link>.
-            </p>
-            <p>
-              Key points:
-            </p>
+            <p>We want every experience on Atai to be worth your investment. Refund eligibility depends on the purchase type, payment method, and applicable law. Full details are in the <Link href="/refund-policy" className="text-primary hover:underline">Refund Policy</Link>.</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Failed payments that deducted funds without awarding credits are eligible for investigation and resolution</li>
+              <li>Failed payments that charged without awarding credits are eligible for investigation and resolution</li>
               <li>Duplicate transactions are eligible for refund of the duplicate amount</li>
-              <li>Credits consumed through platform actions (analysis, generation, deployment) are not refundable</li>
-              <li>Promotional and referral credits are not refundable and have no cash value</li>
+              <li>Credits consumed through platform actions (builds, analysis, generation) are not refundable</li>
+              <li>Promotional and referral credits have no cash value and are not refundable</li>
             </ul>
-            <p>
-              Requests for refunds should be directed to Atai support. Atai reserves the right to deny refund requests where the terms of a specific purchase or promotion do not provide for refunds.
-            </p>
+            <p>If you have any issue with a payment, contact us at <a href="mailto:support@atai.ink" className="text-primary hover:underline">support@atai.ink</a> — we will make it right.</p>
           </Section>
 
-          {/* ── 15. Referral Program ── */}
           <Section id="referrals" number="15" icon={Gift} title="Referral Program">
-            <p>
-              Atai offers a referral program that allows users to earn promotional credits by inviting others to join the platform. The current referral program operates as follows:
-            </p>
+            <p>Atai&apos;s referral program lets you earn credits by bringing other founders onto the platform. Every person you bring along makes the Atai community stronger — and we reward that.</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Each user may have a unique referral code (format: MSA-XXXXXX)</li>
-              <li>When a referred user registers using your referral code and verifies their account, you receive <strong className="text-foreground">500 credits</strong></li>
-              <li>When the referred user reaches a qualifying usage threshold of 75,000 application-generation credits (successful builds only), you receive an additional <strong className="text-foreground">1,500 credits</strong></li>
-              <li>The maximum referral reward per referred user is <strong className="text-foreground">2,000 credits</strong></li>
+              <li>When a referred user registers with your referral code and verifies their account, you earn <strong className="text-foreground">500 credits</strong></li>
+              <li>When the referred user reaches a qualifying build threshold, you earn an additional <strong className="text-foreground">1,500 credits</strong></li>
+              <li>Maximum referral reward per referred user: 2,000 credits</li>
             </ul>
             <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 flex items-start gap-3">
               <AlertTriangle className="size-4 text-amber-500 mt-0.5 shrink-0" />
               <div className="text-sm">
-                <p className="font-medium mb-1">Referral rewards are promotional credits</p>
-                <p>Referral rewards are promotional credits subject to eligibility and anti-abuse requirements. They have no cash value and cannot be exchanged for money. Atai reserves the right to cancel referral rewards where fraudulent, abusive, or manipulative activity is detected.</p>
+                <p className="font-medium text-foreground mb-1">Referral rewards are promotional credits</p>
+                <p>Referral credits have no cash value and cannot be exchanged for money. Self-referral, fraudulent referral chains, and abuse of the program may result in forfeiture of rewards and account suspension.</p>
               </div>
             </div>
-            <p>
-              Self-referral, circular referral chains, creation of multiple accounts to exploit referral rewards, and other fraudulent activity are prohibited and may result in forfeiture of earned rewards and account suspension.
-            </p>
           </Section>
 
-          {/* ── 16. Third-Party Services ── */}
-          <Section id="third-party" number="16" icon={ExternalLink} title="Third-Party Services">
-            <p>
-              Atai may rely on third-party services and infrastructure providers to operate the Service. These may include providers of:
-            </p>
+          <Section id="partnership" number="16" icon={Handshake} title="Future Partnership Program">
+            <p>Atai&apos;s mission is to help you build and grow a real, thriving business. As part of that long-term vision, we are exploring a future voluntary partnership program for users who achieve significant business success on the platform.</p>
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-5">
+              <p className="text-sm font-medium text-foreground mb-2">What this may mean for you</p>
+              <p className="text-sm text-muted-foreground">In the future, Atai may introduce an optional program where users who build exceptional, high-growth businesses using the platform may be invited into a partnership arrangement. Under such an arrangement, Atai may propose a reservation of up to <strong className="text-foreground">15%</strong> of the business — not as a fee, but as a recognition of the platform&apos;s contribution to that success. Think of it as sharing in the journey together.</p>
+            </div>
+            <p>This is important to understand clearly:</p>
+            <ul className="list-disc list-inside space-y-1 ml-4">
+              <li><strong className="text-foreground">No automatic equity.</strong> Atai does not take any stake in your business automatically or as a condition of using the platform today.</li>
+              <li><strong className="text-foreground">Always optional.</strong> Any partnership arrangement will be entirely voluntary and require a separate, explicit written agreement between you and Atai.</li>
+              <li><strong className="text-foreground">Always disclosed in advance.</strong> If Atai introduces such a program, it will be clearly announced and you will have the opportunity to opt in or decline.</li>
+              <li><strong className="text-foreground">Never a condition of service.</strong> Declining any future partnership arrangement will never affect your access to, or continued use of, the Atai platform.</li>
+            </ul>
+            <p>We are genuinely excited about what you are building. If and when this program launches, it will be designed to celebrate mutual success — not to claim what is rightfully yours.</p>
+          </Section>
+
+          <Section id="third-party" number="17" icon={ExternalLink} title="Third-Party Services">
+            <p>Atai relies on best-in-class third-party services to deliver the platform reliably and at scale. These include providers of:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>AI processing and code generation</li>
-              <li>Website analysis and crawling</li>
+              <li>Application build and infrastructure (Totalum)</li>
+              <li>Website analysis and crawling (Firecrawl)</li>
               <li>Database hosting and management</li>
               <li>Authentication services</li>
-              <li>Payment processing</li>
+              <li>Payment processing (Dodo Payments)</li>
               <li>File storage and asset management</li>
-              <li>Email delivery</li>
+              <li>Email delivery (Resend)</li>
               <li>Application hosting and deployment</li>
-              <li>Analytics and monitoring</li>
+              <li>Analytics and monitoring (PostHog)</li>
             </ul>
-            <p>
-              Third-party services may have their own terms of service, privacy policies, availability limitations, and technical requirements. Atai is not responsible for the practices or availability of third-party providers.
-            </p>
-            <p>
-              The specific third-party providers and processing arrangements may change as the Service evolves.
-            </p>
+            <p>Third-party services have their own terms and privacy policies. Atai is not responsible for their practices or availability, but we carefully select providers that meet high standards of reliability, security, and data protection.</p>
           </Section>
 
-          {/* ── 17. Infrastructure and Hosting ── */}
-          <Section id="infrastructure" number="17" icon={Server} title="Infrastructure and Hosting">
-            <p>
-              Atai may provide or connect application infrastructure for your generated projects. This may include:
-            </p>
+          <Section id="infrastructure" number="18" icon={Server} title="Infrastructure & Hosting">
+            <p>Atai configures and manages the technical infrastructure your application needs, so you can focus on your business, not your servers. This includes:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Database hosting and management</li>
               <li>Authentication infrastructure</li>
               <li>File storage</li>
               <li>Application hosting and deployment</li>
-              <li>Free subdomain deployment (*.totalum-project.com)</li>
+              <li>Free subdomain deployment</li>
               <li>Custom domain connections</li>
+              <li>SSL certificates</li>
             </ul>
-            <p>
-              You remain responsible for:
-            </p>
+            <p>You remain responsible for:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Your application&apos;s content and compliance</li>
-              <li>Configuration and secrets management</li>
-              <li>Access permissions and security</li>
-              <li>Third-party services you integrate</li>
-              <li>Production configuration and deployment decisions</li>
+              <li>Your application&apos;s content and legal compliance</li>
+              <li>Secrets management and configuration</li>
+              <li>Access permissions and security settings</li>
+              <li>Third-party integrations you add</li>
+              <li>Production configuration decisions</li>
             </ul>
-            <p>
-              Infrastructure plans, storage limits, and usage policies are described in the <Link href="/database-terms" className="text-primary hover:underline">Database &amp; Infrastructure Terms</Link>.
-            </p>
+            <p>Full infrastructure terms are in the <Link href="/database-terms" className="text-primary hover:underline">Database &amp; Infrastructure Terms</Link>.</p>
           </Section>
 
-          {/* ── 18. Early Access ── */}
-          <Section id="early-access" number="18" icon={Clock} title="Early Access">
+          <Section id="early-access" number="19" icon={Clock} title="Early Access">
+            <p>Atai is in an active early-access stage. This means we are building, shipping, and improving fast — and you are part of that journey from the ground up.</p>
             <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 flex items-start gap-3">
               <AlertTriangle className="size-4 text-amber-500 mt-0.5 shrink-0" />
               <div className="text-sm">
-                <p className="font-medium mb-1">Early Access</p>
-                <p>Atai may currently be in an early-access stage of development.</p>
+                <p className="font-medium text-foreground mb-1">What early access means</p>
+                <p>Features may change, new capabilities are added regularly, performance may vary, and some areas of the platform are still being refined. We will always be transparent about the state of what we ship.</p>
               </div>
             </div>
-            <p>
-              Early access means:
-            </p>
-            <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Features may change without prior notice</li>
-              <li>Functionality may be incomplete or under development</li>
-              <li>Performance may vary and may change over time</li>
-              <li>Infrastructure may be upgraded or modified</li>
-              <li>Bugs, errors, or unexpected behavior may occur</li>
-              <li>Workflows and processes may change</li>
-              <li>Certain features may be experimental</li>
-              <li>Data or projects may be affected by technical limitations</li>
-            </ul>
-            <p>
-              We are continuously improving the Service based on technical testing, usage, and user feedback. Early-access status does not imply that the Service will achieve any particular level of maturity, performance, or availability.
-            </p>
+            <p>We are committed to keeping your data safe and your projects intact throughout this process. Your feedback directly shapes what Atai becomes for every founder after you.</p>
           </Section>
 
-          {/* ── 19. Beta and Experimental Features ── */}
-          <Section id="beta" number="19" icon={FlaskIcon} title="Beta and Experimental Features">
-            <p>
-              Atai may from time to time offer beta or experimental features. Beta features:
-            </p>
+          <Section id="beta" number="20" icon={Lightbulb} title="Beta Features">
+            <p>Atai may offer beta or experimental features from time to time. These are early-access versions of capabilities we are building. They:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>May change, be modified, or be removed at any time</li>
-              <li>May not be supported on a permanent basis</li>
-              <li>May have significant limitations or known issues</li>
-              <li>May not be covered by the same availability or reliability standards as the main Service</li>
+              <li>May change, be modified, or be removed</li>
+              <li>May have limitations or known issues</li>
+              <li>Are entirely optional — you choose whether to use them</li>
             </ul>
-            <p>
-              Use of beta features is optional and at your own risk. Atai makes no guarantees about the availability, performance, or future of beta features.
-            </p>
+            <p>Beta features give you early access to what comes next. Use them, give us feedback, and help make them better for the entire community.</p>
           </Section>
 
-          {/* ── 20. Acceptable Use ── */}
-          <Section id="acceptable-use" number="20" icon={ShieldCheck} title="Acceptable Use">
-            <p>
-              You agree to use Atai only for lawful purposes and in accordance with these Terms. You must not use the Service to:
-            </p>
+          <Section id="acceptable-use" number="21" icon={ShieldCheck} title="Acceptable Use">
+            <p>Atai is built for builders, founders, and entrepreneurs working on legitimate businesses. You agree to use the platform only for lawful purposes. You must not use Atai to:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Engage in any unlawful activity or violate applicable laws or regulations</li>
-              <li>Commit fraud or engage in deceptive practices</li>
-              <li>Impersonate any person or entity</li>
-              <li>Create, distribute, or transmit malware or harmful software</li>
-              <li>Engage in credential theft or phishing</li>
-              <li>Attempt unauthorized access to systems, accounts, or data</li>
-              <li>Launch attacks against other systems or networks</li>
-              <li>Evasion of security controls or access restrictions</li>
-              <li>Violate the privacy of others</li>
-              <li>Infringe copyright, trademark, or other intellectual property rights</li>
-              <li>Perform unauthorized scraping or data collection</li>
-              <li>Engage in harassment, abuse, or bullying</li>
+              <li>Engage in fraud, deception, or unlawful activity</li>
+              <li>Impersonate any person or organization</li>
+              <li>Build or distribute malicious software</li>
+              <li>Attempt unauthorized access to systems or accounts</li>
+              <li>Violate the privacy or intellectual property rights of others</li>
+              <li>Launch attacks against systems or networks</li>
               <li>Send spam or engage in malicious automation</li>
-              <li>Distribute harmful or malicious software</li>
-              <li>Conduct activities designed to damage third-party systems</li>
+              <li>Harass, abuse, or cause harm to others</li>
+              <li>Violate applicable laws or regulations</li>
             </ul>
           </Section>
 
-          {/* ── 21. Prohibited Activities ── */}
-          <Section id="prohibited" number="21" icon={Ban} title="Prohibited Website Activity">
-            <p>
-              Because website analysis is a core capability of Atai, the following activities are specifically prohibited:
-            </p>
+          <Section id="prohibited" number="22" icon={Ban} title="Prohibited Activities">
+            <p>The following are specifically prohibited:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Bypassing authentication or login requirements</li>
-              <li>Bypassing paywalls or subscription requirements</li>
-              <li>Defeating technical access restrictions or DRM</li>
-              <li>Scraping private, non-public, or access-restricted areas of websites</li>
-              <li>Collecting personal data without authorization</li>
-              <li>Making excessive automated requests intended to degrade a website&apos;s performance</li>
-              <li>Evading anti-bot systems, CAPTCHAs, or rate limiting</li>
-              <li>Unauthorized access to computer systems or networks</li>
-              <li>Attempting to circumvent security mechanisms</li>
+              <li>Bypassing authentication, paywalls, or access controls on any website</li>
+              <li>Collecting personal data from websites without authorization or legal basis</li>
+              <li>Making excessive automated requests to degrade website performance</li>
+              <li>Evading anti-bot systems or CAPTCHAs</li>
+              <li>Self-referral or fraudulent referral schemes</li>
+              <li>Creating multiple accounts to circumvent platform limits</li>
+              <li>Building applications designed to commit fraud, phishing, or illegal activity</li>
+              <li>Attempting to reverse-engineer or scrape the Atai platform</li>
             </ul>
-            <p>
-              You must respect website owners, their terms of service, and applicable law when using Atai&apos;s website analysis capabilities.
-            </p>
+            <p>Violation of these rules may result in immediate suspension or permanent termination of your account.</p>
           </Section>
 
-          {/* ── 22. Security ── */}
-          <Section id="security" number="22" icon={Lock} title="Security">
-            <p>
-              You are responsible for:
-            </p>
+          <Section id="security" number="23" icon={Lock} title="Security">
+            <p>Atai takes platform security seriously. We implement password hashing, session token management, rate limiting, access controls, and infrastructure security measures to protect your account and data.</p>
+            <p>Your security responsibilities include:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Protecting your account credentials and API keys</li>
-              <li>Reviewing generated code for security vulnerabilities</li>
+              <li>Reviewing generated applications for security vulnerabilities before going live</li>
               <li>Configuring production secrets and environment variables correctly</li>
-              <li>Managing access permissions for your projects and infrastructure</li>
-              <li>Reviewing generated dependencies for known vulnerabilities</li>
+              <li>Managing access permissions for your projects</li>
             </ul>
-            <p>
-              Atai implements security measures designed to protect the Service, including password hashing, session token management, rate limiting, and access controls. However, no method of transmission or storage is completely secure, and Atai cannot guarantee absolute security.
-            </p>
+            <p>If you discover a security vulnerability in the Atai platform, please report it responsibly to <a href="mailto:support@atai.ink" className="text-primary hover:underline">support@atai.ink</a>. We take every report seriously.</p>
           </Section>
 
-          {/* ── 23. Service Availability ── */}
-          <Section id="availability" number="23" icon={Server} title="Service Availability">
-            <p>
-              Atai strives to maintain reliable service availability. However, the Service may experience:
-            </p>
+          <Section id="availability" number="24" icon={Server} title="Service Availability">
+            <p>We work hard to keep Atai available and reliable at all times. The platform may occasionally experience:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Periodic outages or downtime</li>
-              <li>Scheduled maintenance windows</li>
-              <li>Infrastructure upgrades</li>
+              <li>Scheduled maintenance windows — communicated in advance where possible</li>
+              <li>Unplanned outages or infrastructure incidents</li>
               <li>Third-party service interruptions</li>
-              <li>AI provider interruptions or capacity limitations</li>
-              <li>Network issues or latency</li>
+              <li>Infrastructure upgrades that improve long-term reliability</li>
             </ul>
-            <p>
-              The Service is provided without a guaranteed level of uninterrupted availability unless a separate agreement states otherwise. Atai is not liable for any downtime, data loss, or disruption resulting from service interruptions.
-            </p>
+            <p>We communicate planned maintenance and incidents through the platform and our official channels. Enterprise plans include SLA-backed uptime commitments.</p>
           </Section>
 
-          {/* ── 24. Disclaimers ── */}
-          <Section id="disclaimers" number="24" icon={AlertCircle} title="Disclaimers">
-            <p>
-              <strong className="text-foreground">No guarantee of business success.</strong> Atai does not guarantee product-market fit, revenue, users, customer acquisition, business success, investment, application performance, search ranking, or conversion rates. The platform helps accelerate development but cannot guarantee the outcome of any business.
-            </p>
-            <p>
-              <strong className="text-foreground">No guarantee of error-free output.</strong> AI-generated output may contain mistakes, outdated information, incomplete implementations, incorrect assumptions, security vulnerabilities, dependency issues, or unexpected behavior.
-            </p>
-            <p>
-              <strong className="text-foreground">No production-readiness guarantee.</strong> Atai does not guarantee that every generated application is production-ready. Users must independently evaluate generated output and perform appropriate testing, security review, code review, dependency review, backups, and monitoring before production use.
-            </p>
-            <p>
-              THE SERVICE IS PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. Atai DOES NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED, ERROR-FREE, OR COMPLETELY SECURE.
-            </p>
+          <Section id="disclaimers" number="25" icon={AlertCircle} title="Disclaimers">
+            <p><strong className="text-foreground">We are invested in your success.</strong> That said, there are important things to understand about what the platform can and cannot guarantee.</p>
+            <p>Atai provides powerful tools, infrastructure, and AI assistance. We cannot guarantee specific business outcomes, revenue, user acquisition, investment, search rankings, or product-market fit. Business success depends on many factors — your idea, your execution, your market, and your customers. Atai gives you the strongest possible foundation; what you build on it is yours to drive.</p>
+            <p>AI-generated output is designed to be production-ready and high quality. It may still contain imperfections, and we encourage you to review your application before launch. We continuously improve output quality with every release.</p>
+            <p className="uppercase text-xs leading-6">THE SERVICE IS PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE.&quot; TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, ATAI DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. ATAI DOES NOT WARRANT THAT THE SERVICE WILL BE UNINTERRUPTED OR COMPLETELY ERROR-FREE.</p>
           </Section>
 
-          {/* ── 25. Limitation of Liability ── */}
-          <Section id="liability" number="25" icon={Scale} title="Limitation of Liability">
-            <p>
-              TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW:
-            </p>
-            <p>
-              IN NO EVENT SHALL Atai, ATAI, OR THEIR AFFILIATES, OFFICERS, DIRECTORS, EMPLOYEES, OR AGENTS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES, RESULTING FROM:
-            </p>
-            <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Your access to, use of, or inability to use the Service</li>
-              <li>Any conduct or content of any third party on the Service</li>
-              <li>Any content obtained from the Service</li>
-              <li>Unauthorized access, use, or alteration of your transmissions or content</li>
-              <li>AI-generated output or its use</li>
-            </ul>
-            <p>
-              IN NO EVENT SHALL THE AGGREGATE LIABILITY OF Atai EXCEED THE AMOUNT YOU PAID TO Atai IN THE TWELVE (12) MONTHS PRECEDING THE EVENT GIVING RISE TO THE CLAIM, OR [USD $100 / LOCAL CURRENCY EQUIVALENT], WHICHEVER IS GREATER.
-            </p>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-sm text-muted-foreground italic">
-                [Legal counsel should review and finalize jurisdiction-specific liability limitations before production deployment.]
-              </p>
-            </div>
+          <Section id="liability" number="26" icon={Scale} title="Limitation of Liability">
+            <p className="uppercase text-xs leading-6">TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL ATAI OR ITS AFFILIATES, OFFICERS, DIRECTORS, EMPLOYEES, OR AGENTS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, GOODWILL, OR BUSINESS OPPORTUNITY, ARISING FROM YOUR USE OF OR INABILITY TO USE THE SERVICE.</p>
+            <p className="uppercase text-xs leading-6">IN NO EVENT SHALL THE TOTAL AGGREGATE LIABILITY OF ATAI EXCEED THE GREATER OF (A) THE AMOUNT YOU PAID TO ATAI IN THE TWELVE MONTHS PRECEDING THE EVENT GIVING RISE TO THE CLAIM, OR (B) USD $100 (OR LOCAL CURRENCY EQUIVALENT).</p>
+            <p>Nothing in these Terms limits liability that cannot be excluded by law, including liability for death or personal injury caused by negligence, or for fraud or fraudulent misrepresentation.</p>
           </Section>
 
-          {/* ── 26. Indemnification ── */}
-          <Section id="indemnification" number="26" icon={ShieldCheck} title="Indemnification">
-            <p>
-              You agree to indemnify, defend, and hold harmless Atai, ATAI, and their affiliates, officers, directors, employees, and agents from any claims, damages, losses, liabilities, and expenses (including reasonable legal fees) arising from:
-            </p>
+          <Section id="indemnification" number="27" icon={ShieldCheck} title="Indemnification">
+            <p>You agree to indemnify, defend, and hold harmless ATAI and its affiliates, officers, directors, employees, and agents from any claims, damages, losses, liabilities, and expenses (including reasonable legal fees) arising from:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>Your use of the Service</li>
               <li>Your violation of these Terms</li>
               <li>Your violation of applicable law</li>
-              <li>Your User Content, including content that infringes third-party rights</li>
-              <li>Your unauthorized use of website analysis features</li>
-              <li>Your applications and their deployment</li>
-              <li>Your violation of third-party rights</li>
+              <li>Your violation of any third-party rights</li>
+              <li>Content you submit or applications you build using the Service</li>
             </ul>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-sm text-muted-foreground italic">
-                [This section should be reviewed by legal counsel for jurisdiction-specific enforceability.]
-              </p>
-            </div>
           </Section>
 
-          {/* ── 27. Account Suspension and Termination ── */}
-          <Section id="suspension" number="27" icon={Ban} title="Account Suspension and Termination">
-            <h3 className="text-base font-medium text-foreground mt-6">Suspension by Atai</h3>
-            <p>
-              Atai may restrict or suspend your account where necessary because of:
-            </p>
+          <Section id="suspension" number="28" icon={Ban} title="Account Suspension & Termination">
+            <p>We want every user to have a great experience on Atai. However, we reserve the right to suspend or terminate accounts that:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Abuse or misuse of the Service</li>
-              <li>Fraudulent activity</li>
-              <li>Security threats</li>
-              <li>Violations of these Terms</li>
-              <li>Unlawful activity</li>
-              <li>Payment issues or disputes</li>
-              <li>Attempts to circumvent usage restrictions</li>
-              <li>Threats to platform integrity or other users</li>
+              <li>Violate these Terms</li>
+              <li>Engage in fraudulent, abusive, or harmful behavior</li>
+              <li>Attempt to harm other users or the platform</li>
+              <li>Are subject to legal requirements compelling action</li>
             </ul>
+            <p>Where possible, we will provide notice and an opportunity to resolve the issue before taking action. You may also close your account at any time through your account settings.</p>
+            <p>On termination, your access to the platform ends. We will handle your data as described in the <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.</p>
+          </Section>
 
-            <h3 className="text-base font-medium text-foreground mt-6">Termination</h3>
-            <p>
-              You may close your account where supported by the platform. Upon termination:
-            </p>
+          <Section id="privacy-ref" number="29" icon={Eye} title="Privacy">
+            <p>Your privacy matters to us. How we collect, use, store, and protect your information is explained in detail in the <Link href="/privacy" className="text-primary hover:underline">Atai Privacy Policy</Link>, which is incorporated into these Terms by reference.</p>
+            <p>By using Atai, you acknowledge and accept our data practices as described in the Privacy Policy.</p>
+          </Section>
+
+          <Section id="changes-service" number="30" icon={Lightbulb} title="Changes to Atai">
+            <p>We are constantly improving the platform. We may add, modify, or discontinue features at any time. For significant changes that affect existing workflows, we will provide advance notice through the platform or by email where feasible.</p>
+            <p>We build for the long term and will always aim to make changes that improve the platform for every user.</p>
+          </Section>
+
+          <Section id="changes-terms" number="31" icon={FileText} title="Changes to These Terms">
+            <p>We may update these Terms from time to time. When we make material changes, we will:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Your access to the Service may stop</li>
-              <li>Projects may become inaccessible</li>
-              <li>Remaining credits may be forfeited</li>
-              <li>Data retention may apply as described in the <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link></li>
-              <li>Provisions that by their nature should survive termination will survive, including intellectual property, limitation of liability, indemnification, and dispute resolution</li>
+              <li>Update the &quot;Last Updated&quot; date at the top of this page</li>
+              <li>Notify you via email or a platform notification for significant changes</li>
             </ul>
+            <p>Your continued use of Atai after the updated Terms become effective constitutes your acceptance of the changes. If you do not agree to updated Terms, stop using the platform and close your account.</p>
           </Section>
 
-          {/* ── 28. Data and Privacy ── */}
-          <Section id="privacy" number="28" icon={Eye} title="Data and Privacy">
-            <p>
-              Your use of Atai is also subject to our <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link>, which explains how personal information and other data are collected, used, stored, and processed.
-            </p>
-            <p>
-              By using the Service, you acknowledge that you have read and understood the Privacy Policy. The Privacy Policy is incorporated into these Terms by reference.
-            </p>
+          <Section id="governing-law" number="32" icon={Scale} title="Governing Law & Disputes">
+            <p>These Terms and any disputes arising from them are governed by the laws of Uganda, without regard to conflict of law principles. We encourage you to contact us first at <a href="mailto:support@atai.ink" className="text-primary hover:underline">support@atai.ink</a> before initiating any formal dispute resolution — the vast majority of issues can be resolved quickly through direct communication.</p>
+            <p>For Enterprise plan users, specific dispute resolution terms may be defined in a separate agreement.</p>
           </Section>
 
-          {/* ── 29. Changes to Atai ── */}
-          <Section id="changes-service" number="29" icon={TerminalSquare} title="Changes to Atai">
-            <p>
-              Atai is a continuously evolving service. We may:
-            </p>
-            <ul className="list-disc list-inside space-y-1 ml-4">
-              <li>Add new features and capabilities</li>
-              <li>Remove or modify existing features</li>
-              <li>Change workflows and processes</li>
-              <li>Modify infrastructure and underlying systems</li>
-              <li>Update AI models and systems</li>
-              <li>Modify pricing, credits, and usage limits</li>
-              <li>Improve security measures</li>
-              <li>Discontinue features or capabilities</li>
-            </ul>
-            <p>
-              We may provide reasonable notice of material changes where appropriate, but we do not guarantee specific notice periods for all changes.
-            </p>
+          <Section id="general" number="33" icon={FileText} title="General Provisions">
+            <p><strong className="text-foreground">Entire agreement.</strong> These Terms, together with the Privacy Policy, Refund Policy, and Database &amp; Infrastructure Terms, constitute the entire agreement between you and ATAI regarding your use of the Service.</p>
+            <p><strong className="text-foreground">Severability.</strong> If any provision of these Terms is found to be unenforceable, the remaining provisions continue in full force and effect.</p>
+            <p><strong className="text-foreground">Waiver.</strong> Our failure to enforce any provision is not a waiver of that provision.</p>
+            <p><strong className="text-foreground">Assignment.</strong> You may not assign your rights or obligations under these Terms without our prior written consent. We may assign our rights in connection with a merger, acquisition, or sale of assets.</p>
+            <p><strong className="text-foreground">No agency.</strong> These Terms do not create a partnership, joint venture, agency, or employment relationship between you and ATAI.</p>
           </Section>
 
-          {/* ── 30. Changes to These Terms ── */}
-          <Section id="changes-terms" number="30" icon={FileText} title="Changes to These Terms">
-            <p>
-              We may update these Terms from time to time. When we make material changes, we may provide notice through the Service or other reasonable means.
-            </p>
-            <p>
-              The &quot;Last Updated&quot; date at the top of this page indicates when these Terms were last revised. Continued use of the Service after changes are posted constitutes your agreement to the updated Terms, unless otherwise required by applicable law.
-            </p>
-            <p>
-              We encourage you to review these Terms periodically.
-            </p>
-          </Section>
-
-          {/* ── 31. Governing Law and Disputes ── */}
-          <Section id="governing-law" number="31" icon={Scale} title="Governing Law and Disputes">
-            <p>
-              Governing law and dispute-resolution provisions should be finalized by ATAI&apos;s legal counsel before production deployment.
-            </p>
-            <div className="rounded-lg border border-border bg-card p-4">
-              <p className="text-sm text-muted-foreground italic">
-                [Legal counsel should finalize the governing jurisdiction, applicable law, dispute resolution mechanisms, arbitration provisions (if applicable), and venue for this section.]
-              </p>
-            </div>
-            <p>
-              Any disputes arising from or relating to these Terms or the Service should first be addressed through good-faith negotiation. If informal resolution is not possible, the parties should pursue resolution through the applicable legal channels as determined by the finalized governing law provisions.
-            </p>
-          </Section>
-
-          {/* ── 32. General Provisions ── */}
-          <Section id="general" number="32" icon={BookOpen} title="General Provisions">
-            <h3 className="text-base font-medium text-foreground mt-6">Severability</h3>
-            <p>
-              If any provision of these Terms is held to be invalid or unenforceable, the remaining provisions will remain in full force and effect.
-            </p>
-
-            <h3 className="text-base font-medium text-foreground mt-6">Waiver</h3>
-            <p>
-              Failure to enforce any provision of these Terms does not constitute a waiver of that provision or any other provision.
-            </p>
-
-            <h3 className="text-base font-medium text-foreground mt-6">Assignment</h3>
-            <p>
-              You may not assign or transfer these Terms or your rights under them without Atai&apos;s prior written consent. Atai may assign these Terms in connection with a merger, acquisition, or sale of assets.
-            </p>
-
-            <h3 className="text-base font-medium text-foreground mt-6">Entire Agreement</h3>
-            <p>
-              These Terms, together with the <Link href="/privacy" className="text-primary hover:underline">Privacy Policy</Link> and any other applicable policies, constitute the entire agreement between you and Atai regarding the Service.
-            </p>
-
-            <h3 className="text-base font-medium text-foreground mt-6">Relationship of Parties</h3>
-            <p>
-              Nothing in these Terms creates a partnership, joint venture, agency, or employment relationship between you and Atai.
-            </p>
-
-            <h3 className="text-base font-medium text-foreground mt-6">Force Majeure</h3>
-            <p>
-              Atai is not liable for any failure or delay in performance resulting from causes beyond its reasonable control, including natural disasters, acts of government, infrastructure failures, network outages, or other force majeure events.
-            </p>
-
-            <h3 className="text-base font-medium text-foreground mt-6">Notices</h3>
-            <p>
-              Notices to you may be provided through the Service, by email, or by other reasonable means. Notices to Atai should be sent through the contact channels described in the Contact section below.
-            </p>
-
-            <h3 className="text-base font-medium text-foreground mt-6">Survival</h3>
-            <p>
-              Provisions that by their nature should survive termination will survive, including intellectual property, user content license, disclaimers, limitation of liability, indemnification, and dispute resolution.
-            </p>
-          </Section>
-
-          {/* ── 33. Contact ── */}
-          <Section id="contact" number="33" icon={Mail} title="Contact">
-            <p>
-              Questions about these Terms of Service?
-            </p>
-            <div className="rounded-xl border border-border bg-card p-5 mt-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10"><Mail className="size-4 text-primary" /></div>
-                <p className="font-medium">Contact Atai</p>
+          <Section id="contact" number="34" icon={Phone} title="Contact Us">
+            <p>We are here for you. If you have questions about these Terms, need support, or just want to share feedback, reach out through any of the following:</p>
+            <div className="grid gap-4 sm:grid-cols-3 my-4">
+              <div className="rounded-xl border border-border bg-card p-5">
+                <p className="font-medium text-sm text-foreground mb-2">Email</p>
+                <a href="mailto:support@atai.ink" className="text-sm text-primary hover:underline break-all">support@atai.ink</a>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Reach Atai support through the platform or call <span className="font-mono text-foreground">+256 761 819 885</span> for payment-related assistance.
-              </p>
-              <p className="text-sm text-muted-foreground mt-2">
-                For legal inquiries, contact: <span className="text-primary">[OFFICIAL Atai LEGAL CONTACT]</span>
-              </p>
+              <div className="rounded-xl border border-border bg-card p-5">
+                <p className="font-medium text-sm text-foreground mb-2">Phone / WhatsApp</p>
+                <a href="tel:+256761819885" className="text-sm text-primary hover:underline">+256 761 819 885</a>
+              </div>
+              <div className="rounded-xl border border-border bg-card p-5">
+                <p className="font-medium text-sm text-foreground mb-2">YouTube</p>
+                <a href="https://www.youtube.com/@mirrorsiteai" target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline break-all">@mirrorsiteai</a>
+              </div>
             </div>
+            <p className="text-sm text-muted-foreground">We aim to respond to all enquiries within 1–2 business days.</p>
           </Section>
 
-          {/* ═══════════════════════════════════════════════════════
-             FAQ
-             ═══════════════════════════════════════════════════════ */}
-          <section id="faq" className="scroll-mt-20">
-            <h2 className="text-2xl font-semibold tracking-tight mt-16 mb-6 flex items-center gap-3">
-              <HelpCircle className="size-5 text-primary" /> Frequently Asked Questions
+          {/* FAQ */}
+          <section id="faq" className="scroll-mt-20 mt-16">
+            <h2 className="text-2xl font-semibold tracking-tight mb-8 flex items-center gap-3">
+              <FileText className="size-5 text-primary" /> Frequently Asked Questions
             </h2>
-
-            <div className="space-y-3">
-              {faqItems.map(({ q, a }, i) => (
-                <details key={i} className="group rounded-xl border border-border bg-card overflow-hidden">
-                  <summary className="flex cursor-pointer items-center justify-between px-5 py-4 text-sm font-medium select-none hover:text-foreground transition-colors [&::-webkit-details-marker]:hidden">
+            <div className="space-y-4">
+              {faqItems.map(({ q, a }) => (
+                <details key={q} className="group rounded-xl border border-border bg-card">
+                  <summary className="flex cursor-pointer items-center justify-between px-6 py-4 text-sm font-medium select-none [&::-webkit-details-marker]:hidden">
                     {q}
-                    <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+                    <span className="ml-4 shrink-0 text-muted-foreground">
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
+                    </span>
                   </summary>
-                  <div className="px-5 pb-4 text-sm leading-6 text-muted-foreground">
-                    {a}
-                  </div>
+                  <div className="px-6 pb-5 text-sm text-muted-foreground leading-7">{a}</div>
                 </details>
               ))}
             </div>
@@ -1144,47 +753,8 @@ export default function TermsPage() {
 
         </article>
 
-        {/* ═══════════════════════════════════════════════════════
-           FINAL CTA
-           ═══════════════════════════════════════════════════════ */}
-        <section className="border-y border-border bg-card/40">
-          <div className="mx-auto max-w-4xl px-6 py-16 text-center">
-            <p className="font-mono text-xs uppercase tracking-[0.2em] text-primary mb-4">Questions?</p>
-            <h2 className="text-2xl font-semibold tracking-tight">
-              Have questions about using Atai?
-            </h2>
-            <p className="mt-3 text-muted-foreground">
-              We&apos;re here to help. Reach out or learn more about the platform.
-            </p>
-            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/about" className={buttonVariants({ size: "lg" }) + " h-12 px-6"}>
-                About Atai <ArrowRight className="size-4" />
-              </Link>
-              <Link href="/privacy" className={buttonVariants({ variant: "outline", size: "lg" }) + " h-12 px-6"}>
-                Privacy Policy
-              </Link>
-              <AuthTrigger view="signup" next="/new/idea" className={buttonVariants({ variant: "outline", size: "lg" }) + " h-12 px-6"}>
-                Start Building
-              </AuthTrigger>
-            </div>
-          </div>
-        </section>
-
-        <SiteFooter activePage="/terms" links={[{ href: "/", label: "Home" }, { href: "/pricing", label: "Pricing" }, { href: "/resources", label: "Resources" }, { href: "/about", label: "About" }, { href: "/privacy", label: "Privacy" }, { href: "/refund-policy", label: "Refunds" }, { href: "/terms", label: "Terms" }]} />
+        <SiteFooter />
       </main>
     </>
-  )
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   ICON: Flask (for beta section)
-   ═══════════════════════════════════════════════════════════════ */
-
-function FlaskIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 3h6" />
-      <path d="M10 3v7.4a2 2 0 0 1-.5 1.3L4 16.5c-1.2 1.4-1.1 3.5.1 4.7 1.3 1.2 3.3 1.1 4.5-.1L12 18.5l3.4 2.6c1.2 1.2 3.2 1.3 4.5.1 1.2-1.2 1.3-3.3.1-4.7L14.5 11.7a2 2 0 0 1-.5-1.3V3" />
-    </svg>
   )
 }

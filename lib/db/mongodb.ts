@@ -45,11 +45,20 @@ function connect(): Promise<MongoClient> {
     waitQueueTimeoutMS: pool.waitQueueTimeoutMS,
     maxIdleTimeMS: 30_000,
     serverSelectionTimeoutMS: 8000,
+    connectTimeoutMS: 8000,
+    socketTimeoutMS: 20_000,
   })
   // Without an error listener, socket resets become process-level uncaughtException.
   client.on("error", (error) => {
     if (isBenignDisconnect(error)) return
     logger.warn("mongo", error instanceof Error ? error.message : "Mongo client error")
+  })
+  client.on("timeout", () => {
+    logger.warn("mongo", "Mongo socket timed out; next request will reconnect")
+    globalForMongo.__mirrorMongoClientPromise = undefined
+  })
+  client.on("close", () => {
+    globalForMongo.__mirrorMongoClientPromise = undefined
   })
   return client.connect()
 }

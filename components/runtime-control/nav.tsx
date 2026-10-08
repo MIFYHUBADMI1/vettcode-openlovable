@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { getDeveloperPortalUrl } from "@/lib/env"
 
 const LINKS = [
   { href: "", label: "Overview" },
@@ -41,6 +42,12 @@ export function RuntimeNav({ projectId }: { projectId: string }) {
           </Link>
         )
       })}
+      <a
+        href={getDeveloperPortalUrl()}
+        className="ml-auto inline-flex items-center gap-1 rounded-t-md px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+      >
+        Developer portal ↗
+      </a>
     </nav>
   )
 }

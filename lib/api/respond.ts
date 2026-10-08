@@ -3,6 +3,13 @@ import { TotalumError } from "@/lib/integrations/totalum/errors"
 import { ProviderNotConfiguredError } from "@/lib/integrations/firecrawl/client"
 import { AppError } from "@/lib/errors"
 import { logger } from "@/lib/logging/logger"
+import {
+  aiTimeoutUserMessage,
+  isAbortTimeoutError,
+  isDatabaseConnectivityError,
+  isTlsClockError,
+  tlsClockUserMessage,
+} from "@/lib/api/upstream-error"
 
 /** Consistent JSON error envelope. Technical details stay server-side; the
  * client receives a friendly message and a stable code (spec section 28). */
@@ -73,8 +80,19 @@ export function handleRouteError(stage: string, error: unknown, headers?: Header
   if (error instanceof Error && /E11000|duplicate key/i.test(error.message)) {
     return fail("EMAIL_ALREADY_REGISTERED", undefined, 409)
   }
-  if (error instanceof Error && /mongo|mongodb|database|topology|server selection|connection/i.test(error.message)) {
-    logger.error(stage, "database operation failed", { message: error.message })
+  if (isAbortTimeoutError(error)) {
+    logger.error(stage, "upstream timed out", { message: error instanceof Error ? error.message : String(error) })
+    return fail("AI_UNAVAILABLE", aiTimeoutUserMessage(), 503, headers)
+  }
+  if (isTlsClockError(error)) {
+    logger.error(stage, "tls certificate rejected — check system clock", {
+      message: error instanceof Error ? error.message : String(error),
+      now: new Date().toISOString(),
+    })
+    return fail("AI_UNAVAILABLE", tlsClockUserMessage(), 503, headers)
+  }
+  if (isDatabaseConnectivityError(error)) {
+    logger.error(stage, "database operation failed", { message: error instanceof Error ? error.message : String(error) })
     return fail("DATABASE_UNAVAILABLE", undefined, 503)
   }
   logger.error(stage, "unhandled route error", { message: error instanceof Error ? error.message : String(error) })

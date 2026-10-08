@@ -1,8 +1,8 @@
 /**
- * @atai/sdk — package consumer test (Phase 7 §50).
+ * @atai-group/sdk — package consumer test (Phase 7 §50).
  *
  * Imports EXCLUSIVELY from the built `dist` output, exactly as an external
- * consumer would (`import { Atai } from "@atai/sdk"` → dist). Verifies:
+ * consumer would (`import { Atai } from "@atai-group/sdk"` → dist). Verifies:
  *   - imports resolve,
  *   - declarations resolve (checked by tsc over this file's imports),
  *   - runtime JavaScript executes,

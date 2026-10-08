@@ -17,7 +17,7 @@ Final validation results:
 | `npx tsc --noEmit` (typecheck) | ✅ 0 errors |
 | `npx vitest run` (full suite) | ✅ **57 files, 872 tests passed** |
 | `npx next build` (production) | ✅ success, no errors/warnings |
-| `@atai/sdk` build + tests | ✅ build clean, **7 files, 85 tests passed** |
+| `@atai-group/sdk` build + tests | ✅ build clean, **7 files, 85 tests passed** |
 
 ---
 
@@ -91,7 +91,7 @@ The repository had **14 `tsc` errors** before this phase. All fixed minimally, n
 
 ### 3.4 SDK health method
 
-**`@atai/sdk` 1.0.0 → health capability** (backwards compatible, additive):
+**`@atai-group/sdk` 1.0.0 → health capability** (backwards compatible, additive):
 
 - New `packages/atai-sdk/src/capabilities/health.ts` — `await atai.health.check()` → `AtaiHealthResult` (status, requestId, identity, key status, lifecycle stages).
 - Type `AtaiHealthResult` added to `types.ts`; exports added in `client.ts` (as `atai.health`) and `index.ts`.

@@ -15,6 +15,28 @@ import { AppError } from "@/lib/errors"
 const COOKIE = "Atai_session"
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30 // 30 days
 
+/**
+ * Cookie domain. In production the cookie is set on the shared parent domain
+ * ("atai.ink") so the developer portal (developers.atai.ink) receives the
+ * same session — the portal is a rewrite inside the SAME app, but cookies do
+ * not cross subdomains without an explicit Domain attribute. Empty in dev so
+ * the cookie stays host-only on localhost (a Domain of "localhost" behaves
+ * oddly across browsers).
+ */
+function sessionCookieDomain(): string | undefined {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL
+  if (!appUrl) return undefined // dev (localhost fallback in getAppUrl) → host-only
+  try {
+    const host = new URL(appUrl).hostname
+    // Only a registrable apex + its subdomains benefit; never widen for
+    // vercel.app-style preview hosts or bare IPs.
+    if (host === "atai.ink" || host.endsWith(".atai.ink")) return ".atai.ink"
+    return undefined
+  } catch {
+    return undefined
+  }
+}
+
 export async function createSession(userId: string): Promise<string> {
   await ensureIndexes()
   const col = await sessionsCol()
@@ -46,6 +68,7 @@ export async function setSessionCookie(token: string): Promise<void> {
     sameSite: "lax",
     secure: true,
     path: "/",
+    domain: sessionCookieDomain(),
     maxAge: SESSION_TTL_MS / 1000,
   })
 }

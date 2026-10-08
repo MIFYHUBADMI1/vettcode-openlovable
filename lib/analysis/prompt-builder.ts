@@ -27,7 +27,7 @@ function enabledFeatures(spec: ApplicationSpecification): string[] {
  * Turn the Collaborate plan's "Runtime & Integrations" section into mandatory
  * build instructions. The founder's plan is grounded (by the co-founder AI)
  * in Atai's capability vocabulary, so whatever lands here maps 1:1 to
- * @atai/sdk namespaces — the generated app learns WHICH capabilities it must
+ * @atai-group/sdk namespaces — the generated app learns WHICH capabilities it must
  * call, HOW to call them (SDK + ATAI_API_KEY), and WHERE to read more.
  * The free-text is sanitized as reference material (it's plan content, but
  * the block's own instructions are what the build agent must follow).
@@ -37,11 +37,11 @@ function buildRuntimeIntegrationsBlock(runtimeIntegrations?: string): string {
   if (!text) return ""
   return [
     "═══ ATAI RUNTIME INTEGRATIONS (MANDATORY) ═══",
-    "The application MUST use the official @atai/sdk (npm package) to consume the Atai Runtime API for the following planned integrations:",
+    "The application MUST use the official @atai-group/sdk (npm package) to consume the Atai Runtime API for the following planned integrations:",
     sanitizeReference(text),
     "",
     "RUNTIME WIRING RULES:",
-    "- Install and import @atai/sdk. Authenticate with the ATAI_API_KEY environment variable (provisioned automatically — never ask the user for a key, never hardcode one).",
+    "- Install and import @atai-group/sdk. Authenticate with the ATAI_API_KEY environment variable (provisioned automatically — never ask the user for a key, never hardcode one).",
     "- Initialize one shared server-side client: const atai = new Atai({ apiKey: process.env.ATAI_API_KEY! })",
     "- Call Atai capabilities ONLY from server-side code (route handlers, server components, server actions). Never expose the key or direct SDK calls to the browser — proxy through your own API routes.",
     "- Map each planned integration to its Atai capability and SDK namespace: AI text → atai.ai (capability ai.text), text-to-speech → atai.voice (ai.speak), web search → atai.search (search.web), URL scraping → atai.web (web.scrape), email → atai.email, SMS → atai.sms, WhatsApp → atai.whatsapp, push notifications → atai.notifications, geocoding → atai.maps, bookings → atai.calendar, semantic search/vectors → atai.vectors, app data → atai.db, checkout → atai.payments. Full contract and examples: https://atai.ink/sdk",

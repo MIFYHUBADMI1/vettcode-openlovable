@@ -33,6 +33,11 @@ import { z } from "zod"
  * vector storage (upsert/search/delete), the generated app's runtime
  * database (query/create/edit/delete), and checkout sessions
  * (createCheckout).
+ *
+ * Multimodal wave (OpenRouter full coverage): image generation
+ * (generateImage), video generation (generateVideo), text-to-speech
+ * (speak), transcription (transcribe), and vision-style multimodal input
+ * (visionInput — image/PDF/audio/video content alongside text on chat).
  */
 export const RUNTIME_OPERATIONS = [
   "chat",
@@ -55,6 +60,12 @@ export const RUNTIME_OPERATIONS = [
   "create",
   "edit",
   "createCheckout",
+  // Multimodal wave — OpenRouter full modality coverage
+  "generateImage",
+  "generateVideo",
+  "speak",
+  "transcribe",
+  "visionInput",
 ] as const
 
 export type RuntimeOperation = (typeof RUNTIME_OPERATIONS)[number]
@@ -75,6 +86,13 @@ export const CAPABILITY_OPERATIONS: Record<string, readonly RuntimeOperation[] |
   "ai.text": ["chat", "completion", "embed"],
   "ai.embed": ["embed"],
   "ai.speak": ["synthesize"],
+  // Multimodal wave — OpenRouter-backed AI capabilities. Scopes equal
+  // capability IDs, so each grants independently on an API key.
+  "ai.image": ["generateImage"],
+  "ai.video": ["generateVideo"],
+  "ai.speech": ["speak"],
+  "ai.transcribe": ["transcribe"],
+  "ai.vision": ["visionInput"],
   "search.web": ["web"],
   "web.scrape": ["scrape"],
   "email": ["send"],

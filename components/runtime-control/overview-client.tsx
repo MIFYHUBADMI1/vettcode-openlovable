@@ -124,7 +124,7 @@ export function RuntimeOverviewClient({ projectId }: { projectId: string }) {
             <dt className="text-muted-foreground">Prod runtime</dt>
             <dd>{data.provisioning.production.status}</dd>
             <dt className="text-muted-foreground">SDK</dt>
-            <dd>@atai/sdk {data.platform.sdkVersion}</dd>
+            <dd>@atai-group/sdk {data.platform.sdkVersion}</dd>
           </dl>
         </section>
       </div>

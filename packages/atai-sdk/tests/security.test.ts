@@ -1,5 +1,5 @@
 /**
- * @atai/sdk — security tests (Phase 7 §47.26–31, §66–68, §88, §15).
+ * @atai-group/sdk — security tests (Phase 7 §47.26–31, §66–68, §88, §15).
  */
 
 import { afterEach, describe, expect, it, vi } from "vitest"

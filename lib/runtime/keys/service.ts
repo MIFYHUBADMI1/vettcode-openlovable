@@ -156,6 +156,31 @@ export async function revokeApiKey(
   return result.modifiedCount > 0
 }
 
+// ─── Deletion (permanent) ──────────────────────────────────────────────────
+
+/**
+ * Permanently delete a key record. Unlike revocation this removes the doc
+ * entirely — the audit trail is the caller's responsibility (the dashboard
+ * logs the action). Ownership is enforced IN the filter: another user's keyId
+ * (or a wrong projectId) deletes nothing and gets false.
+ */
+export async function deleteApiKey(
+  userId: string,
+  keyId: string,
+  projectId?: string,
+): Promise<boolean> {
+  const col = await apiKeysCol()
+  const filter: Record<string, unknown> = { id: keyId, userId }
+  if (projectId) filter.projectId = projectId
+
+  const result = await col.deleteOne(filter)
+
+  if (result.deletedCount > 0) {
+    logger.info("runtime.keys", "API key permanently deleted", { keyId, userId })
+  }
+  return result.deletedCount > 0
+}
+
 // ─── lastUsedAt (throttled) ────────────────────────────────────────────────
 
 /**

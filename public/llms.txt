@@ -1,41 +1,36 @@
-# MirrorSite AI
+# Atai
 
-> Instant full-stack code and web generation powered by ATAI Enterprises.
+> Atai.ink is an AI business-building platform. Founders turn an idea, a website, a URL, or a GitHub project into a real digital business — plan, build, launch, manage, and grow in one place.
 
-MirrorSite AI is an AI-powered application development platform that turns websites and ideas into working full-stack applications. It analyzes a starting point — an idea, a product concept, or an existing website — structures what needs to be built, and generates a complete application foundation including frontend, backend, authentication, database, and infrastructure.
+Atai (Advanced Technologies and AI Enterprises) is not a generic website cloner. It is an AI co-founder for non-technical founders and operators: collaborative planning, application generation, hosting, and day-to-day business operations.
 
-## Key Features
+The Atai SDK and a single Atai API key are supporting infrastructure inside that product. Generated apps and developers can call AI, payments, maps, messaging, auth, search, data, and related services without stitching many vendors. That key is one capability of the platform, not the product itself.
 
-- AI-powered application planning and generation
-- Website analysis and structure extraction
-- Full-stack code generation (React, Next.js, Node.js)
-- Authentication, database, and backend included
-- Managed infrastructure and deployment
-- Credit-based pricing with transparent tiers
+## What founders do here
 
-## Pricing
+- Describe a business idea or start from a site / GitHub repo
+- Collaborate on a plain-language plan before any build spend
+- Generate and deploy a working application
+- Operate customers, billing, and growth from the workspace
 
-- Explorer: $12/month — 50,000 credits
-- Starter: $79/month — 300,000 credits
-- Business: $139/month — 600,000 credits
-- Professional: $219/month — 1,400,000 credits
-- Enterprise: $499+/month — 5,000,000+ credits
+## Developers (optional)
 
-Application build costs:
-- Simple: 50,000 credits — basic website/application generation
-- Medium: 75,000 credits — multi-page apps with auth and database
-- Complex: 100,000 credits — advanced full-stack projects
+Same infrastructure the builder uses, via `@atai-group/sdk` and an Atai API key (`atai_proj_...`). See /developers and /sdk. Start at the homepage if you are launching a business, not an integration.
 
 ## Links
 
-- Homepage: https://mirrorsite.atai.ink/
-- Documentation: https://mirrorsite.atai.ink/docs
-- About: https://mirrorsite.atai.ink/about
-- Pricing: https://mirrorsite.atai.ink/pricing
-- Resources: https://mirrorsite.atai.ink/resources
-- Privacy Policy: https://mirrorsite.atai.ink/privacy
-- Terms of Service: https://mirrorsite.atai.ink/terms
+- Homepage: https://atai.ink/
+- Start: https://atai.ink/start
+- Pricing: https://atai.ink/pricing
+- About: https://atai.ink/about
+- Docs: https://atai.ink/docs
+- Developers: https://atai.ink/developers
+- SDK: https://atai.ink/sdk
+- Explore: https://atai.ink/explore
+- Resources: https://atai.ink/resources
+- Privacy: https://atai.ink/privacy
+- Terms: https://atai.ink/terms
 
 ## Organization
 
-MirrorSite AI is built by ATAI Enterprises (https://atai.ink).
+Atai is built by ATAI Enterprises (https://atai.ink).

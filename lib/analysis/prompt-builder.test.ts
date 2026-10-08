@@ -24,10 +24,10 @@ describe("buildInitialBuildPrompt — runtime integrations", () => {
   it("omits the runtime block when the plan section is empty", () => {
     const prompt = buildInitialBuildPrompt(makeSpec())
     expect(prompt).not.toContain("ATAI RUNTIME INTEGRATIONS")
-    expect(prompt).not.toContain("@atai/sdk")
+    expect(prompt).not.toContain("@atai-group/sdk")
   })
 
-  it("wires the plan's Runtime & Integrations into a mandatory @atai/sdk build block", () => {
+  it("wires the plan's Runtime & Integrations into a mandatory @atai-group/sdk build block", () => {
     const prompt = buildInitialBuildPrompt(
       makeSpec({
         runtimeIntegrations:
@@ -35,7 +35,7 @@ describe("buildInitialBuildPrompt — runtime integrations", () => {
       }),
     )
     expect(prompt).toContain("ATAI RUNTIME INTEGRATIONS (MANDATORY)")
-    expect(prompt).toContain("@atai/sdk")
+    expect(prompt).toContain("@atai-group/sdk")
     expect(prompt).toContain("ATAI_API_KEY")
     // Founder's plan content is carried into the prompt
     expect(prompt).toContain("AI support assistant")

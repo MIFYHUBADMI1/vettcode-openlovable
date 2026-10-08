@@ -35,14 +35,37 @@ const SESSION_REFRESH_INTERVAL_MS = 120_000 // 2 minutes
 const STALE_THRESHOLD_MS = 60_000 // consider stale after 60s
 let sessionFetchGeneration = 0
 
+class ApiClientError extends Error {
+  status: number
+  code?: string
+  constructor(message: string, status: number, code?: string) {
+    super(message)
+    this.status = status
+    this.code = code
+  }
+}
+
+function isUnauthorized(error: unknown): boolean {
+  if (error instanceof ApiClientError) {
+    return error.status === 401 || error.code === "UNAUTHORIZED"
+  }
+  return false
+}
+
 async function apiFetch<T>(url: string): Promise<T> {
-  const res = await fetch(url, { headers: { accept: "application/json" }, cache: "no-store", credentials: "include" })
+  const res = await fetch(url, {
+    headers: { accept: "application/json" },
+    cache: "no-store",
+    credentials: "include",
+    signal: AbortSignal.timeout(12_000),
+  })
   const body = await res.json().catch(() => null)
   if (body && typeof body === "object" && "ok" in body) {
-    if (body.ok) return body.data as T
-    throw new Error((body as { error?: { message?: string } }).error?.message ?? `Request failed (${res.status})`)
+    if ((body as { ok: boolean }).ok) return (body as { data: T }).data
+    const error = (body as { error?: { message?: string; code?: string } }).error
+    throw new ApiClientError(error?.message ?? `Request failed (${res.status})`, res.status, error?.code)
   }
-  throw new Error(`Request failed (${res.status})`)
+  throw new ApiClientError(`Request failed (${res.status})`, res.status)
 }
 
 // ─── Session slice ───────────────────────────────────────────────────────────
@@ -115,12 +138,15 @@ export const useClientStore = create<ClientStore>((set, get) => ({
     try {
       const data = await apiFetch<SessionInfo>("/api/me")
       if (generation !== sessionFetchGeneration) return
-      set({ session: data, sessionLoading: false, sessionFetchedAt: Date.now() })
+      set({ session: data, sessionLoading: false, sessionError: null, sessionFetchedAt: Date.now() })
     } catch (e) {
       if (generation !== sessionFetchGeneration) return
+      const signedOut = isUnauthorized(e) || (e instanceof Error && e.name === "TimeoutError")
       set({
+        session: signedOut ? null : get().session,
         sessionLoading: false,
-        sessionError: e instanceof Error ? e.message : "Failed to load session",
+        sessionError: signedOut ? null : e instanceof Error ? e.message : "Failed to load session",
+        sessionFetchedAt: Date.now(),
       })
     }
   },
@@ -161,6 +187,10 @@ export const useClientStore = create<ClientStore>((set, get) => ({
 
   fetchProjects: async () => {
     if (get().projectsLoading) return
+    if (!get().session) {
+      set({ projectsLoading: false, projectsFetchedAt: Date.now() })
+      return
+    }
     set({ projectsLoading: true, projectsError: null })
     try {
       const data = await apiFetch<{ projects: ProjectSummary[] }>("/api/projects")

@@ -26,6 +26,7 @@ import { DashboardNotifications } from "@/components/dashboard/dashboard-notific
 import { CofounderPanel, useCofounderPanel } from "@/components/cofounder/cofounder-panel"
 import { workspaceGrowNav, workspaceProjectNav, type AtaiNavItem } from "@/components/workspace/atai-nav"
 import { useProjects } from "@/lib/client/api"
+import { AuthGate } from "@/components/auth/auth-gate"
 import { interpretProjectState, selectActiveProject } from "@/lib/dashboard/view-model"
 import type { ProjectSummary } from "@/lib/types/project"
 import { cn } from "@/lib/utils"
@@ -67,6 +68,7 @@ export function DashboardShell({
   const recent = [...projects].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 5)
 
   return (
+    <AuthGate next={pathname || "/dashboard"}>
     <div className="min-h-svh bg-background text-foreground">
       <CofounderPanel />
       <div className="flex min-h-svh">
@@ -167,6 +169,7 @@ export function DashboardShell({
         </div>
       </div>
     </div>
+    </AuthGate>
   )
 }
 

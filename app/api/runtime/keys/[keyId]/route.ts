@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth/session"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
-import { revokeApiKey } from "@/lib/runtime/keys/service"
+import { deleteApiKey, revokeApiKey } from "@/lib/runtime/keys/service"
 import { getApiKeyMetadata } from "@/lib/runtime/keys/metadata"
 
 /**
@@ -29,15 +29,28 @@ export async function GET(_req: Request, { params }: { params: Promise<{ keyId: 
 }
 
 /**
- * DELETE /api/runtime/keys/:keyId
- * Revoke a key. The historical record is preserved (status → "revoked");
- * revoked keys can never authenticate runtime requests.
- * Body (optional): { reason?: string } — sanitized server-side.
+ * DELETE /api/runtime/keys/:keyId            → revoke (default, historical record kept)
+ * DELETE /api/runtime/keys/:keyId?permanent=1 → permanently delete the record
+ *
+ * Revoked keys can never authenticate runtime requests; deleted keys are
+ * removed entirely. Ownership enforced in the service filter — another
+ * user's keyId resolves to the same 404 as a missing one.
+ * Body (optional, revoke only): { reason?: string } — sanitized server-side.
  */
 export async function DELETE(req: Request, { params }: { params: Promise<{ keyId: string }> }) {
   try {
     const user = await requireUser()
     const { keyId } = await params
+    const permanent = new URL(req.url).searchParams.get("permanent") === "1"
+
+    if (permanent) {
+      const deleted = await deleteApiKey(user.id, keyId)
+      if (!deleted) {
+        // Missing or not-owned — one stable response.
+        return fail("RUNTIME_KEY_NOT_FOUND", "Key not found.", 404)
+      }
+      return ok({ id: keyId, status: "deleted" })
+    }
 
     // Sanitize the reason: strip anything that could smuggle secrets or raw
     // error text into the audit metadata (Phase 3 §19/§27).

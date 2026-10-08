@@ -13,6 +13,9 @@ import {
   Coins,
   Compass,
   Copy,
+  Eye,
+  Film,
+  ImageIcon,
   Cpu,
   CreditCard,
   Database,
@@ -26,6 +29,7 @@ import {
   MessageSquare,
   Mic,
   PlugZap,
+  PlaySquare,
   RefreshCw,
   Rocket,
   Search,
@@ -43,6 +47,7 @@ import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { ScrollProgress } from "@/components/scroll-progress"
 import { BrandMark } from "@/components/brand-logo"
+import { getDeveloperPortalUrl } from "@/lib/env"
 
 /* ═══════════════════════════════════════════════════════════════
    SECTION METADATA (for search + scroll-spy)
@@ -299,7 +304,7 @@ export function SdkDocsContent() {
             <span className="rounded-full border border-primary/20 bg-primary/5 px-2.5 py-0.5 font-mono text-[10px] font-medium text-primary">v1.0.0</span>
           </div>
           <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
-            The @atai/sdk and the Atai Runtime API
+            The @atai-group/sdk and the Atai Runtime API
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-muted-foreground">
             One typed client, one API key, and every capability your application needs — AI, messaging,
@@ -313,6 +318,13 @@ export function SdkDocsContent() {
             <Link href="/sdk#rest-endpoints" className={buttonVariants({ variant: "outline", size: "sm" })}>
               API reference
             </Link>
+            <a
+              href={`${getDeveloperPortalUrl()}/playground`}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              <PlaySquare className="mr-1.5 size-3.5" />
+              Try it in the playground
+            </a>
           </div>
         </div>
       </section>
@@ -334,7 +346,7 @@ export function SdkDocsContent() {
                 The <strong className="text-foreground">Atai Runtime API</strong> is the single service boundary between
                 your application and everything Atai operates: AI generation, voice, web search and scraping, email,
                 SMS, WhatsApp, push notifications, maps, scheduling, vector storage, the app database, and checkout.
-                The <strong className="text-foreground">@atai/sdk</strong> is its official typed client.
+                The <strong className="text-foreground">@atai-group/sdk</strong> is its official typed client.
               </p>
 
               <div className="grid gap-4 sm:grid-cols-3">
@@ -355,7 +367,7 @@ export function SdkDocsContent() {
               <CodeBlock
                 lang="text"
                 title="architecture"
-                code={`Your application (@atai/sdk)
+                code={`Your application (@atai-group/sdk)
         │  Authorization: Bearer atai_<environment>_<secret>
         ▼
 Atai Runtime API  (https://atai.ink/api/runtime/v1)
@@ -385,9 +397,9 @@ Atai providers & infrastructure  (never visible to your app)`}
             <SectionHeader icon={Terminal} title="Installation" />
             <div className="space-y-6 leading-7 text-muted-foreground">
               <p>Install the SDK from npm:</p>
-              <CodeBlock lang="bash" title="shell" code={`npm install @atai/sdk`} />
-              <CodeBlock lang="bash" title="pnpm" code={`pnpm add @atai/sdk`} />
-              <CodeBlock lang="bash" title="yarn" code={`yarn add @atai/sdk`} />
+              <CodeBlock lang="bash" title="shell" code={`npm install @atai-group/sdk`} />
+              <CodeBlock lang="bash" title="pnpm" code={`pnpm add @atai-group/sdk`} />
+              <CodeBlock lang="bash" title="yarn" code={`yarn add @atai-group/sdk`} />
 
               <h3 className="text-lg font-semibold text-foreground">Requirements</h3>
               <ul className="space-y-2">
@@ -464,6 +476,16 @@ atai_development_b2cD4eF6gH8jK1lM3nP5qR7s9tU2vW4x  ← development key`}
                 Generated applications don&apos;t need this step: Atai provisions a scoped key automatically and injects it
                 into the app&apos;s secret store (see <a href="#provisioning" className="font-medium text-primary hover:underline">Auto-Provisioning</a>).
               </p>
+              <div className="flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-5 py-4">
+                <KeyRound className="size-5 shrink-0 text-primary" />
+                <p className="text-sm">
+                  Create, rotate and monitor keys, watch usage &amp; health, and test every endpoint against your real
+                  key in the{" "}
+                  <a href={getDeveloperPortalUrl()} className="font-medium text-primary underline-offset-2 hover:underline">
+                    Developer Portal →
+                  </a>
+                </p>
+              </div>
 
               <h3 className="text-lg font-semibold text-foreground">Scopes</h3>
               <p>
@@ -504,7 +526,7 @@ atai_development_b2cD4eF6gH8jK1lM3nP5qR7s9tU2vW4x  ← development key`}
               <CodeBlock
                 lang="ts"
                 title="initialize"
-                code={`import { Atai } from "@atai/sdk"
+                code={`import { Atai } from "@atai-group/sdk"
 
 const atai = new Atai({
   apiKey: process.env.ATAI_API_KEY!,   // atai_<environment>_<secret>
@@ -587,6 +609,10 @@ try {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <CapabilityCard icon={Cpu} name="AI" sdk="atai.ai" operations={["chat", "completion", "embed"]} description="Text generation, completion, and embeddings. The workhorse for assistants, content, and understanding." />
+                <CapabilityCard icon={ImageIcon} name="Image generation" sdk="atai.image" operations={["generateImage"]} description="Text-to-image (and image-to-image with reference photos) — product shots, illustrations, and mockups." />
+                <CapabilityCard icon={Film} name="Video generation" sdk="atai.video" operations={["generateVideo"]} description="Text-to-video as an async job — submit a prompt, poll for the finished clip." />
+                <CapabilityCard icon={Mic} name="Speech & transcription" sdk="atai.speech · atai.transcribe" operations={["speak", "transcribe"]} description="Text-to-speech with built-in voices, and audio-to-text across languages and formats." />
+                <CapabilityCard icon={Eye} name="Vision" sdk="atai.vision" operations={["visionInput"]} description="Multimodal understanding — send images, PDFs, audio or video alongside text for analysis." />
                 <CapabilityCard icon={Mic} name="Voice" sdk="atai.voice" operations={["synthesize"]} description="Turn text into natural speech audio (returned base64-encoded with its MIME type)." />
                 <CapabilityCard icon={Search} name="Search" sdk="atai.search" operations={["web"]} description="Query the open web and get ranked, described results." />
                 <CapabilityCard icon={Globe} name="Web" sdk="atai.web" operations={["scrape"]} description="Scrape a public URL into clean markdown, with links and truncation info." />
@@ -681,6 +707,58 @@ await atai.db.delete({ tableName: "orders", recordId: created.id! })`}
   currency: "USD",
 })
 // → { checkoutId, checkoutUrl, status } — redirect the customer to checkoutUrl`}
+              />
+
+              <h3 className="text-lg font-semibold text-foreground">Multimodal — images, video, speech, transcription, vision</h3>
+              <CodeBlock
+                lang="ts"
+                code={`// Image generation (text-to-image, or image-to-image via input_references)
+const image = await atai.image.generateImage({
+  prompt: "A red panda astronaut floating in space",
+  model: "google/gemini-2.5-flash-image",   // OpenRouter model id
+  aspect_ratio: "16:9",
+})
+// → { images: [{ b64, mediaType }] } — base64-encoded image bytes
+
+// Video generation (async job — submit, then poll with { jobId })
+const job = await atai.video.generateVideo({
+  prompt: "A timelapse of a city skyline at dusk",
+  model: "google/veo-3",
+  duration: 5,
+})
+// → { jobId, status: "submitted" } — poll: generateVideo({ jobId: job.jobId })
+
+// Text-to-speech (returns base64 audio)
+const speech = await atai.speech.speak({
+  input: "Hello from Atai!",
+  model: "openai/gpt-4o-mini-tts-2025-12-15",
+  voice: "alloy",
+  response_format: "mp3",
+})
+// → { audioBase64, mimeType }
+
+// Transcription (speech-to-text; base64 audio in)
+const text = await atai.transcribe.transcribe({
+  input_audio: { data: audioBase64, format: "wav" },
+  model: "openai/whisper-large-v3",
+  language: "en",   // optional hint
+})
+// → { text }
+
+// Vision — multimodal understanding (images, PDFs, audio, video + text)
+const answer = await atai.vision.visionInput({
+  messages: [{
+    role: "user",
+    content: [
+      { type: "text", text: "What is in this image?" },
+      { type: "image_url", image_url: { url: "https://example.com/photo.jpg" } },
+      // Also supported: { type: "file", file: { file_data } } for PDFs,
+      // { type: "input_audio", input_audio: { data, format } },
+      // { type: "video_url", video_url: { url } }
+    ],
+  }],
+})
+// → { content, model? }`}
               />
 
               <h3 className="text-lg font-semibold text-foreground">Everything else</h3>
@@ -907,7 +985,7 @@ await atai.vectors.delete({ ids: ["doc-1"] })`}
               <CodeBlock
                 lang="ts"
                 title="error handling"
-                code={`import { AtaiError, isAuthenticationError, isRateLimitError } from "@atai/sdk"
+                code={`import { AtaiError, isAuthenticationError, isRateLimitError } from "@atai-group/sdk"
 
 try {
   await atai.ai.chat({ messages: [{ role: "user", content: "Hello" }] })
@@ -1102,7 +1180,7 @@ try {
                 lang="ts"
                 title="the right shape: thin server proxy"
                 code={`// app/api/chat/route.ts (server) — the key never leaves the server
-import { Atai } from "@atai/sdk"
+import { Atai } from "@atai-group/sdk"
 
 const atai = new Atai({ apiKey: process.env.ATAI_API_KEY! })
 
@@ -1151,7 +1229,7 @@ export async function POST(req: Request) {
               <CodeBlock
                 lang="ts"
                 title="in a generated app — zero configuration"
-                code={`import { Atai } from "@atai/sdk"
+                code={`import { Atai } from "@atai-group/sdk"
 
 // The key arrives via the secret store as ATAI_API_KEY —
 // provisioned automatically at build completion.
@@ -1197,7 +1275,7 @@ if (health.status !== "operational") throw new Error("Atai Runtime not connected
             <div className="space-y-6 leading-7 text-muted-foreground">
               {[
                 {
-                  q: "Is @atai/sdk public?",
+                  q: "Is @atai-group/sdk public?",
                   a: "Yes — it is published to the public npm registry so any application (generated or not) can install it with a plain npm install. The package is proprietary to Atai (all rights reserved): you may use it to talk to the Atai Runtime API, but its source is not open-source.",
                 },
                 {

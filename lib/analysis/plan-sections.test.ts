@@ -37,6 +37,19 @@ describe("plan sections", () => {
     expect(sectionStatus(getPlanSection("businessModel")!, spec)).toBe("missing")
   })
 
+  it("does not treat generic Runtime & Integrations copy as complete", () => {
+    const generic = makeSpec({
+      runtimeIntegrations: "Data Storage: persists user accounts.\nThird-party API Integration: stock quotes.",
+    })
+    expect(sectionStatus(getPlanSection("runtimeIntegrations")!, generic)).toBe("needs_work")
+
+    const grounded = makeSpec({
+      runtimeIntegrations:
+        "Uses @atai-group/sdk with ATAI_API_KEY at /api/runtime/v1. ai.text (atai.ai.chat) answers workspace questions.",
+    })
+    expect(sectionStatus(getPlanSection("runtimeIntegrations")!, grounded)).toBe("complete")
+  })
+
   it("treats generator placeholders as missing", () => {
     expect(isPlaceholderValue("Not defined yet: who pays?")).toBe(true)
     expect(isPlaceholderValue("A real vision statement")).toBe(false)

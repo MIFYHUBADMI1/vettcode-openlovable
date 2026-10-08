@@ -9,6 +9,7 @@ import {
   buildProposal,
 } from "@/lib/analysis/cofounder"
 import { computePlanHealth } from "@/lib/analysis/plan-sections"
+import { isRuntimeIntegrationsGrounded, RUNTIME_AWARENESS_BLOCK } from "@/lib/analysis/runtime-capabilities"
 import { chargeAnalysisCredits, chargeAutoCompleteCredits, refundCollaboration } from "@/lib/analysis/collaborate-credits"
 import { getCollaborateCosts } from "@/lib/billing/runtime-config"
 import { getAvailableCredits } from "@/lib/billing/credit-service"
@@ -16,6 +17,7 @@ import {
   PLAN_SECTIONS,
   GENERATOR_MANAGED_SECTIONS,
   getPlanSection,
+  sectionStatus,
   validatePlanSectionValue,
   applySectionUpdate,
   isPlaceholderValue,
@@ -140,8 +142,7 @@ export interface AutoCompleteResult {
 function missingSectionIds(spec: ApplicationSpecification): PlanSectionId[] {
   return PLAN_SECTIONS.filter((def) => {
     if (GENERATOR_MANAGED_SECTIONS.has(def.id)) return false
-    const value = def.read(spec)
-    return !value || isPlaceholderValue(value)
+    return sectionStatus(def, spec) !== "complete"
   }).map((d) => d.id)
 }
 
@@ -196,7 +197,9 @@ export async function autoCompleteSection(userId: string, projectId: string, sec
     return { ok: false, status: 422, code: "VALIDATION", message: "This section is generated later in the build — auto-complete doesn't draft it." }
   }
   const currentValue = def.read(spec)
-  if (currentValue && !isPlaceholderValue(currentValue)) {
+  const rewriteUngroundedRuntime =
+    section === "runtimeIntegrations" && !!currentValue && !isRuntimeIntegrationsGrounded(currentValue)
+  if (currentValue && !isPlaceholderValue(currentValue) && !rewriteUngroundedRuntime) {
     return { ok: false, status: 409, code: "VALIDATION", message: `"${def.label}" already has content — it won't be overwritten.` }
   }
 
@@ -214,6 +217,8 @@ export async function autoCompleteSection(userId: string, projectId: string, sec
       prompt: [
         buildPlanBrief(spec),
         "",
+        RUNTIME_AWARENESS_BLOCK,
+        "",
         buildSectionFocusBlock(section, spec),
         "",
         `Draft the \"${def.label}\" section now. Return ONLY the JSON object with {\"value\": ...}.`,
@@ -230,6 +235,16 @@ export async function autoCompleteSection(userId: string, projectId: string, sec
   if (!parsed) {
     await refundCollaboration(userId, projectId, "auto-complete")
     return { ok: false, status: 502, code: "UNKNOWN", message: "The co-founder's draft came back unreadable. You can retry — no credits were kept." }
+  }
+
+  if (section === "runtimeIntegrations" && !isRuntimeIntegrationsGrounded(parsed.value)) {
+    await refundCollaboration(userId, projectId, "auto-complete")
+    return {
+      ok: false,
+      status: 502,
+      code: "UNKNOWN",
+      message: "The co-founder drafted generic infrastructure instead of the Atai runtime contract. You can retry — no credits were kept.",
+    }
   }
 
   const validated = validatePlanSectionValue(section, parsed.value)

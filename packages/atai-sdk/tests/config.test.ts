@@ -1,5 +1,5 @@
 /**
- * @atai/sdk — configuration tests (Phase 7 §47.1–4).
+ * @atai-group/sdk — configuration tests (Phase 7 §47.1–4).
  */
 
 import { describe, expect, it, vi } from "vitest"

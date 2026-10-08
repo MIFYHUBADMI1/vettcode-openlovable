@@ -1,6 +1,6 @@
 import type { ApplicationSpecification } from "@/lib/types/specification"
 import type { BusinessPlanField } from "@/lib/types/specification"
-import { RUNTIME_CAPABILITY_SUMMARIES } from "@/lib/analysis/runtime-capabilities"
+import { isRuntimeIntegrationsGrounded } from "@/lib/analysis/runtime-capabilities"
 
 /**
  * Canonical plan sections for the Collaborate workspace.
@@ -165,8 +165,32 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
     label: "Runtime & Integrations",
     icon: "PlugZap",
     group: "Business",
-    emptyHint: "Let's plan the Atai capabilities your app will use — AI, messaging, payments and more.",
+    emptyHint: "Plan which Atai capabilities this app will call with ATAI_API_KEY — AI, email, payments, search, and more.",
     read: (spec) => s(spec.runtimeIntegrations),
+  },
+  {
+    id: "pricingTiers",
+    label: "Pricing & Tiers",
+    icon: "DollarSign",
+    group: "Business",
+    emptyHint: "Let's define your pricing structure — tiers, features per tier, billing cycles, and payment strategy.",
+    read: (spec) => s(spec.pricingStructure),
+  },
+  {
+    id: "brandIdentity",
+    label: "Brand & Visual Identity",
+    icon: "Palette",
+    group: "Product",
+    emptyHint: "Let's define your brand colors, logo approach, and visual personality.",
+    read: (spec) => s(spec.brandIdentity),
+  },
+  {
+    id: "themePreferences",
+    label: "Theme & Appearance",
+    icon: "Monitor",
+    group: "Product",
+    emptyHint: "Let's choose your app's color theme, typography, dark mode strategy, and UI style.",
+    read: (spec) => s(spec.themePreferences),
   },
 ]
 
@@ -182,9 +206,12 @@ export function isPlaceholderValue(value: string): boolean {
   return /^not defined yet:/i.test(value.trim())
 }
 
-/** Deterministic status from field population alone. */
+/** Deterministic status from field population (runtime must name Atai). */
 export function sectionStatus(def: PlanSectionDef, spec: ApplicationSpecification): PlanSectionStatus {
-  return def.read(spec).length > 0 && !isPlaceholderValue(def.read(spec)) ? "complete" : "missing"
+  const value = def.read(spec)
+  if (!value || isPlaceholderValue(value)) return "missing"
+  if (def.id === "runtimeIntegrations" && !isRuntimeIntegrationsGrounded(value)) return "needs_work"
+  return "complete"
 }
 
 // ─── Plan health ──────────────────────────────────────────────────────────────
@@ -214,7 +241,7 @@ export function computePlanHealth(spec: ApplicationSpecification): {
   return {
     percent: Math.round((complete / sections.length) * 100),
     sections,
-    missing: sections.filter((x) => x.status === "missing").map((x) => x.id),
+    missing: sections.filter((x) => x.status !== "complete").map((x) => x.id),
   }
 }
 
@@ -350,5 +377,181 @@ export function applySectionUpdate(
       return { ...spec, authenticationRequirements: value }
     default:
       return spec
+  }
+}
+
+
+// ─── Plan quality scoring ─────────────────────────────────────────────────────
+
+export interface SectionQualityRequirements {
+  minWordCount: number
+  /** Keywords or patterns that should appear in a complete section */
+  requiredPatterns?: RegExp[]
+  /** Maximum allowed placeholder markers like "TBD", "(fill this in)" */
+  maxPlaceholders: number
+}
+
+/** Quality requirements per section — used to assess if a section has enough
+ * detail for production-ready builds */
+export const SECTION_QUALITY_REQUIREMENTS: Partial<Record<PlanSectionId, SectionQualityRequirements>> = {
+  features: {
+    minWordCount: 400,
+    requiredPatterns: [/user story/i, /functionality|feature/i],
+    maxPlaceholders: 2,
+  },
+  pricingTiers: {
+    minWordCount: 300,
+    requiredPatterns: [/(free|basic|pro|enterprise|tier)/i, /\$\d+|price/i],
+    maxPlaceholders: 0,
+  },
+  flows: {
+    minWordCount: 300,
+    requiredPatterns: [/step|user|flow/i],
+    maxPlaceholders: 2,
+  },
+  data: {
+    minWordCount: 200,
+    requiredPatterns: [/field|entity|table/i],
+    maxPlaceholders: 2,
+  },
+  problem: {
+    minWordCount: 150,
+    maxPlaceholders: 1,
+  },
+  solution: {
+    minWordCount: 150,
+    maxPlaceholders: 1,
+  },
+  auth: {
+    minWordCount: 100,
+    requiredPatterns: [/sign|login|auth|password|email/i],
+    maxPlaceholders: 1,
+  },
+  seo: {
+    minWordCount: 200,
+    requiredPatterns: [/keyword|meta|search|google/i],
+    maxPlaceholders: 1,
+  },
+  brandIdentity: {
+    minWordCount: 150,
+    requiredPatterns: [/color|brand|logo|visual/i],
+    maxPlaceholders: 1,
+  },
+  themePreferences: {
+    minWordCount: 150,
+    requiredPatterns: [/theme|font|dark|light/i],
+    maxPlaceholders: 1,
+  },
+}
+
+/** Count placeholder markers in text (TBD, TODO, fill this in, etc.) */
+function countPlaceholders(text: string): number {
+  const patterns = [
+    /\bTBD\b/gi,
+    /\bTODO\b/gi,
+    /\(fill (?:this|in|out)\)/gi,
+    /\[.*?\]/g, // Bracketed placeholders like [insert here]
+    /\{\{.*?\}\}/g, // Mustache-style {{placeholders}}
+  ]
+  let count = 0
+  for (const pattern of patterns) {
+    const matches = text.match(pattern)
+    if (matches) count += matches.length
+  }
+  return count
+}
+
+/** Calculate quality score (0-100) for a single section based on completeness
+ * and detail requirements */
+export function calculateSectionQuality(
+  sectionId: PlanSectionId,
+  spec: ApplicationSpecification,
+): number {
+  const def = getPlanSection(sectionId)
+  if (!def) return 0
+
+  const value = def.read(spec)
+  if (!value || isPlaceholderValue(value)) return 0
+
+  const requirements = SECTION_QUALITY_REQUIREMENTS[sectionId]
+  if (!requirements) return 100 // No specific requirements = present is enough
+
+  const wordCount = value.split(/\s+/).length
+  const placeholderCount = countPlaceholders(value)
+
+  let score = 0
+
+  // Word count score (50% weight)
+  const wordScore = Math.min((wordCount / requirements.minWordCount) * 50, 50)
+  score += wordScore
+
+  // Pattern matching score (30% weight)
+  if (requirements.requiredPatterns && requirements.requiredPatterns.length > 0) {
+    const matchedPatterns = requirements.requiredPatterns.filter((pattern) => pattern.test(value)).length
+    const patternScore = (matchedPatterns / requirements.requiredPatterns.length) * 30
+    score += patternScore
+  } else {
+    score += 30 // No patterns required = full points
+  }
+
+  // Placeholder penalty (20% weight)
+  if (placeholderCount <= requirements.maxPlaceholders) {
+    score += 20
+  } else {
+    // Lose points for excess placeholders
+    const excess = placeholderCount - requirements.maxPlaceholders
+    score += Math.max(0, 20 - (excess * 5))
+  }
+
+  return Math.round(Math.min(score, 100))
+}
+
+/** Calculate overall plan quality score and readiness assessment */
+export function calculatePlanQuality(spec: ApplicationSpecification): {
+  overallScore: number
+  readinessLevel: 'excellent' | 'good' | 'acceptable' | 'needs_work'
+  readinessMessage: string
+  sectionsAssessed: number
+  sectionsWithIssues: Array<{ id: PlanSectionId; label: string; score: number }>
+} {
+  const sectionsWithRequirements = PLAN_SECTIONS.filter(
+    (def) => SECTION_QUALITY_REQUIREMENTS[def.id]
+  )
+
+  const scores = sectionsWithRequirements.map((def) => ({
+    id: def.id,
+    label: def.label,
+    score: calculateSectionQuality(def.id, spec),
+  }))
+
+  const overallScore = scores.length > 0
+    ? Math.round(scores.reduce((sum, s) => sum + s.score, 0) / scores.length)
+    : 100
+
+  const sectionsWithIssues = scores.filter((s) => s.score < 70).sort((a, b) => a.score - b.score)
+
+  let readinessLevel: 'excellent' | 'good' | 'acceptable' | 'needs_work'
+  let readinessMessage: string
+
+  if (overallScore >= 90) {
+    readinessLevel = 'excellent'
+    readinessMessage = 'Excellent detail — ready to build a production-quality application'
+  } else if (overallScore >= 75) {
+    readinessLevel = 'good'
+    readinessMessage = 'Good level of detail — the builder has what it needs'
+  } else if (overallScore >= 60) {
+    readinessLevel = 'acceptable'
+    readinessMessage = 'Acceptable detail — you can build, but more specificity would help'
+  } else {
+    readinessLevel = 'needs_work'
+    readinessMessage = 'Needs more detail for a production-ready build'
+  }
+
+  return {
+    overallScore,
+    readinessLevel,
+    readinessMessage,
+    sectionsAssessed: scores.length,
+    sectionsWithIssues,
   }
 }

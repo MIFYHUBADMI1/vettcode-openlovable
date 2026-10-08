@@ -1,37 +1,43 @@
-import type { MetadataRoute } from "next"
+import { MetadataRoute } from "next"
 import { SITE_URL } from "@/lib/env"
-import { RESOURCE_CATEGORIES, allResources, resourceHref } from "@/lib/resources"
 
+/**
+ * Public sitemap for Atai.ink — business-building platform first.
+ * Only include routes that exist and should be indexed.
+ */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const pages: { path: string; changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"]; priority: number }[] = [
-    { path: "/", changeFrequency: "daily", priority: 1.0 },
-    { path: "/docs", changeFrequency: "weekly", priority: 0.9 },
+  const baseUrl = SITE_URL
+  const now = new Date()
+
+  const pages: Array<{
+    path: string
+    changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"]
+    priority: number
+  }> = [
+    { path: "/", changeFrequency: "daily", priority: 1 },
+    { path: "/start", changeFrequency: "weekly", priority: 0.95 },
     { path: "/pricing", changeFrequency: "weekly", priority: 0.9 },
-    { path: "/about", changeFrequency: "monthly", priority: 0.8 },
+    { path: "/about", changeFrequency: "monthly", priority: 0.85 },
+    { path: "/explore", changeFrequency: "daily", priority: 0.8 },
     { path: "/resources", changeFrequency: "weekly", priority: 0.8 },
-    { path: "/database-terms", changeFrequency: "monthly", priority: 0.4 },
-    { path: "/privacy", changeFrequency: "yearly", priority: 0.5 },
-    { path: "/terms", changeFrequency: "yearly", priority: 0.5 },
-    { path: "/refund-policy", changeFrequency: "yearly", priority: 0.4 },
-    ...RESOURCE_CATEGORIES.map((category) => ({
-      path: `/resources/${category}`,
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    })),
-    ...allResources().map((resource) => ({
-      path: resourceHref(resource),
-      changeFrequency: "monthly" as const,
-      priority: resource.featured ? 0.75 : 0.65,
-    })),
+    { path: "/docs", changeFrequency: "weekly", priority: 0.75 },
+    { path: "/developers", changeFrequency: "weekly", priority: 0.7 },
+    { path: "/sdk", changeFrequency: "weekly", priority: 0.65 },
+    { path: "/modes-comparison", changeFrequency: "monthly", priority: 0.6 },
+    { path: "/feature-requests", changeFrequency: "weekly", priority: 0.55 },
+    { path: "/new", changeFrequency: "monthly", priority: 0.55 },
+    { path: "/login", changeFrequency: "yearly", priority: 0.4 },
+    { path: "/register", changeFrequency: "yearly", priority: 0.45 },
+    { path: "/terms", changeFrequency: "monthly", priority: 0.4 },
+    { path: "/privacy", changeFrequency: "monthly", priority: 0.4 },
+    { path: "/refund-policy", changeFrequency: "monthly", priority: 0.35 },
+    { path: "/database-terms", changeFrequency: "monthly", priority: 0.3 },
   ]
 
-  return pages.map(({ path, changeFrequency, priority }) => {
-    const resource = allResources().find((item) => resourceHref(item) === path)
-    return {
-      url: `${SITE_URL}${path}`,
-      changeFrequency,
-      priority,
-      lastModified: resource ? new Date(`${resource.updatedAt}T00:00:00`) : undefined,
-    }
-  })
+  return pages.map((page) => ({
+    url: page.path === "/" ? baseUrl : `${baseUrl}${page.path}`,
+    lastModified: now,
+    changeFrequency: page.changeFrequency,
+    priority: page.priority,
+  }))
 }

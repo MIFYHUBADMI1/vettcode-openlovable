@@ -12,6 +12,20 @@
 /** Official endpoint: POST {base}/chat/completions. */
 export const OPENROUTER_CHAT_COMPLETIONS_PATH = "/chat/completions"
 
+// ─── Dedicated multimodal endpoints (verified 2026-10) ────────────────────
+
+/** Official endpoint: POST {base}/images (base64 images out). */
+export const OPENROUTER_IMAGES_PATH = "/images"
+
+/** Official endpoint: POST {base}/videos (async job submit/poll). */
+export const OPENROUTER_VIDEOS_PATH = "/videos"
+
+/** Official endpoint: POST {base}/audio/speech (MP3/PCM bytes out). */
+export const OPENROUTER_AUDIO_SPEECH_PATH = "/audio/speech"
+
+/** Official endpoint: POST {base}/audio/transcriptions (JSON text out). */
+export const OPENROUTER_AUDIO_TRANSCRIPTIONS_PATH = "/audio/transcriptions"
+
 // ─── Request ───────────────────────────────────────────────────────────────
 
 export interface OpenRouterMessage {

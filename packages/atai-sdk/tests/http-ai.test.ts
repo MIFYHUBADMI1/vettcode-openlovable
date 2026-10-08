@@ -1,5 +1,5 @@
 /**
- * @atai/sdk — HTTP + AI operation tests (Phase 7 §47.5–15, §48, §49).
+ * @atai-group/sdk — HTTP + AI operation tests (Phase 7 §47.5–15, §48, §49).
  *
  * The runtime API boundary is mocked at `fetch` level: the SDK under test
  * issues real Requests through its transport, and the mock verifies exactly

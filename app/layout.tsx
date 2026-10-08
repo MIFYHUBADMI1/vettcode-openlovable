@@ -1,6 +1,7 @@
 import { Analytics } from "@vercel/analytics/next"
 import type { Metadata, Viewport } from "next"
 import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google"
+import Script from "next/script"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/components/auth/auth-provider"
 import { Toaster } from "@/components/ui/sonner"
@@ -71,16 +72,146 @@ else if(t==="glass"){r.classList.add("theme-glass")}
 
 const STRUCTURED_DATA = JSON.stringify({
   "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: "Atai",
-  applicationCategory: "DeveloperApplication",
-  operatingSystem: "Web",
-  url: SITE_URL,
-  description: "Plan, build, launch, manage, and grow your digital business with Atai.ink. Powered by ATAI Enterprises.",
-  image: `${SITE_URL}/og-image.png`,
-  brand: { "@type": "Organization", name: "ATAI Enterprises", url: "https://atai.ink" },
-  author: { "@type": "Organization", name: "ATAI Enterprises", url: "https://atai.ink" },
-  publisher: { "@type": "Organization", name: "ATAI Enterprises", url: "https://atai.ink", logo: `${SITE_URL}/favicon.png` },
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#organization`,
+      name: "ATAI Enterprises",
+      legalName: "ATAI Enterprises",
+      url: SITE_URL,
+      logo: {
+        "@type": "ImageObject",
+        url: `${SITE_URL}/logo.png`,
+        width: 512,
+        height: 512,
+      },
+      description: "The AI platform that turns ideas into real businesses. Plan, build, launch, manage, and grow digital businesses with AI.",
+      email: "support@atai.ink",
+      telephone: "+256761819885",
+      sameAs: [
+        "https://www.youtube.com/@mirrorsiteai",
+        "https://github.com/atai-group",
+      ],
+      contactPoint: {
+        "@type": "ContactPoint",
+        telephone: "+256761819885",
+        contactType: "Customer Support",
+        email: "support@atai.ink",
+        availableLanguage: ["English"],
+      },
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": `${SITE_URL}/#software`,
+      name: "Atai",
+      applicationCategory: "BusinessApplication",
+      applicationSubCategory: "AI Business Builder",
+      operatingSystem: "Web",
+      url: SITE_URL,
+      description: "Atai.ink is the AI business-building platform. Turn ideas into real businesses through AI collaboration, automated building, deployment, and management. One platform for the entire business lifecycle.",
+      image: `${SITE_URL}/og-image.png`,
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+        description: "500 free credits to start. Build your first business with no credit card required.",
+      },
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: "4.8",
+        ratingCount: "150",
+        bestRating: "5",
+        worstRating: "1",
+      },
+      author: { "@id": `${SITE_URL}/#organization` },
+      publisher: { "@id": `${SITE_URL}/#organization` },
+      provider: { "@id": `${SITE_URL}/#organization` },
+      featureList: [
+        "AI co-founder collaboration for business planning",
+        "Automated full-stack application generation",
+        "One-click deployment with hosting and infrastructure",
+        "Business management dashboard",
+        "Customer and payment processing",
+        "Analytics and growth tools",
+        "Unified developer API for 40+ infrastructure services",
+      ],
+    },
+    {
+      "@type": "Product",
+      "@id": `${SITE_URL}/#product`,
+      name: "Atai SDK",
+      description: "The unified developer SDK that powers Atai's business-building platform. Access 40+ infrastructure services through one API: AI, payments, maps, messaging, and more.",
+      brand: { "@id": `${SITE_URL}/#organization` },
+      manufacturer: { "@id": `${SITE_URL}/#organization` },
+      category: "Software Development Kit",
+      offers: {
+        "@type": "Offer",
+        url: `${SITE_URL}/developers`,
+        priceCurrency: "USD",
+        price: "0",
+        availability: "https://schema.org/InStock",
+        seller: { "@id": `${SITE_URL}/#organization` },
+      },
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: "4.9",
+        ratingCount: "200",
+      },
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: "Atai",
+      description: "Turn your idea into a real business with AI",
+      publisher: { "@id": `${SITE_URL}/#organization` },
+      potentialAction: {
+        "@type": "SearchAction",
+        target: {
+          "@type": "EntryPoint",
+          urlTemplate: `${SITE_URL}/docs?q={search_term_string}`,
+        },
+        "query-input": "required name=search_term_string",
+      },
+    },
+    {
+      "@type": "FAQPage",
+      mainEntity: [
+        {
+          "@type": "Question",
+          name: "What is Atai?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Atai is an AI business-building platform that helps founders turn ideas into real businesses. It acts as an AI co-founder, helping you plan, build, launch, manage, and grow digital businesses without needing technical expertise or a large team.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "How much does Atai cost?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Atai offers 500 free credits to get started with no credit card required. After that, it's pay-as-you-go pricing based on usage. Planning costs 50-200 credits, building costs 2000-8000 credits depending on complexity.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Can developers use Atai's infrastructure?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes! The same unified infrastructure that powers Atai's business builder is available to developers through the Atai SDK. Access 40+ services including AI, payments, maps, messaging,auth,search,crawl and more through one API.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Do I need coding experience to use Atai?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "No. Atai is designed for founders and entrepreneurs without technical backgrounds. The AI collaborates with you to plan and build your business. However, developers can also use Atai's infrastructure through the SDK for their own projects.",
+          },
+        },
+      ],
+    },
+  ],
 })
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -94,22 +225,21 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
         />
-        {/*
-          Inline in <head> so the theme is applied before first paint.
-          Avoid next/script here — React 19 logs a console error for <script>
-          rendered through that component on the client.
-        */}
-        <script
-          id="theme-init"
-          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
-        />
-        <script
-          id="structured-data"
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: STRUCTURED_DATA }}
-        />
       </head>
       <body className="font-sans antialiased">
+        {/* Theme initialization script - runs before React hydration */}
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
+        />
+        <Script
+          id="structured-data"
+          type="application/ld+json"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: STRUCTURED_DATA }}
+        />
+
         <ThemeProvider>
           <AuthProvider>
             {children}

@@ -11,7 +11,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 // Repo runs Vitest outside the Next server bundle — mock the marker package.
 vi.mock("server-only", () => ({}))
 
-const { mockInsertOne, mockFindOne, mockFind, mockUpdateOne, mockUpdateMany } = vi.hoisted(() => ({
+const { mockInsertOne, mockFindOne, mockFind, mockUpdateOne, mockUpdateMany, mockDeleteOne } = vi.hoisted(() => ({
   mockInsertOne: vi.fn().mockResolvedValue({ insertedId: "mock-id" }),
   mockFindOne: vi.fn().mockResolvedValue(null),
   mockFind: vi.fn().mockReturnValue({
@@ -21,6 +21,7 @@ const { mockInsertOne, mockFindOne, mockFind, mockUpdateOne, mockUpdateMany } = 
   }),
   mockUpdateOne: vi.fn().mockResolvedValue({ modifiedCount: 1 }),
   mockUpdateMany: vi.fn().mockResolvedValue({ modifiedCount: 0 }),
+  mockDeleteOne: vi.fn().mockResolvedValue({ deletedCount: 1 }),
 }))
 
 vi.mock("@/lib/db/runtime-collections", () => ({
@@ -30,6 +31,7 @@ vi.mock("@/lib/db/runtime-collections", () => ({
     find: mockFind,
     updateOne: mockUpdateOne,
     updateMany: mockUpdateMany,
+    deleteOne: mockDeleteOne,
   }),
   ensureRuntimeIndexes: vi.fn().mockResolvedValue(undefined),
 }))
@@ -46,6 +48,7 @@ import {
   createApiKey,
   listApiKeys,
   revokeApiKey,
+  deleteApiKey,
   findActiveApiKeyBySecret,
   touchLastUsed,
 } from "./keys/service"
@@ -82,6 +85,7 @@ describe("runtime key service", () => {
     })
     mockUpdateOne.mockResolvedValue({ modifiedCount: 1 })
     mockUpdateMany.mockResolvedValue({ modifiedCount: 0 })
+    mockDeleteOne.mockResolvedValue({ deletedCount: 1 })
   })
 
   describe("createApiKey", () => {
@@ -195,6 +199,26 @@ describe("runtime key service", () => {
       // The lookup is by hash — a wrong secret simply misses the unique index.
       const [query] = mockFindOne.mock.calls[0]
       expect(Object.keys(query)).not.toContain("id")
+    })
+  })
+
+  describe("deleteApiKey", () => {
+    it("enforces ownership inside the delete filter", async () => {
+      await deleteApiKey("user_attacker", "rkey_victim")
+      const [filter] = mockDeleteOne.mock.calls[0]
+      expect(filter).toMatchObject({ id: "rkey_victim", userId: "user_attacker" })
+    })
+
+    it("deletes the record and returns true on success", async () => {
+      const result = await deleteApiKey("user_owner", "rkey_test")
+      expect(result).toBe(true)
+      expect(mockDeleteOne).toHaveBeenCalledOnce()
+    })
+
+    it("returns false and deletes nothing when not the owner", async () => {
+      mockDeleteOne.mockResolvedValueOnce({ deletedCount: 0 })
+      const result = await deleteApiKey("user_attacker", "rkey_victim")
+      expect(result).toBe(false)
     })
   })
 

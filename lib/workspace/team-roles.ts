@@ -4,7 +4,7 @@ export const TEAM_ROLE_META: Record<TeamRole, { title: string; sub: string; init
   cofounder: { title: "Co-founder", sub: "Business · Strategy", initials: "CF", tone: "bg-rose-400 text-rose-950" },
   product: { title: "Product", sub: "UX · Features", initials: "PR", tone: "bg-sky-400 text-sky-950" },
   engineering: { title: "Engineering", sub: "Code · Integrations", initials: "EN", tone: "bg-violet-400 text-violet-950" },
-  launch: { title: "Launch", sub: "Deployment · Growth", initials: "LN", tone: "bg-amber-400 text-amber-950" },
+  launch: { title: "Launch", sub: "Deployment · Production", initials: "LN", tone: "bg-amber-400 text-amber-950" },
 }
 
 export function roleForStage(stage: string): TeamRole {
@@ -16,9 +16,11 @@ export function roleForStage(stage: string): TeamRole {
 }
 
 export function isFounderFacingEvent(event: { message: string }): boolean {
-  const msg = event.message
+  const msg = event.message ?? ""
   if (/Fetch (GET|POST|PUT|DELETE|PATCH)/i.test(msg)) return false
   if (/\/api\/v1\//i.test(msg)) return false
   if (/every \d+ seconds? to track/i.test(msg)) return false
+  if (/sk-[a-zA-Z0-9]|api[_-]?key|Bearer\s+[A-Za-z0-9._-]+|Authorization:/i.test(msg)) return false
+  if (/-----BEGIN |private[_-]?key/i.test(msg)) return false
   return true
 }

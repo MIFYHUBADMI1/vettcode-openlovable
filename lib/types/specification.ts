@@ -48,7 +48,19 @@ export const ApplicationSpecificationSchema = z.object({
   valueProposition: z.string().optional(),
   businessModel: z.string().optional(),
   revenueModel: z.string().optional(),
-  /** Atai Runtime capabilities the generated app will consume (@atai/sdk) —
+  /** Product-facing plans, prices, limits, and upgrade paths — carried into the build. */
+  pricingTiers: z.string().optional(),
+  /** Comprehensive pricing structure with detailed tier breakdown */
+  pricingStructure: z.string().optional(),
+  /** Brand colors, logo guidance, and visual personality */
+  brandIdentity: z.string().optional(),
+  /** Theme selection, dark mode strategy, and UI style preferences */
+  themePreferences: z.string().optional(),
+  /** Visual system: theme, color tokens, density, light/dark — carried into the build. */
+  appearance: z.string().optional(),
+  /** Heading, body, and mono fonts the generated app must use. */
+  typography: z.string().optional(),
+  /** Atai Runtime capabilities the generated app will consume (@atai-group/sdk) —
    * planned in the Collaborate workspace, honored by the build prompt. */
   runtimeIntegrations: z.string().optional(),
   /** SEO & search-engine plan for the generated application — drafted in the
@@ -83,6 +95,9 @@ export const BUSINESS_PLAN_FIELDS = [
   "valueProposition",
   "businessModel",
   "revenueModel",
+  "pricingTiers",
+  "appearance",
+  "typography",
   "runtimeIntegrations",
   "seoPlan",
   "marketPositioning",

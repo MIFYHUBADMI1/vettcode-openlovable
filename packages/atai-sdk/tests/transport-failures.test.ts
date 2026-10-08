@@ -1,5 +1,5 @@
 /**
- * @atai/sdk — network failure, timeout, cancellation, and concurrency tests
+ * @atai-group/sdk — network failure, timeout, cancellation, and concurrency tests
  * (Phase 7 §47.32–33, §54–55, §84–85).
  */
 

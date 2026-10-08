@@ -13,8 +13,6 @@ import { useProject, useProjectStatus, postJson, useSession } from "@/lib/client
 import { useBuildCosts } from "@/lib/client/build-costs"
 import { PublishMenu } from "@/components/publish-menu"
 import { DeploymentHistory } from "@/components/deployment-history"
-import { ProjectAssets } from "@/components/project-assets"
-import { ProjectActivity } from "@/components/project-activity"
 import {
   JOURNEY,
   JOURNEY_TEAMS,
@@ -25,7 +23,7 @@ import {
 import { TEAM_ROLE_META, roleForStage } from "@/lib/workspace/team-roles"
 import type { ProjectState } from "@/lib/types/project"
 import { ensureProtocol, cn } from "@/lib/utils"
-import { ProductPreview } from "@/components/workspace/product-preview"
+import { ProductPreview, ReferenceSitePreview } from "@/components/workspace/product-preview"
 import { TeamHandoff } from "@/components/workspace/team-handoff"
 
 export function ProjectWorkspace({ projectId, initialState }: { projectId: string; initialState: ProjectState }) {
@@ -37,7 +35,6 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
   const { refresh: refreshSession } = useSession()
   const { buildCost, tierLabel } = useBuildCosts()
   const [busy, setBusy] = useState(false)
-  const [showAdvanced, setShowAdvanced] = useState(false)
 
   const project = fetched
   const state = ((statusData as { state?: ProjectState } | undefined)?.state ?? projectState) as ProjectState
@@ -183,7 +180,11 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
                 </div>
                 <a href={ensureProtocol(project.sourceUrl)} target="_blank" rel="noreferrer" className="shrink-0 text-xs font-medium text-primary hover:underline">Open original</a>
               </div>
-              <ProductPreview url={ensureProtocol(project.sourceUrl)} name={`${project.name} reference`} />
+              <ReferenceSitePreview
+                url={ensureProtocol(project.sourceUrl)}
+                name={`${project.name} reference`}
+                screenshots={project.understanding?.screenshots}
+              />
             </section>
           ) : null}
 
@@ -350,28 +351,6 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
         </aside>
       </div>
 
-      <section id="advanced" className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 shadow-sm">
-        <button type="button" onClick={() => setShowAdvanced((v) => !v)} className="flex w-full items-center justify-between text-left">
-          <span>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Advanced project tools</p>
-            <p className="mt-1 text-sm text-muted-foreground">Activity and product assets for this project.</p>
-          </span>
-          <span className="text-xs font-medium text-primary">{showAdvanced ? "Hide" : "Show"}</span>
-        </button>
-        {showAdvanced ? (
-          <div className="mt-6 flex flex-col gap-8">
-            <div>
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Activity</p>
-              <ProjectActivity projectId={projectId} isBuilding={view.brief.live} events={events} />
-            </div>
-            <div>
-              <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Product assets</p>
-              <p className="mb-3 text-sm text-muted-foreground">Screenshots and reference materials for this project appear here.</p>
-              <ProjectAssets projectId={projectId} />
-            </div>
-          </div>
-        ) : null}
-      </section>
     </div>
   )
 }

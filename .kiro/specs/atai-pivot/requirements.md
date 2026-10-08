@@ -23,7 +23,7 @@ The pivot spans 8 areas: brand/identity, a new collaborative planning stage, sub
 - **Theme_System**: The real theme provider supporting system, dark, light, light-blue, and glass themes.
 - **Onboarding_Dialog**: The 4-step founder-focused first-run dialog shown to new users.
 - **Quality_Gate**: A second AI call after spec generation that reviews the spec against a production-readiness checklist and patches gaps.
-- **Atai_SDK**: The `@atai/sdk` client library consumed by generated applications to call platform services.
+- **Atai_SDK**: The `@atai-group/sdk` client library consumed by generated applications to call platform services.
 - **Atai_API_Router**: The `app/api/atai/` route namespace that proxies service calls from generated apps to underlying providers.
 - **Atai_API_Key**: A per-project API key (format `atai_proj_...`) used to authenticate SDK calls from generated apps.
 - **Business_Overview_Tab**: A new workspace tab shown when a project is in `ready` or `deployed` state, surfacing business metrics.
@@ -232,7 +232,7 @@ The pivot spans 8 areas: brand/identity, a new collaborative planning stage, sub
 7. THE Atai_SDK SHALL provide a client class named `Atai` with at minimum the following namespaced methods available in the first rollout phase: `atai.payments.createCheckout(options)` and `atai.ai.chat(options)`.
 8. THE Atai_SDK `payments.createCheckout` method SHALL accept at minimum `amount` (number, in cents) and `currency` (string) parameters and proxy the request to the `payments/` route of the Atai_API_Router.
 9. THE Atai_SDK `ai.chat` method SHALL accept at minimum `model` (string) and `messages` (array) parameters and proxy the request to the `ai/` route of the Atai_API_Router.
-10. THE Atai_System build prompt SHALL instruct the build engine to use `@atai/sdk` for all payment, AI chat, email, and notification operations within generated applications.
+10. THE Atai_System build prompt SHALL instruct the build engine to use `@atai-group/sdk` for all payment, AI chat, email, and notification operations within generated applications.
 11. WHERE a generated project has a non-empty business model (i.e., is monetised), THE Atai_System SHALL configure the `payments/` proxy route for that project with the appropriate Dodo Payments credentials at build time.
 
 ---

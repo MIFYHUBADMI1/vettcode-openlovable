@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, type MouseEvent, type TouchEvent } from "react"
+import { useEffect, useRef, useState, type MouseEvent, type TouchEvent } from "react"
 import { ensureProtocol, cn } from "@/lib/utils"
+import { isRenderableProjectImage, normalizeProjectImageUrl } from "@/lib/media/project-thumbnail"
 
 type Viewport = "desktop" | "tablet" | "mobile"
 
@@ -90,6 +91,101 @@ export function ProductPreview({ url, name }: { url: string; name: string }) {
       >
         <span className="font-mono text-[10px] text-muted-foreground">{height}px</span>
       </div>
+    </div>
+  )
+}
+
+function pickReferenceScreenshot(screenshots: unknown): string | null {
+  if (!Array.isArray(screenshots)) return null
+  const urls = screenshots
+    .filter(isRenderableProjectImage)
+    .map((src) => normalizeProjectImageUrl(src))
+  const fromCrawl = urls.filter((url) => !/app-preview/i.test(url))
+  return fromCrawl[0] ?? null
+}
+
+/** Live iframe of the original site; remounts after idle so it doesn't stay blank. */
+export function ReferenceSitePreview({
+  url,
+  name,
+  screenshots,
+}: {
+  url: string
+  name: string
+  screenshots?: unknown
+}) {
+  const safeUrl = ensureProtocol(url)
+  const snapshot = pickReferenceScreenshot(screenshots)
+  const [frameKey, setFrameKey] = useState(0)
+  const [useSnapshot, setUseSnapshot] = useState(false)
+  const [imageFailed, setImageFailed] = useState(false)
+  const hiddenAt = useRef<number | null>(null)
+
+  function reloadLive() {
+    setUseSnapshot(false)
+    setFrameKey((key) => key + 1)
+  }
+
+  useEffect(() => {
+    function onVisibility() {
+      if (document.visibilityState === "hidden") {
+        hiddenAt.current = Date.now()
+        return
+      }
+      const away = hiddenAt.current ? Date.now() - hiddenAt.current : 0
+      hiddenAt.current = null
+      if (away >= 30_000) setFrameKey((key) => key + 1)
+    }
+    function onPageShow(event: PageTransitionEvent) {
+      if (event.persisted) setFrameKey((key) => key + 1)
+    }
+    document.addEventListener("visibilitychange", onVisibility)
+    window.addEventListener("pageshow", onPageShow)
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility)
+      window.removeEventListener("pageshow", onPageShow)
+    }
+  }, [])
+
+  const showSnapshot = useSnapshot && Boolean(snapshot) && !imageFailed
+
+  return (
+    <div className="overflow-hidden bg-muted/30">
+      <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border/60 px-4 py-2">
+        <button type="button" onClick={reloadLive} className="text-[11px] font-medium text-primary hover:underline">
+          Reload live preview
+        </button>
+        {snapshot ? (
+          <button
+            type="button"
+            onClick={() => setUseSnapshot((v) => !v)}
+            className="text-[11px] font-medium text-muted-foreground hover:text-foreground"
+          >
+            {showSnapshot ? "Show live site" : "Show snapshot"}
+          </button>
+        ) : null}
+      </div>
+      {showSnapshot ? (
+        <a href={safeUrl} target="_blank" rel="noreferrer" className="block bg-muted">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={snapshot!}
+            alt={`Reference snapshot of ${name}`}
+            className="max-h-[520px] w-full object-cover object-top"
+            onError={() => setImageFailed(true)}
+          />
+        </a>
+      ) : (
+        <iframe
+          key={frameKey}
+          src={safeUrl}
+          title={`${name} preview`}
+          className="w-full border-0 bg-background"
+          style={{ height: "600px" }}
+          referrerPolicy="no-referrer-when-downgrade"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+        />
+      )}
     </div>
   )
 }

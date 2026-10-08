@@ -119,6 +119,26 @@ export function getAppUrl(): string {
  */
 export const SITE_URL = getAppUrl()
 
+/**
+ * Developer portal URL (developers.atai.ink in production — served by the same
+ * app via the proxy.ts host rewrite; /developers on localhost/previews). Safe to
+ * call from client components: only NEXT_PUBLIC_* vars and NODE_ENV are read.
+ */
+export function getDeveloperPortalUrl(): string {
+  if (process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_APP_URL) {
+    return `https://${process.env.NEXT_PUBLIC_DEV_PORTAL_HOST ?? "developers.atai.ink"}`
+  }
+  return "/developers"
+}
+
+/** The developer portal's canonical origin (for SEO metadata / sitemap entries). */
+export function getDeveloperPortalOrigin(): string {
+  if (process.env.NODE_ENV === "production" && process.env.NEXT_PUBLIC_APP_URL) {
+    return `https://${process.env.NEXT_PUBLIC_DEV_PORTAL_HOST ?? "developers.atai.ink"}`
+  }
+  return `${getAppUrl()}/developers`
+}
+
 export function isMongoConfigured(): boolean {
   return Boolean(process.env.MONGODB_URI)
 }

@@ -1,12 +1,12 @@
 /**
- * @atai/sdk — official Atai Runtime SDK.
+ * @atai-group/sdk — official Atai Runtime SDK.
  *
  * The typed client generated applications use to communicate with the Atai
  * Runtime API. The SDK knows only Atai: its origin, its API key, and its
  * capability vocabulary. Provider implementation is an Atai infrastructure
  * concern and never appears here.
  *
- * @module @atai/sdk
+ * @module @atai-group/sdk
  */
 
 // Public client + capability surface.

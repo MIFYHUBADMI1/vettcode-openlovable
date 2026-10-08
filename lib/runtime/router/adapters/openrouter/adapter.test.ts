@@ -32,7 +32,7 @@ vi.mock("@/lib/logging/logger", () => ({
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
-import { toOpenRouterRequest, toChatResult, ChatInputSchema } from "./mapper"
+import { toOpenRouterRequest, toChatResult, ChatInputSchema, RECOMMENDED_DEFAULT_MODEL } from "./mapper"
 import { executeChatCompletion, getOpenRouterTimeoutMs } from "./client"
 import { categoryForStatus, openRouterFailure, categoryForNetworkError } from "./errors"
 import { getOpenRouterBaseUrl, openRouterHeaders } from "./config"
@@ -155,12 +155,14 @@ describe("toOpenRouterRequest", () => {
     ).toThrow(ProviderExecutionError)
   })
 
-  it("when no default model is configured, missing model fails validation (normalized 422-class), not a provider call", () => {
+  it("when no model is configured or selected, the platform-recommended default is used (never a 422)", () => {
     delete process.env.OPENROUTER_DEFAULT_MODEL
     try {
-      expect(() =>
-        toOpenRouterRequest({ messages: [{ role: "user", content: "hi" }] }, executionRequest({})),
-      ).toThrow(ProviderExecutionError)
+      const body = toOpenRouterRequest(
+        { messages: [{ role: "user", content: "hi" }] },
+        executionRequest({}),
+      )
+      expect(body.model).toBe(RECOMMENDED_DEFAULT_MODEL)
     } finally {
       process.env.OPENROUTER_DEFAULT_MODEL = "openai/gpt-test"
     }

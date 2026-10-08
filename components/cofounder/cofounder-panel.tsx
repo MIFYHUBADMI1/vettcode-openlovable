@@ -25,17 +25,21 @@ import { cn } from "@/lib/utils"
  * - Action cards render from structured backend payloads, never model prose.
  */
 
-interface PanelControls {
-  open: () => void
+export interface CofounderOpenOptions {
+  draft?: string
 }
 
-let openPanelExternally: (() => void) | null = null
+interface PanelControls {
+  open: (opts?: CofounderOpenOptions) => void
+}
+
+let openPanelExternally: ((opts?: CofounderOpenOptions) => void) | null = null
 
 /** Imperative opener so any surface (header, dashboard cards) can launch the
  * panel without prop-drilling through the whole tree. */
 export function useCofounderPanel(): PanelControls {
   return {
-    open: () => openPanelExternally?.(),
+    open: (opts) => openPanelExternally?.(opts),
   }
 }
 
@@ -50,6 +54,7 @@ function surfaceFromPathname(pathname: string): { activeProjectId?: string; curr
     else if (pathname.endsWith("/database")) currentSurface = "database"
     else if (pathname.endsWith("/runtime")) currentSurface = "runtime"
     else if (pathname.endsWith("/edit")) currentSurface = "edit"
+    else if (pathname.endsWith("/progress")) currentSurface = "progress"
     else if (pathname.endsWith("/source") || pathname.includes("/repo-code")) currentSurface = "source"
     else currentSurface = "overview"
   } else if (pathname.startsWith("/dashboard")) currentSurface = "dashboard"
@@ -80,7 +85,10 @@ export function CofounderPanel() {
 
   // Expose the imperative opener.
   useEffect(() => {
-    openPanelExternally = () => setOpen(true)
+    openPanelExternally = (opts) => {
+      if (opts?.draft) setDraft(opts.draft)
+      setOpen(true)
+    }
     return () => {
       openPanelExternally = null
     }

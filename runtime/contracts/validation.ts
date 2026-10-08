@@ -17,12 +17,16 @@ import { z } from "zod"
  * it comes from the URL path (/api/projects/:id/keys), and ownership is
  * verified server-side against the session user. A body containing
  * userId/projectId is rejected as unsafe injection.
+ *
+ * `scopes` is OPTIONAL: the dashboard client may omit it, in which case the
+ * route defaults to `[]` (= all capabilities granted, the established
+ * convention — see lib/runtime/auth/authorize.ts).
  */
 export const ApiKeyCreateBodySchema = z
   .object({
     name: z.string().min(1).max(100).optional(),
     environment: z.enum(["development", "production"]),
-    scopes: z.array(z.string()).max(50),
+    scopes: z.array(z.string()).max(50).optional(),
     expiresAt: z.number().int().positive().optional(),
     /** Explicitly forbidden — catch injection attempts with a precise error. */
     userId: z.never().optional(),

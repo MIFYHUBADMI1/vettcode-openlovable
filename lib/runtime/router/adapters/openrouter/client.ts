@@ -3,10 +3,99 @@ import { logger } from "@/lib/logging/logger"
 import { getOpenRouterBaseUrl, openRouterHeaders } from "./config"
 import {
   OPENROUTER_CHAT_COMPLETIONS_PATH,
+  OPENROUTER_IMAGES_PATH,
+  OPENROUTER_VIDEOS_PATH,
+  OPENROUTER_AUDIO_SPEECH_PATH,
+  OPENROUTER_AUDIO_TRANSCRIPTIONS_PATH,
   type OpenRouterChatRequest,
   type OpenRouterChatResponse,
   type OpenRouterErrorBody,
 } from "./types"
+
+/**
+ * Generic POST to a dedicated OpenRouter JSON endpoint (images, videos,
+ * transcriptions). Same network invariants as the chat client: fixed path
+ * from trusted config, bounded timeout, normalized failures only.
+ */
+export async function executeOpenRouterJsonPost(
+  path: string,
+  body: unknown,
+): Promise<{ payload: unknown; latencyMs: number; httpStatus: number }> {
+  const startedAt = Date.now()
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), getOpenRouterTimeoutMs())
+  try {
+    const res = await fetch(`${getOpenRouterBaseUrl()}${path}`, {
+      method: "POST",
+      headers: openRouterHeaders(),
+      body: JSON.stringify(body),
+      signal: controller.signal,
+      redirect: "error",
+    })
+    const latencyMs = Date.now() - startedAt
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "")
+      throw openRouterFailure(
+        categoryForStatus(res.status),
+        "OpenRouter request failed",
+        detail.slice(0, 300) || undefined,
+      )
+    }
+    const payload: unknown = await res.json().catch(() => {
+      throw openRouterFailure("provider_error", "The AI provider returned an invalid response.", `malformed JSON from ${path}`)
+    })
+    const errBody = payload as OpenRouterErrorBody
+    if (errBody && typeof errBody === "object" && errBody.error && !Array.isArray(errBody)) {
+      throw openRouterFailure(
+        categoryForStatus(Number(errBody.error.code ?? 500)),
+        "OpenRouter request failed",
+        String(errBody.error.message ?? "").slice(0, 300),
+      )
+    }
+    return { payload, latencyMs, httpStatus: res.status }
+  } catch (e) {
+    if (isAlreadyNormalized(e)) throw e
+    throw openRouterFailure(
+      categoryForNetworkError(e),
+      categoryForNetworkError(e) === "provider_timeout" ? "The AI provider timed out." : "The AI provider is temporarily unavailable.",
+    )
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+/**
+ * POST to the speech endpoint, which returns RAW AUDIO BYTES (not JSON).
+ * Normalized into the caller's ArrayBuffer — JSON handling is the mapper's.
+ */
+export async function executeOpenRouterSpeech(body: unknown): Promise<{ bytes: ArrayBuffer; latencyMs: number }> {
+  const startedAt = Date.now()
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), getOpenRouterTimeoutMs())
+  try {
+    const res = await fetch(`${getOpenRouterBaseUrl()}${OPENROUTER_AUDIO_SPEECH_PATH}`, {
+      method: "POST",
+      headers: openRouterHeaders(),
+      body: JSON.stringify(body),
+      signal: controller.signal,
+      redirect: "error",
+    })
+    const latencyMs = Date.now() - startedAt
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "")
+      throw openRouterFailure(categoryForStatus(res.status), "OpenRouter request failed", detail.slice(0, 300) || undefined)
+    }
+    return { bytes: await res.arrayBuffer(), latencyMs }
+  } catch (e) {
+    if (isAlreadyNormalized(e)) throw e
+    throw openRouterFailure(
+      categoryForNetworkError(e),
+      categoryForNetworkError(e) === "provider_timeout" ? "The AI provider timed out." : "The AI provider is temporarily unavailable.",
+    )
+  } finally {
+    clearTimeout(timer)
+  }
+}
 import {
   categoryForNetworkError,
   categoryForStatus,

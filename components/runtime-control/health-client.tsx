@@ -66,7 +66,7 @@ export function RuntimeHealthClient({ projectId }: { projectId: string }) {
       <section className="rounded-xl border border-border bg-card p-4">
         <h2 className="text-sm font-medium">Runtime install</h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          SDK @atai/sdk {data.platform.sdkVersion}. Provider internals are not exposed here.
+          SDK @atai-group/sdk {data.platform.sdkVersion}. Provider internals are not exposed here.
         </p>
         <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
           <dt className="text-muted-foreground">Development</dt>

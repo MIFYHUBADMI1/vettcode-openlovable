@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { AppHeader } from "@/components/app-header"
+import { AuthGate } from "@/components/auth/auth-gate"
 import { StateBadge } from "@/components/state-badge"
 import { ProjectThumbnail } from "@/components/project-thumbnail"
 import { useProjects, deleteJson } from "@/lib/client/api"

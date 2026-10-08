@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest"
 import {
+  buildCollaborateContext,
   buildPlanBrief,
   buildSectionFocusBlock,
   parseDraftResponse,
@@ -155,5 +156,27 @@ describe("clearSectionUpdate (undo path)", () => {
     const spec = makeSpec({ description: "Desc." })
     expect(clearSectionUpdate(spec, "overview").description).toBe("")
     expect(clearSectionUpdate(spec, "features")).toBe(spec)
+  })
+})
+
+describe("buildCollaborateContext focus", () => {
+  it("puts the selected section last so chat history cannot steal the topic", () => {
+    const ctx = buildCollaborateContext({
+      spec: makeSpec({
+        runtimeIntegrations: "AI assistant and checkout via Atai.",
+        targetUsers: ["Independent clinics"],
+      }),
+      decisions: [],
+      conversation: [
+        { id: "1", role: "user", content: "Who is this for?", at: 1 },
+        { id: "2", role: "assistant", content: "Independent clinics.", at: 2 },
+      ],
+      activeSection: "runtimeIntegrations",
+    })
+    expect(ctx).toContain("CURRENT TASK:")
+    expect(ctx).toContain("Runtime & Integrations")
+    expect(ctx).toContain("runtimeIntegrations")
+    expect(ctx.indexOf("CURRENT TASK:")).toBeGreaterThan(ctx.indexOf("RECENT COLLABORATION"))
+    expect(ctx.indexOf("CURRENT TASK:")).toBeGreaterThan(ctx.indexOf("Independent clinics"))
   })
 })
