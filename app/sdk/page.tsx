@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Code2, Download, BookOpen, Github, ArrowRight, Terminal, Package } from "lucide-react"
+import { Code2, Download, BookOpen, GitBranch, ArrowRight, Terminal, Package } from "lucide-react"
 import { AppHeader } from "@/components/app-header"
 import { SITE_URL } from "@/lib/env"
 
@@ -165,7 +165,7 @@ export default function SDKPage() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-6 py-3 text-base font-semibold text-foreground transition-colors hover:bg-accent"
               >
-                <Github className="size-5" /> GitHub
+                <GitBranch className="size-5" /> GitHub
               </a>
             </div>
           </div>
