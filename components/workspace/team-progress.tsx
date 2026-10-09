@@ -457,7 +457,9 @@ export function TeamProgressPage({ initialProject, activeBuildRuns = [] }: { ini
                   <button
                     type="button"
                     disabled={Boolean(pendingMutation)}
-                    onClick={() => void runMutation(item.mutation)}
+                    onClick={() => {
+                      if (item.mutation) void runMutation(item.mutation)
+                    }}
                     className="mt-3 inline-flex items-center rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground disabled:opacity-60"
                   >
                     {pendingMutation === item.mutation

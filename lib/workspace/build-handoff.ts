@@ -74,7 +74,7 @@ function parseItems(paragraphs: string[]): { items: HandoffItem[]; rest: string[
   const items: HandoffItem[] = []
   const rest: string[] = []
   for (const paragraph of paragraphs) {
-    const match = paragraph.match(/^([^:]{2,72}):\s+(.+)$/s)
+    const match = paragraph.match(/^([^:]{2,72}):\s+([\s\S]+)$/)
     if (match && !match[1].includes("http") && match[1].split(" ").length <= 8) {
       items.push({ title: clean(match[1]), body: clean(match[2]) })
     } else {

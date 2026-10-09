@@ -25,6 +25,8 @@ export type PlanSectionId =
   | "data"
   | "auth"
   | "seo"
+  | "brandIdentity"
+  | "themePreferences"
 
 export type PlanSectionStatus = "missing" | "complete" | "needs_work"
 

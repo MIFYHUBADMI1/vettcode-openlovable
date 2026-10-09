@@ -373,7 +373,7 @@ function WorkspaceAskButton() {
   return (
     <button
       type="button"
-      onClick={open}
+      onClick={() => open()}
       className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm"
     >
       <Sparkles className="size-3.5" />

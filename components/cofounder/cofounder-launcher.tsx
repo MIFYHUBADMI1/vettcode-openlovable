@@ -21,7 +21,7 @@ export function CofounderLauncherButton({ mobile = false }: { mobile?: boolean }
         <Button
           variant="outline"
           size="sm"
-          onClick={open}
+          onClick={() => open()}
           aria-label="Ask your co-founder"
           className="gap-1 rounded-md border-border px-2 font-mono text-xs text-muted-foreground hover:text-foreground"
         >
@@ -38,7 +38,7 @@ export function CofounderLauncherButton({ mobile = false }: { mobile?: boolean }
       <Button
         variant="outline"
         size="sm"
-        onClick={open}
+        onClick={() => open()}
         aria-label="Ask your co-founder"
         className={cn("mr-1 gap-1.5 border-border font-mono text-xs font-medium text-muted-foreground", "hover:border-primary/30 hover:bg-accent hover:text-foreground")}
       >
@@ -68,7 +68,7 @@ export function CofounderLauncherInline() {
         </div>
       </div>
       <div className="flex shrink-0 gap-2">
-        <Button onClick={open} size="sm">
+        <Button onClick={() => open()} size="sm">
           <Sparkles className="size-3.5" />
           Open co-founder
         </Button>

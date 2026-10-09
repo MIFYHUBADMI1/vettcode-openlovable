@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, type MouseEvent, type TouchEvent } from "react"
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type TouchEvent as ReactTouchEvent } from "react"
 import { ensureProtocol, cn } from "@/lib/utils"
 import { isRenderableProjectImage, normalizeProjectImageUrl } from "@/lib/media/project-thumbnail"
 
@@ -27,13 +27,13 @@ export function ProductPreview({ url, name }: { url: string; name: string }) {
     setHeight(VIEWPORTS[v].defaultHeight)
   }
 
-  function handleDragStart(e: MouseEvent | TouchEvent) {
+  function handleDragStart(e: ReactMouseEvent | ReactTouchEvent) {
     e.preventDefault()
     setDragging(true)
     const startY = "touches" in e ? e.touches[0].clientY : e.clientY
     const startHeight = height
 
-    const onMove = (ev: MouseEvent | TouchEvent) => {
+    const onMove = (ev: globalThis.MouseEvent | globalThis.TouchEvent) => {
       const currentY = "touches" in ev ? ev.touches[0].clientY : ev.clientY
       setHeight(Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, startHeight + (currentY - startY))))
     }

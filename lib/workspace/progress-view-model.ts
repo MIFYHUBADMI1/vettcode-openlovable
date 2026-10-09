@@ -604,16 +604,11 @@ function buildNow(
     return {
       state: "idle" as NowState,
       headline:
-        project.state === "deployed"
-          ? "Your application is live."
-          : project.state === "build_complete"
-            ? "The current build is done."
-            : "Your application is built and ready.",
-      body:
-        project.state === "deployed"
-          ? "Your co-founder can help you improve the product or grow the business."
-          : "Open the preview when it appears, then launch when you're ready.",
-      workstream: project.state === "deployed" ? "launch" : "engineering",
+        project.state === "build_complete"
+          ? "The current build is done."
+          : "Your application is built and ready.",
+      body: "Open the preview when it appears, then launch when you're ready.",
+      workstream: "engineering",
       action,
     }
   }
@@ -797,7 +792,7 @@ function buildActiveBuildRun(project: Project, buildRuns?: Array<{ id: string; s
   if (!active) return null
   return {
     id: active.id,
-    kind: active.kind,
+    kind: active.kind === "followup" ? "followup" : "initial",
     status: active.status,
     startedAt: active.startedAt,
     totalumProjectId: active.totalumProjectId,
