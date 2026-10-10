@@ -86,6 +86,9 @@ export async function chargeRuntimeUsage(params: {
       idempotencyKey,
       referenceType: "runtime_request",
       referenceId: params.auth.requestId,
+      // First-class project attribution (Phase 1) — server-derived from the
+      // API key record, never from the request body.
+      projectId: params.auth.projectId,
       metadata: {
         // Safe audit metadata only — no credentials, no request content.
         projectId: params.auth.projectId,
@@ -191,6 +194,9 @@ export async function refundRuntimeCharge(params: {
       idempotencyKey: refundKey,
       referenceType: "runtime_request",
       referenceId: params.auth.requestId,
+      // First-class project attribution (Phase 1) — server-derived from the
+      // API key record, never from the request body.
+      projectId: params.auth.projectId,
       metadata: {
         reason: params.reason,
         projectId: params.auth.projectId,

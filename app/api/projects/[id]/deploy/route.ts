@@ -70,7 +70,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
     // Reserve credits
     const runId = cryptoId()
-    const reserved = await reserveCredits({ userId: user.id, amount: deployCost, buildId: runId, reason: "Production deployment" })
+    const reserved = await reserveCredits({ userId: user.id, amount: deployCost, buildId: runId, reason: "Production deployment", projectId: id })
     if (!reserved) return fail("INSUFFICIENT_CREDITS", "Could not reserve credits for deployment.", 402)
 
     // Deploy via Totalum
@@ -121,7 +121,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       })
     } catch (providerError) {
       // Refund on failure
-      await releaseReservation({ userId: user.id, amount: deployCost, buildId: runId, reason: "Deployment failure" })
+      await releaseReservation({ userId: user.id, amount: deployCost, buildId: runId, reason: "Deployment failure", projectId: id })
 
       // Better error message for project not found
       const errorMessage = providerError instanceof Error ? providerError.message : "Deployment failed"

@@ -7,6 +7,18 @@
  * IMPORTANT: This represents the internal accounting value used for
  * estimated cost/profit calculations. The actual Totalum billing may differ
  * depending on Atai's Totalum subscription tier.
+ *
+ * ── Not a Finance valuation, not a payment currency ──────────────────────
+ * UGX here is only an INTERNAL COST-ACCOUNTING UNIT for Totalum (the
+ * infrastructure provider). It is not a payment currency — no active payment
+ * path uses UGX (Dodo Payments is the only gateway) — and it is NOT ATAI's
+ * credit valuation.
+ *
+ * ATAI's universal standard valuation (3,750 credits = US$1.00) lives in
+ * `lib/billing/credit-valuation.ts`. Any Finance/reporting calculation must
+ * use that module. These helpers are NOT to be used for Finance reporting:
+ * they express provider cost and gross margin in credit units, which is not
+ * a defensible revenue/cost/profit definition (see the Phase 1 audit notes).
  */
 
 /**

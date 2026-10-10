@@ -14,12 +14,30 @@
  * - Premium models WITHOUT a reported cost: a flat 1600 credits per image.
  * - VISUAL_ESTIMATED_CREDITS (1000) is only the upfront estimate shown in
  *   the UI before generating — it is never the amount charged.
+ *
+ * ── Operational charging rule, NOT the Finance valuation ──────────────
+ *
+ * `VISUAL_CREDITS_PER_USD` is a VISUAL-GENERATION CHARGING RULE: it is the
+ * rate at which marked-up provider cost is converted into the credits to
+ * charge for one premium image. It exists so existing visual charges do not
+ * change.
+ *
+ * It is NOT ATAI's credit valuation. ATAI's universal standard valuation is
+ * 3,750 credits = US$1.00 and lives in `lib/billing/credit-valuation.ts`
+ * (`ATAI_CREDITS_PER_USD`). Every Finance/reporting calculation must use that
+ * module — never this constant, and never a second copy of either ratio.
  */
 
 /** 45% profit margin applied on top of the provider-reported cost. */
 export const VISUAL_MARKUP = 1.45
 
-/** Credit conversion rate: $1 of (marked-up) cost = 4000 credits. */
+/**
+ * Visual CHARGING rate: $1 of (marked-up) provider cost = 4000 credits.
+ *
+ * Scoped to premium image generation only. This must never be used as, or
+ * confused with, ATAI's universal Finance valuation
+ * (`ATAI_CREDITS_PER_USD` in lib/billing/credit-valuation.ts = 3750).
+ */
 export const VISUAL_CREDITS_PER_USD = 4000
 
 /** Charge when a premium model returns an image but reports no cost. */

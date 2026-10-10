@@ -1,7 +1,6 @@
 import { Analytics } from "@vercel/analytics/next"
 import type { Metadata, Viewport } from "next"
 import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google"
-import Script from "next/script"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/components/auth/auth-provider"
 import { Toaster } from "@/components/ui/sonner"
@@ -57,7 +56,9 @@ export const viewport: Viewport = {
 }
 
 // Theme initialisation script — runs before first paint to avoid FOUC.
-// Kept as a plain string so Next.js can inject it correctly via next/script.
+// Inlined as a raw <script> in the server-rendered <head> below. React 19
+// never executes <script> elements emitted by client components, which is
+// what next/script renders, so next/script must not be used here.
 const THEME_INIT_SCRIPT = `(function(){try{
 var T=["system","dark","light","light-blue","glass"];
 var s=localStorage.getItem("atai:theme");
@@ -218,6 +219,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html suppressHydrationWarning lang="en" className={`bg-background ${jakarta.variable} ${geistMono.variable}`}>
       <head>
+        {/* Theme initialization script - runs before first paint to avoid FOUC */}
+        <script id="theme-init" dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script
+          id="structured-data"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: STRUCTURED_DATA }}
+        />
         {/* Font Awesome — required for database UI icons */}
         <link
           rel="stylesheet"
@@ -227,19 +235,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         />
       </head>
       <body className="font-sans antialiased">
-        {/* Theme initialization script - runs before React hydration */}
-        <Script
-          id="theme-init"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
-        />
-        <Script
-          id="structured-data"
-          type="application/ld+json"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: STRUCTURED_DATA }}
-        />
-
         <ThemeProvider>
           <AuthProvider>
             {children}

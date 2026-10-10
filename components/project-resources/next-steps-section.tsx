@@ -1,0 +1,159 @@
+"use client"
+
+import { useState } from "react"
+import { Target, Sparkles, Loader2, CheckCircle2, Clock, TrendingUp, DollarSign, Briefcase, Settings, ExternalLink, RefreshCw } from "lucide-react"
+import Link from "next/link"
+import { toast } from "sonner"
+import { CofounderMarkdown } from "@/components/cofounder/markdown"
+import { postJson } from "@/lib/client/api"
+import type { NextStep } from "@/lib/resources/business-intelligence"
+import type { ApplicationSpecification } from "@/lib/types/specification"
+import type { ProjectState } from "@/lib/types/project"
+import { RESOURCES_CREDIT_COSTS } from "@/lib/resources/resources-credits"
+
+const CATEGORY_ICONS = {
+  product: Briefcase,
+  market: TrendingUp,
+  growth: Sparkles,
+  ops: Settings,
+  finance: DollarSign,
+}
+
+const PRIORITY_STYLES = {
+  high: "border-rose-500/30 bg-rose-500/5 text-rose-600 dark:text-rose-400",
+  medium: "border-amber-500/30 bg-amber-500/5 text-amber-600 dark:text-amber-400",
+  low: "border-border bg-muted text-muted-foreground",
+}
+
+interface Props {
+  projectId: string
+  state: ProjectState
+  spec: ApplicationSpecification
+  nextSteps: NextStep[]
+  cachedActionPlan?: { text: string; generatedAt: number }
+  credits: number
+  onCreditsChanged: (n: number) => void
+}
+
+export function NextStepsSection({ projectId, state, spec, nextSteps, cachedActionPlan, credits, onCreditsChanged }: Props) {
+  const [actionPlan, setActionPlan] = useState(cachedActionPlan ?? null)
+  const [generating, setGenerating] = useState(false)
+  const cost = RESOURCES_CREDIT_COSTS.actionPlan
+
+  async function generate() {
+    if (credits < cost) {
+      toast.error(`You need ${cost} credits to generate an action plan.`)
+      return
+    }
+    setGenerating(true)
+    try {
+      const data = await postJson<{ text: string; generatedAt: number }>(
+        `/api/projects/${projectId}/resources/action-plan`
+      )
+      setActionPlan(data)
+      onCreditsChanged(credits - cost)
+      toast.success("Action plan generated!")
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to generate action plan")
+    } finally {
+      setGenerating(false)
+    }
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Checklist */}
+      <section>
+        <div className="mb-4 flex items-center gap-2">
+          <Target className="size-5 text-primary" />
+          <h2 className="text-lg font-semibold text-foreground">Your next steps</h2>
+        </div>
+        <p className="mb-5 text-sm text-muted-foreground">
+          Actions matched to where this business is right now — derived from your plan and current stage.
+        </p>
+
+        <div className="space-y-3">
+          {nextSteps.map((step) => {
+            const Icon = CATEGORY_ICONS[step.category] ?? CheckCircle2
+            return (
+              <div key={step.id} className="flex items-start gap-4 rounded-xl border border-border bg-card p-4">
+                <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                  <Icon className="size-4 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-medium text-foreground">{step.title}</p>
+                    <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase ${PRIORITY_STYLES[step.priority]}`}>
+                      {step.priority}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-sm leading-6 text-muted-foreground">{step.description}</p>
+                  {step.href && (
+                    <Link href={step.href} className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                      Read guide <ExternalLink className="size-3" />
+                    </Link>
+                  )}
+                  {step.action && (
+                    <Link
+                      href={`/project/${projectId}/collaborate#${step.action}`}
+                      className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                    >
+                      Add to plan <ExternalLink className="size-3" />
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* AI Action Plan */}
+      <section className="rounded-xl border border-primary/20 bg-primary/5 p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-5 text-primary" />
+              <h3 className="font-semibold text-foreground">30/60/90-day action plan</h3>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              A personalised, business-specific action plan generated by AI. No generic advice — built from your actual product, market, and stage.
+            </p>
+          </div>
+          {!actionPlan && (
+            <button
+              onClick={generate}
+              disabled={generating || credits < cost}
+              className="shrink-0 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {generating ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
+              {generating ? "Generating…" : `Generate (${cost} credits)`}
+            </button>
+          )}
+        </div>
+
+        {actionPlan && (
+          <div className="mt-5">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Clock className="size-3" />
+                Generated {new Date(actionPlan.generatedAt).toLocaleDateString()}
+              </p>
+              <button
+                onClick={generate}
+                disabled={generating || credits < cost}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+              >
+                <RefreshCw className="size-3" />
+                Refresh ({cost} credits)
+              </button>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-5">
+              <CofounderMarkdown>{actionPlan.text}</CofounderMarkdown>
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  )
+}

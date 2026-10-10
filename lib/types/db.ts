@@ -446,3 +446,243 @@ export interface ProjectGitHubDoc {
   createdAt: number
   updatedAt: number
 }
+
+// ─── SEO Audits (Phase 3 — W2 SEO & Visibility) ─────────────────────────────
+//
+// A durable, per-run snapshot of a deterministic audit of a project's OWN
+// deployed URL. Findings are derived only from the evidence the Firecrawl
+// service actually exposes; anything not observable is stored as `not_observed`
+// rather than guessed. No ranking/traffic claims — see lib/marketing/seo.
+
+export type SeoFindingStatus = "pass" | "fail" | "not_observed"
+
+export interface SeoFinding {
+  /** Stable check id (e.g. "title_present"). */
+  id: string
+  /** Human-readable check label. */
+  label: string
+  status: SeoFindingStatus
+  /**
+   * Evidence string when observed (e.g. the title text, a length). NEVER a
+   * fabricated number. Omitted when status is `not_observed`.
+   */
+  observed?: string
+  /** Why a check could not be evaluated (missing evidence). */
+  note?: string
+}
+
+export type SeoAuditStatus = "completed" | "failed"
+
+export interface SeoAuditDoc {
+  _id: ObjectId
+  /** Business id (`seo_...`) — mirrors _id for callers expecting a string. */
+  id: string
+  userId: string
+  projectId: string
+  /** The exact URL audited (the project's own recorded production URL). */
+  url: string
+  status: SeoAuditStatus
+  /** Findings snapshot. */
+  findings: SeoFinding[]
+  /** Counts by status for cheap display. */
+  score: { pass: number; fail: number; notObserved: number }
+  /** Pages the crawl actually covered (breadth). */
+  pagesCrawled: number
+  /** Credits charged for this run (0 when free/failed before charge). */
+  creditsCharged: number
+  /** Set when status is "failed" — a safe, non-technical reason only. */
+  error?: string
+  /** Whether the crawl evidence came from the 7-day Firecrawl cache. */
+  fromCache: boolean
+  startedAt: number
+  completedAt?: number
+  createdAt: number
+}
+
+// ─── Marketing Studio content (Phase 4 — W3) ─────────────────────────────────
+
+/** Fixed, product-defined copy templates. The AI fills these scaffolds; it is
+ * never allowed to invent a new "kind" or a publishing action. */
+export type StudioTemplate =
+  | "landing_hero"
+  | "feature_blurb"
+  | "email_welcome"
+  | "ad_headline"
+
+export type ContentItemStatus = "draft"
+
+/**
+ * A single marketing-copy draft. Drafts are DISTINCT from the business-plan
+ * `specification` prose: `origin` is always "ai_generated_marketing_content"
+ * so nothing here can ever be mistaken for a founder-authored plan section or
+ * a measured result. Editing produces a NEW doc chained via `parentContentId`
+ * (immutable version history) — there is no publish/scheduling field because
+ * publishing needs the job substrate (W4/W5) and is intentionally absent.
+ */
+export interface ContentItemDoc {
+  _id: ObjectId
+  /** Business id (`content_...`) — mirrors _id for callers expecting a string. */
+  id: string
+  userId: string
+  projectId: string
+  kind: "marketing_copy"
+  template: StudioTemplate
+  status: ContentItemStatus
+  /** Short human label shown in the Studio list. */
+  title: string
+  /** The generated (or hand-edited) copy. */
+  body: string
+  /** 1-based version. v1 is the AI draft; edits append v2, v3 … */
+  version: number
+  /** For v ≥ 2, the id of the original draft this version chains from. */
+  parentContentId?: string
+  /** Always "ai_generated_marketing_content" — the content-vs-spec-prose guard. */
+  origin: "ai_generated_marketing_content"
+  /** Model id used for the initial generation (omitted on pure edits). */
+  model?: string
+  /** Credits charged to create THIS doc (0 for free saves/edits). */
+  creditsCharged: number
+  createdAt: number
+  updatedAt: number
+}
+
+// ─── Marketing growth tasks (Phase 5 — W4) ──────────────────────────────────
+
+/** Lifecycle of a managed growth task. Deliberately small and reversible. */
+export type GrowthTaskStatus = "open" | "done" | "dismissed"
+
+export type GrowthTaskPriority = "low" | "medium" | "high"
+
+/** Provenance of a task row. AI-authored proposals are labelled distinctly
+ * from founder-created or next-step-seeded tasks so nothing is mistaken for a
+ * measured outcome or an instruction the system has already carried out. */
+export type GrowthTaskOrigin = "ai_generated" | "user_created" | "next_step_seed"
+
+/**
+ * A managed growth task. This is a LIST, not a scheduler: status/priority/due
+ * are recorded and change-logged, but NOTHING here executes on a timer — the
+ * job substrate (Phase 0) does not exist and is intentionally not faked.
+ * `dueAt`/`completedAt` use a real null (unknown/absent), never 0.
+ */
+export interface GrowthTaskDoc {
+  _id: ObjectId
+  /** Business id (`task_...`) — mirrors _id for callers expecting a string. */
+  id: string
+  userId: string
+  projectId: string
+  title: string
+  detail?: string
+  status: GrowthTaskStatus
+  priority: GrowthTaskPriority
+  /** Epoch ms, or null when the task has no deadline. */
+  dueAt: number | null
+  /** When seeded from a derived next step, that step's id (a link only). */
+  sourceNextStepId?: string
+  origin: GrowthTaskOrigin
+  createdAt: number
+  updatedAt: number
+  /** Epoch ms when the task first became "done"; null otherwise. */
+  completedAt: number | null
+}
+
+/**
+ * Append-only audit trail of a task's lifecycle. Never mutated or deleted:
+ * every create / status / field change adds a new immutable row so the history
+ * is durable and inspectable.
+ */
+export interface GrowthTaskHistoryDoc {
+  _id: ObjectId
+  id: string
+  taskId: string
+  projectId: string
+  userId: string
+  /** "created" | "status" | "updated". */
+  action: "created" | "status" | "updated"
+  /** Field that changed for a "status"/"updated" row (omitted on create). */
+  field?: "status" | "priority" | "dueAt" | "title"
+  from?: string | null
+  to?: string | null
+  changedBy: string
+  reason?: string
+  createdAt: number
+}
+
+// ─── Marketing campaigns (Phase 6 — W5, planning & tracking only) ────────────
+
+/** Lifecycle of a campaign PLAN. Terminal states are enforced by the service. */
+export type CampaignStatus = "draft" | "active" | "paused" | "completed" | "cancelled"
+
+/** Channels a founder can plan around. These are LABELS for tracking only —
+ * Atai performs NO posting, sending, or spend on any channel here (email
+ * execution needs the consent layer; social/ad posting needs per-platform
+ * approvals; none exist). */
+export type CampaignChannel = "email" | "social" | "content" | "seo" | "referral" | "other"
+
+/** Provenance of a campaign row. AI-proposals are labelled distinctly from
+ * founder-created plans; never a measured outcome. */
+export type CampaignOrigin = "ai_generated" | "user_created"
+
+/**
+ * A campaign PLAN — objectives/channels/budget are TRACKED, not executed or
+ * spent. There is deliberately no execution/attempt table here: `campaign_executions`
+ * needs the job substrate (Phase 0) which does not exist and is not faked, so a
+ * campaign records only what the founder plans and the status they set manually.
+ * `plannedBudgetCents` is a founder-entered planning number — Atai never charges,
+ * spends, or reports ad spend. `utmCampaign` feeds the pure link-builder only;
+ * nothing here mutates the checkout or webhook payloads (that attribution branch
+ * is deferred, money-gated). Link-only by projectId — never embedded in `projects`.
+ */
+export interface CampaignDoc {
+  _id: ObjectId
+  /** Business id (`campaign_...`) — mirrors _id for callers expecting a string. */
+  id: string
+  userId: string
+  projectId: string
+  name: string
+  /** The founder's own stated goal. Free text; never a claim or projection. */
+  objective: string
+  channels: CampaignChannel[]
+  status: CampaignStatus
+  /** Planned budget as tracked by the founder (integer cents). Never spend. */
+  plannedBudgetCents: number | null
+  /** UTM `campaign` slug for tracked links (convention helper only). */
+  utmCampaign: string | null
+  startDate: number | null
+  endDate: number | null
+  notes?: string
+  origin: CampaignOrigin
+  createdAt: number
+  updatedAt: number
+  /** Timestamps of the most recent pause / cancel transitions (null until then). */
+  pausedAt: number | null
+  cancelledAt: number | null
+}
+
+/**
+ * Append-only audit trail of a campaign's lifecycle. Never mutated or deleted:
+ * every create / status transition / field change adds a new immutable row.
+ */
+export interface CampaignHistoryDoc {
+  _id: ObjectId
+  id: string
+  campaignId: string
+  projectId: string
+  userId: string
+  action: "created" | "status" | "updated"
+  field?:
+    | "status"
+    | "name"
+    | "objective"
+    | "channels"
+    | "plannedBudgetCents"
+    | "utmCampaign"
+    | "startDate"
+    | "endDate"
+    | "notes"
+  from?: string | null
+  to?: string | null
+  changedBy: string
+  reason?: string
+  createdAt: number
+}
+

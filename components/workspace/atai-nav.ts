@@ -61,7 +61,7 @@ export function workspaceGrowNav(projectId: string): AtaiNavItem[] {
     { href: `/project/${projectId}/ads`, label: "Ads & marketing", icon: Megaphone, kind: "soon" },
     { href: `/project/${projectId}/finances`, label: "Business finances", icon: Wallet, kind: "soon" },
     { href: `/project/${projectId}/lessons`, label: "Business lessons", icon: GraduationCap, kind: "soon" },
-    { href: `/project/${projectId}/resources`, label: "Resources", icon: BookOpen, kind: "soon" },
+    { href: `/project/${projectId}/resources`, label: "Resources", icon: BookOpen, kind: "link" },
     { href: `/project/${projectId}/competition`, label: "Competition", icon: Swords, kind: "soon" },
   ]
 }

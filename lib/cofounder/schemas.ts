@@ -30,6 +30,43 @@ export const growthOverviewSchema = z.object({
   projectId: z.string().min(1).max(80),
 }).strip()
 
+export const runSeoAuditSchema = z.object({
+  projectId: z.string().min(1).max(80),
+}).strip()
+
+export const generateMarketingCopySchema = z.object({
+  projectId: z.string().min(1).max(80),
+  template: z.enum(["landing_hero", "feature_blurb", "email_welcome", "ad_headline"]),
+  brief: z.string().max(1000).optional(),
+}).strip()
+
+export const proposeGrowthTaskSchema = z.object({
+  projectId: z.string().min(1).max(80),
+  title: z.string().min(3).max(200),
+  detail: z.string().max(2000).optional(),
+  priority: z.enum(["low", "medium", "high"]).optional(),
+  dueAt: z.number().int().positive().optional(),
+}).strip()
+
+export const listGrowthTasksSchema = z.object({
+  projectId: z.string().min(1).max(80),
+  status: z.enum(["open", "done", "dismissed"]).optional(),
+  limit: z.number().int().min(1).max(100).optional(),
+}).strip()
+
+export const proposeCampaignSchema = z.object({
+  projectId: z.string().min(1).max(80),
+  name: z.string().min(3).max(120),
+  objective: z.string().max(500).optional(),
+  channels: z.array(z.enum(["email", "social", "content", "seo", "referral", "other"])).max(6).optional(),
+}).strip()
+
+export const listCampaignsSchema = z.object({
+  projectId: z.string().min(1).max(80),
+  status: z.enum(["draft", "active", "paused", "completed", "cancelled"]).optional(),
+  limit: z.number().int().min(1).max(100).optional(),
+}).strip()
+
 export const createProjectSchema = z.object({
   mode: z.enum(["scratch", "website", "github"]),
   idea: z.string().min(8).max(4000).optional(),

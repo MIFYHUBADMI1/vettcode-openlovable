@@ -64,7 +64,7 @@ export async function autoLaunchBuild(projectId: string) {
     }
 
     const modeLabel = pipelineMode === "heavy" ? "Heavy Mode" : "Legacy"
-    const reserved = await reserveCredits(project.userId, creditsNeeded, run.id, `${tier.charAt(0).toUpperCase() + tier.slice(1)} application build (${modeLabel})`)
+    const reserved = await reserveCredits(project.userId, creditsNeeded, run.id, `${tier.charAt(0).toUpperCase() + tier.slice(1)} application build (${modeLabel})`, projectId)
     if (!reserved) {
       await store.updateBuildRun(run.id, { status: "failed", error: "insufficient credits" })
       await store.updateProject(projectId, { state: project.state })

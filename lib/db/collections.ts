@@ -1,5 +1,5 @@
 import { getDb } from "@/lib/db/mongodb"
-import type { UserDoc, SessionDoc, VerificationTokenDoc, RateLimitDoc, ProjectAssetDoc, ProviderUsageDoc, TopUpDoc, PublishEventDoc, ReferralDoc, DocFeedbackDoc, WebhookEventDoc, PlanningRunDoc, ProjectLikeDoc, UserFollowDoc, ProjectForkDoc, ProjectGitHubDoc } from "@/lib/types/db"
+import type { UserDoc, SessionDoc, VerificationTokenDoc, RateLimitDoc, ProjectAssetDoc, ProviderUsageDoc, TopUpDoc, PublishEventDoc, ReferralDoc, DocFeedbackDoc, WebhookEventDoc, PlanningRunDoc, ProjectLikeDoc, UserFollowDoc, ProjectForkDoc, ProjectGitHubDoc, SeoAuditDoc, ContentItemDoc, GrowthTaskDoc, GrowthTaskHistoryDoc, CampaignDoc, CampaignHistoryDoc } from "@/lib/types/db"
 import type {
   FeatureRequestDoc,
   FeatureRequestInternalNoteDoc,
@@ -12,7 +12,12 @@ import type { CofounderConversationMongoDoc, PendingActionRecord } from "@/lib/c
 import type { CreditLedgerEntry, BuildAuthorization, PaymentRecord, SubscriptionRecord } from "@/lib/billing/billing-types"
 
 /** Cache the Db reference across hot reloads so we don't re-resolve per call. */
-const globalForDb = globalThis as unknown as { __mirrorDb?: Awaited<ReturnType<typeof getDb>> }
+const globalForDb = globalThis as unknown as {
+  __mirrorDb?: Awaited<ReturnType<typeof getDb>>
+  // Shared across module instances (HMR / duplicated bundles) so the index
+  // bootstrap runs exactly once per process no matter how many callers race.
+  __mirrorIndexesPromise?: Promise<void>
+}
 let dbReady = false
 
 async function getDbCached() {
@@ -92,6 +97,56 @@ export async function firecrawlCacheCol() {
   return (await getDbCached()).collection<FirecrawlCacheDoc & { _id?: unknown }>("firecrawl_cache")
 }
 
+/**
+ * SEO audit history (Phase 3 — W2). A durable per-run record of a
+ * deterministic audit of a project's own deployed URL. Separate from the
+ * transient `firecrawl_cache` (TTL) so audit findings persist and can be
+ * compared over time. Link-only by projectId — never embedded in `projects`.
+ */
+export async function seoAuditsCol() {
+  return (await getDbCached()).collection<SeoAuditDoc & { _id?: unknown }>("seo_audits")
+}
+
+/**
+ * Marketing Studio content drafts (Phase 4 — W3). Durable, immutable-version
+ * drafts of AI-generated marketing copy, always labeled with an `origin` that
+ * keeps them DISTINCT from the business-plan `specification` prose. Link-only
+ * by projectId — never embedded in `projects`. No publish state (that needs the
+ * job substrate, deferred to W4/W5).
+ */
+export async function contentItemsCol() {
+  return (await getDbCached()).collection<ContentItemDoc & { _id?: unknown }>("content_items")
+}
+
+/**
+ * Managed growth tasks (Phase 5 — W4). A durable per-project LIST of next-step
+ * tasks with status/priority/due, plus an append-only history. This is NOT a
+ * scheduler — no timer here executes anything (the job substrate does not
+ * exist). Link-only by projectId — never embedded in `projects`.
+ */
+export async function growthTasksCol() {
+  return (await getDbCached()).collection<GrowthTaskDoc & { _id?: unknown }>("growth_tasks")
+}
+
+/** Append-only lifecycle trail for growth tasks. Never updated or deleted. */
+export async function growthTaskHistoryCol() {
+  return (await getDbCached()).collection<GrowthTaskHistoryDoc & { _id?: unknown }>("growth_task_history")
+}
+
+/**
+ * Campaign PLANS (Phase 6 — W5). Objectives/channels/budget are tracked, never
+ * executed or spent — there is no execution/scheduling table because the job
+ * substrate does not exist and is not faked. Link-only by projectId.
+ */
+export async function campaignsCol() {
+  return (await getDbCached()).collection<CampaignDoc & { _id?: unknown }>("campaigns")
+}
+
+/** Append-only lifecycle trail for campaigns. Never updated or deleted. */
+export async function campaignHistoryCol() {
+  return (await getDbCached()).collection<CampaignHistoryDoc & { _id?: unknown }>("campaign_history")
+}
+
 export async function projectLikesCol() {
   return (await getDbCached()).collection<ProjectLikeDoc & { _id?: unknown }>("project_likes")
 }
@@ -149,8 +204,6 @@ export interface FirecrawlCacheDoc {
   createdAt: number
 }
 
-let indexesEnsured = false
-
 /**
  * Drop legacy non-sparse unique id indexes once per process. These exist on
  * older databases where `id: null` records broke uniqueness; after dropping
@@ -176,8 +229,19 @@ async function dropLegacyIndexes() {
  * `createIndex` is a no-op if an equivalent index already exists, so this is
  * safe to call repeatedly and cheap after the first call per process.
  */
-export async function ensureIndexes() {
-  if (indexesEnsured) return
+export async function ensureIndexes(): Promise<void> {
+  if (!globalForDb.__mirrorIndexesPromise) {
+    globalForDb.__mirrorIndexesPromise = runEnsureIndexes().catch((error) => {
+      // Index creation is best-effort — never fail a request over it. Clear the
+      // cached promise so a later call can retry after a transient failure.
+      globalForDb.__mirrorIndexesPromise = undefined
+      console.error("[v0] ensureIndexes: failed", error)
+    })
+  }
+  return globalForDb.__mirrorIndexesPromise
+}
+
+async function runEnsureIndexes(): Promise<void> {
   const [users, sessions, tokens, rateLimits, projects, buildRuns, assets, usage] = await Promise.all([
     usersCol(), sessionsCol(), verificationTokensCol(), rateLimitsCol(),
     projectsCol(), buildRunsCol(), projectAssetsCol(), providerUsageCol(),
@@ -238,7 +302,7 @@ export async function ensureIndexes() {
     console.error("[v0] ensureIndexes: failed", error)
     // Log but don't crash — indexes are best-effort; the app can still
     // function (albeit slower) without them on the first request.
-    indexesEnsured = false
+    globalForDb.__mirrorIndexesPromise = undefined
   })
 
   // Referral indexes
@@ -282,6 +346,11 @@ export async function ensureIndexes() {
     creditLedger.createIndex({ transactionType: 1, createdAt: -1 }),
     // Index for querying ledger entries by reference (e.g., all entries for a build)
     creditLedger.createIndex({ referenceType: 1, referenceId: 1 }),
+    // First-class project attribution (Phase 1): direct project filtering of
+    // credit movement. Sparse-ish by nature — account-level entries simply
+    // have no projectId and are ignored by the index. Idempotent (createIndex
+    // is a no-op when an equivalent index already exists).
+    creditLedger.createIndex({ projectId: 1, createdAt: -1 }, { name: "credit_ledger_project_created" }),
     // General time-series index for admin ledger viewer
     creditLedger.createIndex({ createdAt: -1 }),
     // Index for filtering by credit type in admin views
@@ -330,6 +399,48 @@ export async function ensureIndexes() {
     firecrawlCache.createIndex({ url: 1, crawlMode: 1 }, { unique: true, name: "firecrawl_cache_url_mode_unique" }),
     // TTL index for automatic cache expiration (7 days)
     firecrawlCache.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
+  ])
+
+  // SEO audit indexes (Phase 3 — W2). Ownership-scoped reads by project.
+  const seoAudits = await seoAuditsCol()
+  await Promise.all([
+    seoAudits.createIndex({ id: 1 }, { unique: true, sparse: true, name: "seo_audits_id_unique" }),
+    seoAudits.createIndex({ projectId: 1, createdAt: -1 }),
+    seoAudits.createIndex({ userId: 1, createdAt: -1 }),
+  ])
+
+  // Marketing Studio content indexes (Phase 4 — W3). Ownership-scoped reads by
+  // project; id unique; version chains resolved by parentContentId.
+  const contentItems = await contentItemsCol()
+  await Promise.all([
+    contentItems.createIndex({ id: 1 }, { unique: true, sparse: true, name: "content_items_id_unique" }),
+    contentItems.createIndex({ projectId: 1, updatedAt: -1 }),
+    contentItems.createIndex({ userId: 1, createdAt: -1 }),
+    contentItems.createIndex({ parentContentId: 1, version: -1 }),
+  ])
+
+  // Growth task indexes (Phase 5 — W4). Ownership-scoped reads by project;
+  // list reads filter by status then recency; history is append-only by task.
+  const growthTasks = await growthTasksCol()
+  const growthTaskHistory = await growthTaskHistoryCol()
+  await Promise.all([
+    growthTasks.createIndex({ id: 1 }, { unique: true, sparse: true, name: "growth_tasks_id_unique" }),
+    growthTasks.createIndex({ projectId: 1, status: 1, updatedAt: -1 }),
+    growthTasks.createIndex({ userId: 1, createdAt: -1 }),
+    growthTaskHistory.createIndex({ id: 1 }, { unique: true, sparse: true, name: "growth_task_history_id_unique" }),
+    growthTaskHistory.createIndex({ taskId: 1, createdAt: -1 }),
+  ])
+
+  // Campaign indexes (Phase 6 — W5). Ownership-scoped reads by project; list
+  // reads filter by status then recency; history is append-only by campaign.
+  const campaigns = await campaignsCol()
+  const campaignHistory = await campaignHistoryCol()
+  await Promise.all([
+    campaigns.createIndex({ id: 1 }, { unique: true, sparse: true, name: "campaigns_id_unique" }),
+    campaigns.createIndex({ projectId: 1, status: 1, updatedAt: -1 }),
+    campaigns.createIndex({ userId: 1, createdAt: -1 }),
+    campaignHistory.createIndex({ id: 1 }, { unique: true, sparse: true, name: "campaign_history_id_unique" }),
+    campaignHistory.createIndex({ campaignId: 1, createdAt: -1 }),
   ])
 
   // Social / explore indexes
@@ -394,6 +505,4 @@ export async function ensureIndexes() {
     featureUpdates.createIndex({ featureRequestId: 1, createdAt: -1 }),
     featureNotes.createIndex({ featureRequestId: 1, createdAt: -1 }),
   ])
-
-  indexesEnsured = true
 }

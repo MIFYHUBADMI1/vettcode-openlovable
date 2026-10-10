@@ -158,6 +158,9 @@ export async function POST(
       idempotencyKey: `visual_${cryptoId()}`,
       referenceType: "project",
       referenceId: projectId,
+      // Trusted server-side context from the route (user must own the
+      // project). Persisted on the ledger as first-class projectId.
+      projectId,
       metadata: {
         reason: "Expected visual generation",
         feature: "expected-visuals",

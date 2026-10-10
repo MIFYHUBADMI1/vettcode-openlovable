@@ -97,7 +97,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return fail("INSUFFICIENT_CREDITS", `You don't have enough credits for this build. Required: ${creditsNeeded.toLocaleString()}, Available: ${available.toLocaleString()}.`, 402)
     }
 
-    const reserved = await reserveCredits({ userId, amount: creditsNeeded, buildId: run.id, reason: `${tier.charAt(0).toUpperCase() + tier.slice(1)} application build` })
+    const reserved = await reserveCredits({ userId, amount: creditsNeeded, buildId: run.id, reason: `${tier.charAt(0).toUpperCase() + tier.slice(1)} application build`, projectId: id })
     if (!reserved) {
       await store.updateBuildRun(run.id, { status: "failed", error: "insufficient credits" })
       await store.updateProject(id, { state: project.state })
@@ -143,7 +143,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return ok({ buildRunId: run.id, totalumProjectId: launch.projectId, state: "building" })
     } catch (providerError) {
       // 3. Refund on provider failure.
-      await releaseReservation({ userId, amount: creditsNeeded, buildId: run.id, reason: "Build provider failure" })
+      await releaseReservation({ userId, amount: creditsNeeded, buildId: run.id, reason: "Build provider failure", projectId: id })
       await store.updateBuildRun(run.id, { status: "failed", error: (providerError as Error).message })
       await store.updateProject(id, { state: previousState })
       await store.appendEvent(id, event("build", "Build could not be started. Credits were refunded.", "error"))

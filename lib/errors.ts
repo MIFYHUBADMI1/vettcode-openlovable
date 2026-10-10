@@ -20,6 +20,7 @@ export type ErrorCode =
   | "IMAGE_UPLOAD_FAILED"
   | "TOTALUM_UNAVAILABLE"
   | "FIRECRAWL_UNAVAILABLE"
+  | "AI_UNAVAILABLE"
   | "INSUFFICIENT_CREDITS"
   | "PROJECT_NOT_FOUND"
   | "UNAUTHORIZED_PROJECT_ACCESS"
@@ -42,6 +43,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
   IMAGE_UPLOAD_FAILED: "We couldn't upload that image. Please try a different file.",
   TOTALUM_UNAVAILABLE: "The build service isn't available right now.",
   FIRECRAWL_UNAVAILABLE: "The website analyzer isn't available right now.",
+  AI_UNAVAILABLE: "AI generation isn't available right now. Please try again shortly.",
   INSUFFICIENT_CREDITS: "You don't have enough credits for this action.",
   PROJECT_NOT_FOUND: "We couldn't find this project.",
   UNAUTHORIZED_PROJECT_ACCESS: "You don't have access to this project.",
@@ -65,6 +67,7 @@ const STATUS_BY_CODE: Record<ErrorCode, number> = {
   IMAGE_UPLOAD_FAILED: 400,
   TOTALUM_UNAVAILABLE: 503,
   FIRECRAWL_UNAVAILABLE: 503,
+  AI_UNAVAILABLE: 503,
   INSUFFICIENT_CREDITS: 402,
   PROJECT_NOT_FOUND: 404,
   UNAUTHORIZED_PROJECT_ACCESS: 403,

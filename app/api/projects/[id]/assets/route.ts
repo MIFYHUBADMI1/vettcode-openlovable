@@ -40,31 +40,3 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return handleRouteError("api.projects.assets", error)
   }
 }
-
-export async function GET_visuals_by_section(_request: Request, { params }: { params: Promise<{ id: string; sectionId: string }> }) {
-  try {
-    const user = await requireUser()
-    const { id, sectionId } = await params
-    const project = await store.getProject(id)
-    if (!project || project.userId !== user.id) return fail("UNAUTHORIZED_PROJECT_ACCESS", "We couldn't find this project.", 404)
-    
-    const visuals = await (await projectAssetsCol()).find({
-      projectId: id,
-      kind: "visual",
-      "metadata.sectionId": sectionId,
-    }).sort({ createdAt: -1 }).toArray()
-    
-    return ok({
-      visuals: visuals.map((v) => ({
-        id: v.id,
-        imageUrl: v.url,
-        model: (v.metadata?.model as string) || "",
-        creditsConsumed: (v.metadata?.creditsConsumed as number) || 0,
-        createdAt: v.createdAt,
-        prompt: (v.metadata?.prompt as string) || "",
-      })),
-    })
-  } catch (error) {
-    return handleRouteError("api.projects.assets.visuals", error)
-  }
-}

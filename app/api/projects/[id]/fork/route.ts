@@ -64,10 +64,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const reservationId = cryptoId() // used to release on failure
   let reserved = false
+  let originalProjectId: string | undefined
 
   try {
     const user = await requireUser()
     const { id } = await params
+    originalProjectId = id
 
     // Rate-limit: 10 forks per hour per user
     await checkRateLimit({
@@ -123,6 +125,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       amount: pricing.forkCost,
       buildId: reservationId,
       reason: `Fork of "${original.name}" (${tier} tier)`,
+      projectId: id,
       metadata: { action: "fork_purchase", projectId: id, tier },
     })
 
@@ -240,6 +243,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
             amount: 0, // not used by releaseReservation — it grants back via grantCredits
             buildId: reservationId,
             reason: "Fork failed — credits refunded",
+            projectId: originalProjectId,
           })
           logger.info("api.projects.fork", "credits refunded after failure", { reservationId })
         }

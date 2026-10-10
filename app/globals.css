@@ -1,6 +1,13 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Keep Tailwind from walking docs/caches — hangs PostCSS under Turbopack. */
+@source not "../docs";
+@source not "../.ohmyagent";
+@source not "../.github";
+@source not "../packages";
+@source not "../.next";
+
 @custom-variant dark (&:is(.dark *));
 
 :root {
@@ -129,8 +136,7 @@
   background-attachment: fixed;
 }
 
-.theme-glass .bg-card,
-.theme-glass [class*="bg-card"] {
+.theme-glass .bg-card {
   backdrop-filter: blur(16px) saturate(1.6);
   -webkit-backdrop-filter: blur(16px) saturate(1.6);
   background-color: var(--card) !important;
@@ -142,7 +148,9 @@
 }
 
 .theme-glass header,
-.theme-glass [class*="bg-background/"] {
+.theme-glass .bg-background\/60,
+.theme-glass .bg-background\/50,
+.theme-glass .bg-background\/80 {
   backdrop-filter: blur(20px) saturate(1.4);
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
   background-color: oklch(0.18 0.025 250 / 0.6) !important;

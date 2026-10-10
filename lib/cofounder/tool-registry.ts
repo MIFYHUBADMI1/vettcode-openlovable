@@ -31,6 +31,10 @@ import {
   getCreditCostsTool,
 } from "./tools/navigation"
 import { getGrowthOverviewTool } from "./tools/growth"
+import { runSeoAuditTool } from "./tools/seo"
+import { generateMarketingCopyTool } from "./tools/studio"
+import { proposeGrowthTaskTool, listGrowthTasksTool } from "./tools/tasks"
+import { proposeCampaignTool, listCampaignsTool } from "./tools/campaigns"
 import type { ToolDefinition, ToolRisk } from "./types"
 
 /**
@@ -62,6 +66,10 @@ const REGISTRY: readonly ToolDefinition[] = [
   getCreditCostsTool,
   // READ — growth overview (Phase 2; read-only projection of trusted data)
   getGrowthOverviewTool,
+  // READ — growth task list (Phase 5; read-only projection of the founder's own tasks)
+  listGrowthTasksTool,
+  // READ — campaign list (Phase 6; read-only projection of the founder's own campaign plans)
+  listCampaignsTool,
   // LOW_RISK_WRITE
   stopBuildTool,
   // CONFIRM
@@ -69,6 +77,21 @@ const REGISTRY: readonly ToolDefinition[] = [
   applyPlanUpdateTool,
   autoCompletePlanTool,
   createProjectTool,
+  // CONFIRM — SEO visibility audit (Phase 3; credits + crawl, gated behind a
+  // pending action and the SEO_AUDIT flag)
+  runSeoAuditTool,
+  // CONFIRM — Marketing Studio copy draft (Phase 4; credits + one-shot AI
+  // generation, gated behind a pending action and the STUDIO flag; drafts only,
+  // never publishes)
+  generateMarketingCopyTool,
+  // CONFIRM — growth task proposal (Phase 5; FREE AI-proposed task, gated behind
+  // a pending action and the GROWTH_TASKS flag; the founder works through tasks
+  // manually — nothing here runs on a timer)
+  proposeGrowthTaskTool,
+  // CONFIRM — campaign plan proposal (Phase 6; FREE AI-proposed plan, gated
+  // behind a pending action and the CAMPAIGNS flag; plans/tracks only — nothing
+  // is sent, posted, spent, or scheduled)
+  proposeCampaignTool,
   // HARD_CONFIRM
   requestBuildTool,
   requestFollowupEditTool,

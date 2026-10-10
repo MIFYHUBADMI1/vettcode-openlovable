@@ -138,6 +138,9 @@ export async function chargeScrapeCredits(userId: string, projectId: string, pip
     type: "consume",
     amount: -cost,
     reason: `Website scrape (${modeLabel})`,
+    // Trusted server-derived project context — persisted on the ledger entry
+    // (first-class projectId), not just logged (Phase 1 attribution).
+    metadata: { projectId },
     createdAt: Date.now(),
   })
   logger.info("credits.scrape", "charged", { userId, projectId, amount: cost, mode: pipelineMode ?? "legacy" })
@@ -153,6 +156,8 @@ export async function chargeDeepCrawlCredits(userId: string, projectId: string, 
     type: "consume",
     amount: -cost,
     reason: `Deep crawl — full site replica (${modeLabel})`,
+    // Trusted server-derived project context — persisted on the ledger entry.
+    metadata: { projectId },
     createdAt: Date.now(),
   })
   logger.info("credits.deepCrawl", "charged", { userId, projectId, amount: cost, mode: pipelineMode ?? "legacy" })
@@ -168,6 +173,8 @@ export async function chargePlanCredits(userId: string, projectId: string, pipel
     type: "consume",
     amount: -cost,
     reason: `Plan generation (${modeLabel})`,
+    // Trusted server-derived project context — persisted on the ledger entry.
+    metadata: { projectId },
     createdAt: Date.now(),
   })
   logger.info("credits.plan", "charged", { userId, projectId, amount: cost, mode: pipelineMode ?? "legacy" })
@@ -187,7 +194,13 @@ export async function hasSufficientCredits(userId: string, amount: number) {
  * atomic store operation (`reserveCreditsAtomic`) so two concurrent
  * reservations for the same user can never both pass a stale balance check
  * and overdraft the account. */
-export async function reserveCredits(userId: string, amount: number, buildRunId: string, reason: string) {
+export async function reserveCredits(
+  userId: string,
+  amount: number,
+  buildRunId: string,
+  reason: string,
+  projectId?: string,
+) {
   const reserved = await store.reserveCreditsAtomic(userId, amount, {
     id: cryptoId(),
     userId,
@@ -195,6 +208,8 @@ export async function reserveCredits(userId: string, amount: number, buildRunId:
     amount: -amount,
     reason,
     buildRunId,
+    // Trusted server-derived project context — persisted on the ledger entries.
+    ...(projectId ? { metadata: { projectId } } : {}),
     createdAt: Date.now(),
   })
   if (!reserved) {
@@ -216,6 +231,7 @@ export async function reconcileCredits(
   reserved: number,
   actual: number,
   buildRunId: string,
+  projectId?: string,
 ) {
   const delta = reserved - actual // positive => refund to user
   if (delta === 0) return
@@ -226,13 +242,14 @@ export async function reconcileCredits(
     amount: delta, // positive refunds, negative charges more
     reason: delta > 0 ? "Refund of unused reservation" : "Additional usage",
     buildRunId,
+    ...(projectId ? { metadata: { projectId } } : {}),
     createdAt: Date.now(),
   })
   logger.info("credits.reconcile", "reconciled", { userId, reserved, actual, delta, buildRunId })
 }
 
 /** Full refund when an operation fails before consuming provider resources. */
-export async function refundReservation(userId: string, amount: number, buildRunId: string) {
+export async function refundReservation(userId: string, amount: number, buildRunId: string, projectId?: string) {
   await store.addTransaction({
     id: cryptoId(),
     userId,
@@ -240,6 +257,7 @@ export async function refundReservation(userId: string, amount: number, buildRun
     amount,
     reason: "Refund — operation failed",
     buildRunId,
+    ...(projectId ? { metadata: { projectId } } : {}),
     createdAt: Date.now(),
   })
   logger.info("credits.refund", "refunded failed op", { userId, amount, buildRunId })

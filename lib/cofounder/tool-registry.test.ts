@@ -70,6 +70,12 @@ describe("tool registry — allow-list invariants", () => {
       "apply_plan_update",
       "autocomplete_plan",
       "create_project",
+      "run_seo_audit",
+      "generate_marketing_copy",
+      "propose_growth_task",
+      "list_growth_tasks",
+      "propose_campaign",
+      "list_campaigns",
       "request_build",
       "request_followup_edit",
       "request_deploy",
@@ -117,6 +123,8 @@ describe("tool registry — risk and confirmation invariants", () => {
     expect(riskOf("apply_plan_update")).toBe("CONFIRM")
     expect(riskOf("autocomplete_plan")).toBe("CONFIRM")
     expect(riskOf("stop_build")).toBe("LOW_RISK_WRITE")
+    expect(riskOf("propose_growth_task")).toBe("CONFIRM")
+    expect(riskOf("propose_campaign")).toBe("CONFIRM")
   })
 
   it("keeps all read tools at READ with no confirmation", () => {
@@ -134,6 +142,8 @@ describe("tool registry — risk and confirmation invariants", () => {
       "get_account_summary",
       "get_credit_costs",
       "get_growth_overview",
+      "list_growth_tasks",
+      "list_campaigns",
     ]) {
       expect(riskOf(name)).toBe("READ")
       expect(getTool(name)?.requiresConfirmation).toBe(false)

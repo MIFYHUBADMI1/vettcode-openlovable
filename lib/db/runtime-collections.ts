@@ -25,7 +25,12 @@ import type { ProjectRuntimeConfig } from "@/lib/runtime/control/types"
  */
 
 /** Cached Db reference following the collections.ts hot-reload pattern. */
-const globalForRuntimeDb = globalThis as unknown as { __ataiRuntimeDb?: Db }
+const globalForRuntimeDb = globalThis as unknown as {
+  __ataiRuntimeDb?: Db
+  // Shared across module instances (HMR / duplicated bundles) so the index
+  // bootstrap runs exactly once per process no matter how many callers race.
+  __ataiRuntimeIndexesPromise?: Promise<void>
+}
 
 async function getRuntimeDb(): Promise<Db> {
   if (!globalForRuntimeDb.__ataiRuntimeDb) {
@@ -49,8 +54,6 @@ export async function projectRuntimeConfigCol() {
   )
 }
 
-let indexesEnsured = false
-
 /**
  * Idempotent index creation for runtime collections (safe to call
  * repeatedly; Mongo no-ops equivalent indexes).
@@ -61,7 +64,18 @@ let indexesEnsured = false
  * time-series for dashboards and billing reconciliation.
  */
 export async function ensureRuntimeIndexes(): Promise<void> {
-  if (indexesEnsured) return
+  if (!globalForRuntimeDb.__ataiRuntimeIndexesPromise) {
+    globalForRuntimeDb.__ataiRuntimeIndexesPromise = runEnsureRuntimeIndexes().catch((error) => {
+      // Index creation is best-effort — never fail a request over it. Clear the
+      // cached promise so a later call can retry after a transient failure.
+      globalForRuntimeDb.__ataiRuntimeIndexesPromise = undefined
+      console.error("[atai] ensureRuntimeIndexes: failed", error)
+    })
+  }
+  return globalForRuntimeDb.__ataiRuntimeIndexesPromise
+}
+
+async function runEnsureRuntimeIndexes(): Promise<void> {
   const db = await getRuntimeDb()
 
   const apiKeys = db.collection<ApiKeyDoc>("api_keys")
@@ -97,6 +111,4 @@ export async function ensureRuntimeIndexes(): Promise<void> {
       { unique: true, name: "project_runtime_config_project" },
     ),
   ])
-
-  indexesEnsured = true
 }

@@ -124,6 +124,8 @@ export async function reserveBuildCredits(
     idempotencyKey: `reserve_${auth.buildId}`,
     referenceType: "build_authorization",
     referenceId: auth.id,
+    // Trusted server-side project context from the authorization record.
+    projectId: auth.projectId,
     metadata: {
       projectId: auth.projectId,
       complexity: auth.complexity,
@@ -202,6 +204,7 @@ export async function releaseBuildAuthorization(
       amount: auth.creditCost,
       buildId: auth.buildId,
       reason,
+      projectId: auth.projectId,
       metadata: { authorizationId },
     })
   }

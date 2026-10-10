@@ -22,6 +22,14 @@ export interface CreditLedgerEntry {
   _id?: ObjectId
   id: string
   userId: string
+  /**
+   * First-class project attribution (Phase 1). Present whenever a trusted
+   * server-side project context existed for the operation; absent for
+   * account-level transactions (grants, purchases, expirations), which stay
+   * fully valid without it. Historical entries pre-dating Phase 1 simply do
+   * not carry the field — never fabricate it retroactively.
+   */
+  projectId?: string
   creditType: CreditType
   amount: number
   direction: "credit" | "debit"

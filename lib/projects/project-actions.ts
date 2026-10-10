@@ -92,7 +92,7 @@ export async function startProjectBuild(userId: string, projectId: string): Prom
     return { ok: false, status: 402, code: "INSUFFICIENT_CREDITS", message: `You don't have enough credits for this build. Required: ${creditsNeeded.toLocaleString()}, Available: ${available.toLocaleString()}.` }
   }
 
-  const reserved = await reserveCredits({ userId, amount: creditsNeeded, buildId: run.id, reason: `${tier.charAt(0).toUpperCase() + tier.slice(1)} application build` })
+  const reserved = await reserveCredits({ userId, amount: creditsNeeded, buildId: run.id, reason: `${tier.charAt(0).toUpperCase() + tier.slice(1)} application build`, projectId })
   if (!reserved) {
     await store.updateBuildRun(run.id, { status: "failed", error: "insufficient credits" })
     await store.updateProject(projectId, { state: project.state })
@@ -129,7 +129,7 @@ export async function startProjectBuild(userId: string, projectId: string): Prom
     await store.appendEvent(projectId, event("build", "Build started"))
     return { ok: true, status: 200, code: "OK", buildRunId: run.id, totalumProjectId: launch.projectId, tier, creditsCharged: creditsNeeded }
   } catch (providerError) {
-    await releaseReservation({ userId, amount: creditsNeeded, buildId: run.id, reason: "Build provider failure" })
+    await releaseReservation({ userId, amount: creditsNeeded, buildId: run.id, reason: "Build provider failure", projectId })
     await store.updateBuildRun(run.id, { status: "failed", error: (providerError as Error).message })
     await store.updateProject(projectId, { state: previousState })
     await store.appendEvent(projectId, event("build", "Build could not be started. Credits were refunded.", "error"))
@@ -208,6 +208,7 @@ export async function sendProjectFollowup(userId: string, projectId: string, pro
     amount: creditsNeeded,
     buildId: run.id,
     reason: `${tier.charAt(0).toUpperCase() + tier.slice(1)} application follow-up`,
+    projectId,
   })
   if (!reserved) {
     await store.updateBuildRun(run.id, { status: "failed", error: "insufficient credits" })
@@ -222,7 +223,7 @@ export async function sendProjectFollowup(userId: string, projectId: string, pro
     await store.updateProject(projectId, { state: "building" })
     return { ok: true, status: 200, code: "OK", buildRunId: run.id, tier, creditsCharged: creditsNeeded }
   } catch (providerError) {
-    await releaseReservation({ userId, amount: creditsNeeded, buildId: run.id, reason: "Agent provider failure" })
+    await releaseReservation({ userId, amount: creditsNeeded, buildId: run.id, reason: "Agent provider failure", projectId })
     await store.updateBuildRun(run.id, { status: "failed", error: (providerError as Error).message })
     await store.updateProject(projectId, { state: previousState })
     throw providerError
@@ -277,7 +278,7 @@ export async function startProjectDeploy(userId: string, projectId: string): Pro
   }
 
   const runId = cryptoId()
-  const reserved = await reserveCredits({ userId, amount: deployCost, buildId: runId, reason: "Production deployment" })
+  const reserved = await reserveCredits({ userId, amount: deployCost, buildId: runId, reason: "Production deployment", projectId })
   if (!reserved) {
     return { ok: false, status: 402, code: "INSUFFICIENT_CREDITS", message: "Could not reserve credits for deployment." }
   }
@@ -321,7 +322,7 @@ export async function startProjectDeploy(userId: string, projectId: string): Pro
     await store.appendEvent(projectId, event("deploy", "Deployment started — publishing to production (typically 3–5 minutes)."))
     return { ok: true, status: 200, code: "OK", deployRunId: runId, creditsCharged: deployCost, message: "Deployment started. This typically takes 3-5 minutes." }
   } catch (providerError) {
-    await releaseReservation({ userId, amount: deployCost, buildId: runId, reason: "Deployment failure" })
+    await releaseReservation({ userId, amount: deployCost, buildId: runId, reason: "Deployment failure", projectId })
     const errorMessage = providerError instanceof Error ? providerError.message : "Deployment failed"
     const isProjectNotFound = errorMessage.includes("PROJECT_NOT_FOUND") || errorMessage.includes("404")
     const userMessage = isProjectNotFound

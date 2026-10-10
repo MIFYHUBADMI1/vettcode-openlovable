@@ -137,6 +137,8 @@ export async function activatePlan(
         amount: plan.AtaiPrice,
         transactionType: "infrastructure_purchase",
         idempotencyKey: `infra_${projectId}_${plan.id}_${now}`,
+        // Trusted server-derived project context (ownership verified above).
+        projectId,
         metadata: {
           reason: `Infrastructure plan: ${plan.name} — ${plan.storageLabel}`,
           projectId,

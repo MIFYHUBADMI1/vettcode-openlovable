@@ -106,6 +106,9 @@ export class MongoStore implements DataStore {
         creditType: 'permanent', // Default for legacy addTransaction calls
         transactionType: tx.type === 'grant' ? 'promotional_grant' : 'admin_adjustment',
         idempotencyKey: tx.id, // Use transaction ID as idempotency key
+        // First-class project attribution (Phase 1) — only when the caller
+        // supplied trusted server-side project context.
+        ...(typeof tx.metadata?.projectId === 'string' ? { projectId: tx.metadata.projectId } : {}),
         metadata: {
           reason: tx.reason,
           legacyMigration: true,
@@ -120,6 +123,9 @@ export class MongoStore implements DataStore {
         amount: absoluteAmount,
         transactionType: tx.type === 'consume' ? 'build_finalization' : 'admin_adjustment',
         idempotencyKey: tx.id,
+        // First-class project attribution (Phase 1) — only when the caller
+        // supplied trusted server-side project context.
+        ...(typeof tx.metadata?.projectId === 'string' ? { projectId: tx.metadata.projectId } : {}),
         metadata: {
           reason: tx.reason,
           legacyMigration: true,
@@ -142,6 +148,8 @@ export class MongoStore implements DataStore {
         amount,
         buildId: tx.buildRunId || 'unknown',
         reason: tx.reason || 'Build reservation',
+        // First-class project attribution (Phase 1).
+        ...(typeof tx.metadata?.projectId === 'string' ? { projectId: tx.metadata.projectId } : {}),
         metadata: {
           projectId: tx.metadata?.projectId,
           complexity: tx.metadata?.complexity,

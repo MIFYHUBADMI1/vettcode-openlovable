@@ -140,7 +140,9 @@ export class PlanningOrchestrator {
     try {
       // Requirement 1.4: Reserve credits before processing (mode-aware)
       const planCost = await getPlanCost(pipelineMode)
-      const reservation = await reserveCredits(userId, planCost, projectId, `AI planning pipeline (${pipelineMode === "heavy" ? "Heavy mode" : "Legacy"})`)
+      // 3rd arg is the reservation identifier (existing behaviour), 5th arg
+      // attributes the ledger entries to this project (Phase 1).
+      const reservation = await reserveCredits(userId, planCost, projectId, `AI planning pipeline (${pipelineMode === "heavy" ? "Heavy mode" : "Legacy"})`, projectId)
       if (!reservation) {
         throw new CreditInsufficientError(
           `Insufficient credits for planning. Required: ${planCost}`,
@@ -301,7 +303,7 @@ export class PlanningOrchestrator {
       if (reservationId) {
         try {
           const planCost = await getPlanCost(pipelineMode)
-          await refundReservation(userId, planCost, projectId)
+          await refundReservation(userId, planCost, projectId, projectId)
         } catch (refundError) {
           logger.error("[PlanningOrchestrator] Failed to refund credits", "Refund failed", {
             userId,
@@ -368,7 +370,9 @@ export class PlanningOrchestrator {
     try {
       // Reserve credits (mode-aware)
       const planCost = await getPlanCost(pipelineMode)
-      const reservation = await reserveCredits(userId, planCost, projectId, `AI planning pipeline (${pipelineMode === "heavy" ? "Heavy mode" : "Legacy"})`)
+      // 3rd arg is the reservation identifier (existing behaviour), 5th arg
+      // attributes the ledger entries to this project (Phase 1).
+      const reservation = await reserveCredits(userId, planCost, projectId, `AI planning pipeline (${pipelineMode === "heavy" ? "Heavy mode" : "Legacy"})`, projectId)
       if (!reservation) {
         throw new CreditInsufficientError(
           `Insufficient credits for planning. Required: ${planCost}`,
@@ -518,7 +522,7 @@ export class PlanningOrchestrator {
       if (reservationId) {
         try {
           const planCost = await getPlanCost(pipelineMode)
-          await refundReservation(userId, planCost, projectId)
+          await refundReservation(userId, planCost, projectId, projectId)
         } catch (refundError) {
           logger.error("[PlanningOrchestrator] Failed to refund credits", "Refund failed", {
             userId,

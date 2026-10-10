@@ -89,6 +89,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       amount: creditsNeeded,
       buildId: run.id,
       reason: `${tier.charAt(0).toUpperCase() + tier.slice(1)} application follow-up`,
+      projectId: id,
     })
     if (!reserved) {
       await store.updateBuildRun(run.id, { status: "failed", error: "insufficient credits" })
@@ -103,7 +104,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       await store.updateProject(id, { state: "building" })
       return ok({ buildRunId: run.id, state: "building", creditsCharged: creditsNeeded, tier })
     } catch (providerError) {
-      await releaseReservation({ userId, amount: creditsNeeded, buildId: run.id, reason: "Agent provider failure" })
+      await releaseReservation({ userId, amount: creditsNeeded, buildId: run.id, reason: "Agent provider failure", projectId: id })
       await store.updateBuildRun(run.id, { status: "failed", error: (providerError as Error).message })
       await store.updateProject(id, { state: previousState })
       throw providerError

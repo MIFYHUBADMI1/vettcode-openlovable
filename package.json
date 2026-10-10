@@ -4,7 +4,8 @@
   "private": true,
   "packageManager": "pnpm@10.6.0",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
+    "dev:turbo": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "cleanup:credit-transactions": "tsx scripts/cleanup-credit-transactions.ts",

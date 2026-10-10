@@ -119,6 +119,21 @@ export async function getAvailableCredits(userId: string): Promise<number> {
 
 // ─── Ledger Operations ───────────────────────────────────────────────────────
 
+/**
+ * Normalize a project id for first-class ledger attribution.
+ *
+ * Only server-derived project context may be passed here (route handlers must
+ * resolve ownership themselves — a client-supplied id is never trusted just
+ * because it arrived in a request body). Empty/whitespace values are dropped
+ * so account-level transactions legitimately carry no projectId.
+ */
+function normalizeProjectId(projectId?: string | null): string | undefined {
+  if (typeof projectId !== "string") return undefined
+  const trimmed = projectId.trim()
+  if (!trimmed) return undefined
+  return trimmed.slice(0, 128)
+}
+
 async function recordLedgerEntry(params: {
   userId: string
   creditType: CreditType
@@ -132,12 +147,17 @@ async function recordLedgerEntry(params: {
   idempotencyKey: string
   metadata?: Record<string, unknown>
   session?: ClientSession
+  projectId?: string
 }): Promise<CreditLedgerEntry> {
   const col = await creditLedgerCol()
+  const projectId = normalizeProjectId(params.projectId)
   const entry: CreditLedgerEntry = {
     _id: new ObjectId(),
     id: `ledger_${cryptoId()}`,
     userId: params.userId,
+    // First-class optional project attribution (Phase 1). Absent for
+    // account-level transactions, which remain fully valid without it.
+    ...(projectId ? { projectId } : {}),
     creditType: params.creditType,
     amount: params.amount,
     direction: params.direction,
@@ -241,6 +261,8 @@ export async function grantCredits(params: {
   referenceType?: string
   referenceId?: string
   metadata?: Record<string, unknown>
+  /** Trusted server-derived project context, persisted on the ledger entry. */
+  projectId?: string
 }): Promise<{ success: boolean; ledgerEntry: CreditLedgerEntry }> {
   const users = await usersCol()
   const balance = await getBalance(params.userId)
@@ -291,6 +313,7 @@ export async function grantCredits(params: {
         idempotencyKey: params.idempotencyKey,
         metadata: params.metadata,
         session,
+        projectId: params.projectId,
       })
 
       success = true
@@ -375,6 +398,8 @@ export async function consumeCredits(params: {
   referenceType?: string
   referenceId?: string
   metadata?: Record<string, unknown>
+  /** Trusted server-derived project context, persisted on every ledger entry. */
+  projectId?: string
 }): Promise<{
   success: boolean
   subscriptionConsumed: number
@@ -498,6 +523,7 @@ export async function consumeCredits(params: {
           idempotencyKey: `${params.idempotencyKey}_sub`,
           metadata: params.metadata,
           session,
+          projectId: params.projectId,
         })
       }
 
@@ -515,6 +541,7 @@ export async function consumeCredits(params: {
           idempotencyKey: `${params.idempotencyKey}_perm`,
           metadata: params.metadata,
           session,
+          projectId: params.projectId,
         })
       }
 
@@ -544,6 +571,7 @@ export async function consumeCredits(params: {
           idempotencyKey: params.idempotencyKey,
           metadata: { ...params.metadata, legacyBalanceDebit: true },
           session,
+          projectId: params.projectId,
         })
       }
 
@@ -620,6 +648,8 @@ export async function reserveCredits(params: {
   buildId: string
   reason: string
   metadata?: Record<string, unknown>
+  /** Trusted server-derived project context, persisted on the ledger entries. */
+  projectId?: string
 }): Promise<boolean> {
   const result = await consumeCredits({
     userId: params.userId,
@@ -629,6 +659,7 @@ export async function reserveCredits(params: {
     referenceType: "build",
     referenceId: params.buildId,
     metadata: { ...params.metadata, reason: params.reason },
+    projectId: params.projectId,
   })
   return result.success
 }
@@ -646,6 +677,8 @@ export async function releaseReservation(params: {
   subscriptionConsumed?: number
   permanentConsumed?: number
   metadata?: Record<string, unknown>
+  /** Trusted server-derived project context, persisted on the ledger entry. */
+  projectId?: string
 }): Promise<boolean> {
   // If we know the exact bucket breakdown from the reservation, release to permanent
   // (subscription credits may have expired by the time the build fails)
@@ -657,6 +690,7 @@ export async function releaseReservation(params: {
     idempotencyKey: `release_${params.buildId}`,
     referenceType: "build",
     referenceId: params.buildId,
+    projectId: params.projectId,
     metadata: {
       ...params.metadata,
       reason: params.reason,
@@ -1048,6 +1082,8 @@ export async function reverseCredits(params: {
   referenceType?: string
   referenceId?: string
   metadata?: Record<string, unknown>
+  /** Trusted server-derived project context, persisted on the ledger entry. */
+  projectId?: string
 }): Promise<{ success: boolean }> {
   const users = await usersCol()
   const balance = await getBalance(params.userId)
@@ -1105,6 +1141,7 @@ export async function reverseCredits(params: {
         idempotencyKey: params.idempotencyKey,
         metadata: { ...params.metadata, originalAmount: params.amount, actualReversed: actualReversal },
         session,
+        projectId: params.projectId,
       })
 
       success = true
@@ -1137,6 +1174,7 @@ export async function adminAdjustCredits(params: {
   reason: string
   creditType?: CreditType
   idempotencyKey?: string
+  projectId?: string
 }): Promise<boolean> {
   const creditType = params.creditType ?? "permanent"
   // Use provided idempotency key or generate one from admin+user+reason+amount
@@ -1152,6 +1190,7 @@ export async function adminAdjustCredits(params: {
       idempotencyKey: key,
       referenceType: "admin",
       referenceId: params.adminId,
+      projectId: params.projectId,
       metadata: { reason: params.reason, adminId: params.adminId },
     })
     return result.success
@@ -1164,6 +1203,7 @@ export async function adminAdjustCredits(params: {
       idempotencyKey: key,
       referenceType: "admin",
       referenceId: params.adminId,
+      projectId: params.projectId,
       metadata: { reason: params.reason, adminId: params.adminId },
     })
     return result.success
