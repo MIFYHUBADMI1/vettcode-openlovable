@@ -30,6 +30,7 @@ import {
   getAccountSummaryTool,
   getCreditCostsTool,
 } from "./tools/navigation"
+import { getGrowthOverviewTool } from "./tools/growth"
 import type { ToolDefinition, ToolRisk } from "./types"
 
 /**
@@ -59,6 +60,8 @@ const REGISTRY: readonly ToolDefinition[] = [
   navigateTool,
   getAccountSummaryTool,
   getCreditCostsTool,
+  // READ — growth overview (Phase 2; read-only projection of trusted data)
+  getGrowthOverviewTool,
   // LOW_RISK_WRITE
   stopBuildTool,
   // CONFIRM

@@ -1,0 +1,39 @@
+# Minimal verification workflow for this phase (no new tooling — the repo has
+# no lint config, so CI runs exactly the commands the repo already defines:
+# TypeScript check, Vitest suite, and the Next.js production build).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable pnpm (matches packageManager in package.json)
+        run: corepack enable && corepack prepare pnpm@10.6.0 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm exec tsc --noEmit
+
+      - name: Tests
+        run: pnpm test
+
+      - name: Production build
+        run: pnpm build
+        env:
+          # The app uses per-feature env access; a handful of route builders
+          # read NEXT_PUBLIC_APP_URL at build time for metadata/sitemaps.
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}

@@ -1171,7 +1171,7 @@ try {
               <h3 className="text-lg font-semibold text-foreground">Keep keys server-side</h3>
               <p>
                 Atai runtime keys are <strong className="text-foreground">secret credentials — there is no browser-safe
-                public key type</strong>. If a generated application runs entirely in a public browser, the key can be
+                  public key type</strong>. If a generated application runs entirely in a public browser, the key can be
                 seen by end users. Call the SDK from your server (or a serverless function) and proxy results to the
                 browser. Never compensate by embedding any provider key in the client — the SDK has no fields for them
                 and never will.
@@ -1329,6 +1329,33 @@ if (health.status !== "operational") throw new Error("Atai Runtime not connected
               <Link href="/dashboard" className={buttonVariants({ variant: "outline", size: "sm" })}>
                 Open dashboard
               </Link>
+              <Link href="/docs" className={buttonVariants({ variant: "outline", size: "sm" })}>
+                Platform docs
+              </Link>
+            </div>
+          </section>
+
+          {/* Related Documentation — cross-links for navigation and SEO */}
+          <section className="not-prose">
+            <p className="mb-3 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Related documentation</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[
+                { href: "/docs", icon: BookOpen, label: "Platform Docs", desc: "Guides on planning, building, launching and growing your business", color: "text-primary", bg: "bg-primary/10" },
+                { href: "/developers", icon: Zap, label: "Developer Portal", desc: "Overview of Atai's infrastructure capabilities and getting started", color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-500/10" },
+                { href: "/docs#collaborate", icon: MessageSquare, label: "Collaborate & Plan", desc: "Working with the AI co-founder before anything is built", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10" },
+                { href: "/docs#credits", icon: Coins, label: "Credits & Billing", desc: "How credits work and what every operation costs", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-500/10" },
+              ].map(({ href, icon: Icon, label, desc, color, bg }) => (
+                <Link key={href} href={href} className="group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 transition-all hover:border-primary/40 hover:shadow-md">
+                  <div className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${bg}`}>
+                    <Icon className={`size-4 ${color}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{label}</p>
+                    <p className="text-[11px] text-muted-foreground">{desc}</p>
+                  </div>
+                  <ArrowRight className="ml-auto size-3.5 shrink-0 text-muted-foreground/40 group-hover:text-primary/60 transition-colors" />
+                </Link>
+              ))}
             </div>
           </section>
         </div>

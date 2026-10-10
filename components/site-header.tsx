@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowRight, BookOpen, Compass, DollarSign, Info, LayoutDashboard, Menu, X, Zap } from "lucide-react"
+import { ArrowRight, BookOpen, Code2, Compass, DollarSign, Info, LayoutDashboard, Menu, X, Zap } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { AccountMenu } from "@/components/account-menu"
 import { useSession } from "@/lib/client/api"
@@ -33,6 +33,8 @@ interface SiteHeaderProps {
 const defaultLinks: NavLink[] = [
   { href: "/", label: "Home" },
   { href: "/docs", label: "Docs", icon: BookOpen },
+  { href: "/sdk", label: "SDK & API", icon: Code2 },
+  { href: "/developers", label: "Developers", icon: Zap },
   { href: "/pricing", label: "Pricing", icon: DollarSign },
   { href: "/about", label: "About", icon: Info },
   { href: "/resources", label: "Resources" },
@@ -77,6 +79,8 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
             <Link href="/pricing" className={NAV_LINK}>Pricing</Link>
             <Link href="/resources" className={NAV_LINK}>Resources</Link>
             <Link href="/docs" className={NAV_LINK}>Docs</Link>
+            <Link href="/sdk" className={NAV_LINK}>SDK & API</Link>
+            <Link href="/developers" className={NAV_LINK}>Developers</Link>
             <Link href="/about" className={NAV_LINK}>About</Link>
             <Link href="/explore" className={NAV_LINK}>
               <Compass className="size-3.5" />
@@ -184,6 +188,8 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
                 <Link href="/pricing" className={NAV_LINK} onClick={() => setMobileOpen(false)}>Pricing</Link>
                 <Link href="/resources" className={NAV_LINK} onClick={() => setMobileOpen(false)}>Resources</Link>
                 <Link href="/docs" className={NAV_LINK} onClick={() => setMobileOpen(false)}>Docs</Link>
+                <Link href="/sdk" className={NAV_LINK} onClick={() => setMobileOpen(false)}>SDK & API</Link>
+                <Link href="/developers" className={NAV_LINK} onClick={() => setMobileOpen(false)}>Developers</Link>
                 <Link href="/about" className={NAV_LINK} onClick={() => setMobileOpen(false)}>About</Link>
                 <Link href="/explore" className={NAV_LINK} onClick={() => setMobileOpen(false)}>Explore</Link>
               </>

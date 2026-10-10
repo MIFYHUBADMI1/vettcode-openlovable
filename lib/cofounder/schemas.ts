@@ -26,6 +26,10 @@ export const navigationSchema = z.object({
   projectId: z.string().min(1).max(80).optional(),
 }).strip()
 
+export const growthOverviewSchema = z.object({
+  projectId: z.string().min(1).max(80),
+}).strip()
+
 export const createProjectSchema = z.object({
   mode: z.enum(["scratch", "website", "github"]),
   idea: z.string().min(8).max(4000).optional(),

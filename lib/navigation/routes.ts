@@ -28,6 +28,7 @@ export type ProjectTarget =
   | "repoCode"
   | "readme"
   | "runtime"
+  | "market"
 
 /** Every navigation target the Co-founder may produce. */
 export type NavigationTarget = WorkspaceTarget | ProjectTarget
@@ -71,6 +72,7 @@ export const PROJECT_TARGETS: readonly ProjectTarget[] = [
   "repoCode",
   "readme",
   "runtime",
+  "market",
 ]
 
 export function isKnownTarget(target: string): target is NavigationTarget {
@@ -107,6 +109,7 @@ export function resolveProjectTarget(target: ProjectTarget, projectId: string): 
     case "repoCode": return `/project/${id}/repo-code`
     case "readme": return `/project/${id}/readme`
     case "runtime": return `/project/${id}/runtime`
+    case "market": return `/project/${id}/market`
   }
 }
 

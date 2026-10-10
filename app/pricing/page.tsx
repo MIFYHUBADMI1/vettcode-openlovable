@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
-
-import { ArrowRight, Check, Zap, Code2, Layers3, Globe, Link as LinkIcon, Shield, Clock, Settings, DollarSign, AlertTriangle, X, Coins } from "lucide-react"
+import Link from "next/link"
+import { ArrowRight, BookOpen, Check, Zap, Code2, Layers3, Globe, Link as LinkIcon, Shield, Clock, Settings, DollarSign, AlertTriangle, X, Coins } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
@@ -487,7 +487,32 @@ export default async function PricingPage() {
         </div>
       </section>
 
-      <SiteFooter activePage="/pricing" links={[{ href: "/", label: "Home" }, { href: "/pricing", label: "Pricing" }, { href: "/about", label: "About" }, { href: "/privacy", label: "Privacy" }, { href: "/terms", label: "Terms" }]} wrapperClassName="mx-auto flex w-full max-w-5xl flex-col gap-5 px-6 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between" />
+      {/* Related pages — cross-links for navigation and SEO */}
+      <section className="border-t border-border bg-muted/30">
+        <div className="mx-auto max-w-5xl px-6 py-12 lg:px-10">
+          <p className="mb-4 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Learn more</p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { href: "/docs", icon: BookOpen, label: "Documentation", desc: "Complete guides on building with Atai", color: "text-primary", bg: "bg-primary/10" },
+              { href: "/sdk", icon: Code2, label: "SDK & API", desc: "Runtime API reference — @atai-group/sdk", color: "text-cyan-600 dark:text-cyan-400", bg: "bg-cyan-500/10" },
+              { href: "/developers", icon: Zap, label: "Developers", desc: "Atai infrastructure for your own projects", color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-500/10" },
+              { href: "/about", icon: LinkIcon, label: "About Atai", desc: "Our mission and story", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-500/10" },
+            ].map(({ href, icon: Icon, label, desc, color, bg }) => (
+              <Link key={href} href={href} className="group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 transition-all hover:border-primary/40 hover:shadow-md">
+                <div className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${bg}`}>
+                  <Icon className={`size-4 ${color}`} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{label}</p>
+                  <p className="text-[11px] text-muted-foreground">{desc}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <SiteFooter activePage="/pricing" links={[{ href: "/", label: "Home" }, { href: "/pricing", label: "Pricing" }, { href: "/docs", label: "Docs" }, { href: "/sdk", label: "SDK" }, { href: "/developers", label: "Developers" }, { href: "/about", label: "About" }, { href: "/privacy", label: "Privacy" }, { href: "/terms", label: "Terms" }]} wrapperClassName="mx-auto flex w-full max-w-5xl flex-col gap-5 px-6 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between" />
     </main>
   )
 }

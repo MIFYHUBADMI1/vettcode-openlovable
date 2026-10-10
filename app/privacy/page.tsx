@@ -205,7 +205,7 @@ export default function PrivacyPage() {
       <main className="workspace-environment min-h-svh overflow-hidden bg-background text-foreground">
         <span className="workspace-signal" aria-hidden="true" />
 
-        <SiteHeader activePage="/privacy" links={[{ href: "/", label: "Home" }, { href: "/pricing", label: "Pricing" }, { href: "/about", label: "About" }]} />
+        <SiteHeader activePage="/privacy" links={[{ href: "/", label: "Home" }, { href: "/pricing", label: "Pricing" }, { href: "/docs", label: "Docs" }, { href: "/sdk", label: "SDK & API" }, { href: "/developers", label: "Developers" }, { href: "/about", label: "About" }]} />
 
         {/* PAGE HEADER */}
         <section className="mx-auto max-w-4xl px-6 pt-12 pb-8 lg:px-10">
@@ -733,7 +733,32 @@ export default function PrivacyPage() {
 
         </article>
 
-        <SiteFooter />
+        {/* Related pages — cross-links for navigation and SEO */}
+        <section className="border-t border-border bg-muted/30">
+          <div className="mx-auto max-w-4xl px-6 py-12 lg:px-10">
+            <p className="mb-4 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Related pages</p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { href: "/terms", icon: FileText, label: "Terms of Service", desc: "Your rights, our commitments and acceptable use", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10" },
+                { href: "/pricing", icon: CreditCard, label: "Pricing & Credits", desc: "Plans, credit packs and build costs", color: "text-primary", bg: "bg-primary/10" },
+                { href: "/docs", icon: Globe, label: "Documentation", desc: "Complete guides on building with Atai", color: "text-cyan-600 dark:text-cyan-400", bg: "bg-cyan-500/10" },
+                { href: "/about", icon: Shield, label: "About Atai", desc: "Our mission and the team behind the platform", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-500/10" },
+              ].map(({ href, icon: Icon, label, desc, color, bg }) => (
+                <Link key={href} href={href} className="group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 transition-all hover:border-primary/40 hover:shadow-md">
+                  <div className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${bg}`}>
+                    <Icon className={`size-4 ${color}`} />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{label}</p>
+                    <p className="text-[11px] text-muted-foreground">{desc}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <SiteFooter activePage="/privacy" links={[{ href: "/", label: "Home" }, { href: "/pricing", label: "Pricing" }, { href: "/docs", label: "Docs" }, { href: "/sdk", label: "SDK" }, { href: "/developers", label: "Developers" }, { href: "/about", label: "About" }, { href: "/privacy", label: "Privacy" }, { href: "/terms", label: "Terms" }]} />
       </main>
     </>
   )

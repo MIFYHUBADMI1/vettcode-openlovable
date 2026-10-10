@@ -128,6 +128,7 @@ export function DocsContent() {
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 { href: "/sdk", icon: Code2, label: "Atai SDK & API", desc: "@atai-group/sdk + Runtime API reference — keys, endpoints, limits", color: "text-cyan-600 dark:text-cyan-400", bg: "bg-cyan-500/10" },
+                { href: "/developers", icon: Zap, label: "Developer Portal", desc: "Infrastructure services, quickstart, and API access", color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-500/10" },
                 { href: "/pricing", icon: DollarSign, label: "Pricing", desc: "Plans, credit packs & build costs", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10" },
                 { href: "/modes-comparison", icon: GitCompare, label: "Modes Comparison", desc: "Legacy vs Heavy pipeline breakdown", color: "text-purple-600 dark:text-purple-400", bg: "bg-purple-500/10" },
                 { href: "/dashboard", icon: Rocket, label: "Dashboard", desc: "Your projects & activity", color: "text-primary", bg: "bg-primary/10" },
@@ -1043,6 +1044,33 @@ export function DocsContent() {
             </div>
           </section>
 
+        </div>
+      </div>
+
+      {/* Related pages — full-width below main grid, for SEO cross-linking */}
+      <div className="mx-auto max-w-7xl px-6 py-12 lg:px-10 border-t border-border">
+        <p className="mb-4 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Explore more</p>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { href: "/sdk", icon: Code2, label: "SDK & API Reference", desc: "The @atai-group/sdk and Runtime API — keys, endpoints, capabilities", color: "text-cyan-600 dark:text-cyan-400", bg: "bg-cyan-500/10" },
+            { href: "/developers", icon: Zap, label: "Developer Portal", desc: "Build with Atai's infrastructure — AI, payments, maps, and 40+ services", color: "text-violet-600 dark:text-violet-400", bg: "bg-violet-500/10" },
+            { href: "/pricing", icon: DollarSign, label: "Pricing & Credits", desc: "Plans, credit packs, and what every action costs", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10" },
+            { href: "/about", icon: Shield, label: "About Atai", desc: "Our mission, team, and the story behind the platform", color: "text-indigo-600 dark:text-indigo-400", bg: "bg-indigo-500/10" },
+          ].map(({ href, icon: Icon, label, desc, color, bg }) => (
+            <Link
+              key={href}
+              href={href}
+              className="group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 transition-all hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5"
+            >
+              <div className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${bg}`}>
+                <Icon className={`size-4 ${color}`} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{label}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{desc}</p>
+              </div>
+            </Link>
+          ))}
         </div>
       </div>
 

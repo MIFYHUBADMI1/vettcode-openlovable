@@ -97,6 +97,7 @@ export type ToolResultType =
   | "navigation"
   | "account_summary"
   | "credit_costs"
+  | "growth_overview"
   | "pending_action"
   | "text"
 

@@ -16,7 +16,7 @@ import type { ToolDefinition } from "../types"
 export const navigateTool: ToolDefinition = {
   name: "navigate",
   description:
-    "Navigate the founder to an Atai surface. Project destinations (project, plan, collaborate, database, edit, source, tree, repoCode, readme, runtime) REQUIRE a projectId from list_projects or get_workspace_overview. Workspace destinations (dashboard, projects, newProject, explore, featureRequests, billing, settings) don't. Only navigate after the destination is verified — for a project the founder described, confirm the match first.",
+    "Navigate the founder to an Atai surface. Project destinations (project, plan, collaborate, database, edit, source, tree, repoCode, readme, runtime, market) REQUIRE a projectId from list_projects or get_workspace_overview. Workspace destinations (dashboard, projects, newProject, explore, featureRequests, billing, settings) don't. Only navigate after the destination is verified — for a project the founder described, confirm the match first.",
   risk: "READ",
   requiresConfirmation: false,
   inputSchema: navigationSchema,

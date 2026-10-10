@@ -57,7 +57,7 @@ export function workspaceProjectNav(projectId: string): AtaiNavItem[] {
 
 export function workspaceGrowNav(projectId: string): AtaiNavItem[] {
   return [
-    { href: `/project/${projectId}/market`, label: "Market & grow", icon: TrendingUp, kind: "soon" },
+    { href: `/project/${projectId}/market`, label: "Market & grow", icon: TrendingUp, kind: "link" },
     { href: `/project/${projectId}/ads`, label: "Ads & marketing", icon: Megaphone, kind: "soon" },
     { href: `/project/${projectId}/finances`, label: "Business finances", icon: Wallet, kind: "soon" },
     { href: `/project/${projectId}/lessons`, label: "Business lessons", icon: GraduationCap, kind: "soon" },

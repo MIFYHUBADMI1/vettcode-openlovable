@@ -35,6 +35,7 @@ describe("route registry — valid targets", () => {
     expect(resolveNavigationTarget({ target: "repoCode", projectId: "abc" })).toBe("/project/abc/repo-code")
     expect(resolveNavigationTarget({ target: "readme", projectId: "abc" })).toBe("/project/abc/readme")
     expect(resolveNavigationTarget({ target: "runtime", projectId: "abc" })).toBe("/project/abc/runtime")
+    expect(resolveNavigationTarget({ target: "market", projectId: "abc" })).toBe("/project/abc/market")
   })
 
   it("encodes project ids into the path", () => {

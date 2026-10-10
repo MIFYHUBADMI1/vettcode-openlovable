@@ -35,6 +35,8 @@ const FOOTER_COLS = [
       { href: "/about#team", label: "The team" },
       { href: "/docs", label: "Documentation" },
       { href: "/resources", label: "Resources" },
+      { href: "/developers", label: "Developers" },
+      { href: "/sdk", label: "SDK & API" },
     ],
   },
   {

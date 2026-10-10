@@ -64,6 +64,7 @@ describe("tool registry — allow-list invariants", () => {
       "navigate",
       "get_account_summary",
       "get_credit_costs",
+      "get_growth_overview",
       "stop_build",
       "propose_plan_update",
       "apply_plan_update",
@@ -132,6 +133,7 @@ describe("tool registry — risk and confirmation invariants", () => {
       "navigate",
       "get_account_summary",
       "get_credit_costs",
+      "get_growth_overview",
     ]) {
       expect(riskOf(name)).toBe("READ")
       expect(getTool(name)?.requiresConfirmation).toBe(false)
