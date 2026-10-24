@@ -430,12 +430,18 @@ export const SPEND_TREND_DAYS = 28
 
 export interface SpendTrend {
   /** UTC date buckets (oldest first), zero-filled — honest, gapless days. */
-  daily: Array<{ date: string; creditsCharged: number }>
+  daily: Array<{ date: string; creditsCharged: number; earningsMinor: number }>
   creditsTotal14d: number
   creditsPrior14d: number
   /** Percent change of the last 14 days vs the prior 14; null when the prior
    * window saw zero spend (no honest percentage exists). */
   changePct: number | null
+  /** Attributed earnings over the same last-14-days window, minor units;
+   * null when no project's earnings feed reported "ok" — unavailable ≠ 0. */
+  earningsTotal14d: number | null
+  netTotal14d: number | null
+  /** Currencies seen in the swept attributed earnings (for honest display). */
+  earningsCurrencies: string[]
 }
 
 /**
@@ -456,9 +462,30 @@ export function spendTrend(daily: Array<{ date: string; creditsCharged: number }
 }
 
 /**
- * Bounded portfolio spending trend for the home dashboard mini-card: one
- * Mongo aggregation (all owned projects, 28 days, UTC day buckets),
- * zero-filled, plus the week-over-window comparison. Read-only.
+ * Fold successful attributed payments into the zero-filled daily trend
+ * buckets (same honesty rules as the finance pages: only succeeded amounts
+ * count, un-parseable dates are not day-bucketed). Pure and unit-tested.
+ */
+export function mergeEarningsIntoDaily(
+  daily: Array<{ date: string; creditsCharged: number }>,
+  payments: Array<Pick<ProjectPayment, "amountMinor" | "currency" | "status" | "createdAt">>,
+): Array<{ date: string; creditsCharged: number; earningsMinor: number }> {
+  const earningsByDate = new Map<string, number>()
+  for (const p of payments) {
+    if (p.status !== "succeeded" || typeof p.amountMinor !== "number" || p.createdAt === null) continue
+    const date = new Date(p.createdAt).toISOString().slice(0, 10)
+    earningsByDate.set(date, (earningsByDate.get(date) ?? 0) + p.amountMinor)
+  }
+  return daily.map((d) => ({ ...d, earningsMinor: earningsByDate.get(d.date) ?? 0 }))
+}
+
+/**
+ * Bounded portfolio spending + earnings trend for the home dashboard
+ * mini-card: one Mongo aggregation (all owned projects, 28 days, UTC day
+ * buckets), zero-filled, the week-over-window spend comparison, and the
+ * attributed earnings over the same window via the SAME bounded sweep the
+ * platform finance page uses (≤ MAX_EARNINGS_PROJECTS projects, each its
+ * own cached sync). Read-only.
  */
 export async function getPortfolioSpendTrend(userId: string): Promise<SpendTrend> {
   const to = Date.now()
@@ -468,35 +495,73 @@ export async function getPortfolioSpendTrend(userId: string): Promise<SpendTrend
   const projectIds = projects.map((p) => p.id)
 
   let dayRows: Array<{ _id: string; creditsCharged: number }> = []
+  let earningsDaily: Array<{ date: string; creditsCharged: number; earningsMinor: number }> = []
+  let earningsTotal14d: number | null = null
+  let netTotal14d: number | null = null
+  const earningsCurrencies = new Set<string>()
+
   if (projectIds.length > 0) {
-    await ensureRuntimeIndexes()
-    const col = await runtimeUsageCol()
-    dayRows = await col
-      .aggregate<{ _id: string; creditsCharged: number }>([
-        { $match: { projectId: { $in: projectIds }, createdAt: { $gte: from, $lte: to } } },
-        {
-          $group: {
-            _id: {
-              $dateToString: {
-                format: "%Y-%m-%d",
-                date: { $dateTrunc: { date: { $add: [EPOCH_DATE, "$createdAt"] }, unit: "day" } },
+    const sweep = projects.slice(0, MAX_EARNINGS_PROJECTS)
+    const [earningsResults] = await Promise.all([
+      Promise.all(sweep.map((p) => getProjectEarnings(p.id, from))),
+      (async () => {
+        await ensureRuntimeIndexes()
+        const col = await runtimeUsageCol()
+        dayRows = await col
+          .aggregate<{ _id: string; creditsCharged: number }>([
+            { $match: { projectId: { $in: projectIds }, createdAt: { $gte: from, $lte: to } } },
+            {
+              $group: {
+                _id: {
+                  $dateToString: {
+                    format: "%Y-%m-%d",
+                    date: { $dateTrunc: { date: { $add: [EPOCH_DATE, "$createdAt"] }, unit: "day" } },
+                  },
+                },
+                creditsCharged: { $sum: "$creditsCharged" },
               },
             },
-            creditsCharged: { $sum: "$creditsCharged" },
-          },
-        },
-        { $sort: { _id: 1 } },
-      ])
-      .toArray()
+            { $sort: { _id: 1 } },
+          ])
+          .toArray()
+      })(),
+    ])
+
+    // Zero-fill every day of the window — gaps are honest zeros. Oldest first.
+    const creditsByDate = new Map(dayRows.map((r) => [r._id, r.creditsCharged]))
+    const creditsDaily: Array<{ date: string; creditsCharged: number }> = []
+    for (let day = SPEND_TREND_DAYS - 1; day >= 0; day--) {
+      const date = new Date(to - day * DAY_MS).toISOString().slice(0, 10)
+      creditsDaily.push({ date, creditsCharged: creditsByDate.get(date) ?? 0 })
+    }
+
+    // Earnings: only feeds that reported "ok" contribute. If none did, the
+    // earnings fields stay null — unavailable, never a fabricated zero.
+    const okResults = earningsResults.filter((r) => r.status === "ok")
+    const allPayments = okResults.flatMap((r) => r.payments)
+    earningsDaily = mergeEarningsIntoDaily(creditsDaily, allPayments)
+    if (okResults.length > 0) {
+      for (const p of allPayments) {
+        if (p.currency) earningsCurrencies.add(p.currency)
+      }
+      const earnings14 = earningsDaily.slice(-14).reduce((a, r) => a + r.earningsMinor, 0)
+      const credits14 = earningsDaily.slice(-14).reduce((a, r) => a + r.creditsCharged, 0)
+      earningsTotal14d = earnings14
+      netTotal14d = earnings14 - credits14
+    }
   }
 
-  // Zero-fill every day of the window — gaps are honest zeros. Oldest first.
-  const creditsByDate = new Map(dayRows.map((r) => [r._id, r.creditsCharged]))
-  const daily: SpendTrend["daily"] = []
-  for (let day = SPEND_TREND_DAYS - 1; day >= 0; day--) {
-    const date = new Date(to - day * DAY_MS).toISOString().slice(0, 10)
-    daily.push({ date, creditsCharged: creditsByDate.get(date) ?? 0 })
-  }
+  const daily = earningsDaily.length > 0 ? earningsDaily : Array.from({ length: SPEND_TREND_DAYS }, (_, i) => ({
+    date: new Date(to - (SPEND_TREND_DAYS - 1 - i) * DAY_MS).toISOString().slice(0, 10),
+    creditsCharged: 0,
+    earningsMinor: 0,
+  }))
 
-  return { daily, ...spendTrend(daily) }
+  return {
+    daily,
+    ...spendTrend(daily),
+    earningsTotal14d,
+    netTotal14d,
+    earningsCurrencies: [...earningsCurrencies].sort(),
+  }
 }

@@ -542,10 +542,11 @@ function ReferralCard() {
 }
 
 /**
- * Portfolio spending trend — mini card linking into the whole-business
+ * Portfolio finance trend — mini card linking into the whole-business
  * finance roll-up. Every number is computed server-side
  * (/api/finances/summary over lib/finances/*); the browser only renders it.
- * Zero activity is a stated zero, never a blank or a fabricated trend.
+ * Net (attributed earnings − credits) headlines the card when the earnings
+ * feed is configured; unavailable is stated, never faked as zero.
  */
 function FinancesTrendCard() {
   const { trend, isLoading } = usePortfolioSpend()
@@ -557,28 +558,50 @@ function FinancesTrendCard() {
     changePct === null ? null : changePct > 0 ? ("up" as const) : changePct < 0 ? ("down" as const) : ("flat" as const)
   const active = last14 > 0 || prior14 > 0
 
-  // 28-day bar sparkline — same dependency-free SVG approach the finance
-  // pages use. Server-computed daily buckets; zero days stay zero.
+  const netMinor = trend?.netTotal14d ?? null
+  const earningsMinor = trend?.earningsTotal14d ?? null
+  const currencies = trend?.earningsCurrencies ?? []
+  const currencySuffix = currencies.length === 1 ? ` ${currencies[0]}` : ""
+  const major = (minor: number) => (minor / 100).toLocaleString("en-US", { maximumFractionDigits: 2 })
+
+  // 28-day two-series bar sparkline — same dependency-free SVG approach the
+  // finance pages use. Server-computed daily buckets; zero days stay zero.
   const daily = trend?.daily ?? []
-  const maxDaily = Math.max(...daily.map((d) => d.creditsCharged), 1)
+  const maxDaily = Math.max(
+    ...daily.map((d) => Math.max(d.creditsCharged, d.earningsMinor / 100)),
+    1,
+  )
   const sparkWidth = Math.max(daily.length * 3, 3)
 
   return (
     <section className="rounded-2xl border border-border bg-card p-5">
-      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Portfolio spend</p>
+      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Portfolio net</p>
       {isLoading && !trend ? (
         <Skeleton className="mt-2 h-6 w-36" />
+      ) : netMinor !== null ? (
+        <p className="mt-2 text-lg font-semibold tabular-nums">
+          {Number(netMinor) < 0 ? "−" : "+"}
+          {major(Math.abs(netMinor))}
+          {currencySuffix}
+        </p>
       ) : (
         <p className="mt-2 text-lg font-semibold tabular-nums">{last14.toLocaleString()} credits</p>
       )}
       <p className="mt-1 text-xs text-muted-foreground">
-        {active
-          ? changePct === null
-            ? "vs the prior two weeks — their first spend"
-            : null
-          : "No runtime spend yet"}
+        {netMinor !== null
+          ? `net over the last 14 days${currencies.length > 1 ? " — mixed currencies" : ""}`
+          : active
+            ? changePct === null
+              ? "vs the prior two weeks — their first spend"
+              : null
+            : "No runtime spend yet"}
       </p>
-      {active && changePct !== null ? (
+      {netMinor !== null ? (
+        <p className="mt-1 text-xs text-muted-foreground">
+          Earned {major(earningsMinor ?? 0)}{currencySuffix} · spent {last14.toLocaleString()} credits
+        </p>
+      ) : null}
+      {active && netMinor === null && changePct !== null ? (
         <p className="mt-1 flex items-center gap-1 text-xs font-medium">
           {direction === "up" ? (
             <TrendingUp className="size-3.5" aria-hidden />
@@ -592,19 +615,28 @@ function FinancesTrendCard() {
               : `flat vs prior two weeks`}
         </p>
       ) : null}
-      {trend && active ? (
+      {trend && (active || netMinor !== null) ? (
         <svg
           viewBox={`0 0 ${sparkWidth} 24`}
           preserveAspectRatio="none"
           className="mt-3 h-6 w-full"
           role="img"
-          aria-label="Daily portfolio credit spend, last 28 days"
+          aria-label="Daily portfolio credits (left bar) and attributed earnings (right bar), last 28 days"
         >
           {daily.map((d, i) => {
-            const h = Math.max((d.creditsCharged / maxDaily) * 24, d.creditsCharged > 0 ? 2 : 0)
-            return d.creditsCharged > 0 ? (
-              <rect key={d.date} x={i * 3} y={24 - h} width={2} height={h} rx="0.5" className="fill-primary" />
-            ) : null
+            const earningsMajor = d.earningsMinor / 100
+            const creditH = Math.max((d.creditsCharged / maxDaily) * 24, d.creditsCharged > 0 ? 2 : 0)
+            const earnH = Math.max((earningsMajor / maxDaily) * 24, earningsMajor > 0 ? 2 : 0)
+            return (
+              <g key={d.date} transform={`translate(${i * 3}, 0)`}>
+                {d.creditsCharged > 0 ? (
+                  <rect x={0} y={24 - creditH} width={1.4} height={creditH} rx="0.5" className="fill-primary" />
+                ) : null}
+                {earningsMajor > 0 ? (
+                  <rect x={1.5} y={24 - earnH} width={1.4} height={earnH} rx="0.5" className="fill-emerald-500" />
+                ) : null}
+              </g>
+            )
           })}
         </svg>
       ) : null}

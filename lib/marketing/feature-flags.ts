@@ -102,6 +102,16 @@ export function isStudioEnabledForUser(userId: string): boolean {
 }
 
 /**
+ * Market & Grow AI studio flag. This surface is ON by default (the workspace
+ * content studio is part of the shipped market page) with a simple kill
+ * switch: MARKET_STUDIO_ENABLED=false disables generation for everyone.
+ */
+export function isMarketStudioEnabled(): boolean {
+  const hard = process.env.MARKET_STUDIO_ENABLED
+  return !(hard === "false" || hard === "0")
+}
+
+/**
  * Growth tasks flag (Phase 5 — W4). Same convention and SAME default-OFF
  * posture as the Studio/SEO flags: an AI-proposed, founder-approvable write
  * surface is unreachable until an operator opts in (GROWTH_TASKS_ENABLED=true)

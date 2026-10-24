@@ -38,6 +38,10 @@ import { z } from "zod"
  * (generateImage), video generation (generateVideo), text-to-speech
  * (speak), transcription (transcribe), and vision-style multimodal input
  * (visionInput — image/PDF/audio/video content alongside text on chat).
+ *
+ * Payments commerce wave: subscriptions (createSubscription), the merchant
+ * payment feed (listPayments) and account-level payout records
+ * (listPayouts) — reads for dashboards, writes for real charges.
  */
 export const RUNTIME_OPERATIONS = [
   "chat",
@@ -60,6 +64,10 @@ export const RUNTIME_OPERATIONS = [
   "create",
   "edit",
   "createCheckout",
+  // Payments commerce wave
+  "createSubscription",
+  "listPayments",
+  "listPayouts",
   // Multimodal wave — OpenRouter full modality coverage
   "generateImage",
   "generateVideo",
@@ -104,7 +112,7 @@ export const CAPABILITY_OPERATIONS: Record<string, readonly RuntimeOperation[] |
   "calendar": ["listBookings", "createBooking"],
   "vectors": ["upsert", "search", "delete"],
   "db": ["query", "create", "edit", "delete"],
-  "payments": ["createCheckout"],
+  "payments": ["createCheckout", "createSubscription", "listPayments", "listPayouts"],
   // Test-only capability proving the router end-to-end (mock adapter).
   test: ["echo"],
 } as const

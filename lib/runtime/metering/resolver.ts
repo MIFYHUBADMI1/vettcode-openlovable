@@ -153,6 +153,84 @@ export async function resolveRuntimePrice(params: {
       },
     }
   }
+  // Payments (Dodo): a single flat per-request rate for all operations —
+  // real charges (checkout/subscription) and payment-feed reads alike.
+  // Admin rules still take per-operation precedence over this fallback.
+  if (params.capability === "payments") {
+    return {
+      chargeable: true,
+      source: "legacy",
+      fixedCredits: legacy.paymentsRequest,
+      snapshot: {
+        pricingVersion: RUNTIME_PRICING_VERSION,
+        pricingSource: "legacy",
+        mode: "fixed_per_request",
+        credits: legacy.paymentsRequest,
+      },
+    }
+  }
+  // Embeddings: the Phase 9 legacy config already carried an aiEmbedPer1k
+  // rate (input tokens only — embeddings have no output tokens). Wired when
+  // the first production embedding adapter joined (Phase 10 final).
+  if (params.capability === "ai.embed") {
+    return {
+      chargeable: true,
+      source: "legacy",
+      inputPer1k: legacy.aiEmbedPer1k,
+      outputPer1k: 0,
+      snapshot: {
+        pricingVersion: RUNTIME_PRICING_VERSION,
+        pricingSource: "legacy",
+        mode: "per_1k_tokens",
+        inputPer1k: legacy.aiEmbedPer1k,
+        outputPer1k: 0,
+      },
+    }
+  }
+
+  // Multimodal AI: flat per-request pricing (provider billing for these
+  // endpoints is per generation, not token-based). Kept as legacy fallbacks so
+  // image/voice/video work on deployments with no admin rules; admin rules
+  // still take per-operation precedence above.
+  if (params.capability === "ai.image") {
+    return {
+      chargeable: true,
+      source: "legacy",
+      fixedCredits: legacy.aiImageRequest,
+      snapshot: {
+        pricingVersion: RUNTIME_PRICING_VERSION,
+        pricingSource: "legacy",
+        mode: "fixed_per_request",
+        credits: legacy.aiImageRequest,
+      },
+    }
+  }
+  if (params.capability === "ai.speech") {
+    return {
+      chargeable: true,
+      source: "legacy",
+      fixedCredits: legacy.aiSpeechRequest,
+      snapshot: {
+        pricingVersion: RUNTIME_PRICING_VERSION,
+        pricingSource: "legacy",
+        mode: "fixed_per_request",
+        credits: legacy.aiSpeechRequest,
+      },
+    }
+  }
+  if (params.capability === "ai.video") {
+    return {
+      chargeable: true,
+      source: "legacy",
+      fixedCredits: legacy.aiVideoRequest,
+      snapshot: {
+        pricingVersion: RUNTIME_PRICING_VERSION,
+        pricingSource: "legacy",
+        mode: "fixed_per_request",
+        credits: legacy.aiVideoRequest,
+      },
+    }
+  }
 
   // 3. Unpriced capability/operation — deny BEFORE provider execution.
   throw new RuntimePricingUnconfiguredError()

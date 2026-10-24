@@ -60,6 +60,27 @@ export const ChatInputSchema = z
 export type ChatInput = z.infer<typeof ChatInputSchema>
 
 /**
+ * The Atai completion operation input — a single-shot prompt (Phase 10:
+ * "completion" joined the provider-neutral vocabulary alongside "chat").
+ * Strict: unexpected fields are rejected, never silently forwarded.
+ */
+export const CompletionInputSchema = z
+  .object({
+    prompt: z.string().min(1).max(100_000),
+    model: z.string().min(1).max(200).regex(/^[\w.\/:-]+$/, "Invalid model identifier").optional(),
+    temperature: z.number().min(0).max(2).optional(),
+    top_p: z.number().gt(0).max(1).optional(),
+    max_tokens: z.number().int().min(1).max(1_000_000).optional(),
+    stop: z.union([z.string().max(100), z.array(z.string().max(100)).max(4)]).optional(),
+    frequency_penalty: z.number().min(-2).max(2).optional(),
+    presence_penalty: z.number().min(-2).max(2).optional(),
+    seed: z.number().int().optional(),
+  })
+  .strict()
+
+export type CompletionInput = z.infer<typeof CompletionInputSchema>
+
+/**
  * Platform-recommended default when the caller does not select a model and
  * OPENROUTER_DEFAULT_MODEL is not configured. A constant (not a required env
  * var) so chat always resolves — first calls from unconfigured projects and
@@ -75,6 +96,42 @@ export const RECOMMENDED_DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free
  */
 function defaultModel(): string {
   return process.env.OPENROUTER_DEFAULT_MODEL || RECOMMENDED_DEFAULT_MODEL
+}
+
+
+/** Shared model resolution: caller selection → project policy → platform default. */
+function resolveModelOrThrow(model: string | undefined, operation: string, policy?: ChatModelPolicy | null): string {
+  const resolved = resolveChatModel(
+    model,
+    policy ?? UNRESTRICTED_MODEL_POLICY,
+    defaultModel(),
+  )
+  if (!resolved.ok) {
+    throw new ProviderExecutionError(
+      "unsupported_operation",
+      resolved.error === "model_not_allowed"
+        ? "The requested model is not allowed for this project."
+        : "The request body is invalid for this capability.",
+      resolved.error === "model_not_allowed"
+        ? `model not in project allowlist (operation "${operation}")`
+        : `no model could be resolved (caller, project policy, and platform default) (operation "${operation}")`,
+    )
+  }
+  return resolved.model
+}
+
+/** Optional generation parameters shared by chat and completion bodies. */
+function applyGenerationParams(
+  body: OpenRouterChatRequest,
+  params: Pick<ChatInput, "temperature" | "top_p" | "max_tokens" | "stop" | "frequency_penalty" | "presence_penalty" | "seed">,
+): void {
+  if (params.temperature !== undefined) body.temperature = params.temperature
+  if (params.top_p !== undefined) body.top_p = params.top_p
+  if (params.max_tokens !== undefined) body.max_tokens = params.max_tokens
+  if (params.stop !== undefined) body.stop = params.stop
+  if (params.frequency_penalty !== undefined) body.frequency_penalty = params.frequency_penalty
+  if (params.presence_penalty !== undefined) body.presence_penalty = params.presence_penalty
+  if (params.seed !== undefined) body.seed = params.seed
 }
 
 /**
@@ -100,36 +157,50 @@ export function toOpenRouterRequest(
   }
 
   const chat = parsed.data
-  const resolved = resolveChatModel(
-    chat.model,
-    policy ?? UNRESTRICTED_MODEL_POLICY,
-    defaultModel(),
-  )
-  if (!resolved.ok) {
-    throw new ProviderExecutionError(
-      "unsupported_operation",
-      resolved.error === "model_not_allowed"
-        ? "The requested model is not allowed for this project."
-        : "The request body is invalid for this capability.",
-      resolved.error === "model_not_allowed"
-        ? "model not in project allowlist"
-        : "no model could be resolved (caller, project policy, and platform default)",
-    )
-  }
-  const model = resolved.model
+  const model = resolveModelOrThrow(chat.model, "chat", policy)
 
   // Deliberate allowlist translation — only contract-supported parameters.
   const body: OpenRouterChatRequest = {
     model,
     messages: chat.messages.map((m) => ({ role: m.role, content: m.content })),
   }
-  if (chat.temperature !== undefined) body.temperature = chat.temperature
-  if (chat.top_p !== undefined) body.top_p = chat.top_p
-  if (chat.max_tokens !== undefined) body.max_tokens = chat.max_tokens
-  if (chat.stop !== undefined) body.stop = chat.stop
-  if (chat.frequency_penalty !== undefined) body.frequency_penalty = chat.frequency_penalty
-  if (chat.presence_penalty !== undefined) body.presence_penalty = chat.presence_penalty
-  if (chat.seed !== undefined) body.seed = chat.seed
+  applyGenerationParams(body, chat)
+
+  return body
+}
+
+// ─── Completion (ai.text/completion — single-shot prompt) ───────────────
+
+/**
+ * Translate validated Atai completion input into an OpenRouter
+ * chat-completions body: the prompt becomes one user message. Validation
+ * and model resolution follow exactly the chat contract (§ shared policy).
+ */
+export function toOpenRouterCompletionRequest(
+  input: unknown,
+  request: ProviderExecutionRequest,
+  policy?: ChatModelPolicy | null,
+): OpenRouterChatRequest {
+  void request
+  const parsed = CompletionInputSchema.safeParse(input)
+  if (!parsed.success) {
+    throw new ProviderExecutionError(
+      "unsupported_operation",
+      "The request body is invalid for this capability.",
+      `completion input validation failed: ${parsed.error.issues[0]?.path.join(".") ?? "unknown"} ${
+        parsed.error.issues[0]?.message ?? ""
+      }`.trim(),
+    )
+  }
+
+  const completion = parsed.data
+  const model = resolveModelOrThrow(completion.model, "completion", policy)
+
+  const body: OpenRouterChatRequest = {
+    model,
+    messages: [{ role: "user", content: completion.prompt }],
+  }
+  applyGenerationParams(body, completion)
 
   return body
 }

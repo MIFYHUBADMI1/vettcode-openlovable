@@ -328,10 +328,13 @@ export function useProjectStatus(projectId: string, isActive: boolean) {
 // trend — none of this is per-request metering data the user acts on live.
 
 export interface PortfolioSpendTrend {
-  daily: Array<{ date: string; creditsCharged: number }>
+  daily: Array<{ date: string; creditsCharged: number; earningsMinor: number }>
   creditsTotal14d: number
   creditsPrior14d: number
   changePct: number | null
+  earningsTotal14d: number | null
+  netTotal14d: number | null
+  earningsCurrencies: string[]
 }
 
 export function usePortfolioSpend(enabled = true) {

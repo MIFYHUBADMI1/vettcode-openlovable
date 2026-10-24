@@ -204,6 +204,128 @@ export const VectorDeleteInputSchema = z
   })
   .strict()
 
+// ── embedding (ai.embed/embed + ai.text/embed alias) ─────────────────────
+
+/** Total text characters accepted per embedding call (§43 — bounded resources). */
+export const MAX_EMBED_TOTAL_CHARS = 100_000
+
+export const EmbedInputSchema = z
+  .object({
+    input: z.union(
+      [z.string().min(1).max(50_000), z.array(z.string().min(1).max(50_000)).min(1).max(50)],
+    ),
+  })
+  .strict()
+
+export type EmbedInput = z.infer<typeof EmbedInputSchema>
+
+export interface TranslatedEmbedRequest {
+  body: { text: string[] }
+  totalChars: number
+}
+
+export function toCloudflareEmbedRequest(input: unknown): TranslatedEmbedRequest {
+  const parsed = EmbedInputSchema.safeParse(input)
+  if (!parsed.success) {
+    const detail = `embed input validation failed: ${firstIssue(parsed)}`
+    throw new ProviderExecutionError("unsupported_operation", "The request body is invalid for this capability.", detail)
+  }
+  const texts = Array.isArray(parsed.data.input) ? parsed.data.input : [parsed.data.input]
+  const totalChars = texts.reduce((sum, t) => sum + t.length, 0)
+  if (totalChars > MAX_EMBED_TOTAL_CHARS) {
+    throw new ProviderExecutionError(
+      "unsupported_operation",
+      "The request body is invalid for this capability.",
+      `embed input is too large: ${totalChars} chars exceeds the ${MAX_EMBED_TOTAL_CHARS} cap`,
+    )
+  }
+  return { body: { text: texts }, totalChars }
+}
+
+/** Documented Workers AI /ai/run embedding response (defensive subset). */
+export interface CloudflareEmbedRunResponse {
+  success?: boolean
+  errors?: Array<{ code?: number; message?: string }>
+  result?: {
+    data?: unknown
+    shape?: unknown
+    usage?: { prompt_tokens?: number }
+  }
+}
+
+export interface EmbedResultData {
+  /** One embedding per input text, provider-reported order. */
+  embeddings: number[][]
+  /** The Workers AI model actually used (server configuration). */
+  model: string
+  /** Embedding dimensionality (validated consistent across the batch). */
+  dimensions: number
+}
+
+export function toEmbedResult(
+  response: CloudflareEmbedRunResponse,
+  model: string,
+  totalChars: number,
+): ProviderExecutionResponse<EmbedResultData> {
+  assertCloudflareSuccess(response)
+
+  const rows = response.result?.data
+  if (!Array.isArray(rows) || rows.length === 0) {
+    throw new ProviderExecutionError(
+      "provider_error",
+      "The embedding provider returned an invalid response.",
+      "missing result.data rows",
+    )
+  }
+
+  const embeddings: number[][] = []
+  let dimensions: number | null = null
+  for (const row of rows) {
+    if (!Array.isArray(row) || row.length === 0) continue
+    let values: number[] | null = null
+    if (row.every((v) => typeof v === "number" && Number.isFinite(v))) {
+      values = row as number[]
+    }
+    if (!values) continue
+    if (dimensions === null) dimensions = values.length
+    if (values.length !== dimensions) {
+      // A ragged batch can never be normalized — fail rather than pad (§105).
+      throw new ProviderExecutionError(
+        "provider_error",
+        "The embedding provider returned an invalid response.",
+        `inconsistent embedding dimensions: ${values.length} vs ${dimensions}`,
+      )
+    }
+    embeddings.push(values)
+  }
+  if (embeddings.length === 0 || dimensions === null) {
+    throw new ProviderExecutionError(
+      "provider_error",
+      "The embedding provider returned an invalid response.",
+      "no valid embedding rows in result.data",
+    )
+  }
+
+  // Usage: prefer the provider-reported prompt token count; fall back to a
+  // conservative chars-per-token estimate so billing never silently zero-fills
+  // a billable unit (§55/§56 — unknown ≠ 0).
+  const reportedTokens = response.result?.usage?.prompt_tokens
+  const inputTokens =
+    typeof reportedTokens === "number" && Number.isInteger(reportedTokens) && reportedTokens > 0
+      ? reportedTokens
+      : Math.max(1, Math.ceil(totalChars / 3))
+
+  return {
+    provider: "cloudflare",
+    data: { embeddings, model, dimensions },
+    usage: {
+      inputTokens,
+      outputTokens: 0,
+      metadata: { texts: embeddings.length },
+    },
+  }
+}
+
 export type VectorDeleteInput = z.infer<typeof VectorDeleteInputSchema>
 
 export interface TranslatedDeleteRequest {

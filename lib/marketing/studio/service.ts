@@ -98,6 +98,10 @@ export async function reviseContentItem(input: {
   if (!parent || parent.userId !== input.userId) {
     throw new AppError("UNAUTHORIZED_PROJECT_ACCESS")
   }
+  if (parent.kind !== "marketing_copy") {
+    // Market & Grow assets are immutable studio outputs, not editable copy drafts.
+    throw new AppError("VALIDATION")
+  }
   const body = (input.body ?? "").trim()
   if (!body) throw new AppError("VALIDATION")
 
@@ -128,7 +132,7 @@ export async function reviseContentItem(input: {
 /** Latest content items for a project (ownership-scoped by caller). Read-only, free. */
 export async function listContentItems(projectId: string, limit = 50): Promise<ContentItemDoc[]> {
   const col = await contentItemsCol()
-  return (await col.find({ projectId }).sort({ updatedAt: -1 }).limit(limit).toArray()) as unknown as ContentItemDoc[]
+  return (await col.find({ projectId, kind: "marketing_copy" }).sort({ updatedAt: -1 }).limit(limit).toArray()) as unknown as ContentItemDoc[]
 }
 
 async function insertContentItem(doc: ContentItemDoc, projectId: string): Promise<void> {

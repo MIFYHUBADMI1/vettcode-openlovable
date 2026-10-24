@@ -1,0 +1,8 @@
+{
+  "permission_rules": [
+    {
+      "tool": "Read",
+      "decision": "allow"
+    }
+  ]
+}

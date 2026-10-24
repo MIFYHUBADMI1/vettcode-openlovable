@@ -67,6 +67,24 @@ export function getCloudflareTimeoutMs(): number {
 }
 
 /**
+ * Default Workers AI embedding model for the provider-neutral `ai.embed`
+ * capability (and the `ai.text`/`embed` alias in the shared contract).
+ * bge-base-en-v1.5 → 768-dimensional vectors. Override only via trusted env
+ * (e.g. "@cf/baai/bge-m3"); the id becomes a URL path segment, so validate
+ * its charset strictly (§41).
+ */
+export const DEFAULT_CLOUDFLARE_EMBEDDING_MODEL = "@cf/baai/bge-base-en-v1.5"
+const EMBEDDING_MODEL_PATTERN = /^[A-Za-z0-9_@./-]{1,120}$/
+
+export function getCloudflareEmbeddingModel(): string {
+  const override = process.env.CLOUDFLARE_EMBEDDING_MODEL
+  if (override !== undefined && !EMBEDDING_MODEL_PATTERN.test(override)) {
+    throw new ProviderNotConfiguredError(`cloudflare:${override}`)
+  }
+  return override ?? DEFAULT_CLOUDFLARE_EMBEDDING_MODEL
+}
+
+/**
  * Deterministic, collision-safe namespace for one authenticated project +
  * environment. Human-readable prefix when it fits; a short digest suffix
  * keeps long project ids collision-free under the 64-byte provider cap.

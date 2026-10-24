@@ -6,14 +6,18 @@ import type {
 } from "@/runtime/contracts/router"
 import type { RuntimeProviderAdapter } from "@/lib/runtime/router/adapter"
 import { ProviderExecutionError } from "@/lib/runtime/router/adapter"
-import { executeDeleteVectors, executeQueryVectors, executeUpsertVectors } from "./client"
+import { executeDeleteVectors, executeQueryVectors, executeRunEmbedding, executeUpsertVectors } from "./client"
+import { getCloudflareEmbeddingModel } from "./config"
 import {
   toCloudflareDelete,
+  toCloudflareEmbedRequest,
   toCloudflareSearch,
   toCloudflareUpsert,
   toDeleteResult,
+  toEmbedResult,
   toSearchResult,
   toUpsertResult,
+  type EmbedResultData,
   type VectorDeleteResultData,
   type VectorSearchResultData,
   type VectorUpsertResultData,
@@ -38,16 +42,43 @@ class CloudflareAdapter implements RuntimeProviderAdapter {
   readonly provider = CLOUDFLARE_PROVIDER_ID
 
   supports(capability: string, operation: string): boolean {
-    return (
+    if (
       capability === "vectors" &&
       (operation === "upsert" || operation === "search" || operation === "delete")
-    )
+    ) return true
+    // Embeddings: the dedicated ai.embed capability plus the ai.text/embed
+    // alias both live in the shared operation registry — same handler.
+    if (operation === "embed" && (capability === "ai.embed" || capability === "ai.text")) return true
+    return false
   }
 
   async execute(
     request: ProviderExecutionRequest,
-  ): Promise<ProviderExecutionResponse<VectorUpsertResultData | VectorSearchResultData | VectorDeleteResultData>> {
+  ): Promise<ProviderExecutionResponse<VectorUpsertResultData | VectorSearchResultData | VectorDeleteResultData | EmbedResultData>> {
     const { capability, operation } = request.request
+
+    // Embedding branch — text in, normalized float vectors out. The model is
+    // server configuration; callers never choose it (§9/§53).
+    if (operation === "embed" && (capability === "ai.embed" || capability === "ai.text")) {
+      const model = getCloudflareEmbeddingModel()
+      const translated = toCloudflareEmbedRequest(request.request.input)
+      const response = await executeRunEmbedding({
+        model,
+        body: translated.body,
+        requestId: request.requestId,
+      })
+      const result = toEmbedResult(response, model, translated.totalChars)
+      logger.info("runtime.cloudflare", "provider execution complete", {
+        requestId: request.requestId,
+        provider: this.provider,
+        capability,
+        operation,
+        model,
+        embeddings: result.data.embeddings.length,
+        dimensions: result.data.dimensions,
+      })
+      return result
+    }
 
     if (capability === "vectors" && operation === "upsert") {
       const translated = toCloudflareUpsert(request.request.input, request)

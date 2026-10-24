@@ -168,6 +168,14 @@ const RuntimePricingSchema = z.object({
   aiEmbedPer1k: z.number().int().min(0).max(1_000_000),
   /** search.web / web scrape — flat credits per request. */
   webRequest: z.number().int().min(0).max(1_000_000),
+  /** payments capability — flat credits per request (checkout/subscription writes and payment-feed reads alike). */
+  paymentsRequest: z.number().int().min(0).max(1_000_000),
+  /** ai.image / generateImage — flat credits per generated image request. */
+  aiImageRequest: z.number().int().min(0).max(1_000_000),
+  /** ai.speech / speak — flat credits per text-to-speech request. */
+  aiSpeechRequest: z.number().int().min(0).max(1_000_000),
+  /** ai.video / generateVideo — flat credits per submit/poll request. */
+  aiVideoRequest: z.number().int().min(0).max(1_000_000),
 })
 export type RuntimePricing = z.infer<typeof RuntimePricingSchema>
 
@@ -179,6 +187,10 @@ export const DEFAULT_RUNTIME_PRICING: RuntimePricing = {
   aiTextOutputPer1k: 8,
   aiEmbedPer1k: 1,
   webRequest: 5,
+  paymentsRequest: 2,
+  aiImageRequest: 20,
+  aiSpeechRequest: 10,
+  aiVideoRequest: 50,
 }
 
 // ─── Runtime pricing RULES (Phase 9.5) ───────────────────────────────────────

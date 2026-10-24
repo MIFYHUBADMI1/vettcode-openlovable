@@ -4,6 +4,7 @@ import {
   collapseExpenseRows,
   combineEarningsStatus,
   mergeRecentPayments,
+  mergeEarningsIntoDaily,
   portfolioProjectRows,
   spendTrend,
   MAX_EARNINGS_PROJECTS,
@@ -269,5 +270,44 @@ describe("spendTrend — the dashboard mini-card's honest direction", () => {
   it("short series never goes negative-index (slice floors at the start)", () => {
     const out = spendTrend([day(5), day(10), day(15)])
     expect(out).toEqual({ creditsTotal14d: 30, creditsPrior14d: 0, changePct: null })
+  })
+})
+
+describe("mergeEarningsIntoDaily — the mini-card's earnings window", () => {
+  const DAY = 24 * 60 * 60 * 1000
+  const t = Date.parse("2026-10-10T12:00:00Z")
+
+  it("adds only succeeded amounts into their UTC day buckets", () => {
+    const out = mergeEarningsIntoDaily(
+      [
+        { date: "2026-10-09", creditsCharged: 10 },
+        { date: "2026-10-10", creditsCharged: 20 },
+      ],
+      [
+        payment({ amountMinor: 1500, status: "succeeded", createdAt: t, currency: "USD" }),
+        payment({ amountMinor: 500, status: "succeeded", createdAt: t - DAY, currency: "USD" }),
+        payment({ amountMinor: 9999, status: "pending", createdAt: t, currency: "USD" }),
+        payment({ amountMinor: 9999, status: "failed", createdAt: t, currency: "USD" }),
+      ],
+    )
+    expect(out[0]).toEqual({ date: "2026-10-09", creditsCharged: 10, earningsMinor: 500 })
+    expect(out[1]).toEqual({ date: "2026-10-10", creditsCharged: 20, earningsMinor: 1500 })
+  })
+
+  it("payments without a parseable date never leak into a day bucket", () => {
+    const out = mergeEarningsIntoDaily(
+      [{ date: "2026-10-10", creditsCharged: 20 }],
+      [payment({ amountMinor: 1500, createdAt: null })],
+    )
+    expect(out[0].earningsMinor).toBe(0)
+  })
+
+  it("day buckets with no payments stay at an honest zero", () => {
+    const out = mergeEarningsIntoDaily(
+      [{ date: "2026-10-01", creditsCharged: 0 }],
+      [payment({ amountMinor: 1500, createdAt: t })],
+    )
+    expect(out[0].earningsMinor).toBe(0)
+    expect(out[0].creditsCharged).toBe(0)
   })
 })

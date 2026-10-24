@@ -1,10 +1,11 @@
 import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { GrowthOverviewView } from "@/components/marketing/growth-overview-view"
+import { MarketStudio } from "@/components/marketing/market-studio"
 import { SeoAuditPanel } from "@/components/marketing/seo-audit-panel"
 import { ProjectComingSoon } from "@/components/workspace/project-coming-soon"
 import { getCurrentUser } from "@/lib/auth/session"
 import { getGrowthOverview } from "@/lib/marketing/growth-overview"
-import { isGrowthOverviewEnabledForUser, isSeoAuditEnabledForUser } from "@/lib/marketing/feature-flags"
+import { isGrowthOverviewEnabledForUser, isMarketStudioEnabled, isSeoAuditEnabledForUser } from "@/lib/marketing/feature-flags"
 import { getSeoAuditAffordability } from "@/lib/marketing/seo/credits"
 import { getLatestSeoAudit } from "@/lib/marketing/seo/service"
 import { requireOwnedProject } from "@/lib/workspace/require-owned-project"
@@ -48,6 +49,11 @@ export default async function ProjectMarketPage({ params }: { params: Promise<{ 
   return (
     <DashboardShell title={project.name} projectId={project.id}>
       <GrowthOverviewView overview={overview} />
+      <MarketStudio
+        projectId={project.id}
+        projectName={project.name}
+        enabled={isMarketStudioEnabled()}
+      />
       <div className="mx-auto w-full max-w-5xl px-6 pb-16">
         <SeoAuditPanel
           projectId={project.id}

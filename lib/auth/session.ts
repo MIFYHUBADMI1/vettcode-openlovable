@@ -37,6 +37,10 @@ function sessionCookieDomain(): string | undefined {
   }
 }
 
+function isSecureOrigin(): boolean {
+  return (process.env.NEXT_PUBLIC_APP_URL || "").startsWith("https://")
+}
+
 export async function createSession(userId: string): Promise<string> {
   await ensureIndexes()
   const col = await sessionsCol()
@@ -66,7 +70,7 @@ export async function setSessionCookie(token: string): Promise<void> {
   jar.set(COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: true,
+    secure: isSecureOrigin(),
     path: "/",
     domain: sessionCookieDomain(),
     maxAge: SESSION_TTL_MS / 1000,

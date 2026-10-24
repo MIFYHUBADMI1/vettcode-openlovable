@@ -79,7 +79,7 @@ describe("generateMarketingDraft", () => {
 
 describe("reviseContentItem", () => {
   it("appends an immutable next version chained to the original (free, still a draft)", async () => {
-    findOne.mockResolvedValue({ id: "content_parent", userId: "owner", projectId: "proj_1", template: "landing_hero", title: "Landing hero for Acme", body: "old", version: 1, origin: "ai_generated_marketing_content" })
+    findOne.mockResolvedValue({ id: "content_parent", userId: "owner", projectId: "proj_1", kind: "marketing_copy", template: "landing_hero", title: "Landing hero for Acme", body: "old", version: 1, origin: "ai_generated_marketing_content" })
     const doc = await reviseContentItem({ userId: "owner", projectId: "proj_1", contentId: "content_parent", body: "  revised copy  " })
     expect(doc.version).toBe(2)
     expect(doc.parentContentId).toBe("content_parent")
@@ -99,7 +99,7 @@ describe("reviseContentItem", () => {
   })
 
   it("rejects an empty revision", async () => {
-    findOne.mockResolvedValue({ id: "content_parent", userId: "owner", projectId: "proj_1", template: "landing_hero", version: 1, body: "y", title: "t", origin: "ai_generated_marketing_content" })
+    findOne.mockResolvedValue({ id: "content_parent", userId: "owner", projectId: "proj_1", kind: "marketing_copy", template: "landing_hero", version: 1, body: "y", title: "t", origin: "ai_generated_marketing_content" })
     await expect(reviseContentItem({ userId: "owner", projectId: "proj_1", contentId: "content_parent", body: "   " })).rejects.toMatchObject({ code: "VALIDATION" })
   })
 })
@@ -108,7 +108,7 @@ describe("listContentItems", () => {
   it("queries tenant-scoped drafts newest-first", async () => {
     toArray.mockResolvedValue([])
     await listContentItems("proj_1")
-    expect(find).toHaveBeenCalledWith({ projectId: "proj_1" })
+    expect(find).toHaveBeenCalledWith({ projectId: "proj_1", kind: "marketing_copy" })
     expect(findChain.sort).toHaveBeenCalledWith({ updatedAt: -1 })
   })
 })

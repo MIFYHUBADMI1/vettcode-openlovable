@@ -69,7 +69,7 @@ const CAPABILITY_LABELS: Record<string, string> = {
   "calendar": "Scheduling (Cal.com)",
   "vectors": "Vector storage",
   "db": "App database",
-  "payments": "Payments & checkout",
+  "payments": "Payments (checkout · subscriptions · payment feed · payouts)",
 }
 
 const CAPABILITY_OPERATIONS: Record<string, readonly string[]> = {
@@ -92,7 +92,7 @@ const CAPABILITY_OPERATIONS: Record<string, readonly string[]> = {
   "calendar": ["listBookings", "createBooking"],
   "vectors": ["upsert", "search", "delete"],
   "db": ["query", "create", "edit", "delete"],
-  "payments": ["createCheckout"],
+  "payments": ["createCheckout", "createSubscription", "listPayments", "listPayouts"],
 }
 
 const OPERATION_LABELS: Record<string, string> = {
@@ -119,6 +119,9 @@ const OPERATION_LABELS: Record<string, string> = {
   create: "Create",
   edit: "Edit",
   createCheckout: "Create checkout",
+  createSubscription: "Create subscription",
+  listPayments: "List payments",
+  listPayouts: "List payouts",
 }
 
 /** A helper email/phone for placeholder credentials used by side-effect samples. */
@@ -161,12 +164,16 @@ const SAMPLE_INPUTS = (): Record<string, string> => ({
   "db/edit": JSON.stringify({ tableName: "customers", recordId: "<record id>", data: { name: "Ada Tester (edited)" } }, null, 2),
   "db/delete": JSON.stringify({ tableName: "customers", recordId: "<record id>" }, null, 2),
   "payments/createCheckout": JSON.stringify({ items: [{ name: "Pro Plan", quantity: 1, price: 29.9 }], idempotencyKey: "demo-checkout", successUrl: DEMO_SUCCESS_URL, cancelUrl: DEMO_CANCEL_URL, currency: "USD" }, null, 2),
+  "payments/createSubscription": JSON.stringify({ productId: "prdtxxxxxxxxxxxx", quantity: 1, customer: { email: DEMO_EMAIL, name: "Ada Tester" }, billing: { country: "US", city: "Kampala" }, returnUrl: DEMO_SUCCESS_URL }, null, 2),
+  "payments/listPayments": JSON.stringify({ limit: 20, status: "succeeded" }, null, 2),
+  "payments/listPayouts": JSON.stringify({ limit: 10 }, null, 2),
 })
 
 const REQUEST_HINTS: Record<string, string> = {
   "ai.text/chat": "messages[] with role/content. The model comes from the Model chooser below (recommended default or custom).",
-  "ai.text/completion": "No production provider is wired for completion yet — see the capability coverage panel.",
-  "ai.text/embed": "No production provider is wired for embeddings yet — see the capability coverage panel.",
+  "ai.text/completion": "A single-shot prompt. Optional generation params (temperature, max_tokens, stop…). Model comes from the Model chooser — resolved the same way as chat.",
+  "ai.text/embed": "input (string or string[]) → embeddings (768-dim by default via the platform's Workers AI embedding model; override server-side with CLOUDFLARE_EMBEDDING_MODEL).",
+  "ai.embed/embed": "input (string or string[]) → { embeddings, model, dimensions }. Same embedding provider as ai.text/embed.",
   "ai.speak/synthesize": "text (1–5,000 chars). Optional voiceId/model from the ElevenLabs allowlist; both default to server config.",
   "ai.image/generateImage": "prompt and an OpenRouter image-capable model are required. aspect_ratio optional.",
   "ai.video/generateVideo": "prompt + model. Returns { jobId, status } — poll the SAME operation with { jobId } until it completes.",
@@ -190,7 +197,10 @@ const REQUEST_HINTS: Record<string, string> = {
   "db/create": "tableName + a data object — a new record is written to your project's database.",
   "db/edit": "tableName, recordId, and a data object of fields to update.",
   "db/delete": "tableName + recordId — permanently removes the record.",
-  "payments/createCheckout": "items[] with name/quantity/price. Returns a hosted checkoutUrl to redirect the customer to (test mode by default).",
+  "payments/createCheckout": "items[] with name/quantity/price. Returns a hosted checkoutUrl to redirect the customer to (test mode by default). Project attribution is stamped server-side.",
+  "payments/createSubscription": "Real recurring charge: productId (a Dodo product id), quantity, customer {email,name} and billing {country}. Returns subscriptionId + paymentLink for the customer's first payment.",
+  "payments/listPayments": "Read-only feed of the platform's payment records. Optional limit (≤100), status filter, subscriptionId or customerId.",
+  "payments/listPayouts": "Read-only, ACCOUNT-LEVEL: settlement payouts of the platform's merchant account (not attributable to a single project). Optional limit.",
 }
 
 /** Capabilities that generate media and need a specific model (chat uses the model chooser instead). */

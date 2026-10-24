@@ -623,7 +623,7 @@ try {
                 <CapabilityCard icon={FileText} name="Calendar" sdk="atai.calendar" operations={["listBookings", "createBooking"]} description="List upcoming bookings and create new ones with attendees." />
                 <CapabilityCard icon={Boxes} name="Vectors" sdk="atai.vectors" operations={["upsert", "search", "delete"]} description="Store embeddings and search them — semantic search, recommendations, RAG." />
                 <CapabilityCard icon={Database} name="Database" sdk="atai.db" operations={["query", "create", "edit", "delete"]} description="The app's runtime database: filter, sort, paginate, and mutate records." />
-                <CapabilityCard icon={CreditCard} name="Payments" sdk="atai.payments" operations={["createCheckout"]} description="Create checkout sessions for one-time purchases and order flows." />
+                <CapabilityCard icon={CreditCard} name="Payments" sdk="atai.payments" operations={["createCheckout", "createSubscription", "listPayments", "listPayouts"]} description="Checkout sessions, recurring subscriptions, the payment feed, and account-level payout records." />
               </div>
 
               <h3 className="mt-8 text-lg font-semibold text-foreground">ai — text generation</h3>

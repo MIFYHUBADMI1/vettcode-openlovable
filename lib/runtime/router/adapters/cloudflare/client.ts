@@ -13,6 +13,7 @@ import type { ProviderHttpResponse } from "../shared/http"
 import type {
   CloudflareQueryResponse,
   CloudflareVectorMutationResponse,
+  CloudflareEmbedRunResponse,
 } from "./mapper"
 
 /**
@@ -91,4 +92,49 @@ export async function executeDeleteVectors(params: {
   return parseJsonBody<CloudflareVectorMutationResponse>(
     await callVectorize({ endpoint: "delete_by_ids", body: params.body, requestId: params.requestId }),
   )
+}
+
+// ─── Workers AI embeddings (ai.embed/embed + ai.text/embed alias) ──────
+
+/**
+ * Run ONE Workers AI embedding model on a batch of texts. Model id is a
+ * trusted server configuration value (URL path segment) — never caller
+ * input. The /ai/run endpoint is the only additional surface reachable
+ * through this adapter (§53: no arbitrary Cloudflare forwarding).
+ */
+export async function executeRunEmbedding(params: {
+  model: string
+  body: { text: string[] }
+  requestId?: string
+}): Promise<CloudflareEmbedRunResponse> {
+  const startedAt = Date.now()
+  const account = encodeURIComponent(getCloudflareAccountId())
+  const url = `${getCloudflareBaseUrl()}/accounts/${account}/ai/run/${encodeURIComponent(params.model)}`
+
+  const res = await providerFetch({
+    url,
+    method: "POST",
+    headers: cloudflareHeaders(),
+    body: JSON.stringify(params.body),
+    timeoutMs: getCloudflareTimeoutMs(),
+    requestId: params.requestId,
+  })
+  const latencyMs = Date.now() - startedAt
+  if (!res.ok) {
+    logger.error("runtime.cloudflare", "provider returned an error status", {
+      ...(params.requestId ? { requestId: params.requestId } : {}),
+      endpoint: "ai/run/embedding",
+      status: res.status,
+      latencyMs,
+      detail: res.text.slice(0, 300),
+    })
+    throw providerStatusFailure(categoryForStatus(res.status), "The embedding provider returned an error.", res.text)
+  }
+  logger.info("runtime.cloudflare", "embedding run complete", {
+    ...(params.requestId ? { requestId: params.requestId } : {}),
+    endpoint: "ai/run/embedding",
+    status: res.status,
+    latencyMs,
+  })
+  return parseJsonBody<CloudflareEmbedRunResponse>(res)
 }

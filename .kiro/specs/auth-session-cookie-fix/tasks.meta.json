@@ -1,0 +1,52 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Write bug condition exploration test": [
+      {
+        "executionId": "fed069dc-0f3d-443f-85aa-a1d3a1d5b02b",
+        "chatSessionId": "sess_1c569a2c-9aab-4dc7-b9ea-4219579d0391",
+        "timestamp": 1792824387188
+      },
+      {
+        "executionId": "fed069dc-0f3d-443f-85aa-a1d3a1d5b02b",
+        "chatSessionId": "sess_1c569a2c-9aab-4dc7-b9ea-4219579d0391",
+        "timestamp": 1792824404781
+      }
+    ],
+    "2. Write preservation property tests (BEFORE implementing fix)": [
+      {
+        "executionId": "fed069dc-0f3d-443f-85aa-a1d3a1d5b02b",
+        "chatSessionId": "sess_1c569a2c-9aab-4dc7-b9ea-4219579d0391",
+        "timestamp": 1792824388491
+      }
+    ],
+    "3.1 Add `isSecureOrigin` helper and update `setSessionCookie`": [
+      {
+        "executionId": "fed069dc-0f3d-443f-85aa-a1d3a1d5b02b",
+        "chatSessionId": "sess_1c569a2c-9aab-4dc7-b9ea-4219579d0391",
+        "timestamp": 1792824389874
+      }
+    ],
+    "3.2 Verify bug condition exploration test now passes": [
+      {
+        "executionId": "fed069dc-0f3d-443f-85aa-a1d3a1d5b02b",
+        "chatSessionId": "sess_1c569a2c-9aab-4dc7-b9ea-4219579d0391",
+        "timestamp": 1792824391026
+      }
+    ],
+    "3.3 Verify preservation tests still pass": [
+      {
+        "executionId": "fed069dc-0f3d-443f-85aa-a1d3a1d5b02b",
+        "chatSessionId": "sess_1c569a2c-9aab-4dc7-b9ea-4219579d0391",
+        "timestamp": 1792824392005
+      }
+    ],
+    "4. Checkpoint — Ensure all tests pass": [
+      {
+        "executionId": "fed069dc-0f3d-443f-85aa-a1d3a1d5b02b",
+        "chatSessionId": "sess_1c569a2c-9aab-4dc7-b9ea-4219579d0391",
+        "timestamp": 1792824392795
+      }
+    ]
+  }
+}

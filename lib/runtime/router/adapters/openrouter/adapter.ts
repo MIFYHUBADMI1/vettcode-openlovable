@@ -6,7 +6,7 @@ import type {
 } from "@/runtime/contracts/router"
 import type { RuntimeProviderAdapter } from "@/lib/runtime/router/adapter"
 import { executeChatCompletion, executeOpenRouterJsonPost, executeOpenRouterSpeech } from "./client"
-import { toChatResult, toOpenRouterRequest } from "./mapper"
+import { toChatResult, toOpenRouterCompletionRequest, toOpenRouterRequest } from "./mapper"
 import {
   toOpenRouterImageRequest,
   toImageResult,
@@ -59,7 +59,7 @@ class OpenRouterAdapter implements RuntimeProviderAdapter {
    * OpenRouter is behind it (§7/§8).
    */
   supports(capability: string, operation: string): boolean {
-    if (capability === "ai.text" && operation === "chat") return true
+    if (capability === "ai.text" && (operation === "chat" || operation === "completion")) return true
     // Multimodal wave — dedicated OpenRouter endpoints.
     if (capability === "ai.image" && operation === "generateImage") return true
     if (capability === "ai.video" && operation === "generateVideo") return true
@@ -118,14 +118,16 @@ class OpenRouterAdapter implements RuntimeProviderAdapter {
       return toVisionResult(payload as Parameters<typeof toVisionResult>[0])
     }
 
-    // Chat path (ai.text/chat) — unchanged Phase 6 flow.
+    // Chat (ai.text/chat) and completion (ai.text/completion) share the
+    // same OpenRouter endpoint and normalization — only the translation of
+    // the provider-neutral input differs.
     // 1. Translate (validates; bad caller input → normalized 422-class error).
     const projectConfig = await getCachedProjectRuntimeConfig(request.auth.projectId)
-    const orRequest = toOpenRouterRequest(
-      request.request.input,
-      request,
-      configToModelPolicy(projectConfig),
-    )
+    const policy = configToModelPolicy(projectConfig)
+    const orRequest =
+      capability === "ai.text" && operation === "completion"
+        ? toOpenRouterCompletionRequest(request.request.input, request, policy)
+        : toOpenRouterRequest(request.request.input, request, policy)
 
     // 2. Call OpenRouter (network failures → normalized ProviderExecutionError).
     const { response, latencyMs } = await executeChatCompletion(orRequest)

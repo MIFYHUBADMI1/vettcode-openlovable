@@ -511,6 +511,63 @@ export type StudioTemplate =
 
 export type ContentItemStatus = "draft"
 
+/** Content kinds produced by the Market & Grow AI studio. */
+export type MarketAssetKind =
+  | "copy"
+  | "email"
+  | "social"
+  | "timeline"
+  | "image"
+  | "voice"
+  | "video"
+
+/** Stored media for a market asset. Binary data is bounded before storage. */
+export interface MarketAssetMedia {
+  /** Media family — text assets store no media here (their body is the deliverable). */
+  kind: "image" | "audio" | "video"
+  /** Inline data URL for image/audio (omitted when too large to store). */
+  dataUrl?: string
+  mimeType?: string
+  /** Async video job reference (the provider generates out of band). */
+  jobId?: string
+  status?: string
+  /** Provider job output, reduced to JSON-safe scalars. */
+  providerOutput?: unknown
+  /** True when the media exceeded the storage bound and was not persisted. */
+  notPersisted?: boolean
+}
+
+/** One runtime call made while producing an asset (audit + credit display). */
+export interface MarketAssetRuntimeCall {
+  requestId: string
+  capability: string
+  operation: string
+  creditsCharged: number
+  model?: string
+}
+
+/** Provenance for a generated market asset. */
+export interface MarketAssetRuntime {
+  /** Project API key used automatically, or the workspace session identity. */
+  keySource: "project_api_key" | "workspace"
+  apiKeyId: string
+  keyLabel: string
+  calls: MarketAssetRuntimeCall[]
+  totalCreditsCharged: number
+}
+
+/** The brief the founder gave the studio (shown with the result). */
+export interface MarketAssetBrief {
+  brief: string
+  tone?: string
+  language?: string
+  channel?: string
+  audience?: string
+  aspectRatio?: string
+  durationSeconds?: number
+  voiceStyle?: string
+}
+
 /**
  * A single marketing-copy draft. Drafts are DISTINCT from the business-plan
  * `specification` prose: `origin` is always "ai_generated_marketing_content"
@@ -525,8 +582,8 @@ export interface ContentItemDoc {
   id: string
   userId: string
   projectId: string
-  kind: "marketing_copy"
-  template: StudioTemplate
+  kind: "marketing_copy" | "marketing_asset"
+  template: StudioTemplate | "market_studio"
   status: ContentItemStatus
   /** Short human label shown in the Studio list. */
   title: string
@@ -540,6 +597,11 @@ export interface ContentItemDoc {
   origin: "ai_generated_marketing_content"
   /** Model id used for the initial generation (omitted on pure edits). */
   model?: string
+  /** Market & Grow studio asset metadata (absent on plain copy drafts). */
+  assetKind?: MarketAssetKind
+  media?: MarketAssetMedia
+  runtime?: MarketAssetRuntime
+  brief?: MarketAssetBrief
   /** Credits charged to create THIS doc (0 for free saves/edits). */
   creditsCharged: number
   createdAt: number

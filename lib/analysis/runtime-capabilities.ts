@@ -115,9 +115,9 @@ export const RUNTIME_CAPABILITY_SUMMARIES: readonly RuntimeCapabilitySummary[] =
   {
     capability: "payments",
     sdk: "atai.payments",
-    operations: ["createCheckout"],
-    description: "Checkout sessions — charge customers for products or plans.",
-    examples: ["one-time purchases", "order checkout", "paid upgrades"],
+    operations: ["createCheckout", "createSubscription", "listPayments", "listPayouts"],
+    description: "Checkout sessions, recurring subscriptions, and the read-only payment/payout feed.",
+    examples: ["one-time purchases", "order checkout", "paid upgrades", "subscription plans", "payment feeds"],
   },
   {
     capability: "health",

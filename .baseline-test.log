@@ -1,0 +1,551 @@
+[33m(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.[39m
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.1 [39m[90mC:/Users/USER/Desktop/mirrorsiteai[39m
+
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mClosed State - Normal Operation[2m > [22m[2mshould increment failure count on error
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.565Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mClosed State - Normal Operation[2m > [22m[2mshould reset failure count on success
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.585Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mClosed State - Normal Operation[2m > [22m[2mshould reset failure count on success
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.585Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Open State[2m > [22m[2mshould open circuit after reaching failure threshold
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.593Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Open State[2m > [22m[2mshould open circuit after reaching failure threshold
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.593Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Open State[2m > [22m[2mshould open circuit after reaching failure threshold
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.593Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-10T12:53:56.593Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Open State[2m > [22m[2mshould set next attempt time when opening
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.602Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Open State[2m > [22m[2mshould set next attempt time when opening
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.602Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Open State[2m > [22m[2mshould set next attempt time when opening
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.602Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-10T12:53:56.602Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mOpen State - Rejecting Requests[2m > [22m[2mshould reject requests immediately when open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.611Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mOpen State - Rejecting Requests[2m > [22m[2mshould reject requests immediately when open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.611Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mOpen State - Rejecting Requests[2m > [22m[2mshould reject requests immediately when open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.611Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-10T12:53:56.611Z"}
+
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mOpen State - Rejecting Requests[2m > [22m[2mshould not execute function when circuit is open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.634Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mOpen State - Rejecting Requests[2m > [22m[2mshould not execute function when circuit is open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.634Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mOpen State - Rejecting Requests[2m > [22m[2mshould not execute function when circuit is open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.634Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-10T12:53:56.634Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mOpen State - Rejecting Requests[2m > [22m[2mshould include service name in error message
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.650Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mOpen State - Rejecting Requests[2m > [22m[2mshould include service name in error message
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.650Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mOpen State - Rejecting Requests[2m > [22m[2mshould include service name in error message
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.650Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-10T12:53:56.650Z"}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace PostgreSQL references with Totalum SDK database
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.647Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould transition to half-open after timeout
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.669Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace PostgreSQL references with Totalum SDK database
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.658Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould transition to half-open after timeout
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.669Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace postgres (lowercase) references
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.675Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould transition to half-open after timeout
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.669Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-10T12:53:56.669Z"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace postgres (lowercase) references
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.676Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"postgres","replacement":"Totalum SDK database","pattern":"postgres","field":"additionalInstructions"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould transition to half-open after timeout
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:56.670Z","level":"info","stage":"circuit_breaker","message":"Circuit half-open for test-service, testing recovery"}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace MongoDB references with Totalum SDK database
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.678Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould transition to half-open after timeout
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:56.670Z","level":"info","stage":"circuit_breaker","message":"Success in half-open state for test-service","service":"test-service","successCount":1,"successThreshold":2}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace MongoDB references with Totalum SDK database
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.679Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"MongoDB","replacement":"Totalum SDK database","pattern":"MongoDB","field":"integrations[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould reset success count when entering half-open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.692Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace MySQL references with Totalum SDK database
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.681Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould reset success count when entering half-open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.692Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace MySQL references with Totalum SDK database
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.682Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"MySQL","replacement":"Totalum SDK database","pattern":"MySQL","field":"designDirection"}]}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould reset success count when entering half-open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.692Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-10T12:53:56.692Z"}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace SQLite references with Totalum SDK database
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.683Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould reset success count when entering half-open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:56.693Z","level":"info","stage":"circuit_breaker","message":"Circuit half-open for test-service, testing recovery"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace SQLite references with Totalum SDK database
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.684Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"SQLite","replacement":"Totalum SDK database","pattern":"SQLite","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould reset success count when entering half-open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:56.693Z","level":"info","stage":"circuit_breaker","message":"Success in half-open state for test-service","service":"test-service","successCount":1,"successThreshold":2}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace Prisma references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.689Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould not transition to half-open before timeout
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.699Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace Prisma references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.689Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"Prisma ORM","replacement":"Totalum SDK","pattern":"Prisma ORM","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould not transition to half-open before timeout
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.699Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace Mongoose references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.691Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould not transition to half-open before timeout
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.699Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-10T12:53:56.699Z"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace Mongoose references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.692Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":2,"details":[{"original":"MongoDB","replacement":"Totalum SDK database","pattern":"MongoDB","field":"integrations[0]"},{"original":"Mongoose","replacement":"Totalum SDK","pattern":"Mongoose","field":"integrations[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould close circuit after success threshold in half-open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.710Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace Sequelize references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.694Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould close circuit after success threshold in half-open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.710Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace Sequelize references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.694Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"Sequelize","replacement":"Totalum SDK","pattern":"Sequelize","field":"additionalInstructions"}]}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould close circuit after success threshold in half-open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.710Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-10T12:53:56.710Z"}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace TypeORM references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.696Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould close circuit after success threshold in half-open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:56.711Z","level":"info","stage":"circuit_breaker","message":"Circuit half-open for test-service, testing recovery"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace TypeORM references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.696Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"TypeORM","replacement":"Totalum SDK","pattern":"TypeORM","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould close circuit after success threshold in half-open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:56.711Z","level":"info","stage":"circuit_breaker","message":"Success in half-open state for test-service","service":"test-service","successCount":1,"successThreshold":2}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace Drizzle references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.698Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould close circuit after success threshold in half-open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:56.711Z","level":"info","stage":"circuit_breaker","message":"Circuit closed for test-service, service recovered","service":"test-service","successThreshold":2}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace Drizzle references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.699Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"Drizzle ORM","replacement":"Totalum SDK","pattern":"Drizzle ORM","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould reopen circuit on failure in half-open state
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.718Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mbackend framework replacements[2m > [22m[2mshould replace Express references with Next.js API routes
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.702Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould reopen circuit on failure in half-open state
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.718Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mbackend framework replacements[2m > [22m[2mshould replace Express references with Next.js API routes
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.702Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"Express","replacement":"Next.js API routes","pattern":"Express","field":"backendRequirements[0]"}]}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould reopen circuit on failure in half-open state
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.718Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-10T12:53:56.718Z"}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mbackend framework replacements[2m > [22m[2mshould replace Fastify references with Next.js API routes
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.709Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould reopen circuit on failure in half-open state
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:56.719Z","level":"info","stage":"circuit_breaker","message":"Circuit half-open for test-service, testing recovery"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mbackend framework replacements[2m > [22m[2mshould replace Fastify references with Next.js API routes
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.710Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"Fastify","replacement":"Next.js API routes","pattern":"Fastify","field":"integrations[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould reopen circuit on failure in half-open state
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:56.719Z","level":"info","stage":"circuit_breaker","message":"Success in half-open state for test-service","service":"test-service","successCount":1,"successThreshold":2}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mbackend framework replacements[2m > [22m[2mshould replace NestJS references with Next.js API routes
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.712Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould reopen circuit on failure in half-open state
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:56.719Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened from half-open for test-service, service still unhealthy","service":"test-service","nextAttempt":"2026-10-10T12:53:57.719Z"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mbackend framework replacements[2m > [22m[2mshould replace NestJS references with Next.js API routes
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.713Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"NestJS","replacement":"Next.js API routes","pattern":"NestJS","field":"additionalInstructions"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould set new timeout when reopening from half-open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.730Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mBaaS replacements[2m > [22m[2mshould replace Firebase references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.715Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould set new timeout when reopening from half-open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.730Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mBaaS replacements[2m > [22m[2mshould replace Firebase references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.715Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"Firebase","replacement":"Totalum SDK","pattern":"Firebase","field":"integrations[0]"}]}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould set new timeout when reopening from half-open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.730Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-10T12:53:56.730Z"}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mBaaS replacements[2m > [22m[2mshould replace Supabase references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.718Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould set new timeout when reopening from half-open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:56.731Z","level":"info","stage":"circuit_breaker","message":"Circuit half-open for test-service, testing recovery"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mBaaS replacements[2m > [22m[2mshould replace Supabase references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.719Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"Supabase","replacement":"Totalum SDK","pattern":"Supabase","field":"backendRequirements[0]"}]}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould set new timeout when reopening from half-open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:56.731Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened from half-open for test-service, service still unhealthy","service":"test-service","nextAttempt":"2026-10-10T12:53:57.731Z"}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan backendRequirements array
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.724Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan backendRequirements array
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.725Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":2,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[0]"},{"original":"Express","replacement":"Next.js API routes","pattern":"Express","field":"backendRequirements[1]"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould increment success count with each success
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.744Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan integrations array
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.728Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould increment success count with each success
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.744Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan integrations array
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.728Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":2,"details":[{"original":"MongoDB","replacement":"Totalum SDK database","pattern":"MongoDB","field":"integrations[0]"},{"original":"Prisma","replacement":"Totalum SDK","pattern":"Prisma","field":"integrations[1]"}]}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould increment success count with each success
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.744Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-10T12:53:56.744Z"}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan designDirection string
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.731Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould increment success count with each success
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:56.745Z","level":"info","stage":"circuit_breaker","message":"Circuit half-open for test-service, testing recovery"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan designDirection string
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.731Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"designDirection"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould increment success count with each success
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:56.745Z","level":"info","stage":"circuit_breaker","message":"Success in half-open state for test-service","service":"test-service","successCount":1,"successThreshold":2}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan additionalInstructions string
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.733Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould increment success count with each success
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:56.745Z","level":"info","stage":"circuit_breaker","message":"Circuit closed for test-service, service recovered","service":"test-service","successThreshold":2}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan additionalInstructions string
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.733Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"Express","replacement":"Next.js API routes","pattern":"Express","field":"additionalInstructions"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mState Getters[2m > [22m[2mshould return current failure count
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.762Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan suggestedFeatures descriptions
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.734Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mState Getters[2m > [22m[2mshould return current success count
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.786Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan suggestedFeatures descriptions
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.735Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":2,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"suggestedFeatures[0].description"},{"original":"Prisma","replacement":"Totalum SDK","pattern":"Prisma","field":"suggestedFeatures[0].description"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mState Getters[2m > [22m[2mshould return current success count
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.786Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mState Getters[2m > [22m[2mshould return current success count
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.786Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-10T12:53:56.786Z"}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan dataEntities descriptions
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.742Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mState Getters[2m > [22m[2mshould return current success count
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:56.787Z","level":"info","stage":"circuit_breaker","message":"Circuit half-open for test-service, testing recovery"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan dataEntities descriptions
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.742Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"MongoDB","replacement":"Totalum SDK database","pattern":"MongoDB","field":"dataEntities[0].description"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mState Getters[2m > [22m[2mshould return current success count
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:56.787Z","level":"info","stage":"circuit_breaker","message":"Success in half-open state for test-service","service":"test-service","successCount":1,"successThreshold":2}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan coreFlows descriptions
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.744Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mState Getters[2m > [22m[2mshould return next attempt timestamp
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.802Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan coreFlows descriptions
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.747Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":2,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"coreFlows[0].description"},{"original":"Prisma","replacement":"Totalum SDK","pattern":"Prisma","field":"coreFlows[0].description"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mState Getters[2m > [22m[2mshould return next attempt timestamp
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.802Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan authenticationRequirements
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.752Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mState Getters[2m > [22m[2mshould return next attempt timestamp
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.802Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-10T12:53:56.802Z"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan authenticationRequirements
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.760Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"Firebase","replacement":"Totalum SDK","pattern":"Firebase","field":"authenticationRequirements"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould reset to closed state
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.816Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mviolation tracking[2m > [22m[2mshould track violations with field paths
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.777Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould reset to closed state
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.816Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mviolation tracking[2m > [22m[2mshould track violations with field paths
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.778Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[0]"}]}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould reset to closed state
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.816Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-10T12:53:56.816Z"}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mviolation tracking[2m > [22m[2mshould track multiple violations in the same field
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.796Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould reset to closed state
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.816Z","level":"info","stage":"circuit_breaker","message":"Circuit breaker reset for test-service","service":"test-service"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mviolation tracking[2m > [22m[2mshould track multiple violations in the same field
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.796Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":2,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"additionalInstructions"},{"original":"Prisma","replacement":"Totalum SDK","pattern":"Prisma","field":"additionalInstructions"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould reset all counters
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.833Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mviolation tracking[2m > [22m[2mshould track violations across multiple fields
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.799Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould reset all counters
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.833Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mviolation tracking[2m > [22m[2mshould track violations across multiple fields
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.799Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":3,"details":[{"original":"Express","replacement":"Next.js API routes","pattern":"Express","field":"additionalInstructions"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[0]"},{"original":"MongoDB","replacement":"Totalum SDK database","pattern":"MongoDB","field":"integrations[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould reset all counters
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.833Z","level":"info","stage":"circuit_breaker","message":"Circuit breaker reset for test-service","service":"test-service"}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2msanitized flag[2m > [22m[2mshould set sanitized flag when violations are found
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.803Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould allow requests after reset
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.836Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2msanitized flag[2m > [22m[2mshould set sanitized flag when violations are found
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.811Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould allow requests after reset
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.836Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2msanitized flag[2m > [22m[2mshould not set sanitized flag when no violations are found
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.814Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+[Atai] {"ts":"2026-10-10T12:53:55.814Z","level":"info","stage":"[Sanitizer] No sanitization needed - specification is compliant","message":"Specification is compliant","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould allow requests after reset
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.836Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-10T12:53:56.836Z"}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould handle empty specification
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.816Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+[Atai] {"ts":"2026-10-10T12:53:55.816Z","level":"info","stage":"[Sanitizer] No sanitization needed - specification is compliant","message":"Specification is compliant","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould allow requests after reset
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.836Z","level":"info","stage":"circuit_breaker","message":"Circuit breaker reset for test-service","service":"test-service"}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould handle undefined optional fields
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.826Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+[Atai] {"ts":"2026-10-10T12:53:55.826Z","level":"info","stage":"[Sanitizer] No sanitization needed - specification is compliant","message":"Specification is compliant","title":"Test App"}
+
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould filter empty strings from arrays after sanitization
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.827Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mPre-configured Instances[2m > [22m[2mshould have independent states for each instance
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.857Z","level":"info","stage":"circuit_breaker","message":"Circuit breaker reset for firecrawl","service":"firecrawl"}
+[Atai] {"ts":"2026-10-10T12:53:55.857Z","level":"info","stage":"circuit_breaker","message":"Circuit breaker reset for openrouter","service":"openrouter"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould filter empty strings from arrays after sanitization
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.828Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[1]"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mPre-configured Instances[2m > [22m[2mshould have independent states for each instance
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.857Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for firecrawl","service":"firecrawl","failureCount":1,"threshold":5}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould handle case-insensitive matches
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.833Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mPre-configured Instances[2m > [22m[2mshould have independent states for each instance
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.857Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for firecrawl","service":"firecrawl","failureCount":2,"threshold":5}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould handle case-insensitive matches
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.833Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":3,"details":[{"original":"POSTGRESQL","replacement":"Totalum SDK database","pattern":"POSTGRESQL","field":"backendRequirements[0]"},{"original":"postgresql","replacement":"Totalum SDK database","pattern":"postgresql","field":"backendRequirements[1]"},{"original":"PostGreSQL","replacement":"Totalum SDK database","pattern":"PostGreSQL","field":"backendRequirements[2]"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mPre-configured Instances[2m > [22m[2mshould have independent states for each instance
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.857Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for firecrawl","service":"firecrawl","failureCount":3,"threshold":5}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould handle multiple violations in single text
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.835Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mPre-configured Instances[2m > [22m[2mshould have independent states for each instance
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.857Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for firecrawl","service":"firecrawl","failureCount":4,"threshold":5}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould handle multiple violations in single text
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.835Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":3,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"additionalInstructions"},{"original":"Prisma","replacement":"Totalum SDK","pattern":"Prisma","field":"additionalInstructions"},{"original":"Express","replacement":"Next.js API routes","pattern":"Express","field":"additionalInstructions"}]}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mPre-configured Instances[2m > [22m[2mshould have independent states for each instance
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.857Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for firecrawl","service":"firecrawl","failures":5,"threshold":5,"nextAttempt":"2026-10-10T12:54:55.857Z"}
+
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mError Propagation[2m > [22m[2mshould propagate original error when circuit is closed
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.862Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould preserve other content while replacing violations
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.843Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mError Propagation[2m > [22m[2mshould throw CircuitBreakerOpenError when circuit is open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.867Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould preserve other content while replacing violations
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.843Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mError Propagation[2m > [22m[2mshould throw CircuitBreakerOpenError when circuit is open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.867Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2mscanForViolations[2m > [22m[2mshould scan without modifying the specification
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.845Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mError Propagation[2m > [22m[2mshould throw CircuitBreakerOpenError when circuit is open
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.867Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-10T12:53:56.867Z"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2mscanForViolations[2m > [22m[2mshould scan without modifying the specification
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.846Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mEdge Cases[2m > [22m[2mshould handle synchronous errors
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.879Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2mscanForViolations[2m > [22m[2mshould find all violations across all fields
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.850Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mEdge Cases[2m > [22m[2mshould handle async rejections
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.882Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2mscanForViolations[2m > [22m[2mshould find all violations across all fields
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.850Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":4,"details":[{"original":"Express","replacement":"Next.js API routes","pattern":"Express","field":"additionalInstructions"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[0]"},{"original":"MongoDB","replacement":"Totalum SDK database","pattern":"MongoDB","field":"integrations[0]"},{"original":"Prisma ORM","replacement":"Totalum SDK","pattern":"Prisma ORM","field":"suggestedFeatures[0].description"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mEdge Cases[2m > [22m[2mshould handle zero timeout
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.914Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for zero-timeout","service":"zero-timeout","failureCount":1,"threshold":2}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2mscanForViolations[2m > [22m[2mshould return empty array when no violations found
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.852Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+[Atai] {"ts":"2026-10-10T12:53:55.852Z","level":"info","stage":"[Sanitizer] No sanitization needed - specification is compliant","message":"Specification is compliant","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mEdge Cases[2m > [22m[2mshould handle zero timeout
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.914Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for zero-timeout","service":"zero-timeout","failures":2,"threshold":2,"nextAttempt":"2026-10-10T12:53:55.914Z"}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2mperformance[2m > [22m[2mshould sanitize large specifications quickly
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.859Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mEdge Cases[2m > [22m[2mshould handle zero timeout
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.915Z","level":"info","stage":"circuit_breaker","message":"Circuit half-open for zero-timeout, testing recovery"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2mperformance[2m > [22m[2mshould sanitize large specifications quickly
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.863Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":300,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[0]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[1]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[2]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[3]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[4]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[5]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[6]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[7]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[8]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[9]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[10]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[11]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[12]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[13]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[14]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[15]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[16]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[17]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[18]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[19]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[20]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[21]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[22]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[23]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[24]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[25]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[26]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[27]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[28]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[29]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[30]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[31]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[32]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[33]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[34]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[35]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[36]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[37]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[38]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[39]"}]}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mEdge Cases[2m > [22m[2mshould handle zero timeout
+[22m[39m[Atai] {"ts":"2026-10-10T12:53:55.915Z","level":"info","stage":"circuit_breaker","message":"Circuit closed for zero-timeout, service recovered","service":"zero-timeout","successThreshold":1}
+
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstdout[2m | lib/cofounder/tools/growth.test.ts
+[22m[39m[AI Model] Using: openrouter/auto
+
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstderr[2m | lib/marketing/growth-overview.test.ts[2m > [22m[2mmetric availability states[2m > [22m[2mmarks failed reads as unavailable with a null value — never 0
+[22m[39m[Atai] {"ts":"2026-10-10T12:54:26.973Z","level":"warn","stage":"marketing.growthOverview","message":"runtime usage read failed","projectId":"proj_1","error":"mongo down"}
+[Atai] {"ts":"2026-10-10T12:54:26.991Z","level":"warn","stage":"marketing.growthOverview","message":"credit ledger read failed","projectId":"proj_1","error":"boom"}
+
+[90mstderr[2m | lib/marketing/growth-overview.test.ts[2m > [22m[2mmetric availability states[2m > [22m[2mmarks failed reads as unavailable with a null value — never 0
+[22m[39m[Atai] {"ts":"2026-10-10T12:54:26.994Z","level":"warn","stage":"marketing.growthOverview","message":"referral read failed","userId":"user_1","error":"boom"}
+
+[90mstderr[2m | lib/marketing/growth-overview.test.ts[2m > [22m[2mmetric availability states[2m > [22m[2mnever fabricates visitors, completed payments, revenue, conversion, or project referrals
+[22m[39m[Atai] {"ts":"2026-10-10T12:54:27.001Z","level":"warn","stage":"marketing.growthOverview","message":"credit ledger read failed","projectId":"proj_1","error":"boom"}
+
+[90mstderr[2m | lib/marketing/growth-overview.test.ts[2m > [22m[2mmetric availability states[2m > [22m[2mcarries explicit caveats so checkout calls are never payments and requests are never visitors
+[22m[39m[Atai] {"ts":"2026-10-10T12:54:27.017Z","level":"warn","stage":"marketing.growthOverview","message":"credit ledger read failed","projectId":"proj_1","error":"boom"}
+
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstderr[2m | lib/marketing/growth-overview.test.ts[2m > [22m[2mmetric availability states[2m > [22m[2mqueries the ledger with the owner from the session, never a client id
+[22m[39m[Atai] {"ts":"2026-10-10T12:54:27.051Z","level":"warn","stage":"marketing.growthOverview","message":"credit ledger read failed","projectId":"proj_1","error":"boom"}
+
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstderr[2m | lib/planning/models/registry.test.ts[2m > [22m[2mModelRegistry[2m > [22m[2mEdge Cases[2m > [22m[2mshould not crash on invalid stage
+[22m[39m[ModelRegistry] Unknown stage: invalid_stage, using default config
+
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstdout[2m | lib/marketing/feature-flags.test.ts[2m > [22m[2mgrowth overview flag[2m > [22m[2mhonors the kill switch for everyone
+[22m[39m[Atai] {"ts":"2026-10-10T12:55:01.058Z","level":"info","stage":"marketing.flags","message":"Growth overview disabled by kill switch","userId":"user_a"}
+[Atai] {"ts":"2026-10-10T12:55:01.069Z","level":"info","stage":"marketing.flags","message":"Growth overview disabled by kill switch","userId":"user_b"}
+
+[90mstdout[2m | lib/marketing/feature-flags.test.ts[2m > [22m[2mgrowth overview flag[2m > [22m[2msplits cohorts deterministically at a partial rollout
+[22m[39m[Atai] {"ts":"2026-10-10T12:55:01.083Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-10T12:55:01.083Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-10T12:55:01.086Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-10T12:55:01.088Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-10T12:55:01.089Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-10T12:55:01.090Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-10T12:55:01.091Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-10T12:55:01.092Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-10T12:55:01.093Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-10T12:55:01.093Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-10T12:55:01.094Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[90mstdout[2m | lib/cofounder/tool-registry.test.ts
+[22m[39m[AI Model] Using: openrouter/auto
+
+[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m[33m[39m[32m·[39m
+
+[2m Test Files [22m [1m[32m80 passed[39m[22m[90m (80)[39m
+[2m      Tests [22m [1m[32m1041 passed[39m[22m[90m (1041)[39m
+[2m   Start at [22m 15:52:53
+[2m   Duration [22m 189.92s[2m (import 64%, transform 27%, tests 6%, worker 3%)[22m
+
+[2m  Transform [22m [33mtransforming modules took 103.46s[39m[2m · 27% of tracked time, re-done on every run[22m
+[2m            [22m [2mpersist transforms across runs with [22m[33mfsModuleCache: true[39m
+[2m            [22m [2mlearn more: https://vitest.dev/guide/improving-performance#caching-between-reruns[22m
+
+EXIT:0

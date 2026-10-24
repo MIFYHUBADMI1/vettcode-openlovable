@@ -337,4 +337,71 @@ export interface PaymentsCreateCheckoutResult {
     checkoutUrl: string;
     status: string;
 }
+export interface PaymentsCreateSubscriptionInput {
+    /** Dodo product id the recurring plan bills. */
+    productId: string;
+    quantity?: number;
+    customer: {
+        email: string;
+        name: string;
+    };
+    /** Dodo requires at least the two-letter country code. */
+    billing: {
+        country: string;
+        city?: string;
+        state?: string;
+        street?: string;
+        zipcode?: string;
+    };
+    returnUrl?: string;
+    metadata?: Record<string, string | number | boolean>;
+}
+export interface PaymentsCreateSubscriptionResult {
+    subscriptionId: string;
+    paymentId: string;
+    /** Hosted payment link for the customer's first payment (when provided). */
+    paymentLink: string | null;
+    /** Recurring pre-tax amount in the plan currency's minor units. */
+    recurringPreTaxAmount: number | null;
+}
+export interface PaymentsListPaymentsInput {
+    /** 1–100 per page (server clamps). */
+    limit?: number;
+    status?: "succeeded" | "failed" | "cancelled" | "processing" | "requires_customer_action" | "requires_merchant_action" | "requires_payment_method" | "requires_confirmation" | "requires_capture" | "partially_captured" | "partially_captured_and_capturable";
+    subscriptionId?: string;
+    customerId?: string;
+}
+export interface PaymentsPaymentListItem {
+    paymentId: string;
+    /** Gross amount in minor units, as the provider reports it. */
+    amount: number | null;
+    currency: string | null;
+    status: string;
+    /** Epoch-ms (null when the provider omits it). */
+    createdAt: number | null;
+    subscriptionId: string | null;
+    customerEmail: string | null;
+    metadata: Record<string, string | number | boolean>;
+}
+export interface PaymentsListPaymentsResult {
+    payments: PaymentsPaymentListItem[];
+    /** True when the page filled the limit — more pages likely exist. */
+    pageFull: boolean;
+}
+export interface PaymentsListPayoutsInput {
+    /** 1–100 per page (server clamps). */
+    limit?: number;
+}
+export interface PaymentsPayoutListItem {
+    payoutId: string;
+    amount: number | null;
+    currency: string | null;
+    status: string;
+    paymentMethod: string | null;
+    name: string | null;
+    createdAt: number | null;
+}
+export interface PaymentsListPayoutsResult {
+    payouts: PaymentsPayoutListItem[];
+}
 //# sourceMappingURL=types.d.ts.map
