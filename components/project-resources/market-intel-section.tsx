@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import { CofounderMarkdown } from "@/components/cofounder/markdown"
 import { postJson } from "@/lib/client/api"
 import type { MarketCard, ValuationSnapshot } from "@/lib/resources/business-intelligence"
-import { RESOURCES_CREDIT_COSTS } from "@/lib/resources/resources-credits"
+import { RESOURCES_CREDIT_COSTS } from "@/lib/resources/credit-costs"
 
 const CARD_ICONS: Record<string, React.ElementType> = {
   Users, DollarSign, Briefcase, Compass, Layers,

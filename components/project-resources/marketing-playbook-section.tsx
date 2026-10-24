@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import { CofounderMarkdown } from "@/components/cofounder/markdown"
 import { postJson } from "@/lib/client/api"
 import type { MarketingChannel } from "@/lib/resources/business-intelligence"
-import { RESOURCES_CREDIT_COSTS } from "@/lib/resources/resources-credits"
+import { RESOURCES_CREDIT_COSTS } from "@/lib/resources/credit-costs"
 
 const CHANNEL_ICONS: Record<string, React.ElementType> = {
   Search, Globe, Users, Mail, Megaphone, Rocket, FileText, Handshake, Share, Zap,

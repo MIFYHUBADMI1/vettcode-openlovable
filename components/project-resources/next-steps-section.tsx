@@ -9,7 +9,7 @@ import { postJson } from "@/lib/client/api"
 import type { NextStep } from "@/lib/resources/business-intelligence"
 import type { ApplicationSpecification } from "@/lib/types/specification"
 import type { ProjectState } from "@/lib/types/project"
-import { RESOURCES_CREDIT_COSTS } from "@/lib/resources/resources-credits"
+import { RESOURCES_CREDIT_COSTS } from "@/lib/resources/credit-costs"
 
 const CATEGORY_ICONS = {
   product: Briefcase,

@@ -1,15 +1,11 @@
 import { consumeCredits, grantCredits, getAvailableCredits } from "@/lib/billing/credit-service"
 import { cryptoId } from "@/lib/store/store"
 import { logger } from "@/lib/logging/logger"
+import { RESOURCES_CREDIT_COSTS, type ResourcesAIOperation } from "./credit-costs"
 
-export const RESOURCES_CREDIT_COSTS = {
-  actionPlan: 50,
-  marketResearch: 75,
-  competitors: 100,
-  marketingPlaybook: 75,
-} as const
-
-export type ResourcesAIOperation = keyof typeof RESOURCES_CREDIT_COSTS
+// Re-exported for existing server-side callers; Client Components must import
+// the client-safe ./credit-costs module directly.
+export { RESOURCES_CREDIT_COSTS, type ResourcesAIOperation }
 
 async function chargeResources(
   userId: string,

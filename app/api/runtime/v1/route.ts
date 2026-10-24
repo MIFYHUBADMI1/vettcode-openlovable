@@ -6,6 +6,7 @@ import {
 } from "@/lib/runtime/router/router"
 import { listCapabilities } from "@/lib/runtime/router/capability-registry"
 import { registerAllRuntimeAdapters } from "@/lib/runtime/router/adapters/register-all"
+import { capabilityAvailability } from "@/lib/runtime/router/adapters/availability"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { tryAcquireRuntimeSlot, releaseRuntimeSlot } from "@/lib/runtime/concurrency"
 import { enforceProjectRuntimeLimits } from "@/lib/runtime/control/enforce-limits"
@@ -91,6 +92,8 @@ export async function POST(req: Request) {
 }
 
 export async function GET() {
-  // Registry metadata only — not a promise of provider availability.
-  return ok({ capabilities: listCapabilities() })
+  // Registry metadata + deployment availability — not a promise of a
+  // per-request outcome; adapters still own the final availability decision.
+  // Availability carries provider names and missing env-var NAMES only.
+  return ok({ capabilities: listCapabilities(), availability: capabilityAvailability() })
 }

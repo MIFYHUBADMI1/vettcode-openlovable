@@ -2,10 +2,12 @@
 
 import { useMemo, useState } from "react"
 import { useSearchParams } from "next/navigation"
+import useSWR from "swr"
 import { toast } from "sonner"
 import { Loader2, Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { jsonFetcher } from "@/lib/client/api"
 import { formatWhen } from "@/components/runtime-control/format"
 
 /**
@@ -13,6 +15,10 @@ import { formatWhen } from "@/components/runtime-control/format"
  * pastes. Calls are billed to credits exactly like SDK traffic (decided with
  * the product owner). The key never leaves the browser's memory except inside
  * the Authorization header of the request being run; it is never stored.
+ *
+ * Capability coverage (GET /api/runtime/v1) is displayed so users can see at
+ * a glance which capabilities are testable on this deployment — wiring and
+ * server-side provider configuration are reported separately.
  */
 
 interface RunResult {
@@ -26,10 +32,46 @@ interface RunResult {
   responseJson?: string
 }
 
+/** GET /api/runtime/v1 — public capability discovery + deployment availability. */
+interface CapabilityDiscovery {
+  capabilities: { id: string; operations: readonly string[] }[]
+  availability: Record<
+    string,
+    {
+      provider: string | null
+      configured: boolean | null
+      missingEnvVars: string[]
+      operations: { name: string; available: boolean }[]
+    }
+  >
+}
+
 /** The platform-recommended default — mirrors RECOMMENDED_DEFAULT_MODEL in the OpenRouter adapter. */
 const RECOMMENDED_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
 
 /** The registry subset exposed here mirrors runtime/contracts/router.ts. */
+const CAPABILITY_LABELS: Record<string, string> = {
+  "ai.text": "AI — text & chat",
+  "ai.embed": "AI — embeddings",
+  "ai.speak": "AI — voice (ElevenLabs)",
+  "ai.image": "AI — image generation",
+  "ai.video": "AI — video generation",
+  "ai.speech": "AI — text-to-speech",
+  "ai.transcribe": "AI — transcription",
+  "ai.vision": "AI — vision input",
+  "search.web": "Web search",
+  "web.scrape": "Web scraping",
+  "email": "Email",
+  "sms": "SMS",
+  "whatsapp": "WhatsApp",
+  "notifications": "Push notifications",
+  "maps": "Maps & geocoding",
+  "calendar": "Scheduling (Cal.com)",
+  "vectors": "Vector storage",
+  "db": "App database",
+  "payments": "Payments & checkout",
+}
+
 const CAPABILITY_OPERATIONS: Record<string, readonly string[]> = {
   "ai.text": ["chat", "completion", "embed"],
   "ai.embed": ["embed"],
@@ -53,19 +95,102 @@ const CAPABILITY_OPERATIONS: Record<string, readonly string[]> = {
   "payments": ["createCheckout"],
 }
 
-const SAMPLE_INPUTS: Record<string, string> = {
+const OPERATION_LABELS: Record<string, string> = {
+  chat: "Chat",
+  completion: "Completion",
+  embed: "Embed",
+  synthesize: "Synthesize",
+  generateImage: "Generate image",
+  generateVideo: "Generate video",
+  speak: "Speak",
+  transcribe: "Transcribe",
+  visionInput: "Vision input",
+  web: "Web search",
+  scrape: "Scrape",
+  send: "Send",
+  geocode: "Geocode",
+  reverseGeocode: "Reverse geocode",
+  listBookings: "List bookings",
+  createBooking: "Create booking",
+  upsert: "Upsert",
+  search: "Search",
+  delete: "Delete",
+  query: "Query",
+  create: "Create",
+  edit: "Edit",
+  createCheckout: "Create checkout",
+}
+
+/** A helper email/phone for placeholder credentials used by side-effect samples. */
+const DEMO_EMAIL = "you@example.com"
+const DEMO_PHONE = "+15551234567"
+const DEMO_SUCCESS_URL = "https://example.com/success"
+const DEMO_CANCEL_URL = "https://example.com/cancel"
+const DEMO_IMAGE_URL = "https://example.com/photo.jpg"
+
+function futureDateIso(): string {
+  const d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+  return d.toISOString().slice(0, 19) + "Z"
+}
+
+const SAMPLE_INPUTS = (): Record<string, string> => ({
   "ai.text/chat": JSON.stringify({ messages: [{ role: "user", content: "Say hello in one short sentence." }] }, null, 2),
-  "ai.text/embed": JSON.stringify({ input: "hello world" }, null, 2),
+  "ai.text/completion": JSON.stringify({ prompt: "Explain quantum computing in one short sentence." }, null, 2),
   "ai.embed/embed": JSON.stringify({ input: "hello world" }, null, 2),
-  "search.web/web": JSON.stringify({ query: "best coffee in Kampala", limit: 3 }, null, 2),
-  "web.scrape/scrape": JSON.stringify({ url: "https://example.com" }, null, 2),
-  "maps/geocode": JSON.stringify({ query: "Kampala", limit: 3 }, null, 2),
-  // Multimodal samples — models shown are OpenRouter examples; switch freely.
+  "ai.speak/synthesize": JSON.stringify({ text: "Hello from Atai!", model: "eleven_flash_v2_5" }, null, 2),
   "ai.image/generateImage": JSON.stringify({ prompt: "A red panda astronaut floating in space", model: "google/gemini-2.5-flash-image", aspect_ratio: "16:9" }, null, 2),
   "ai.video/generateVideo": JSON.stringify({ prompt: "A timelapse of a city skyline at dusk", model: "google/veo-3", duration: 5 }, null, 2),
   "ai.speech/speak": JSON.stringify({ input: "Hello from Atai!", model: "openai/gpt-4o-mini-tts-2025-12-15", voice: "alloy", response_format: "mp3" }, null, 2),
   "ai.transcribe/transcribe": JSON.stringify({ input_audio: { data: "<base64 audio>", format: "wav" }, model: "openai/whisper-large-v3" }, null, 2),
-  "ai.vision/visionInput": JSON.stringify({ messages: [{ role: "user", content: [{ type: "text", text: "Describe this image." }, { type: "image_url", image_url: { url: "https://example.com/photo.jpg" } }] }] }, null, 2),
+  "ai.vision/visionInput": JSON.stringify({ messages: [{ role: "user", content: [{ type: "text", text: "Describe this image." }, { type: "image_url", image_url: { url: DEMO_IMAGE_URL } }] }] }, null, 2),
+  "search.web/web": JSON.stringify({ query: "best coffee in Kampala", limit: 3 }, null, 2),
+  "web.scrape/scrape": JSON.stringify({ url: "https://example.com" }, null, 2),
+  "email/send": JSON.stringify({ to: [DEMO_EMAIL], subject: "Hello from Atai", text: "This email was delivered through the Atai runtime." }, null, 2),
+  "sms/send": JSON.stringify({ to: DEMO_PHONE, body: "Hello from Atai!" }, null, 2),
+  "whatsapp/send": JSON.stringify({ to: DEMO_PHONE, body: "Hello from Atai on WhatsApp!" }, null, 2),
+  "notifications/send": JSON.stringify({ token: "<device FCM token>", title: "Hello from Atai", body: "This push was sent through the runtime." }, null, 2),
+  "maps/geocode": JSON.stringify({ query: "Kampala", limit: 3 }, null, 2),
+  "maps/reverseGeocode": JSON.stringify({ longitude: 32.5828, latitude: 0.3136, limit: 1 }, null, 2),
+  "calendar/listBookings": JSON.stringify({ limit: 10, status: "upcoming" }, null, 2),
+  "calendar/createBooking": JSON.stringify({ start: futureDateIso(), attendee: { name: "Ada Tester", email: DEMO_EMAIL, timeZone: "Africa/Kampala" } }, null, 2),
+  "vectors/upsert": JSON.stringify({ vectors: [{ id: "doc-1", values: [0.1, 0.2, 0.3], metadata: { kind: "demo" } }] }, null, 2),
+  "vectors/search": JSON.stringify({ vector: [0.1, 0.2, 0.3], topK: 3, returnMetadata: "indexed" }, null, 2),
+  "vectors/delete": JSON.stringify({ ids: ["doc-1"] }, null, 2),
+  "db/query": JSON.stringify({ tableName: "customers", limit: 5 }, null, 2),
+  "db/create": JSON.stringify({ tableName: "customers", data: { name: "Ada Tester", email: DEMO_EMAIL } }, null, 2),
+  "db/edit": JSON.stringify({ tableName: "customers", recordId: "<record id>", data: { name: "Ada Tester (edited)" } }, null, 2),
+  "db/delete": JSON.stringify({ tableName: "customers", recordId: "<record id>" }, null, 2),
+  "payments/createCheckout": JSON.stringify({ items: [{ name: "Pro Plan", quantity: 1, price: 29.9 }], idempotencyKey: "demo-checkout", successUrl: DEMO_SUCCESS_URL, cancelUrl: DEMO_CANCEL_URL, currency: "USD" }, null, 2),
+})
+
+const REQUEST_HINTS: Record<string, string> = {
+  "ai.text/chat": "messages[] with role/content. The model comes from the Model chooser below (recommended default or custom).",
+  "ai.text/completion": "No production provider is wired for completion yet — see the capability coverage panel.",
+  "ai.text/embed": "No production provider is wired for embeddings yet — see the capability coverage panel.",
+  "ai.speak/synthesize": "text (1–5,000 chars). Optional voiceId/model from the ElevenLabs allowlist; both default to server config.",
+  "ai.image/generateImage": "prompt and an OpenRouter image-capable model are required. aspect_ratio optional.",
+  "ai.video/generateVideo": "prompt + model. Returns { jobId, status } — poll the SAME operation with { jobId } until it completes.",
+  "ai.speech/speak": "input text + an OpenRouter TTS model. voice and response_format optional.",
+  "ai.transcribe/transcribe": "input_audio { data (base64), format } + an OpenRouter transcription model.",
+  "ai.vision/visionInput": "messages[] whose content mixes text parts and image_url parts.",
+  "search.web/web": "query plus optional limit. Results are normalized title/url/snippet items.",
+  "web.scrape/scrape": "url to fetch and return as markdown/text.",
+  "email/send": "to[] + subject + text and/or html (at least one). The platform sender is injected server-side — never include a from.",
+  "sms/send": "to must be E.164 (e.g. +15551234567) and body ≤ 1,600 chars. Platform sender is injected server-side.",
+  "whatsapp/send": "Same input shape as SMS; the platform WhatsApp sender is injected server-side.",
+  "notifications/send": "token (FCM device token), title and body — one device per request.",
+  "maps/geocode": "query plus optional limit (≤5), country (ISO 3166, e.g. \"us\") and language tags.",
+  "maps/reverseGeocode": "longitude (−180..180) and latitude (−90..90); optional limit.",
+  "calendar/listBookings": "Read-only. Optional limit (≤50) and status (upcoming | past | cancelled).",
+  "calendar/createBooking": "Real side effect — books a meeting in the platform Cal.com account. start must be a future ISO timestamp; eventTypeId defaults to the server-configured event type.",
+  "vectors/upsert": "vectors[] of { id, values } — values must match the Cloudflare Vectorize index dimensions. The namespace is derived from your project automatically.",
+  "vectors/search": "vector to query with, optional topK and returnMetadata (none | indexed | all).",
+  "vectors/delete": "ids[] of vector ids to remove from your project's namespace.",
+  "db/query": "This is YOUR project's database (Totalum). tableName + optional filter/limit/skip/sortBy (sortDirection asc|desc).",
+  "db/create": "tableName + a data object — a new record is written to your project's database.",
+  "db/edit": "tableName, recordId, and a data object of fields to update.",
+  "db/delete": "tableName + recordId — permanently removes the record.",
+  "payments/createCheckout": "items[] with name/quantity/price. Returns a hosted checkoutUrl to redirect the customer to (test mode by default).",
 }
 
 /** Capabilities that generate media and need a specific model (chat uses the model chooser instead). */
@@ -75,10 +200,15 @@ export function PlaygroundClient() {
   const params = useSearchParams()
   const projectId = params.get("project")
 
+  const { data: discovery } = useSWR<CapabilityDiscovery>("/api/runtime/v1", jsonFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60_000,
+  })
+
   const [apiKey, setApiKey] = useState("")
   const [capability, setCapability] = useState("ai.text")
   const [operation, setOperation] = useState("chat")
-  const [inputText, setInputText] = useState(SAMPLE_INPUTS["ai.text/chat"] ?? "{}")
+  const [inputText, setInputText] = useState(SAMPLE_INPUTS()["ai.text/chat"] ?? "{}")
   const [running, setRunning] = useState(false)
   const [runs, setRuns] = useState<RunResult[]>([])
   // Model choice (ai.text chat/completion only): use the platform-recommended
@@ -91,6 +221,12 @@ export function PlaygroundClient() {
   const needsMediaModel = MEDIA_MODEL_CAPABILITIES.has(capability)
 
   const operations = CAPABILITY_OPERATIONS[capability] ?? []
+  const status = discovery?.availability?.[capability] ?? null
+  const requestKey = `${capability}/${operation}`
+  const shapeHint = REQUEST_HINTS[requestKey]
+  const opAvailable = status
+    ? (status.operations.find((o) => o.name === operation)?.available ?? status.provider !== null)
+    : true
   const stats = useMemo(() => {
     const total = runs.length
     const succeeded = runs.filter((r) => r.ok).length
@@ -108,12 +244,12 @@ export function PlaygroundClient() {
     const ops = CAPABILITY_OPERATIONS[next] ?? []
     const op = ops[0] ?? "chat"
     setOperation(op)
-    setInputText(SAMPLE_INPUTS[`${next}/${op}`] ?? "{}")
+    setInputText(SAMPLE_INPUTS()[`${next}/${op}`] ?? "{}")
   }
 
   function pickOperation(next: string) {
     setOperation(next)
-    setInputText(SAMPLE_INPUTS[`${capability}/${next}`] ?? "{}")
+    setInputText(SAMPLE_INPUTS()[`${capability}/${next}`] ?? "{}")
   }
 
   async function run() {
@@ -201,7 +337,13 @@ export function PlaygroundClient() {
           },
           ...r,
         ])
-        toast.error(errBody?.error?.message ?? `Request failed (${res.status})`)
+        if (errBody?.error?.code === "runtime_capability_unavailable") {
+          toast.error(
+            "This capability's provider isn't available on this deployment — check the capability coverage panel above for what's missing.",
+          )
+        } else {
+          toast.error(errBody?.error?.message ?? `Request failed (${res.status})`)
+        }
       }
     } catch (e) {
       const latencyMs = Math.round(performance.now() - started)
@@ -256,7 +398,58 @@ export function PlaygroundClient() {
       </section>
 
       <section className="rounded-xl border border-border bg-card p-4">
+        <h2 className="text-sm font-medium">Capability coverage</h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          What this deployment can exercise with your key.
+        </p>
+        <ul className="mt-3 grid gap-1.5 text-xs sm:grid-cols-2">
+          {Object.keys(CAPABILITY_OPERATIONS).map((cap) => {
+            const a = discovery?.availability?.[cap] ?? null
+            return (
+              <li key={cap} className="flex items-center justify-between gap-2 rounded-lg bg-muted/20 px-3 py-1.5">
+                <span className="truncate font-medium text-foreground">{CAPABILITY_LABELS[cap] ?? cap}</span>
+                {a?.provider === null ? (
+                  <span className="shrink-0 text-muted-foreground">no provider yet</span>
+                ) : a?.configured === false ? (
+                  <span
+                    className="shrink-0 text-amber-600 dark:text-amber-400"
+                    title={a.missingEnvVars.length > 0 ? `Missing server env: ${a.missingEnvVars.join(", ")}` : undefined}
+                  >
+                    needs setup
+                  </span>
+                ) : (
+                  <span className="shrink-0 text-emerald-600 dark:text-emerald-400">
+                    ready{a?.provider ? ` · ${a.provider}` : ""}
+                  </span>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+        {discovery ? (
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            “needs setup” shows capabilities whose platform provider credentials are missing on this deployment
+            (hover for the missing server environment variables). “no provider yet” marks capabilities that exist in
+            the contract but have no integration wired yet.
+          </p>
+        ) : null}
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-4">
         <h2 className="text-sm font-medium">Request</h2>
+        {status?.provider === null ? (
+          <p className="mt-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-muted-foreground">
+            <strong className="text-foreground">Heads up:</strong> {CAPABILITY_LABELS[capability] ?? capability} is in
+            the contract but no production provider is wired for it yet — requests will fail with{" "}
+            <code className="rounded bg-muted px-1 font-mono">runtime_capability_unavailable</code>.
+          </p>
+        ) : status?.configured === false ? (
+          <p className="mt-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-muted-foreground">
+            <strong className="text-foreground">Not configured yet:</strong> this deployment is missing the server
+            environment variables {status.missingEnvVars.length > 0 ? <code className="rounded bg-muted px-1 font-mono">{status.missingEnvVars.join(", ")}</code> : "—"} —
+            the request will fail until they are set.
+          </p>
+        ) : null}
         <div className="mt-3 grid gap-3 sm:grid-cols-2">
           <label className="flex flex-col gap-1 text-xs text-muted-foreground">
             Capability
@@ -266,9 +459,13 @@ export function PlaygroundClient() {
               value={capability}
               onChange={(e) => pickCapability(e.target.value)}
             >
-              {Object.keys(CAPABILITY_OPERATIONS).map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
+              {Object.keys(CAPABILITY_OPERATIONS).map((c) => {
+                const a = discovery?.availability?.[c] ?? null
+                const suffix = a?.provider === null ? " — no provider yet" : a?.configured === false ? " — needs setup" : ""
+                return (
+                  <option key={c} value={c}>{`[${c}] ${CAPABILITY_LABELS[c] ?? c}${suffix}`}</option>
+                )
+              })}
             </select>
           </label>
           <label className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -279,12 +476,26 @@ export function PlaygroundClient() {
               value={operation}
               onChange={(e) => pickOperation(e.target.value)}
             >
-              {operations.map((o) => (
-                <option key={o} value={o}>{o}</option>
-              ))}
+              {operations.map((o) => {
+                const opOk = status ? (status.operations.find((s) => s.name === o)?.available ?? true) : true
+                return (
+                  <option key={o} value={o}>{`${OPERATION_LABELS[o] ?? o}${opOk ? "" : " — no provider yet"}`}</option>
+                )
+              })}
             </select>
           </label>
         </div>
+        {shapeHint ? (
+          <p className="mt-3 rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+            <strong className="text-foreground">Request shape:</strong> {shapeHint}
+          </p>
+        ) : null}
+        {!opAvailable && status?.provider !== null ? (
+          <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+            The operation <code className="font-mono">{requestKey}</code> is in the contract but no provider is wired
+            for it — pick another operation or capability.
+          </p>
+        ) : null}
         {supportsModel ? (
           <fieldset className="mt-3 rounded-lg border border-border p-3">
             <legend className="px-1 text-xs font-medium text-muted-foreground">Model (required)</legend>
@@ -331,7 +542,7 @@ export function PlaygroundClient() {
         {needsMediaModel ? (
           <p className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-muted-foreground">
             <strong className="text-foreground">Model required:</strong> {capability} needs a specific OpenRouter model id —
-            set <code className="rounded bg-muted px-1 font-mono">"model"</code> in the input JSON below. The prefilled
+            set <code className="rounded bg-muted px-1 font-mono">&quot;model&quot;</code> in the input JSON below. The prefilled
             sample shows an example model; browse more at openrouter.ai/models.
           </p>
         ) : null}
@@ -360,7 +571,7 @@ export function PlaygroundClient() {
             )}
           </Button>
           <p className="text-xs text-muted-foreground">
-            POST /api/runtime/v1 — {capability}/{operation}
+            POST /api/runtime/v1 — {requestKey}
           </p>
         </div>
       </section>

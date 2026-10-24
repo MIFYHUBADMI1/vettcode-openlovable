@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import { postJson } from "@/lib/client/api"
 import type { ApplicationSpecification } from "@/lib/types/specification"
 import type { CompetitorProfile } from "./resources-client"
-import { RESOURCES_CREDIT_COSTS } from "@/lib/resources/resources-credits"
+import { RESOURCES_CREDIT_COSTS } from "@/lib/resources/credit-costs"
 
 interface Props {
   projectId: string
