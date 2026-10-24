@@ -320,3 +320,31 @@ export function useProjectStatus(projectId: string, isActive: boolean) {
   )
   return { statusData: data, error, refresh: mutate }
 }
+
+// ─── usePortfolioSpend ───────────────────────────────────────────────────────
+//
+// Portfolio spending trend for the home-dashboard mini card. The numbers are
+// computed server-side (never in the browser); 5 min poll is plenty for a
+// trend — none of this is per-request metering data the user acts on live.
+
+export interface PortfolioSpendTrend {
+  daily: Array<{ date: string; creditsCharged: number }>
+  creditsTotal14d: number
+  creditsPrior14d: number
+  changePct: number | null
+}
+
+export function usePortfolioSpend(enabled = true) {
+  const { data, error, isLoading, mutate } = useSWR<PortfolioSpendTrend>(
+    enabled ? "/api/finances/summary" : null,
+    jsonFetcher,
+    {
+      refreshInterval: 300_000,
+      dedupingInterval: 60_000,
+      keepPreviousData: true,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    },
+  )
+  return { trend: data ?? null, error, isLoading, refresh: mutate }
+}

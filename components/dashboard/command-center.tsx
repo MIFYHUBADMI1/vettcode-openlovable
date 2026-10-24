@@ -11,6 +11,8 @@ import {
   Lightbulb,
   MessageSquare,
   Sparkles,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react"
 import { FirstMission } from "@/components/onboarding/first-mission"
 import { ActivationEmpty } from "@/components/onboarding/activation-empty"
@@ -20,7 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { buttonVariants } from "@/components/ui/button"
 import { CofounderLauncherInline } from "@/components/cofounder/cofounder-launcher"
 import { relativeTime } from "@/lib/client/format"
-import { useProjectActivity, useProjects, useSession, type ActivityEvent } from "@/lib/client/api"
+import { usePortfolioSpend, useProjectActivity, useProjects, useSession, type ActivityEvent } from "@/lib/client/api"
 import {
   filterMeaningfulActivity,
   getDashboardAttentionItems,
@@ -161,7 +163,8 @@ export function DashboardCommandCenter() {
 
         {projects.length > 0 ? <BusinessesList projects={projects} /> : null}
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          <FinancesTrendCard />
           <UsageCard
             available={session.credits.available}
             balance={session.credits.balance}
@@ -533,6 +536,80 @@ function ReferralCard() {
       <p className="mt-2 text-sm">Invite someone building a business. Earn Atai credits when they join.</p>
       <Link href="/referrals" className="mt-3 inline-flex items-center gap-1 text-sm text-primary hover:underline">
         <Sparkles className="size-3.5" /> Open referrals
+      </Link>
+    </section>
+  )
+}
+
+/**
+ * Portfolio spending trend — mini card linking into the whole-business
+ * finance roll-up. Every number is computed server-side
+ * (/api/finances/summary over lib/finances/*); the browser only renders it.
+ * Zero activity is a stated zero, never a blank or a fabricated trend.
+ */
+function FinancesTrendCard() {
+  const { trend, isLoading } = usePortfolioSpend()
+
+  const last14 = trend?.creditsTotal14d ?? 0
+  const prior14 = trend?.creditsPrior14d ?? 0
+  const changePct = trend?.changePct ?? null
+  const direction =
+    changePct === null ? null : changePct > 0 ? ("up" as const) : changePct < 0 ? ("down" as const) : ("flat" as const)
+  const active = last14 > 0 || prior14 > 0
+
+  // 28-day bar sparkline — same dependency-free SVG approach the finance
+  // pages use. Server-computed daily buckets; zero days stay zero.
+  const daily = trend?.daily ?? []
+  const maxDaily = Math.max(...daily.map((d) => d.creditsCharged), 1)
+  const sparkWidth = Math.max(daily.length * 3, 3)
+
+  return (
+    <section className="rounded-2xl border border-border bg-card p-5">
+      <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Portfolio spend</p>
+      {isLoading && !trend ? (
+        <Skeleton className="mt-2 h-6 w-36" />
+      ) : (
+        <p className="mt-2 text-lg font-semibold tabular-nums">{last14.toLocaleString()} credits</p>
+      )}
+      <p className="mt-1 text-xs text-muted-foreground">
+        {active
+          ? changePct === null
+            ? "vs the prior two weeks — their first spend"
+            : null
+          : "No runtime spend yet"}
+      </p>
+      {active && changePct !== null ? (
+        <p className="mt-1 flex items-center gap-1 text-xs font-medium">
+          {direction === "up" ? (
+            <TrendingUp className="size-3.5" aria-hidden />
+          ) : (
+            <TrendingDown className={cn("size-3.5", direction === "flat" && "opacity-0")} aria-hidden />
+          )}
+          {direction === "up"
+            ? `+${changePct}% vs prior two weeks`
+            : direction === "down"
+              ? `${changePct}% vs prior two weeks`
+              : `flat vs prior two weeks`}
+        </p>
+      ) : null}
+      {trend && active ? (
+        <svg
+          viewBox={`0 0 ${sparkWidth} 24`}
+          preserveAspectRatio="none"
+          className="mt-3 h-6 w-full"
+          role="img"
+          aria-label="Daily portfolio credit spend, last 28 days"
+        >
+          {daily.map((d, i) => {
+            const h = Math.max((d.creditsCharged / maxDaily) * 24, d.creditsCharged > 0 ? 2 : 0)
+            return d.creditsCharged > 0 ? (
+              <rect key={d.date} x={i * 3} y={24 - h} width={2} height={h} rx="0.5" className="fill-primary" />
+            ) : null
+          })}
+        </svg>
+      ) : null}
+      <Link href="/finances" className="mt-3 inline-flex text-sm text-primary hover:underline">
+        Business finances
       </Link>
     </section>
   )

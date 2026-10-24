@@ -12,9 +12,21 @@ import { registerProviderAdapter } from "@/lib/runtime/router/provider-registry"
  */
 
 export { dodoAdapter, DODO_PROVIDER_ID } from "./adapter"
+export { ATTRIBUTION_METADATA_KEYS } from "./adapter"
 export { isDodoConfigured } from "./config"
-export { CreateCheckoutInputSchema } from "./mapper"
-export type { CreateCheckoutResultData } from "./mapper"
+export {
+  CreateCheckoutInputSchema,
+  CreateSubscriptionInputSchema,
+  ListPaymentsInputSchema,
+  ListPayoutsInputSchema,
+} from "./mapper"
+export type {
+  CreateCheckoutResultData,
+  CreateSubscriptionResultData,
+  PaymentsPageData,
+  PaymentListItemData,
+  PayoutListItemData,
+} from "./mapper"
 
 /** Register Dodo Payments as the provider for its capability+operation. */
 export function registerDodoAdapter(): void {

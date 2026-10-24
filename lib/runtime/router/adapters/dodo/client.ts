@@ -23,7 +23,7 @@ export async function executeCreateCheckout(params: {
     cancel_url?: string
     customer_email?: string
     currency?: string
-    metadata?: Record<string, string>
+    metadata?: Record<string, string | number | boolean>
   }
   idempotencyKey?: string
   requestId?: string
@@ -95,6 +95,148 @@ export async function executeCreateCheckout(params: {
     throw new ProviderExecutionError(
       "provider_unavailable",
       "The payment provider is temporarily unavailable.",
+    )
+  }
+}
+
+
+/**
+ * Create a subscription (POST /subscriptions) — a real recurring charge
+ * against an existing Dodo product. Side effect: never retried (§45).
+ */
+export async function executeCreateSubscription(params: {
+  body: {
+    product_id: string
+    quantity: number
+    customer: { email: string; name: string }
+    billing: { country: string; city?: string; state?: string; street?: string; zipcode?: string }
+    return_url?: string
+    metadata?: Record<string, string | number | boolean>
+  }
+  idempotencyKey?: string
+  requestId?: string
+}): Promise<{ payload: { subscription_id?: string; payment_id?: string; payment_link?: string | null; recurring_pre_tax_amount?: number | null; errors?: unknown }; latencyMs: number }> {
+  const startedAt = Date.now()
+  const url = `${getDodoBaseUrl()}/subscriptions`
+  const headers: Record<string, string> = {
+    ...dodoHeaders(),
+    "idempotency-key": params.idempotencyKey ?? crypto.randomUUID(),
+  }
+  try {
+    const res = await providerFetch({
+      url,
+      method: "POST",
+      headers,
+      body: JSON.stringify(params.body),
+      timeoutMs: getDodoTimeoutMs(),
+      requestId: params.requestId,
+    })
+    if (!res.ok) {
+      logger.error("runtime.dodo", "provider returned an error status", {
+        ...(params.requestId ? { requestId: params.requestId } : {}),
+        status: res.status,
+        latencyMs: Date.now() - startedAt,
+        detail: res.text.slice(0, 300),
+      })
+      throw failureForStatus(res.status, res.text)
+    }
+    return {
+      payload: parseStrictJson<{
+        subscription_id?: string
+        payment_id?: string
+        payment_link?: string | null
+        recurring_pre_tax_amount?: number | null
+        errors?: unknown
+      }>(res.text),
+      latencyMs: Date.now() - startedAt,
+    }
+  } catch (e) {
+    if (isAlreadyNormalized(e)) throw e
+    logger.error("runtime.dodo", "provider request failed", {
+      ...(params.requestId ? { requestId: params.requestId } : {}),
+      latencyMs: Date.now() - startedAt,
+      errorName: e instanceof Error ? e.name : "unknown",
+    })
+    throw new ProviderExecutionError(
+      "provider_unavailable",
+      "The payment provider is temporarily unavailable.",
+    )
+  }
+}
+
+/** Read-only payment feed (GET /payments). Retries harmless, but keep single-attempt for symmetry. */
+export async function executeListPayments(params: {
+  query: { page_size?: number; status?: string; subscription_id?: string; customer_id?: string }
+  requestId?: string
+}): Promise<{ payload: { items?: unknown; errors?: unknown } | unknown[]; latencyMs: number }> {
+  return executeGet("/payments", params.query, params.requestId)
+}
+
+/** Read-only payout feed (GET /payouts) — account-level settlement records. */
+export async function executeListPayouts(params: {
+  query: { page_size?: number }
+  requestId?: string
+}): Promise<{ payload: { items?: unknown; errors?: unknown } | unknown[]; latencyMs: number }> {
+  return executeGet("/payouts", params.query, params.requestId)
+}
+
+async function executeGet(
+  path: "/payments" | "/payouts",
+  query: Record<string, string | number | undefined>,
+  requestId?: string,
+): Promise<{ payload: { items?: unknown; errors?: unknown } | unknown[]; latencyMs: number }> {
+  const startedAt = Date.now()
+  const search = new URLSearchParams()
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined && value !== "") search.set(key, String(value))
+  }
+  const qs = search.toString()
+  const url = `${getDodoBaseUrl()}${path}${qs ? `?${qs}` : ""}`
+  try {
+    const res = await providerFetch({
+      url,
+      method: "GET",
+      headers: dodoHeaders(),
+      timeoutMs: getDodoTimeoutMs(),
+      requestId,
+    })
+    if (!res.ok) {
+      logger.error("runtime.dodo", "provider returned an error status", {
+        ...(requestId ? { requestId } : {}),
+        path,
+        status: res.status,
+        latencyMs: Date.now() - startedAt,
+        detail: res.text.slice(0, 300),
+      })
+      throw failureForStatus(res.status, res.text)
+    }
+    return {
+      payload: parseStrictJson<{ items?: unknown; errors?: unknown } | unknown[]>(res.text),
+      latencyMs: Date.now() - startedAt,
+    }
+  } catch (e) {
+    if (isAlreadyNormalized(e)) throw e
+    logger.error("runtime.dodo", "provider request failed", {
+      ...(requestId ? { requestId } : {}),
+      path,
+      latencyMs: Date.now() - startedAt,
+      errorName: e instanceof Error ? e.name : "unknown",
+    })
+    throw new ProviderExecutionError(
+      "provider_unavailable",
+      "The payment provider is temporarily unavailable.",
+    )
+  }
+}
+
+function parseStrictJson<T>(text: string): T {
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    throw new ProviderExecutionError(
+      "provider_error",
+      "The payment provider returned an invalid response.",
+      "malformed JSON in 2xx response",
     )
   }
 }
