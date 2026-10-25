@@ -456,6 +456,77 @@
   }
 }
 
+@keyframes voice-halo-pulse {
+  0% {
+    transform: scale(0.85);
+    opacity: .7;
+  }
+
+  70% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+
+@keyframes voice-caret-blink {
+  0%,
+  55% {
+    opacity: 1;
+  }
+
+  56%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes voice-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.voice-halo {
+  animation: voice-halo-pulse 1.4s ease-out infinite;
+  pointer-events: none;
+}
+
+.voice-bar {
+  transition: height 90ms linear;
+}
+
+.voice-caret {
+  animation: voice-caret-blink 1s steps(1) infinite;
+}
+
+.voice-panel {
+  animation: voice-panel-in 220ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .voice-halo,
+  .voice-caret,
+  .voice-panel {
+    animation: none;
+  }
+
+  .voice-bar {
+    transition: none;
+  }
+}
+
 .workspace-environment {
   position: relative;
   isolation: isolate;
