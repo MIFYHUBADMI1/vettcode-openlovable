@@ -7,6 +7,11 @@ import { BrandMark } from "@/components/brand-logo"
 import { Button } from "@/components/ui/button"
 import { peekPendingStart, restorePendingStart, takePendingStart } from "@/lib/auth/client-intent"
 import { useProjects, useSession } from "@/lib/client/api"
+import {
+  readErrorCode,
+  trackWorkspaceCreated,
+  trackWorkspaceCreateFailed,
+} from "@/lib/analytics/start-funnel"
 import { recordOnboardingActivation } from "@/lib/onboarding/activate"
 import { createProjectFromPending } from "@/lib/projects/continue-start"
 import { applyCheckoutReturn } from "@/lib/billing/checkout-return-client"
@@ -50,9 +55,16 @@ function StartContinueInner() {
         return
       }
       setStatus(STEPS[0])
+      const createStartedAt = Date.now()
       try {
-        const { project } = await createProjectFromPending(pending)
+        const { project, reused } = await createProjectFromPending(pending)
         takePendingStart()
+        trackWorkspaceCreated({
+          method: pending.mode ?? "idea",
+          projectId: project.id,
+          reused,
+          createMs: Date.now() - createStartedAt,
+        })
         setStatus(STEPS[1])
         await Promise.all([refreshProjects(), refreshSession()]).catch(() => undefined)
         try {
@@ -68,6 +80,10 @@ function StartContinueInner() {
         setStatus(STEPS[2])
         router.replace(`/project/${project.id}/collaborate`)
       } catch (err) {
+        trackWorkspaceCreateFailed({
+          method: pending.mode ?? "idea",
+          errorCode: readErrorCode(err),
+        })
         setError(err instanceof Error ? err.message : "We couldn't create your workspace yet.")
       }
     }

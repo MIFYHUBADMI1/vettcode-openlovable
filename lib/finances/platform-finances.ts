@@ -109,6 +109,8 @@ export interface ExpenseDayProjectRow {
   creditsCharged: number
   providerCostUsd: number
   providerCostUnavailableCount: number
+  /** Numeric provider costs in a non-USD currency (counted, never summed in). */
+  providerCostNonUsdCount?: number
 }
 
 export interface ProjectExpenseTotals {
@@ -116,6 +118,7 @@ export interface ProjectExpenseTotals {
   creditsCharged: number
   providerCostUsd: number
   providerCostUnavailableCount: number
+  providerCostNonUsdCount?: number
 }
 
 export interface CollapsedExpenses {
@@ -128,6 +131,7 @@ export interface CollapsedExpenses {
     creditsCharged: number
     providerCostUsd: number
     providerCostUnavailableCount: number
+    providerCostNonUsdCount?: number
   }>
   /** Platform totals — buildTotals input (checkoutAttempts is always 0: the
    * roll-up does not aggregate per-project checkout attempts). */
@@ -138,6 +142,7 @@ export interface CollapsedExpenses {
     creditsCharged: number
     providerCostUsd: number
     providerCostUnavailableCount: number
+    providerCostNonUsdCount?: number
     checkoutAttempts: 0
   }
   /** Per-project expense sums keyed by projectId. */
@@ -160,6 +165,7 @@ export function collapseExpenseRows(rows: ExpenseDayProjectRow[]): CollapsedExpe
         creditsCharged: 0,
         providerCostUsd: 0,
         providerCostUnavailableCount: 0,
+        providerCostNonUsdCount: 0,
       }
     day.requests += row.requests
     day.succeeded += row.succeeded
@@ -167,15 +173,17 @@ export function collapseExpenseRows(rows: ExpenseDayProjectRow[]): CollapsedExpe
     day.creditsCharged += row.creditsCharged
     day.providerCostUsd += row.providerCostUsd
     day.providerCostUnavailableCount += row.providerCostUnavailableCount
+    day.providerCostNonUsdCount = (day.providerCostNonUsdCount ?? 0) + (row.providerCostNonUsdCount ?? 0)
     byDate.set(row.date, day)
 
     const project =
       projects.get(row.projectId) ??
-      { requests: 0, creditsCharged: 0, providerCostUsd: 0, providerCostUnavailableCount: 0 }
+      { requests: 0, creditsCharged: 0, providerCostUsd: 0, providerCostUnavailableCount: 0, providerCostNonUsdCount: 0 }
     project.requests += row.requests
     project.creditsCharged += row.creditsCharged
     project.providerCostUsd += row.providerCostUsd
     project.providerCostUnavailableCount += row.providerCostUnavailableCount
+    project.providerCostNonUsdCount = (project.providerCostNonUsdCount ?? 0) + (row.providerCostNonUsdCount ?? 0)
     projects.set(row.projectId, project)
   }
 
@@ -189,6 +197,7 @@ export function collapseExpenseRows(rows: ExpenseDayProjectRow[]): CollapsedExpe
       creditsCharged: dailyValues.reduce((a, r) => a + r.creditsCharged, 0),
       providerCostUsd: dailyValues.reduce((a, r) => a + r.providerCostUsd, 0),
       providerCostUnavailableCount: dailyValues.reduce((a, r) => a + r.providerCostUnavailableCount, 0),
+      providerCostNonUsdCount: dailyValues.reduce((a, r) => a + (r.providerCostNonUsdCount ?? 0), 0),
       checkoutAttempts: 0,
     },
     byProject: projects,
@@ -330,19 +339,21 @@ async function aggregatePlatformExpenses(
   await ensureRuntimeIndexes()
   const col = await runtimeUsageCol()
 
+  const numericCostCond = { $in: [{ $type: "$costMetadata.providerCost" }, NUMERIC_PROVIDER_TYPES] }
+  // Phase 2 currency honesty: only USD-denominated provider reports sum into
+  // providerCostUsd; other currencies are counted, never mixed or converted.
   const providerCostExpr = {
     $cond: [
-      { $in: [{ $type: "$costMetadata.providerCost" }, NUMERIC_PROVIDER_TYPES] },
+      { $and: [numericCostCond, { $eq: ["$costMetadata.providerCostCurrency", "USD"] }] },
       "$costMetadata.providerCost",
       0,
     ],
   }
+  const providerNonUsdExpr = {
+    $cond: [{ $and: [numericCostCond, { $ne: ["$costMetadata.providerCostCurrency", "USD"] }] }, 1, 0],
+  }
   const providerMissingExpr = {
-    $cond: [
-      { $in: [{ $type: "$costMetadata.providerCost" }, NUMERIC_PROVIDER_TYPES] },
-      0,
-      1,
-    ],
+    $cond: [numericCostCond, 0, 1],
   }
 
   const rows = await col
@@ -364,11 +375,12 @@ async function aggregatePlatformExpenses(
           failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } },
           creditsCharged: { $sum: "$creditsCharged" },
           providerCostUsd: { $sum: providerCostExpr },
+          providerNonUsd: { $sum: providerNonUsdExpr },
           providerUnavailable: { $sum: providerMissingExpr },
         },
       },
       { $sort: { "_id.date": 1 } },
-      { $project: { _id: 0, date: "$_id.date", projectId: "$_id.projectId", requests: 1, succeeded: 1, failed: 1, creditsCharged: 1, providerCostUsd: 1, providerCostUnavailableCount: "$providerUnavailable" } },
+      { $project: { _id: 0, date: "$_id.date", projectId: "$_id.projectId", requests: 1, succeeded: 1, failed: 1, creditsCharged: 1, providerCostUsd: 1, providerCostUnavailableCount: "$providerUnavailable", providerCostNonUsdCount: "$providerNonUsd" } },
     ])
     .toArray()
 

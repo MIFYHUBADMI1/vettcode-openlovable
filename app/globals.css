@@ -2360,3 +2360,129 @@ html.heavy-mode-active>body>* {
     transform: none !important;
   }
 }
+
+/* ═══ Composer: make the input unmistakably the place to type ═══ */
+@property --lp-ring-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.lp-composer-shell {
+  position: relative;
+  border-color: rgba(99, 102, 241, 0.45);
+  box-shadow:
+    0 0 0 1px rgba(99, 102, 241, 0.28),
+    0 0 30px -10px rgba(99, 102, 241, 0.55),
+    0 24px 60px -36px rgba(79, 70, 229, 0.5);
+  animation: lp-composer-breathe 4.5s ease-in-out infinite;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* Rotating conic ring painted just outside the card. Masked into a 2px
+   border so the soft card background stays intact. */
+.lp-composer-shell::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  padding: 2px;
+  border-radius: calc(1.35rem + 2px);
+  background: conic-gradient(
+    from var(--lp-ring-angle),
+    #6366f1 0deg,
+    #8b5cf6 55deg,
+    #06b6d4 120deg,
+    #22c55e 185deg,
+    #f59e0b 245deg,
+    #ec4899 305deg,
+    #6366f1 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0.8;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+  animation: lp-ring-spin 7s linear infinite;
+}
+
+.lp-composer-shell:hover::before,
+.lp-composer-shell:focus-within::before {
+  opacity: 1;
+}
+
+.lp-composer-shell:focus-within {
+  border-color: rgba(99, 102, 241, 0.7);
+  animation: none;
+  box-shadow:
+    0 0 0 1.5px rgba(99, 102, 241, 0.5),
+    0 0 46px -8px rgba(99, 102, 241, 0.72),
+    0 24px 60px -36px rgba(79, 70, 229, 0.55);
+}
+
+@keyframes lp-ring-spin {
+  to {
+    --lp-ring-angle: 360deg;
+  }
+}
+
+@keyframes lp-composer-breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(99, 102, 241, 0.28),
+      0 0 26px -10px rgba(99, 102, 241, 0.45),
+      0 24px 60px -36px rgba(79, 70, 229, 0.5);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(139, 92, 246, 0.42),
+      0 0 38px -8px rgba(139, 92, 246, 0.62),
+      0 24px 60px -36px rgba(79, 70, 229, 0.5);
+  }
+}
+
+/* "Type here" badge */
+@keyframes lp-type-badge-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.lp-type-badge {
+  animation: lp-type-badge-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes lp-type-badge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.45);
+  }
+
+  50% {
+    opacity: 0.75;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0);
+  }
+}
+
+.lp-type-badge-dot {
+  animation: lp-type-badge-pulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-composer-shell,
+  .lp-composer-shell::before,
+  .lp-type-badge,
+  .lp-type-badge-dot {
+    animation: none !important;
+  }
+}

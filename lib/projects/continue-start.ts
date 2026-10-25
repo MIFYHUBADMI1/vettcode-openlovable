@@ -48,5 +48,5 @@ export function buildCreatePayload(pending: PendingStart) {
 
 export async function createProjectFromPending(pending: PendingStart) {
   const payload = buildCreatePayload(pending)
-  return postJson<{ project: Project }>("/api/projects", payload)
+  return postJson<{ project: Project; reused?: boolean }>("/api/projects", payload)
 }

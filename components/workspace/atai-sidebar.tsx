@@ -108,7 +108,7 @@ function AtaiTopbar() {
           className="h-9 w-full rounded-full border border-atai-chrome-fg/12 bg-atai-chrome-fg/8 pl-9 pr-3 text-sm text-atai-chrome-fg placeholder:text-atai-chrome-muted outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       </form>
-      <CreditMeter />
+      <CreditMeter compact showTopUp={false} />
       <AccountMenu />
     </header>
   )

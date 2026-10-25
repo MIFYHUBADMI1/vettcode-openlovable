@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth/session"
 import { ok, handleRouteError } from "@/lib/api/respond"
 import { usersCol, projectsCol, buildRunsCol, creditLedgerCol, topupsCol, publishEventsCol, referralsCol } from "@/lib/db/collections"
+import { CREDIT_BACK_REVERSAL_TRANSACTION_TYPES } from "@/lib/billing/reversal-types"
 
 interface OnboardingBreakdown {
   label: string
@@ -185,8 +186,11 @@ export async function GET(request: NextRequest) {
         { $match: { direction: "debit" } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]).toArray(),
+      // "Refunded" = credits handed back (CREDIT-direction reversal rows only).
+      // A `refund_reversal` clawback is a debit and already sits in totalCharged
+      // — counting it here would net the same money twice (Phase 3 §6).
       ledgerCol_.aggregate([
-        { $match: { transactionType: { $in: ["refund", "build_refund"] } } },
+        { $match: { direction: "credit", transactionType: { $in: [...CREDIT_BACK_REVERSAL_TRANSACTION_TYPES] } } },
         { $group: { _id: null, total: { $sum: "$amount" } } },
       ]).toArray(),
     ])

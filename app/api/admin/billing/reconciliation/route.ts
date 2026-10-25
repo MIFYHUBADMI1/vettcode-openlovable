@@ -1,219 +1,60 @@
 import { requireAdmin } from "@/lib/auth/session"
-import { ok, handleRouteError } from "@/lib/api/respond"
-import {
-  usersCol,
-  paymentRecordsCol,
-  subscriptionRecordsCol,
-  creditLedgerCol,
-} from "@/lib/db/collections"
+import { ok, fail, handleRouteError } from "@/lib/api/respond"
+import { reconcileFinances, MAX_WINDOW_SIZE } from "@/lib/finances/reconciliation"
+import type { ReconciliationSeverity } from "@/lib/finances/reconciliation"
 
 /**
- * Billing reconciliation endpoint.
+ * Billing reconciliation endpoint (Phase 3 — Workstream E/G).
  *
- * Compares Dodo payments ↔ Atai payment records ↔ subscriptions ↔
- * credit grants ↔ credit ledger ↔ user entitlements.
+ * The route is a thin, admin-only boundary over `lib/finances/reconciliation`:
+ * it validates operator-supplied pagination/filter parameters and returns the
+ * computed page. The service is READ-ONLY — this endpoint never repairs a
+ * record, and there is intentionally no POST/PUT/DELETE here. Corrections go
+ * through `/api/admin/billing/webhooks` (bounded recovery batches) or the
+ * existing admin credit-adjustment path, both of which are idempotent and
+ * state-validated.
  *
- * Detects:
- * - Successful payment without credit grant
- * - Credit grant without successful payment
- * - Duplicate credit grants
- * - Subscription mismatches
- * - Ledger/balance mismatches
+ * Findings carry identifiers, amounts and bookkeeping only; raw webhook
+ * payloads are never surfaced (see the service's no-secret-leakage rule).
  */
 
-interface ReconciliationIssue {
-  id: string
-  type: string
-  severity: "critical" | "warning" | "info"
-  userId?: string
-  referenceId?: string
-  description: string
-  detectedAt: number
+const SEVERITIES: readonly ReconciliationSeverity[] = ["critical", "warning", "info"]
+
+function clampInt(raw: string | null, fallback: number, max: number): number {
+  if (!raw) return fallback
+  const n = Number.parseInt(raw, 10)
+  if (!Number.isFinite(n) || n <= 0) return fallback
+  return Math.min(n, max)
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     await requireAdmin()
 
-    const issues: ReconciliationIssue[] = []
-    const now = Date.now()
+    const url = new URL(req.url)
+    const windowSize = clampInt(url.searchParams.get("limit"), 250, MAX_WINDOW_SIZE)
+    const cursor = url.searchParams.get("cursor")
+    const userId = url.searchParams.get("userId")
+    const severityParam = url.searchParams.get("severity")
+    const severity = SEVERITIES.includes((severityParam ?? "") as ReconciliationSeverity)
+      ? (severityParam as ReconciliationSeverity)
+      : undefined
+    const types = (url.searchParams.get("types") ?? "")
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .slice(0, 20)
 
-    const [payCol, subCol, ledgerCol, users] = await Promise.all([
-      paymentRecordsCol(),
-      subscriptionRecordsCol(),
-      creditLedgerCol(),
-      usersCol(),
-    ])
+    const page = await reconcileFinances({
+      windowSize,
+      cursor: cursor && cursor.length <= 128 ? cursor : null,
+      userId: userId && userId.length <= 128 ? userId : undefined,
+      types,
+      severity,
+    })
 
-    // ── 1. Check for successful payments without credit grants ──
-    // Load at most 500 payments; for larger datasets run in batches via a
-    // background job rather than a single HTTP request.
-    const successfulPayments = await payCol
-      .find({ status: "succeeded", paymentType: "permanent_credit_pack" })
-      .limit(500)
-      .toArray()
-
-    // Batch: collect all payment IDs that have a userId+creditsGranted, then
-    // fetch all matching ledger entries in one query instead of N sequential
-    // round-trips.
-    const paymentsToCheck = successfulPayments.filter(
-      (p) => p.userId && p.creditsGranted,
-    )
-    const dodoPaymentIds = paymentsToCheck.map((p) => p.dodoPaymentId)
-
-    const existingLedgerGrants = dodoPaymentIds.length
-      ? await ledgerCol
-        .find(
-          { transactionType: "credit_purchase", "metadata.dodoPaymentId": { $in: dodoPaymentIds } },
-          { projection: { "metadata.dodoPaymentId": 1, _id: 0 } },
-        )
-        .toArray()
-      : []
-
-    const ledgerGrantedIds = new Set(
-      existingLedgerGrants.map((g) => g.metadata?.dodoPaymentId as string).filter(Boolean),
-    )
-
-    for (const payment of paymentsToCheck) {
-      if (ledgerGrantedIds.has(payment.dodoPaymentId)) continue
-      issues.push({
-        id: `pay_no_grant_${payment.id}`,
-        type: "payment_without_grant",
-        severity: "critical",
-        userId: payment.userId,
-        referenceId: payment.dodoPaymentId,
-        description: `Payment ${payment.dodoPaymentId} succeeded ($${payment.amount}) but no credit grant found in ledger`,
-        detectedAt: now,
-      })
-    }
-
-    // ── 2. Check for subscription mismatches ──
-    // Load at most 500 active subscriptions and batch-fetch their users in
-    // one $in query instead of one findOne per subscription.
-    const activeSubscriptions = await subCol
-      .find({ status: "active" })
-      .limit(500)
-      .toArray()
-
-    const subUserIds = [...new Set(activeSubscriptions.map((s) => s.userId).filter(Boolean))]
-    const subUsers = subUserIds.length
-      ? await users
-        .find(
-          { id: { $in: subUserIds } },
-          { projection: { id: 1, subscriptionCredits: 1, credits: 1, _id: 0 } },
-        )
-        .toArray()
-      : []
-    const subUserMap = new Map(subUsers.map((u) => [u.id, u]))
-
-    for (const sub of activeSubscriptions) {
-      const user = subUserMap.get(sub.userId)
-      if (!user) {
-        issues.push({
-          id: `sub_no_user_${sub.id}`,
-          type: "subscription_mismatch",
-          severity: "critical",
-          userId: sub.userId,
-          referenceId: sub.dodoSubscriptionId,
-          description: `Active subscription ${sub.dodoSubscriptionId} belongs to non-existent user ${sub.userId}`,
-          detectedAt: now,
-        })
-        continue
-      }
-
-      // Check if user has subscription credits
-      if ((user.subscriptionCredits ?? 0) <= 0 && sub.status === "active") {
-        issues.push({
-          id: `sub_no_credits_${sub.id}`,
-          type: "subscription_mismatch",
-          severity: "warning",
-          userId: sub.userId,
-          referenceId: sub.dodoSubscriptionId,
-          description: `Active subscription ${sub.dodoSubscriptionId} but user has 0 subscription credits`,
-          detectedAt: now,
-        })
-      }
-    }
-
-    // ── 3. Check for ledger/balance mismatches ──
-    // Get all users with credits
-    const usersWithCredits = await users
-      .find({ credits: { $gt: 0 }, deletedAt: { $exists: false } })
-      .limit(1000)
-      .toArray()
-
-    for (const user of usersWithCredits) {
-      const subCredits = user.subscriptionCredits ?? 0
-      const permCredits = user.permanentCredits ?? 0
-      const legacyCredits = user.credits ?? 0
-
-      // Check that subscription + permanent = total (or legacy)
-      const calculatedTotal = subCredits + permCredits
-      if (calculatedTotal !== legacyCredits && calculatedTotal > 0) {
-        issues.push({
-          id: `balance_mismatch_${user.id}`,
-          type: "ledger_balance_mismatch",
-          severity: "warning",
-          userId: user.id,
-          description: `User ${user.id}: subscription(${subCredits}) + permanent(${permCredits}) = ${calculatedTotal} ≠ credits(${legacyCredits})`,
-          detectedAt: now,
-        })
-      }
-    }
-
-    // ── 4. Check for duplicate credit grants ──
-    const duplicateGrants = await ledgerCol
-      .aggregate([
-        { $group: { _id: "$idempotencyKey", count: { $sum: 1 }, ids: { $push: "$id" } } },
-        { $match: { count: { $gt: 1 } } },
-        { $limit: 50 },
-      ])
-      .toArray()
-
-    for (const dup of duplicateGrants) {
-      issues.push({
-        id: `dup_grant_${dup._id}`,
-        type: "duplicate_credit_grant",
-        severity: "info",
-        referenceId: dup._id,
-        description: `Idempotency key "${dup._id}" has ${dup.count} ledger entries`,
-        detectedAt: now,
-      })
-    }
-
-    // ── 5. Check for cancelled subscriptions still marked active ──
-    const cancelledButActive = await subCol
-      .find({ status: "cancelled", cancelAtPeriodEnd: true })
-      .toArray()
-
-    for (const sub of cancelledButActive) {
-      if (sub.currentPeriodEnd && sub.currentPeriodEnd < now) {
-        issues.push({
-          id: `cancelled_past_${sub.id}`,
-          type: "subscription_mismatch",
-          severity: "warning",
-          userId: sub.userId,
-          referenceId: sub.dodoSubscriptionId,
-          description: `Subscription ${sub.dodoSubscriptionId} cancelled but period ended ${new Date(sub.currentPeriodEnd).toISOString()}`,
-          detectedAt: now,
-        })
-      }
-    }
-
-    // Sort by severity
-    const severityOrder = { critical: 0, warning: 1, info: 2 }
-    issues.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity])
-
-    // Summary stats
-    const summary = {
-      totalIssues: issues.length,
-      critical: issues.filter((i) => i.severity === "critical").length,
-      warning: issues.filter((i) => i.severity === "warning").length,
-      info: issues.filter((i) => i.severity === "info").length,
-      checkedAt: now,
-    }
-
-    return ok({ summary, issues })
+    if (!page.readOnly) return fail("INTERNAL", "reconciliation reported a non read-only run")
+    return ok(page)
   } catch (e) {
     return handleRouteError("api.admin.billing.reconciliation", e)
   }

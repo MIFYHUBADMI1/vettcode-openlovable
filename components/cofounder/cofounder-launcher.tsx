@@ -12,7 +12,14 @@ import { cn } from "@/lib/utils"
  * here so it exists on every page that renders the header, and the
  * conversation persists across navigation (spec section 47).
  */
-export function CofounderLauncherButton({ mobile = false }: { mobile?: boolean }) {
+export function CofounderLauncherButton({
+  mobile = false,
+  withPanel = true,
+}: {
+  mobile?: boolean
+  /** Set false when the host already mounts a single `<CofounderPanel />`. */
+  withPanel?: boolean
+}) {
   const { open } = useCofounderPanel()
 
   if (mobile) {
@@ -28,7 +35,7 @@ export function CofounderLauncherButton({ mobile = false }: { mobile?: boolean }
           <Sparkles className="size-3" />
           <span className="sm:hidden">Ask</span>
         </Button>
-        <CofounderPanel />
+        {withPanel ? <CofounderPanel /> : null}
       </>
     )
   }
@@ -45,7 +52,7 @@ export function CofounderLauncherButton({ mobile = false }: { mobile?: boolean }
         <Sparkles className="size-3.5 text-primary" />
         Ask your co-founder
       </Button>
-      <CofounderPanel />
+      {withPanel ? <CofounderPanel /> : null}
     </>
   )
 }

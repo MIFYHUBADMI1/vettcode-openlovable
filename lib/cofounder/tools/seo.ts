@@ -18,8 +18,9 @@ import type { ToolDefinition, PrepareOutcome, ToolOutcome, ToolContext } from ".
 import { runSeoAuditSchema } from "../schemas"
 import { ownedProject } from "./projects"
 import { isSeoAuditEnabledForUser } from "@/lib/marketing/feature-flags"
-import { getSeoAuditCost, getSeoAuditAffordability, chargeSeoAuditCredits, refundSeoAuditCredits } from "@/lib/marketing/seo/credits"
-import { runSeoAudit } from "@/lib/marketing/seo/service"
+import { getSeoAuditCost, getSeoAuditAffordability, chargeSeoAuditCredits, refundSeoAuditCredits, type SeoRefundOutcome } from "@/lib/marketing/seo/credits"
+import { scopedIntentKey } from "@/lib/billing/operation-identity"
+import { runSeoAudit, markSeoAuditRefund } from "@/lib/marketing/seo/service"
 import { isFirecrawlConfigured } from "@/lib/integrations/firecrawl/client"
 import { AppError } from "@/lib/errors"
 import { logger } from "@/lib/logging/logger"
@@ -83,7 +84,11 @@ export const runSeoAuditTool: ToolDefinition = {
   },
   async executeApproved(input, ctx): Promise<ToolOutcome> {
     let charged = false
+    let chargedAmount = 0
+    let failedAuditId: string | null = null
+    let refundStatus: SeoRefundOutcome | null = null
     let projectId = ""
+    let intentKey: string | undefined
     try {
       const parsed = runSeoAuditSchema.parse(input)
       projectId = parsed.projectId
@@ -95,12 +100,32 @@ export const runSeoAuditTool: ToolDefinition = {
         return { success: false, error: { code: gate.code, message: gate.message, fatal: true } }
       }
 
-      charged = await chargeSeoAuditCredits(ctx.user.id, parsed.projectId)
+      chargedAmount = getSeoAuditCost()
+      // Phase 3 (Workstream C): the approved pending-action id is a stable,
+      // server-derived single-use identifier — but it is still an identifier,
+      // not a scoped one. `scopedIntentKey` binds it to the session user and
+      // the ownership-checked project so the ledger key cannot be aliased by
+      // another caller, and the SAME key is reused for the refund below.
+      intentKey = scopedIntentKey(ctx.pendingActionId, {
+        userId: ctx.user.id,
+        operation: "seo_audit",
+        projectId: parsed.projectId,
+      })
+      charged = await chargeSeoAuditCredits(ctx.user.id, parsed.projectId, intentKey)
       if (!charged) {
         return { success: false, error: { code: "INSUFFICIENT_CREDITS", message: "You don't have enough credits for this audit.", fatal: true } }
       }
 
-      const outcome = await runSeoAudit({ userId: ctx.user.id, projectId: parsed.projectId, url: gate.url, creditsCharged: getSeoAuditCost() })
+      const outcome = await runSeoAudit({
+        userId: ctx.user.id,
+        projectId: parsed.projectId,
+        url: gate.url,
+        creditsCharged: chargedAmount,
+        projectName: gate.project.name,
+        onFailedAuditPersisted: (auditId) => {
+          failedAuditId = auditId
+        },
+      })
 
       return {
         success: true,
@@ -119,13 +144,22 @@ export const runSeoAuditTool: ToolDefinition = {
       }
     } catch (e) {
       if (charged && projectId) {
-        await refundSeoAuditCredits(ctx.user.id, projectId)
+        // Reverse exactly what was charged and stamp the stored failed row so
+        // the history reflects the real refund outcome.
+        refundStatus = await refundSeoAuditCredits(ctx.user.id, projectId, chargedAmount, intentKey)
+        if (failedAuditId) {
+          await markSeoAuditRefund(projectId, failedAuditId, refundStatus, chargedAmount)
+        }
       }
+      const refundNote =
+        refundStatus === "failed"
+          ? "We couldn't reverse the credits automatically — please contact support."
+          : "Any credits were refunded."
       if (e instanceof AppError && e.code === "FIRECRAWL_UNAVAILABLE") {
-        return { success: false, error: { code: "FIRECRAWL_UNAVAILABLE", message: "The website analyzer couldn't reach that site. Credits were refunded." } }
+        return { success: false, error: { code: "FIRECRAWL_UNAVAILABLE", message: `The website analyzer couldn't reach that site. ${refundNote}` } }
       }
       logger.warn("cofounder.tool.seo", "executeApproved failed", { message: e instanceof Error ? e.message : String(e) })
-      return toToolOutcome(e, "The audit failed. Any credits were refunded.")
+      return toToolOutcome(e, `The audit failed. ${refundNote}`)
     }
   },
 }

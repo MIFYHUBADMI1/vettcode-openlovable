@@ -45,7 +45,7 @@ export function VerifyEmailBanner() {
   }
 
   return (
-    <div className="flex flex-col gap-3 border-b border-amber-500/30 bg-amber-500/10 px-6 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-10">
+    <div className="flex flex-col gap-3 border-b border-amber-500/30 bg-amber-500/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-10">
       <div className="flex items-center gap-3">
         <MailWarning className="size-4 shrink-0 text-amber-500" />
         <p className="text-sm text-foreground">

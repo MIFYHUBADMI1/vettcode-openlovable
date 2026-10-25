@@ -18,8 +18,12 @@
  * USD-equivalent value of this quantity of credits?" It does NOT establish:
  *
  *   1. Credit quantity   — how many credits were granted/consumed/reversed.
- *   2. Payment revenue   — actual cash received through Dodo Payments
- *                          (recorded in `payment_records`, net of refunds).
+ *   2. Payment revenue   — actual cash received through Dodo Payments.
+ *                          `payment_records` stores GROSS collections as their
+ *                          own rows and each confirmed refund as a SEPARATE
+ *                          traceable row (negative amount, `refund` type); net
+ *                          is an explicit subtraction, never an edited-away
+ *                          original. See the Phase 3 refund accounting rules.
  *   3. Provider cost     — real monetary cost reported by external providers.
  *   4. Profitability     — a separate calculation needing defensible revenue
  *                          AND cost definitions.

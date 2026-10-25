@@ -12,6 +12,7 @@ import {
   openRouterHeaders,
 } from "@/lib/runtime/router/adapters/openrouter/config"
 import { computeVisualCredits, VISUAL_FALLBACK_CREDITS } from "@/lib/billing/visual-pricing"
+import { scopedIntentKey } from "@/lib/billing/operation-identity"
 import {
   DEFAULT_IMAGE_MODEL,
   IMAGE_MODELS,
@@ -72,6 +73,15 @@ export async function POST(
 
     const body: VisualMockupRequest = await req.json()
     const { sectionId, model = DEFAULT_IMAGE_MODEL, aspectRatio = "16:9", style } = body
+
+    // Optional client intent id → stable ledger identity for THIS generation
+    // (validated + scoped to this user/project; never authorization). Absent →
+    // previous per-attempt key, so distinct generations stay distinct.
+    const intentKey = scopedIntentKey(body.requestId, {
+      userId: user.id,
+      operation: "visual_generation",
+      projectId,
+    })
 
     const project = await store.getProject(projectId)
     if (!project || project.userId !== user.id) {
@@ -155,7 +165,7 @@ export async function POST(
       userId: user.id,
       amount: credits,
       transactionType: "ai_collaboration",
-      idempotencyKey: `visual_${cryptoId()}`,
+      idempotencyKey: intentKey ? `visual_${intentKey}` : `visual_${cryptoId()}`,
       referenceType: "project",
       referenceId: projectId,
       // Trusted server-side context from the route (user must own the

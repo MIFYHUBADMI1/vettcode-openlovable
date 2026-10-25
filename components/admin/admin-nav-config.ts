@@ -77,7 +77,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
       { href: "/admin/billing/webhooks", label: "Webhooks", icon: Webhook, description: "Payment webhook log." },
       { href: "/admin/billing/audit", label: "Billing audit", icon: FileText, description: "Billing audit trail." },
       { href: "/admin/billing/reconciliation", label: "Reconciliation", icon: Scale, description: "Payments vs credits vs entitlements." },
-      { href: "/admin/payments", label: "Payments", icon: ShoppingCart, description: "Mobile money top-up review." },
+      { href: "/admin/payments", label: "Legacy top-ups", icon: ShoppingCart, description: "Historical Mobile Money records (read-only)." },
       { href: "/admin/transactions", label: "Transactions", icon: CreditCard, description: "Credit activity across users." },
       { href: "/admin/ledger", label: "Ledger", icon: FileText, description: "Detailed credit ledger." },
       { href: "/admin/dodo-products", label: "Dodo products", icon: Package, description: "Dodo Payments catalog." },

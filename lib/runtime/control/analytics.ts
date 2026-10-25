@@ -81,6 +81,7 @@ export async function summarizeProjectUsage(
       failed: number
       creditsCharged: number
       providerCostUsd: number
+      providerNonUsd?: number
       providerNumeric: number
       providerCostUnavailableCount: number
     }>([
@@ -98,7 +99,37 @@ export async function summarizeProjectUsage(
           creditsCharged: { $sum: "$creditsCharged" },
           providerCostUsd: {
             $sum: {
-              $cond: [{ $eq: [{ $type: "$costMetadata.providerCost" }, "double"] }, "$costMetadata.providerCost", 0],
+              $cond: [
+                {
+                  $and: [
+                    { $eq: [{ $type: "$costMetadata.providerCost" }, "double"] },
+                    { $eq: ["$costMetadata.providerCostCurrency", "USD"] },
+                  ],
+                },
+                "$costMetadata.providerCost",
+                0,
+              ],
+            },
+          },
+          providerNonUsd: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    {
+                      $or: [
+                        { $eq: [{ $type: "$costMetadata.providerCost" }, "double"] },
+                        { $eq: [{ $type: "$costMetadata.providerCost" }, "int"] },
+                        { $eq: [{ $type: "$costMetadata.providerCost" }, "long"] },
+                        { $eq: [{ $type: "$costMetadata.providerCost" }, "decimal"] },
+                      ],
+                    },
+                    { $ne: ["$costMetadata.providerCostCurrency", "USD"] },
+                  ],
+                },
+                1,
+                0,
+              ],
             },
           },
           providerNumeric: {
@@ -148,6 +179,7 @@ export async function summarizeProjectUsage(
       creditsCharged: 0,
       providerCostUsd: null,
       providerCostUnavailableCount: 0,
+      providerCostNonUsdCount: 0,
     }
   }
 
@@ -158,8 +190,9 @@ export async function summarizeProjectUsage(
     succeeded: row.succeeded,
     failed: row.failed,
     creditsCharged: row.creditsCharged,
-    providerCostUsd: row.providerNumeric > 0 ? row.providerCostUsd : null,
+    providerCostUsd: row.providerCostUsd > 0 ? row.providerCostUsd : null,
     providerCostUnavailableCount: row.providerCostUnavailableCount,
+    providerCostNonUsdCount: row.providerNonUsd ?? 0,
   }
 }
 

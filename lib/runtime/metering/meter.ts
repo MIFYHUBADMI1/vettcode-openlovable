@@ -11,6 +11,7 @@ import { calculateRuntimeCredits, estimateRequestUsage, estimateMinimumCredits }
 import { chargeRuntimeUsage, refundRuntimeCharge } from "./charge"
 import type { RuntimeChargeResult } from "./charge"
 import type { RuntimeChargeCalculation } from "./pricing"
+import { costStatusFromProviderCost } from "@/lib/finances/cost-status"
 
 /**
  * Atai Runtime — usage meter (server-only, Phase 9 + 9.5).
@@ -543,6 +544,9 @@ function buildCostMetadata(args: {
       : {}),
     // Provider cost (Phase 9.5 §23/§82): verbatim, distinguishable from the
     // customer charge; unavailable stays explicitly unavailable, never 0.
+    // Phase 2 adds the explicit `costStatus` classification (confirmed /
+    // estimated / unavailable) so accounting reads a documented status rather
+    // than re-guessing from field presence (lib/finances/cost-status).
     ...(providerCost !== undefined
       ? {
           providerCost:
@@ -551,7 +555,8 @@ function buildCostMetadata(args: {
               : providerCost.amount,
           providerCostCurrency: providerCost.currency ?? null,
           providerCostSource: providerCost.source,
+          costStatus: costStatusFromProviderCost(providerCost),
         }
-      : {}),
+      : { costStatus: "unavailable" as const }),
   }
 }

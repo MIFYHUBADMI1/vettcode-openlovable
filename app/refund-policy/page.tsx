@@ -27,7 +27,7 @@ import { SITE_URL } from "@/lib/env"
 export const metadata: Metadata = {
   title: "Atai Refund Policy | Credit Purchases & Refunds",
   description:
-    "Learn about Atai's refund policy for credit purchases, mobile money payments, failed transactions, and account credits.",
+    "Learn about Atai's refund policy for credit purchases, payments, failed transactions, and account credits.",
   alternates: { canonical: "/refund-policy" },
   openGraph: {
     type: "website",
@@ -36,13 +36,13 @@ export const metadata: Metadata = {
     siteName: "Atai",
     title: "Atai Refund Policy | Credit Purchases & Refunds",
     description:
-      "Learn about Atai's refund policy for credit purchases, mobile money payments, failed transactions, and account credits.",
+      "Learn about Atai's refund policy for credit purchases, payments, failed transactions, and account credits.",
     images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai Refund Policy" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Atai Refund Policy | Credit Purchases & Refunds",
-    description: "Learn about Atai's refund policy for credit purchases, mobile money payments, failed transactions, and account credits.",
+    description: "Learn about Atai's refund policy for credit purchases, payments, failed transactions, and account credits.",
     images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai Refund Policy" }],
   },
 }
@@ -56,7 +56,7 @@ const refundPageStructuredData = {
   "@type": "WebPage",
   name: "Atai Refund Policy",
   description:
-    "Refund policy for Atai credit purchases, mobile money payments, failed transactions, and account credits.",
+    "Refund policy for Atai credit purchases, payments, failed transactions, and account credits.",
   url: `${SITE_URL}/refund-policy`,
   isPartOf: {
     "@type": "WebSite",
@@ -82,7 +82,7 @@ const faqStructuredData = {
       name: "What if my payment fails but I was charged?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "If your mobile money payment was deducted but credits were not awarded, contact support with your transaction ID and payment screenshot. Atai will investigate and either award the credits or process a refund.",
+        text: "If your payment was deducted but credits were not awarded, contact support with your transaction ID and payment confirmation. Atai will investigate and either award the credits or process a refund.",
       },
     },
     {
@@ -106,7 +106,7 @@ const faqStructuredData = {
       name: "How long does refund processing take?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Refund processing times depend on the payment method and the nature of the refund. Mobile money refunds may take several business days. Credit adjustments are typically applied within 48 hours of approval.",
+        text: "Refund processing times depend on the payment method and the nature of the refund. Provider-side refunds may take several business days. Credit adjustments are typically applied within 48 hours of approval.",
       },
     },
   ],
@@ -123,7 +123,7 @@ const faqItems = [
   },
   {
     q: "What if my payment fails but I was charged?",
-    a: "If your mobile money payment was deducted but credits were not awarded, contact support with your transaction ID and payment screenshot. Atai will investigate and either award the credits or process a refund.",
+    a: "If your payment was deducted but credits were not awarded, contact support with your transaction ID and payment confirmation. Atai will investigate and either award the credits or process a refund.",
   },
   {
     q: "How do I request a refund?",
@@ -135,7 +135,7 @@ const faqItems = [
   },
   {
     q: "How long does refund processing take?",
-    a: "Refund processing times depend on the payment method and the nature of the refund. Mobile money refunds may take several business days. Credit adjustments are typically applied within 48 hours of approval.",
+    a: "Refund processing times depend on the payment method and the nature of the refund. Provider-side refunds may take several business days. Credit adjustments are typically applied within 48 hours of approval.",
   },
 ]
 
@@ -253,7 +253,7 @@ export default function RefundPolicyPage() {
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
               <p>
-                If your mobile money payment was deducted from your account but credits were not awarded to your Atai account:
+                If a payment was deducted from your account but credits were not awarded to your Atai account:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>Contact Atai support with your transaction ID and payment confirmation screenshot</li>
@@ -265,7 +265,7 @@ export default function RefundPolicyPage() {
                 <p className="text-sm font-medium mb-1">What to include when reporting a failed payment</p>
                 <ul className="text-sm text-muted-foreground space-y-1 mt-2">
                   <li>• Your Atai account email</li>
-                  <li>• Mobile money transaction ID</li>
+                  <li>• Payment transaction ID</li>
                   <li>• Amount paid</li>
                   <li>• Date and time of payment</li>
                   <li>• Payment confirmation screenshot</li>
@@ -386,7 +386,7 @@ export default function RefundPolicyPage() {
                       <td className="px-4 py-3">Typically within 48 hours of approval</td>
                     </tr>
                     <tr className="border-b border-border/50">
-                      <td className="px-4 py-3 font-medium">Mobile money refund</td>
+                      <td className="px-4 py-3 font-medium">Payment provider refund</td>
                       <td className="px-4 py-3">3–7 business days after approval</td>
                     </tr>
                     <tr>
@@ -397,7 +397,7 @@ export default function RefundPolicyPage() {
                 </table>
               </div>
               <p>
-                Processing times may vary depending on the payment provider, your mobile money operator, and the complexity of the refund request.
+                Processing times may vary depending on the payment provider and the complexity of the refund request.
               </p>
             </div>
           </section>

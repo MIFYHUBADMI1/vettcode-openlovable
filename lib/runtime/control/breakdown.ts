@@ -26,9 +26,14 @@ export interface BreakdownRow {
   creditsCharged: number
   /** Mean latency across the group (ms). */
   avgLatencyMs: number | null
-  /** Numeric provider-cost sum when at least one event reported one. */
+  /** Sum of provider-reported costs explicitly denominated in USD (Phase 2:
+   * other currencies are NEVER mixed into this label). Null when the group
+   * has no USD-denominated numeric cost. */
   providerCostUsd: number | null
   providerCostUnavailableCount: number
+  /** Events whose provider reported a NUMERIC cost in a non-USD currency —
+   * counted, never summed across currencies. */
+  providerCostNonUsdCount?: number
 }
 
 /** A clearly-labeled linear projection of current-period spend. */
@@ -61,6 +66,7 @@ function clampRange(from: number | undefined, to: number | undefined): { from: n
 
 /** Bounded group stage: normalize missing groups to "unknown" and cap rows. */
 function groupStage(groupField: string, limit: number): Record<string, unknown>[] {
+  const numericCost = { $in: [{ $type: "$costMetadata.providerCost" }, ["double", "int", "long", "decimal"]] }
   return [
     {
       $group: {
@@ -70,31 +76,41 @@ function groupStage(groupField: string, limit: number): Record<string, unknown>[
         failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } },
         creditsCharged: { $sum: "$creditsCharged" },
         totalLatencyMs: { $sum: "$latencyMs" },
+        // Phase 2 currency honesty: providerCostUsd sums ONLY amounts the
+        // provider explicitly denominated in USD. Numeric costs in another
+        // currency are counted (never converted, never mixed into the label);
+        // non-numeric costs remain "unavailable" — never 0.
         providerCostUsd: {
           $sum: {
             $cond: [
-              { $in: [{ $type: "$costMetadata.providerCost" }, ["double", "int", "long", "decimal"]] },
+              { $and: [numericCost, { $eq: ["$costMetadata.providerCostCurrency", "USD"] }] },
               "$costMetadata.providerCost",
+              0,
+            ],
+          },
+        },
+        providerNonUsd: {
+          $sum: {
+            $cond: [
+              {
+                $and: [
+                  numericCost,
+                  { $ne: ["$costMetadata.providerCostCurrency", "USD"] },
+                ],
+              },
+              1,
               0,
             ],
           },
         },
         providerNumeric: {
           $sum: {
-            $cond: [
-              { $in: [{ $type: "$costMetadata.providerCost" }, ["double", "int", "long", "decimal"]] },
-              1,
-              0,
-            ],
+            $cond: [numericCost, 1, 0],
           },
         },
         providerCostUnavailableCount: {
           $sum: {
-            $cond: [
-              { $in: [{ $type: "$costMetadata.providerCost" }, ["double", "int", "long", "decimal"]] },
-              0,
-              1,
-            ],
+            $cond: [numericCost, 0, 1],
           },
         },
       },
@@ -112,6 +128,7 @@ interface AggRow {
   creditsCharged: number
   totalLatencyMs: number
   providerCostUsd: number
+  providerNonUsd: number
   providerNumeric: number
   providerCostUnavailableCount: number
 }
@@ -124,8 +141,9 @@ function toRow(row: AggRow): BreakdownRow {
     failed: row.failed,
     creditsCharged: row.creditsCharged,
     avgLatencyMs: row.requests > 0 ? Math.round(row.totalLatencyMs / row.requests) : null,
-    providerCostUsd: row.providerNumeric > 0 ? row.providerCostUsd : null,
+    providerCostUsd: row.providerCostUsd > 0 ? row.providerCostUsd : null,
     providerCostUnavailableCount: row.providerCostUnavailableCount,
+    providerCostNonUsdCount: row.providerNonUsd ?? 0,
   }
 }
 
@@ -232,7 +250,12 @@ export async function estimatePeriodUsage(
           providerCostUsd: {
             $sum: {
               $cond: [
-                { $in: [{ $type: "$costMetadata.providerCost" }, ["double", "int", "long", "decimal"]] },
+                {
+                  $and: [
+                    { $in: [{ $type: "$costMetadata.providerCost" }, ["double", "int", "long", "decimal"]] },
+                    { $eq: ["$costMetadata.providerCostCurrency", "USD"] },
+                  ],
+                },
                 "$costMetadata.providerCost",
                 0,
               ],

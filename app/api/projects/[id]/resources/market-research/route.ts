@@ -1,12 +1,19 @@
 import { requireUser } from "@/lib/auth/session"
 import { store } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
-import { generateText } from "ai"
-import { MODEL } from "@/lib/analysis/model"
 import { chargeMarketResearch, refundResources } from "@/lib/resources/resources-credits"
+import { scopedIntentKey } from "@/lib/billing/operation-identity"
+import { generateWithRetry, logAIFailure } from "@/lib/resources/ai-retry"
+
+/** Read the optional client intent id (idempotency identity only — validated
+ * and scoped to this authenticated user + this ownership-checked project). */
+async function readIntentKey(req: Request, userId: string, projectId: string): Promise<string | undefined> {
+  const body = (await req.json().catch(() => null)) as { requestId?: unknown } | null
+  return scopedIntentKey(body?.requestId, { userId, operation: "resources_market_research", projectId })
+}
 
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -21,7 +28,8 @@ export async function POST(
       return fail("VALIDATION", "No specification found for this project.", 409)
     }
 
-    const charged = await chargeMarketResearch(user.id, id)
+    const intentKey = await readIntentKey(req, user.id, id)
+    const charged = await chargeMarketResearch(user.id, id, intentKey)
     if (!charged) {
       return fail("INSUFFICIENT_CREDITS", "You need 75 credits to research your market.", 402)
     }
@@ -71,16 +79,35 @@ Be specific to this exact business type and category. Cite real market data wher
 
     let text: string
     try {
-      const result = await generateText({
-        model: MODEL,
-        system: systemPrompt,
-        prompt: userPrompt,
-        maxOutputTokens: 2500,
-      })
-      text = result.text
+      text = await generateWithRetry(
+        { system: systemPrompt, prompt: userPrompt },
+        { maxOutputTokens: 2500 },
+      )
     } catch (aiError) {
-      await refundResources(user.id, id, "marketResearch")
-      throw aiError
+      await refundResources(user.id, id, "marketResearch", intentKey)
+      
+      logAIFailure("resources.market-research", aiError, {
+        projectId: id,
+        userId: user.id,
+        operation: "marketResearch",
+      })
+      
+      // @ts-expect-error — dynamic cache fields not in strict type
+      const cachedResearch = project.resourcesCache?.marketResearch
+      if (cachedResearch?.text) {
+        return ok({
+          text: cachedResearch.text,
+          generatedAt: cachedResearch.generatedAt,
+          cached: true,
+          note: "Using previously generated research. The AI service is temporarily unavailable.",
+        })
+      }
+      
+      return fail(
+        "AI_UNAVAILABLE",
+        "The AI service is temporarily unavailable. Your credits have been refunded. Please try again in a few moments.",
+        503,
+      )
     }
 
     await store.updateProject(id, {

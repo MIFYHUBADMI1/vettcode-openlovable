@@ -1,5 +1,5 @@
 import { getDb } from "@/lib/db/mongodb"
-import type { UserDoc, SessionDoc, VerificationTokenDoc, RateLimitDoc, ProjectAssetDoc, ProviderUsageDoc, TopUpDoc, PublishEventDoc, ReferralDoc, DocFeedbackDoc, WebhookEventDoc, PlanningRunDoc, ProjectLikeDoc, UserFollowDoc, ProjectForkDoc, ProjectGitHubDoc, SeoAuditDoc, ContentItemDoc, GrowthTaskDoc, GrowthTaskHistoryDoc, CampaignDoc, CampaignHistoryDoc } from "@/lib/types/db"
+import type { UserDoc, SessionDoc, VerificationTokenDoc, RateLimitDoc, ProjectAssetDoc, ProviderUsageDoc, TopUpDoc, PublishEventDoc, ReferralDoc, DocFeedbackDoc, WebhookEventDoc, PlanningRunDoc, ProjectLikeDoc, UserFollowDoc, ProjectForkDoc, ProjectGitHubDoc, SeoAuditDoc, ContentItemDoc, BrandProfileDoc, GrowthTaskDoc, GrowthTaskHistoryDoc, CampaignDoc, CampaignHistoryDoc } from "@/lib/types/db"
 import type {
   FeatureRequestDoc,
   FeatureRequestInternalNoteDoc,
@@ -122,6 +122,15 @@ export async function contentItemsCol() {
 }
 
 /**
+ * Persisted brand profile (Phase 4 v2). ONE row per project, founder-authored
+ * preferences that ground every generation. Link-only by projectId — never
+ * embedded in `projects`, and never a measured signal.
+ */
+export async function brandProfilesCol() {
+  return (await getDbCached()).collection<BrandProfileDoc & { _id?: unknown }>("brand_profiles")
+}
+
+/**
  * Managed growth tasks (Phase 5 — W4). A durable per-project LIST of next-step
  * tasks with status/priority/due, plus an append-only history. This is NOT a
  * scheduler — no timer here executes anything (the job substrate does not
@@ -216,14 +225,19 @@ let legacyIndexesDropped = false
 async function dropLegacyIndexes() {
   if (legacyIndexesDropped) return
   legacyIndexesDropped = true
-  const [projects, buildRuns, assets, usage] = await Promise.all([
-    projectsCol(), buildRunsCol(), projectAssetsCol(), providerUsageCol(),
+  const [projects, buildRuns, assets, usage, topups] = await Promise.all([
+    projectsCol(), buildRunsCol(), projectAssetsCol(), providerUsageCol(), topupsCol(),
   ])
   await Promise.all([
     projects.dropIndex("id_1").catch(() => undefined),
     buildRuns.dropIndex("id_1").catch(() => undefined),
     assets.dropIndex("id_1").catch(() => undefined),
     usage.dropIndex("id_1").catch(() => undefined),
+    // Legacy Mobile Money TTL — it auto-deleted historical top-up records,
+    // which must be preserved for audit/reconciliation/support after the
+    // gateway was discontinued. Dropping the index stops further deletion;
+    // no documents are deleted here.
+    topups.dropIndex("expiresAt_1").catch(() => undefined),
   ])
 }
 
@@ -257,6 +271,18 @@ export async function ensureIndexes(): Promise<void> {
   return globalForDb.__mirrorIndexesPromise
 }
 
+/**
+ * Process index creation in small batches to avoid exhausting the connection
+ * pool during startup. Each batch waits for completion before starting the
+ * next, allowing regular queries to interleave.
+ */
+async function batchedIndexCreation(operations: Array<Promise<unknown>>, batchSize = 5): Promise<void> {
+  for (let i = 0; i < operations.length; i += batchSize) {
+    const batch = operations.slice(i, i + batchSize)
+    await Promise.all(batch)
+  }
+}
+
 async function runEnsureIndexes(): Promise<void> {
   const [users, sessions, tokens, rateLimits, projects, buildRuns, assets, usage] = await Promise.all([
     usersCol(), sessionsCol(), verificationTokensCol(), rateLimitsCol(),
@@ -266,11 +292,18 @@ async function runEnsureIndexes(): Promise<void> {
   // Drop legacy indexes once, then create all indexes.
   await dropLegacyIndexes()
 
-  await Promise.all([
+  // Critical path indexes first (users, sessions, tokens) — these are needed
+  // for authentication and are the hottest queries. Process in small batches
+  // to avoid saturating the pool during startup.
+  await batchedIndexCreation([
     users.createIndex({ email: 1 }, { unique: true }),
     users.createIndex({ googleId: 1 }, { sparse: true }),
     users.createIndex({ githubId: 1 }, { sparse: true }),
     users.createIndex({ referralCode: 1 }, { sparse: true }),
+    // Supports findUserById: findOne({ id, deletedAt: { $exists: false } })
+    // Without this compound index, every session resolution does a collection
+    // scan on users, holding a pool connection longer than necessary.
+    users.createIndex({ id: 1, deletedAt: 1 }, { sparse: true, name: "users_id_deleted" }),
     // Supports lookups and expiry queries on individual credit buckets
     users.createIndex({ "creditBuckets.subscriptionId": 1 }, { sparse: true }),
     users.createIndex({ "creditBuckets.expiresAt": 1 }, { sparse: true }),
@@ -298,7 +331,7 @@ async function runEnsureIndexes(): Promise<void> {
 
   // Publish event indexes
   const publishEvents = await publishEventsCol()
-  await Promise.all([
+  await batchedIndexCreation([
     publishEvents.createIndex({ id: 1 }, { unique: true, sparse: true, name: "publish_events_id_unique" }),
     publishEvents.createIndex({ userId: 1, createdAt: -1 }),
     publishEvents.createIndex({ projectId: 1, createdAt: -1 }),
@@ -306,14 +339,15 @@ async function runEnsureIndexes(): Promise<void> {
     publishEvents.createIndex({ createdAt: -1 }),
   ])
 
-  // Top-up indexes
+  // Top-up indexes (historical Mobile Money records — retained permanently
+  // for audit/support; NO TTL: the gateway is discontinued but its records
+  // must not be auto-deleted by routine index creation)
   const topups = await topupsCol()
-  await Promise.all([
+  await batchedIndexCreation([
     topups.createIndex({ id: 1 }, { unique: true, sparse: true, name: "topups_id_unique" }),
     topups.createIndex({ userId: 1, createdAt: -1 }),
     topups.createIndex({ paymentReference: 1 }, { unique: true }),
     topups.createIndex({ status: 1, createdAt: -1 }),
-    topups.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
   ]).catch((error) => {
     // Log but don't crash — indexes are best-effort; the app can still
     // function (albeit slower) without them on the first request.
@@ -322,7 +356,7 @@ async function runEnsureIndexes(): Promise<void> {
 
   // Referral indexes
   const referrals = await referralsCol()
-  await Promise.all([
+  await batchedIndexCreation([
     referrals.createIndex({ id: 1 }, { unique: true, sparse: true, name: "referrals_id_unique" }),
     referrals.createIndex({ referrerUserId: 1, createdAt: -1 }),
     referrals.createIndex({ referredUserId: 1 }, { unique: true }),
@@ -331,24 +365,27 @@ async function runEnsureIndexes(): Promise<void> {
 
   // Doc feedback indexes
   const docFeedback = await docFeedbackCol()
-  await Promise.all([
+  await batchedIndexCreation([
     docFeedback.createIndex({ key: 1 }, { unique: true, name: "doc_feedback_key_unique" }),
     docFeedback.createIndex({ sectionId: 1, vote: 1 }),
   ])
 
   // Webhook event indexes
   const webhookEvents = await webhookEventsCol()
-  await Promise.all([
+  await batchedIndexCreation([
     webhookEvents.createIndex({ id: 1 }, { unique: true, sparse: true, name: "webhook_events_id_unique" }),
     webhookEvents.createIndex({ webhookId: 1 }, { unique: true, name: "webhook_events_webhook_id_unique" }),
     webhookEvents.createIndex({ eventType: 1, receivedAt: -1 }),
     webhookEvents.createIndex({ status: 1, receivedAt: -1 }),
+    // Recovery-worker claim pattern: { status, nextAttemptAt } + oldest-first
+    // by receivedAt (lib/billing/webhook-recovery.ts claimNextEvent).
+    webhookEvents.createIndex({ status: 1, nextAttemptAt: 1, receivedAt: 1 }, { name: "webhook_events_recovery_claim" }),
     webhookEvents.createIndex({ receivedAt: -1 }),
   ])
 
   // ─── Unified Billing Indexes ────────────────────────────────────────────
   const creditLedger = await creditLedgerCol()
-  await Promise.all([
+  await batchedIndexCreation([
     // Unique identifier for ledger entries
     creditLedger.createIndex({ id: 1 }, { unique: true, sparse: true, name: "credit_ledger_id_unique" }),
     // Composite index for user credit history queries (most common query pattern)
@@ -373,7 +410,7 @@ async function runEnsureIndexes(): Promise<void> {
   ])
 
   const buildAuths = await buildAuthorizationsCol()
-  await Promise.all([
+  await batchedIndexCreation([
     buildAuths.createIndex({ id: 1 }, { unique: true, sparse: true, name: "build_auth_id_unique" }),
     buildAuths.createIndex({ userId: 1, createdAt: -1 }),
     buildAuths.createIndex({ projectId: 1, createdAt: -1 }),
@@ -382,7 +419,7 @@ async function runEnsureIndexes(): Promise<void> {
   ])
 
   const paymentRecords = await paymentRecordsCol()
-  await Promise.all([
+  await batchedIndexCreation([
     paymentRecords.createIndex({ id: 1 }, { unique: true, sparse: true, name: "payment_records_id_unique" }),
     paymentRecords.createIndex({ dodoPaymentId: 1 }, { unique: true, name: "payment_records_dodo_id_unique" }),
     paymentRecords.createIndex({ userId: 1, createdAt: -1 }),
@@ -390,7 +427,7 @@ async function runEnsureIndexes(): Promise<void> {
   ])
 
   const subRecords = await subscriptionRecordsCol()
-  await Promise.all([
+  await batchedIndexCreation([
     subRecords.createIndex({ id: 1 }, { unique: true, sparse: true, name: "subscription_records_id_unique" }),
     subRecords.createIndex({ dodoSubscriptionId: 1 }, { unique: true, name: "subscription_records_dodo_id_unique" }),
     subRecords.createIndex({ userId: 1, createdAt: -1 }),
@@ -399,7 +436,7 @@ async function runEnsureIndexes(): Promise<void> {
 
   // Planning run indexes
   const planningRuns = await planningRunsCol()
-  await Promise.all([
+  await batchedIndexCreation([
     planningRuns.createIndex({ id: 1 }, { unique: true, sparse: true, name: "planning_runs_id_unique" }),
     planningRuns.createIndex({ projectId: 1 }),
     planningRuns.createIndex({ userId: 1, startedAt: -1 }),
@@ -409,7 +446,7 @@ async function runEnsureIndexes(): Promise<void> {
 
   // Firecrawl cache indexes
   const firecrawlCache = await firecrawlCacheCol()
-  await Promise.all([
+  await batchedIndexCreation([
     // Unique URL + crawl mode combination
     firecrawlCache.createIndex({ url: 1, crawlMode: 1 }, { unique: true, name: "firecrawl_cache_url_mode_unique" }),
     // TTL index for automatic cache expiration (7 days)
@@ -418,7 +455,7 @@ async function runEnsureIndexes(): Promise<void> {
 
   // SEO audit indexes (Phase 3 — W2). Ownership-scoped reads by project.
   const seoAudits = await seoAuditsCol()
-  await Promise.all([
+  await batchedIndexCreation([
     seoAudits.createIndex({ id: 1 }, { unique: true, sparse: true, name: "seo_audits_id_unique" }),
     seoAudits.createIndex({ projectId: 1, createdAt: -1 }),
     seoAudits.createIndex({ userId: 1, createdAt: -1 }),
@@ -427,18 +464,25 @@ async function runEnsureIndexes(): Promise<void> {
   // Marketing Studio content indexes (Phase 4 — W3). Ownership-scoped reads by
   // project; id unique; version chains resolved by parentContentId.
   const contentItems = await contentItemsCol()
-  await Promise.all([
+  await batchedIndexCreation([
     contentItems.createIndex({ id: 1 }, { unique: true, sparse: true, name: "content_items_id_unique" }),
     contentItems.createIndex({ projectId: 1, updatedAt: -1 }),
     contentItems.createIndex({ userId: 1, createdAt: -1 }),
     contentItems.createIndex({ parentContentId: 1, version: -1 }),
+    // Library search/filter + calendar reads stay project-scoped and bounded.
+    contentItems.createIndex({ projectId: 1, status: 1, updatedAt: -1 }),
+    contentItems.createIndex({ projectId: 1, plannedAt: 1 }),
   ])
+
+  // Brand profile (Phase 4 v2): exactly one profile per project.
+  const brandProfiles = await brandProfilesCol()
+  await brandProfiles.createIndex({ projectId: 1 }, { unique: true, name: "brand_profiles_project_unique" })
 
   // Growth task indexes (Phase 5 — W4). Ownership-scoped reads by project;
   // list reads filter by status then recency; history is append-only by task.
   const growthTasks = await growthTasksCol()
   const growthTaskHistory = await growthTaskHistoryCol()
-  await Promise.all([
+  await batchedIndexCreation([
     growthTasks.createIndex({ id: 1 }, { unique: true, sparse: true, name: "growth_tasks_id_unique" }),
     growthTasks.createIndex({ projectId: 1, status: 1, updatedAt: -1 }),
     growthTasks.createIndex({ userId: 1, createdAt: -1 }),
@@ -450,7 +494,7 @@ async function runEnsureIndexes(): Promise<void> {
   // reads filter by status then recency; history is append-only by campaign.
   const campaigns = await campaignsCol()
   const campaignHistory = await campaignHistoryCol()
-  await Promise.all([
+  await batchedIndexCreation([
     campaigns.createIndex({ id: 1 }, { unique: true, sparse: true, name: "campaigns_id_unique" }),
     campaigns.createIndex({ projectId: 1, status: 1, updatedAt: -1 }),
     campaigns.createIndex({ userId: 1, createdAt: -1 }),
@@ -460,19 +504,19 @@ async function runEnsureIndexes(): Promise<void> {
 
   // Social / explore indexes
   const projectLikes = await projectLikesCol()
-  await Promise.all([
+  await batchedIndexCreation([
     projectLikes.createIndex({ userId: 1, projectId: 1 }, { unique: true, name: "project_likes_unique" }),
     projectLikes.createIndex({ projectId: 1 }),
     projectLikes.createIndex({ userId: 1 }),
   ])
   const userFollows = await userFollowsCol()
-  await Promise.all([
+  await batchedIndexCreation([
     userFollows.createIndex({ followerId: 1, followingId: 1 }, { unique: true, name: "user_follows_unique" }),
     userFollows.createIndex({ followerId: 1 }),
     userFollows.createIndex({ followingId: 1 }),
   ])
   const projectForks = await projectForksCol()
-  await Promise.all([
+  await batchedIndexCreation([
     projectForks.createIndex({ forkedByUserId: 1, originalProjectId: 1 }, { unique: true, name: "project_forks_unique" }),
     projectForks.createIndex({ originalProjectId: 1 }),
     projectForks.createIndex({ forkedByUserId: 1 }),
@@ -480,7 +524,7 @@ async function runEnsureIndexes(): Promise<void> {
 
   // GitHub integration indexes
   const projectGitHub = await projectGitHubCol()
-  await Promise.all([
+  await batchedIndexCreation([
     projectGitHub.createIndex({ projectId: 1 }, { unique: true, name: "project_github_project_unique" }),
     projectGitHub.createIndex({ userId: 1 }),
   ])
@@ -496,7 +540,7 @@ async function runEnsureIndexes(): Promise<void> {
   // efficient, ownership-scoped pending-action claims.
   const cofounderConversations = await cofounderConversationsCol()
   const cofounderPendingActions = await cofounderPendingActionsCol()
-  await Promise.all([
+  await batchedIndexCreation([
     cofounderConversations.createIndex({ id: 1 }, { unique: true, sparse: true, name: "cofounder_conversations_id_unique" }),
     cofounderConversations.createIndex({ userId: 1, updatedAt: -1 }),
     cofounderPendingActions.createIndex({ id: 1 }, { unique: true, name: "cofounder_pending_actions_id_unique" }),
@@ -505,7 +549,7 @@ async function runEnsureIndexes(): Promise<void> {
     cofounderPendingActions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0, sparse: true }),
   ])
 
-  await Promise.all([
+  await batchedIndexCreation([
     featureRequests.createIndex({ id: 1 }, { unique: true, sparse: true, name: "feature_requests_id_unique" }),
     featureRequests.createIndex({ status: 1, voteCount: -1 }),
     featureRequests.createIndex({ category: 1, createdAt: -1 }),

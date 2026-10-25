@@ -1,7 +1,11 @@
-"use client"
-
 import { FileArchive, Download, ExternalLink } from "lucide-react"
 
+/**
+ * Presentational icons for the `repo-code` Server Component page. No
+ * `"use client"` here on purpose: reaching through an object export of a client
+ * module from a Server Component yields `undefined` members (see the same fix
+ * in `app/project/[projectId]/env-icons.tsx`).
+ */
 export const RepoCodeIcons = {
   HeaderIcon() {
     return (

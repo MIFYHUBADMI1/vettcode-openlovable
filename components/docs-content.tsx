@@ -54,7 +54,7 @@ const sectionMeta = [
   { id: "workspace", label: "Working With Your App", icon: Puzzle, keywords: ["workspace", "preview", "source code", "instruction bar", "database manager", "edit", "changes"] },
   { id: "publishing", label: "Publishing & Domains", icon: Upload, keywords: ["publish", "domain", "subdomain", "dns", "deploy", "live", "url", "https", "custom domain"] },
   { id: "github", label: "GitHub Integration", icon: GitCompare, keywords: ["github", "git", "repo", "repository", "push", "auto-push", "build from", "source control", "version control", "connect", "oauth"] },
-  { id: "credits", label: "Credits & Billing", icon: CreditCard, keywords: ["credits", "billing", "payment", "price", "cost", "top up", "mobile money", "mtn", "airtel", "free"] },
+  { id: "credits", label: "Credits & Billing", icon: CreditCard, keywords: ["credits", "billing", "payment", "price", "cost", "top up", "dodo", "free"] },
   { id: "appearance", label: "Themes & Appearance", icon: Settings, keywords: ["theme", "dark", "light", "glass", "glassmorphism", "appearance", "system", "colour", "color"] },
   { id: "account", label: "Account & Settings", icon: Settings, keywords: ["account", "profile", "password", "security", "settings", "referral", "refer", "earn"] },
   { id: "faq", label: "Frequently Asked Questions", icon: HelpCircle, keywords: ["faq", "question", "answer", "help", "support", "problem", "issue", "export", "mobile", "secure"] },
@@ -986,7 +986,7 @@ export function DocsContent() {
                 },
                 {
                   q: "What happens if I run out of credits?",
-                  a: "You can top up your credits at any time via Mobile Money. Your existing projects and applications remain accessible — you just need credits to build new ones or make changes.",
+                  a: "You can purchase additional credits at any time via Dodo Payments in Settings → Billing. Your existing projects and applications remain accessible — you just need credits to build new ones or make changes.",
                 },
                 {
                   q: "Can I export my application?",

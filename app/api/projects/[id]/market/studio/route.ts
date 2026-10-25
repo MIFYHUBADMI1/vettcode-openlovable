@@ -37,7 +37,7 @@ import {
 
 const BaseGenerateSchema = z
   .object({
-    kind: z.enum(["copy", "email", "social", "timeline", "image", "voice", "video"]),
+    kind: z.enum(["copy", "email", "social", "timeline", "blog", "brief", "image", "voice", "video"]),
     brief: z.string().max(2000).default(""),
     tone: z.enum(MARKET_TONES).optional(),
     language: z.enum(MARKET_LANGUAGES).optional(),

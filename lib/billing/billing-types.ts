@@ -79,8 +79,14 @@ export interface PaymentRecord {
   dodoPaymentId: string
   /** Dodo customer ID */
   dodoCustomerId?: string
-  amount: number
-  currency: string
+  /**
+   * Transaction amount as reported by Dodo. Absent when the provider did
+   * not supply an authoritative amount (e.g. some payment.failed events) —
+   * never fabricated as a confirmed zero.
+   */
+  amount?: number
+  /** ISO payment currency recorded from the Dodo transaction; absent when unknown. */
+  currency?: string
   status: PaymentStatus
   /** "subscription" | "permanent_credit_pack" | "one_time" */
   paymentType: string
@@ -95,6 +101,21 @@ export interface PaymentRecord {
   subscriptionId?: string
   /** Package ID for permanent credit packs */
   packageId?: string
+  /**
+   * Phase 3 refund accounting: the ORIGINAL payment a refund row reverses
+   * (set on `paymentType: "refund"` rows written from refund.succeeded).
+   * Historical refund rows may predate the field — reconciliation treats a
+   * missing link as "incomplete record", distinct from a confirmed error.
+   */
+  originalPaymentId?: string
+  /** Refund identifier (Dodo refund_id) — mirrors dodoPaymentId on refund rows. */
+  refundId?: string
+  /**
+   * Cumulative confirmed-refunded amount in the payment's ORIGINAL currency
+   * minor units, maintained on the original payment row as refund rows land.
+   * Absent = no refund recorded against this payment (never a fabricated 0).
+   */
+  refundedAmountMinor?: number
   metadata?: Record<string, unknown>
   createdAt: number
   updatedAt: number
@@ -148,14 +169,48 @@ export interface UserBillingProfile {
 
 // ─── Reconciliation Entry ────────────────────────────────────────────────────
 
+/** Every discrepancy type the reconciliation service can emit. */
+export type ReconciliationIssueType =
+  | "missing_credit_grant"
+  | "duplicate_credit_grant"
+  | "subscription_mismatch"
+  | "renewal_mismatch"
+  | "refund_without_reversal"
+  | "ledger_balance_mismatch"
+  | "payment_without_grant"
+  | "grant_without_payment"
+  | "duplicate_payment_records"
+  | "refund_without_payment"
+  | "reversal_without_refund"
+  | "duplicate_refund_records"
+  | "unexpected_ledger_entry"
+  | "webhook_unresolved"
+  | "webhook_failed_recovery"
+  | "webhook_manual_review"
+  | "payment_attribution_missing"
+  | "subscription_period_mismatch"
+  | "incomplete_record"
+
 export interface ReconciliationIssue {
   id: string
-  type: "missing_credit_grant" | "duplicate_credit_grant" | "subscription_mismatch" | "renewal_mismatch" | "refund_without_reversal" | "ledger_balance_mismatch" | "payment_without_grant"
+  type: ReconciliationIssueType
   severity: "critical" | "warning" | "info"
+  /** Review priority — maps from severity by default; operators re-rank manually. */
+  priority?: number
   userId?: string
   referenceId?: string
+  /** Related webhook / ledger / refund identifiers where the join is authoritative. */
+  relatedIds?: string[]
+  /** What the authoritative records say SHOULD be true. */
+  expected?: string
+  /** What was actually observed. */
+  observed?: string
   description: string
   detectedAt: number
+  /** "open" is the default for new findings; `resolved` kept for the
+   * historical admin-route consumers. Findings are computed live — this field
+   * is metadata for operator notes, never a trigger to rewrite records. */
+  resolution?: "open" | "under_review" | "resolved" | "needs_business_decision"
   resolved?: boolean
   resolvedAt?: number
   resolvedBy?: string

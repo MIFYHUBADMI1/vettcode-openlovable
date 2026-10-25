@@ -41,8 +41,8 @@ const defaultLinks: NavLink[] = [
 ]
 
 const NAV_LINK =
-  "inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-const NAV_LINK_ACTIVE = "inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary"
+  "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+const NAV_LINK_ACTIVE = "inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-lg bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary"
 
 export function SiteHeader({ activePage, links = defaultLinks, variant = "default" }: SiteHeaderProps) {
   const { session, isLoading: sessionLoading } = useSession()
@@ -54,9 +54,12 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
 
   const inner = (
     <>
-      <BrandLogo size={32} priority />
+      <BrandLogo size={32} priority className="shrink-0" />
 
-      <nav className="hidden items-center gap-1 lg:flex" aria-label="Primary">
+      <nav
+        className={cn("hidden items-center gap-1", variant === "bordered" ? "2xl:flex" : "xl:flex")}
+        aria-label="Primary"
+      >
         {isHome ? (
           <>
             <DropdownMenu>
@@ -119,7 +122,7 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
         )}
       </nav>
 
-      <div className="flex items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
         <ThemeToggle />
         {session ? (
           <>
@@ -127,16 +130,15 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
               {startLabel}
               <ArrowRight className="size-3.5" />
             </Link>
-            <Link href="/dashboard" className={cn(buttonVariants({ variant: "outline", size: "sm" }), "inline-flex gap-1.5 sm:hidden")}>
-              Dashboard
-            </Link>
             <AccountMenu />
           </>
         ) : (
           <>
-            <AuthTrigger view="login" className={NAV_LINK}>
-              Sign in
-            </AuthTrigger>
+            <div className="hidden sm:block">
+              <AuthTrigger view="login" className={NAV_LINK}>
+                Sign in
+              </AuthTrigger>
+            </div>
             <AuthTrigger view="signup" next="/new/idea" className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>
               <span className="sm:hidden">Start</span>
               <span className="hidden sm:inline">Get started</span>
@@ -146,7 +148,10 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
         )}
         <button
           type="button"
-          className="grid size-9 place-items-center rounded-lg border border-border text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
+          className={cn(
+            "grid size-9 shrink-0 place-items-center rounded-lg border border-border text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            variant === "bordered" ? "2xl:hidden" : "xl:hidden",
+          )}
           aria-expanded={mobileOpen}
           aria-controls="site-mobile-nav"
           onClick={() => setMobileOpen((open) => !open)}
@@ -164,8 +169,8 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
       variant === "bordered" && "border-border",
     )}>
       <div className={cn(
-        "mx-auto flex w-full items-center justify-between px-6 py-3",
-        variant === "bordered" ? "max-w-5xl" : "max-w-7xl lg:px-10",
+        "mx-auto flex w-full items-center justify-between gap-3 px-4 py-3 sm:px-6",
+        variant === "bordered" ? "max-w-6xl" : "max-w-7xl lg:px-10",
       )}>
         {inner}
       </div>
@@ -173,7 +178,10 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
       {mobileOpen && (
         <nav
           id="site-mobile-nav"
-          className="border-t border-border bg-background px-6 py-4 lg:hidden"
+          className={cn(
+            "border-t border-border bg-background px-4 py-4 sm:px-6",
+            variant === "bordered" ? "2xl:hidden" : "xl:hidden",
+          )}
           aria-label="Mobile"
         >
           <div className="mx-auto flex max-w-7xl flex-col gap-1">

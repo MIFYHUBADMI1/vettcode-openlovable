@@ -24,7 +24,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { VerifyEmailBanner } from "@/components/verify-email-banner"
 import { DashboardNotifications } from "@/components/dashboard/dashboard-notifications"
 import { CofounderPanel, useCofounderPanel } from "@/components/cofounder/cofounder-panel"
-import { workspaceGrowNav, workspaceProjectNav, type AtaiNavItem } from "@/components/workspace/atai-nav"
+import { workspaceGrowNav, workspaceIntelligenceNav, workspaceProjectNav, type AtaiNavItem } from "@/components/workspace/atai-nav"
 import { useProjects } from "@/lib/client/api"
 import { AuthGate } from "@/components/auth/auth-gate"
 import { interpretProjectState, selectActiveProject } from "@/lib/dashboard/view-model"
@@ -130,11 +130,11 @@ export function DashboardShell({
 
         <div className="flex min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
-            <div className="flex items-center justify-between gap-3 px-4 py-3 lg:px-6">
+            <div className="flex items-center justify-between gap-2 px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3 lg:px-6">
               <div className="flex min-w-0 items-center gap-3">
                 <button
                   type="button"
-                  className="rounded-lg border border-border p-2 md:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="shrink-0 rounded-lg border border-border p-2 md:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-expanded={mobileOpen}
                   aria-controls={drawerId}
                   onClick={() => setMobileOpen(true)}
@@ -147,7 +147,7 @@ export function DashboardShell({
                   <h1 className="truncate text-sm font-semibold sm:text-base">{title}</h1>
                 </div>
               </div>
-              <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex shrink-0 items-center gap-2 sm:gap-3">
                 {resolvedProjectId ? <WorkspaceAskButton /> : <ProjectSearch projects={projects} />}
                 <Link
                   href="/docs"
@@ -221,6 +221,7 @@ function SidebarBody({
 }) {
   if (projectId) {
     const tools = workspaceProjectNav(projectId)
+    const intelligence = workspaceIntelligenceNav(projectId)
     const grow = workspaceGrowNav(projectId)
     return (
       <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-3 py-4">
@@ -241,6 +242,14 @@ function SidebarBody({
             <p className="px-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Project tools</p>
           ) : null}
           {tools.map((item) => (
+            <SidebarLink key={item.href} item={item} pathname={pathname} collapsed={collapsed} />
+          ))}
+        </nav>
+        <nav className="flex flex-col gap-1" aria-label="Application intelligence">
+          {!collapsed ? (
+            <p className="px-2 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground">Application intelligence</p>
+          ) : null}
+          {intelligence.map((item) => (
             <SidebarLink key={item.href} item={item} pathname={pathname} collapsed={collapsed} />
           ))}
         </nav>

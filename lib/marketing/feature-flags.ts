@@ -106,6 +106,17 @@ export function isStudioEnabledForUser(userId: string): boolean {
  * content studio is part of the shipped market page) with a simple kill
  * switch: MARKET_STUDIO_ENABLED=false disables generation for everyone.
  */
+/**
+ * The unified Studio workspace (Phase 4 v2). It hosts BOTH the original
+ * template drafts (STUDIO_ENABLED, default OFF) and the richer market studio
+ * (MARKET_STUDIO_ENABLED, default ON). Either flag makes the surface reachable,
+ * so moving the market studio under /studio does not hide a capability that
+ * was already visible on the Market page.
+ */
+export function isStudioWorkspaceEnabled(userId: string): boolean {
+  return isStudioEnabledForUser(userId) || isMarketStudioEnabled()
+}
+
 export function isMarketStudioEnabled(): boolean {
   const hard = process.env.MARKET_STUDIO_ENABLED
   return !(hard === "false" || hard === "0")

@@ -12,6 +12,13 @@ import { ProjectPreferencesDialog } from "@/components/project-preferences-dialo
 import { Loader2, Lock, Globe, AlertCircle, Settings, Copy, Layers } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { peekPendingStart, takePendingStart } from "@/lib/auth/client-intent"
+import {
+  beginStartFlow,
+  readErrorCode,
+  trackStartSubmitted,
+  trackWorkspaceCreated,
+  trackWorkspaceCreateFailed,
+} from "@/lib/analytics/start-funnel"
 import { recordOnboardingActivation } from "@/lib/onboarding/activate"
 import { extractGithubRepo } from "@/lib/start/detect-input"
 import { GitHubIcon } from "@/components/github-icon"
@@ -53,6 +60,10 @@ export function CreateGitHubRepoForm({ hasGitHub }: { hasGitHub: boolean }) {
   const [capturedIntent, setCapturedIntent] = useState<string | null>(null)
 
   useEffect(() => {
+    beginStartFlow({ method: "github", surface: "new_github" })
+  }, [])
+
+  useEffect(() => {
     const pending = peekPendingStart()
     if (!pending?.prompt) return
     if (!pending.href.includes("/new/github") && !/github\.com\//i.test(pending.prompt)) return
@@ -74,8 +85,10 @@ export function CreateGitHubRepoForm({ hasGitHub }: { hasGitHub: boolean }) {
     if (!canSubmit || busy) return
     setBusy(true)
     setError(null)
+    trackStartSubmitted({ method: "github", surface: "new_github", authenticated: true })
+    const createStartedAt = Date.now()
     try {
-      const { project } = await postJson<{ project: Project }>("/api/projects", {
+      const { project, reused } = await postJson<{ project: Project; reused?: boolean }>("/api/projects", {
         mode: "github",
         githubRepoOwner: parsed!.owner,
         githubRepoName: parsed!.name,
@@ -84,6 +97,12 @@ export function CreateGitHubRepoForm({ hasGitHub }: { hasGitHub: boolean }) {
         userRequest: subMode === "extend" ? userRequest.trim() : undefined,
         idea: capturedIntent || (subMode === "extend" ? userRequest.trim() : undefined),
         preferences: preferences || undefined,
+      })
+      trackWorkspaceCreated({
+        method: "github",
+        projectId: project.id,
+        reused,
+        createMs: Date.now() - createStartedAt,
       })
       await refresh()
       try {
@@ -98,6 +117,7 @@ export function CreateGitHubRepoForm({ hasGitHub }: { hasGitHub: boolean }) {
       }
       router.push(`/project/${project.id}/collaborate`)
     } catch (err) {
+      trackWorkspaceCreateFailed({ method: "github", errorCode: readErrorCode(err) })
       setError(err instanceof Error ? err.message : "Could not create project")
       setBusy(false)
     }

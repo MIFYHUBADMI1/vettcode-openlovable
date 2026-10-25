@@ -33,24 +33,33 @@ interface BillingOverview {
     netCredits: number
   }
   revenue: {
+    /** Accounting basis label from the server — gross collections, not
+     * recognized revenue. Displayed verbatim so the number can never be
+     * silently re-interpreted. */
+    basis?: string
     total: number
     today: number
     thisWeek: number
     thisMonth: number
     currency: string
+    refundsTotal?: number
+    netTotal?: number
+    unknownAmountRows?: number
+    otherCurrencies?: Array<{ currency: string; gross: number; refunds: number; net: number }>
   }
   payments: {
     total: number
     successful: number
     failed: number
     refunded: number
+    awaitingConfirmation?: number
   }
   subscriptions: {
     total: number
     active: number
     cancelled: number
   }
-  paymentTypeDistribution: { type: string; count: number; totalRevenue: number }[]
+  paymentTypeDistribution: { type: string; count: number; totalRevenue: number; currency?: string }[]
   topUsers: { id: string; name: string; email: string; credits: number; subscriptionCredits: number; permanentCredits: number }[]
   revenueByDay: { date: string; count: number; revenue: number; credits: number }[]
   transactionTypes: { type: string; count: number; totalAmount: number }[]
@@ -217,6 +226,32 @@ export default function AdminBillingPage() {
               color="text-primary"
             />
           </div>
+          {/* Basis line: the cards above are GROSS USD collections. Refunds
+              are separate confirmed Dodo events, so net is shown explicitly
+              instead of quietly re-labelling gross as revenue. */}
+          <p className="mt-3 text-xs text-muted-foreground">
+            Figures are gross USD collections from Dodo (no FX conversion is
+            configured, so other currencies are listed separately and never
+            summed in).
+            {(overview?.revenue.refundsTotal ?? 0) > 0 && (
+              <>
+                {" "}Confirmed refunds <span className="tabular-nums">${(overview?.revenue.refundsTotal ?? 0).toLocaleString()}</span>
+                {" "}→ net <span className="tabular-nums">${(overview?.revenue.netTotal ?? 0).toLocaleString()}</span>.
+              </>
+            )}
+            {(overview?.revenue.otherCurrencies?.length ?? 0) > 0 && (
+              <>
+                {" "}Other currencies:{" "}
+                {overview?.revenue.otherCurrencies
+                  ?.map((c) => `${c.currency} ${(c.gross ?? 0).toLocaleString()}`)
+                  .join(", ")}
+                  .
+              </>
+            )}
+            {(overview?.revenue.unknownAmountRows ?? 0) > 0 && (
+              <> {(overview?.revenue.unknownAmountRows ?? 0).toLocaleString()} collection row(s) have no provider amount and are not counted as zero.</>
+            )}
+          </p>
         </section>
 
         {/* ── Credits Overview ── */}

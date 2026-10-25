@@ -477,7 +477,7 @@ export default function TermsPage() {
           </Section>
 
           <Section id="payments" number="13" icon={CreditCard} title="Payments">
-            <p>Atai processes payments via Dodo Payments and mobile money providers (MTN and Airtel). When you make a payment:</p>
+            <p>Atai processes payments via Dodo Payments. When you make a payment:</p>
             <ul className="list-disc list-inside space-y-1 ml-4">
               <li>You authorize the payment for the selected plan or credit package</li>
               <li>Payment is processed through the applicable payment provider</li>

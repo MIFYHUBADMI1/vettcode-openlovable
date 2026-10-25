@@ -38,24 +38,11 @@ export function getPackageById(id: string): PermanentCreditPack | undefined {
 }
 
 // ─── Removed legacy values ───────────────────────────────────────────────────
-// PAYMENT_RECIPIENT — removed (was for MTN/Airtel mobile money)
+// PAYMENT_RECIPIENT — removed (was for MTN/Airtel mobile money; the Mobile
+//                      Money gateway is discontinued and historical top-up
+//                      code no longer references it)
 // REFERENCE_EXPIRY_MS — removed (was for manual payment references)
 // priceUGX fields — removed (currency is now USD)
 
 /** Welcome bonus credits for new users. */
 export const WELCOME_BONUS = WELCOME_BONUS_CREDITS
-
-/**
- * @deprecated Legacy payment recipient — was for MTN/Airtel mobile money.
- * Kept for backward compatibility with legacy top-up code.
- */
-export const PAYMENT_RECIPIENT = {
-  name: "Biira Keziah",
-  phone: "+256 761 819 885",
-  phoneNormalized: "+256761819885",
-} as const
-
-/**
- * @deprecated Legacy reference expiry — was for manual payment references.
- */
-export const REFERENCE_EXPIRY_MS = 24 * 60 * 60 * 1000

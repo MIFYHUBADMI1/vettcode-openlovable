@@ -11,6 +11,15 @@ async function chargeResources(
   userId: string,
   projectId: string,
   operation: ResourcesAIOperation,
+  /**
+   * Phase 3 (Workstream C): stable server-scoped operation identity (see
+   * `lib/billing/operation-identity`). When present the charge key becomes
+   * `resources_${intentKey}` so a retried generation of the SAME logical
+   * operation is a recognized no-op instead of a second debit; when absent
+   * the previous per-attempt key is kept. Never authorization — routes pass
+   * only a value already validated and scoped to this user + project.
+   */
+  intentKey?: string,
 ): Promise<boolean> {
   const amount = RESOURCES_CREDIT_COSTS[operation]
   if (amount <= 0) return true
@@ -25,9 +34,12 @@ async function chargeResources(
     userId,
     amount,
     transactionType: "ai_collaboration",
-    idempotencyKey: cryptoId(),
+    idempotencyKey: intentKey ? `resources_${intentKey}` : cryptoId(),
     referenceType: "project",
     referenceId: projectId,
+    // First-class project attribution (Phase 2) — server-validated project
+    // from the route's ownership gate, never a client guess.
+    projectId,
     metadata: { feature: "resources", operation },
   })
 
@@ -35,23 +47,27 @@ async function chargeResources(
   return result.success
 }
 
-export async function chargeActionPlan(userId: string, projectId: string) {
-  return chargeResources(userId, projectId, "actionPlan")
+export async function chargeActionPlan(userId: string, projectId: string, intentKey?: string) {
+  return chargeResources(userId, projectId, "actionPlan", intentKey)
 }
-export async function chargeMarketResearch(userId: string, projectId: string) {
-  return chargeResources(userId, projectId, "marketResearch")
+export async function chargeMarketResearch(userId: string, projectId: string, intentKey?: string) {
+  return chargeResources(userId, projectId, "marketResearch", intentKey)
 }
-export async function chargeCompetitors(userId: string, projectId: string) {
-  return chargeResources(userId, projectId, "competitors")
+export async function chargeCompetitors(userId: string, projectId: string, intentKey?: string) {
+  return chargeResources(userId, projectId, "competitors", intentKey)
 }
-export async function chargeMarketingPlaybook(userId: string, projectId: string) {
-  return chargeResources(userId, projectId, "marketingPlaybook")
+export async function chargeMarketingPlaybook(userId: string, projectId: string, intentKey?: string) {
+  return chargeResources(userId, projectId, "marketingPlaybook", intentKey)
 }
 
 export async function refundResources(
   userId: string,
   projectId: string,
   operation: ResourcesAIOperation,
+  /** Pass the SAME intent key used to charge and the reversal key becomes
+   * deterministic (`resources_${intentKey}_refund`), so a retried failure path
+   * cannot refund the same generation twice. */
+  intentKey?: string,
 ): Promise<void> {
   try {
     const amount = RESOURCES_CREDIT_COSTS[operation]
@@ -61,9 +77,11 @@ export async function refundResources(
       creditType: "permanent",
       amount,
       transactionType: "other_reversal",
-      idempotencyKey: `resources_refund_${cryptoId()}`,
+      idempotencyKey: intentKey ? `resources_${intentKey}_refund` : `resources_refund_${cryptoId()}`,
       referenceType: "project",
       referenceId: projectId,
+      // First-class project attribution (Phase 2) — mirrors the charge.
+      projectId,
       metadata: { feature: "resources", operation, reason: "AI call failed — automatic refund" },
     })
   } catch (e) {

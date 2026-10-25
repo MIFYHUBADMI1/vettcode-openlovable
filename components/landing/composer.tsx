@@ -24,6 +24,11 @@ import {
   X,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import {
+  trackStartMethodSelected,
+  trackStartSubmitted,
+  trackStartValidationFailed,
+} from "@/lib/analytics/start-funnel"
 import { useAuthModal } from "@/components/auth/auth-provider"
 import { useSession } from "@/lib/client/api"
 import { savePendingStart } from "@/lib/auth/client-intent"
@@ -114,6 +119,35 @@ const MODES: {
   },
 ]
 
+const TYPING_HINTS: Record<StartMode, string[]> = {
+  idea: [
+    "Describe the business in your own words — the problem, who it's for, what should exist.",
+    "A booking platform for small clinics…",
+    "A marketplace connecting local farmers with restaurants…",
+    "An AI assistant for independent freelancers…",
+  ],
+  website: [
+    "Paste a website you want Atai to understand as a starting point…",
+    "https://linear.app — build a version of this experience for my business.",
+    "https://www.doctolib.com — a booking platform for my market.",
+  ],
+  url: [
+    "Paste a URL and tell Atai what to do with it…",
+    "https://example.com — analyze this site and help me build something better.",
+  ],
+  github: [
+    "Paste a GitHub repository URL…",
+    "https://github.com/vercel/next.js — understand this codebase and help me productize it.",
+  ],
+}
+
+const TYPE_CUES: Record<StartMode, string> = {
+  idea: "Type your idea here",
+  website: "Paste a website",
+  url: "Paste a URL",
+  github: "Paste a repo",
+}
+
 const AGENTS = [
   { id: "atai", name: "Atai", role: "AI Co-Founder", locked: true, icon: Brain },
   { id: "research", name: "Research & Strategy", role: "Market and competitor research", locked: false, icon: Search },
@@ -154,11 +188,14 @@ export function LandingComposer({
   lockedMode,
   showModes = true,
   showIntro = true,
+  surface = "landing",
   className,
 }: {
   lockedMode?: StartMode
   showModes?: boolean
   showIntro?: boolean
+  /** Where the composer is mounted — keeps /new funnel events separate from the landing hero. */
+  surface?: string
   className?: string
 } = {}) {
   const router = useRouter()
@@ -191,6 +228,7 @@ export function LandingComposer({
   const [speechLevel, setSpeechLevel] = useState(0)
 
   const active = MODES.find((item) => item.id === mode) ?? MODES[0]
+  const hasPrompt = prompt.length > 0
   const detected = detectStartMode(prompt)
   const chips = useMemo(() => detectIntentChips(prompt, mode), [prompt, mode])
   const canSend = prompt.trim().length > 0 && !submitting
@@ -216,6 +254,59 @@ export function LandingComposer({
   useEffect(() => {
     promptRef.current = prompt
   }, [prompt])
+
+  // Type an animated, mode-specific hint into the empty textarea so the field
+  // reads as "type here" rather than another block of copy. DOM-driven to
+  // avoid re-rendering the whole composer on every character.
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el || hasPrompt) return
+
+    const reduceMotion =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
+    if (reduceMotion) {
+      el.placeholder = active.placeholder
+      return
+    }
+
+    const phrases = TYPING_HINTS[mode] ?? TYPING_HINTS.idea
+    let phraseIndex = 0
+    let charIndex = 0
+    let deleting = false
+    let timer: number | undefined
+
+    const tick = () => {
+      const phrase = phrases[phraseIndex] ?? ""
+      if (!deleting) {
+        charIndex += 1
+        el.placeholder = phrase.slice(0, charIndex)
+        if (charIndex >= phrase.length) {
+          deleting = true
+          timer = window.setTimeout(tick, 1800)
+          return
+        }
+        timer = window.setTimeout(tick, 34)
+        return
+      }
+      charIndex -= 1
+      el.placeholder = phrase.slice(0, Math.max(0, charIndex))
+      if (charIndex <= 0) {
+        deleting = false
+        phraseIndex = (phraseIndex + 1) % phrases.length
+        timer = window.setTimeout(tick, 320)
+        return
+      }
+      timer = window.setTimeout(tick, 18)
+    }
+
+    el.placeholder = ""
+    timer = window.setTimeout(tick, 420)
+    return () => {
+      if (timer !== undefined) window.clearTimeout(timer)
+    }
+  }, [mode, hasPrompt, active.placeholder])
 
   useEffect(() => {
     resizeTextarea(textareaRef.current)
@@ -244,6 +335,7 @@ export function LandingComposer({
     if (lockedMode) return
     setMode(next)
     setError(null)
+    trackStartMethodSelected(next, surface)
   }
 
   function toggleAgent(id: string) {
@@ -458,6 +550,7 @@ export function LandingComposer({
     const message = validateStartInput(mode, prompt)
     if (message) {
       setError(message)
+      trackStartValidationFailed(mode, surface, prompt.trim() ? "invalid_input" : "empty")
       return
     }
     const saved = promptForStart(mode, prompt)
@@ -471,6 +564,7 @@ export function LandingComposer({
       pipelineMode: "heavy",
     })
     saveComposerPrefs({ prompt, mode, agents, tool, auto, files })
+    trackStartSubmitted({ method: mode, surface, authenticated: Boolean(session) })
     setSubmitting(true)
     if (!session) {
       openAuth("signup", { next: continueHref, prompt: saved })
@@ -536,14 +630,16 @@ export function LandingComposer({
       </div>
       ) : null}
 
-      <div
-        className={cn(
-          "lp-composer-shell mt-3 rounded-[1.35rem] border bg-card/90 shadow-[0_24px_60px_-36px_rgba(79,70,229,0.5)] backdrop-blur-md transition-[border-color,box-shadow] duration-200",
-          focused
-            ? "border-indigo-500/35 shadow-[0_24px_70px_-32px_rgba(79,70,229,0.62)]"
-            : "border-border/80",
-        )}
-      >
+      <div className="lp-composer-shell mt-3 rounded-[1.35rem] border border-transparent bg-card/90 backdrop-blur-md">
+        {!focused && !hasPrompt ? (
+          <span
+            aria-hidden
+            className="lp-type-badge pointer-events-none absolute -top-3 right-4 z-10 inline-flex items-center gap-1.5 rounded-full border border-indigo-400/50 bg-background/95 px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-indigo-600 shadow-[0_8px_24px_-12px_rgba(79,70,229,0.7)] dark:border-indigo-400/40 dark:text-indigo-300"
+          >
+            <span className="lp-type-badge-dot size-1.5 rounded-full bg-indigo-500" />
+            {TYPE_CUES[mode]}
+          </span>
+        ) : null}
         {(chips.length > 0 || agents.length > 1 || tool || auto !== "auto") && (
           <div className="flex flex-wrap gap-1.5 px-3.5 pt-3">
             {chips.map((chip) => (
@@ -609,7 +705,7 @@ export function LandingComposer({
           onBlur={() => setFocused(false)}
           onKeyDown={onKeyDown}
           placeholder={active.placeholder}
-          className="min-h-[88px] max-h-[240px] w-full resize-none bg-transparent px-3.5 pt-3 pb-1.5 text-sm leading-6 outline-none placeholder:text-muted-foreground/75"
+          className="min-h-[88px] max-h-[240px] w-full resize-none bg-transparent px-3.5 pt-3 pb-1.5 text-sm leading-6 outline-none caret-indigo-500 placeholder:text-indigo-600/75 dark:placeholder:text-indigo-300/75"
         />
         <p aria-hidden className="px-3.5 pb-2.5 text-xs leading-5 text-muted-foreground/80 italic">
           {active.example}

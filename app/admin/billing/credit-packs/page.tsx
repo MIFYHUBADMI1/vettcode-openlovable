@@ -81,7 +81,7 @@ export default function AdminCreditPacksPage() {
             </div>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight">Credit Packs</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Manage permanent credit packs and Mobile Money top-up packages.
+              Manage permanent credit packs (purchased via Dodo Payments).
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => mutate()} className="gap-1.5">
@@ -90,7 +90,7 @@ export default function AdminCreditPacksPage() {
           </Button>
         </header>
 
-        {/* ── Mobile Money Top-Up Packages ── */}
+        {/* ── Permanent Credit Packages (Dodo) ── */}
         <section className="mt-8">              <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground mb-4">Permanent Credit Packages</p>            <p className="text-sm text-muted-foreground mb-4">
             Customer-facing permanent credit packages for purchase via Dodo Payments.
           </p>

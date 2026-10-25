@@ -172,7 +172,7 @@ const faqItems = [
   },
   {
     q: "Does Atai collect payment card information?",
-    a: "No. Atai does not directly collect or store card numbers. Payments are processed via secure providers (Dodo Payments, MTN, and Airtel). Atai receives transaction confirmation data (transaction ID, amount, status) but not raw card details.",
+    a: "No. Atai does not directly collect or store card numbers. Payments are processed via our secure provider (Dodo Payments). Atai receives transaction confirmation data (transaction ID, amount, status) but not raw card details.",
   },
   {
     q: "Can I delete my account and data?",
@@ -414,7 +414,7 @@ export default function PrivacyPage() {
               <CreditCard className="size-5 text-primary" /> 7. Payment & Billing Information
             </h2>
             <div className="space-y-4 text-base leading-7 text-muted-foreground">
-              <p>Atai processes payments through Dodo Payments and mobile money providers (MTN and Airtel). <strong className="text-foreground">Atai does not directly collect or store credit card numbers.</strong></p>
+              <p>Atai processes payments through Dodo Payments. <strong className="text-foreground">Atai does not directly collect or store credit card numbers.</strong></p>
               <p>Atai receives the following transaction confirmation data from payment providers:</p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>Transaction ID and reference</li>
@@ -553,7 +553,7 @@ export default function PrivacyPage() {
                   { category: "AI Processing", desc: "OpenRouter (AI model routing and generation)" },
                   { category: "Application Build", desc: "Totalum (application generation and infrastructure)" },
                   { category: "Website Analysis", desc: "Firecrawl (website crawling and analysis)" },
-                  { category: "Payment Processing", desc: "Dodo Payments, MTN, Airtel (payments)" },
+                  { category: "Payment Processing", desc: "Dodo Payments (payments)" },
                   { category: "Email", desc: "Resend (transactional email delivery)" },
                   { category: "Analytics", desc: "Vercel Analytics, PostHog (usage analytics)" },
                   { category: "Authentication", desc: "Atai platform auth (session management)" },

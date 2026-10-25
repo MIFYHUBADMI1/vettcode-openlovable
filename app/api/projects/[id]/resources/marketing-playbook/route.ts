@@ -1,10 +1,10 @@
 import { requireUser } from "@/lib/auth/session"
 import { store } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
-import { generateText } from "ai"
-import { MODEL } from "@/lib/analysis/model"
 import { chargeMarketingPlaybook, refundResources } from "@/lib/resources/resources-credits"
 import { getMarketingChannels } from "@/lib/resources/business-intelligence"
+import { scopedIntentKey } from "@/lib/billing/operation-identity"
+import { generateWithRetry, logAIFailure } from "@/lib/resources/ai-retry"
 
 export async function POST(
   req: Request,
@@ -22,10 +22,12 @@ export async function POST(
       return fail("VALIDATION", "No specification found for this project.", 409)
     }
 
-    const body = await req.json().catch(() => ({})) as { channel?: string }
+    const body = await req.json().catch(() => ({})) as { channel?: string; requestId?: unknown }
     const targetChannel = body.channel // optional: generate playbook for a specific channel
 
-    const charged = await chargeMarketingPlaybook(user.id, id)
+    // Optional client intent id — validated + scoped, never authorization.
+    const intentKey = scopedIntentKey(body.requestId, { userId: user.id, operation: "resources_playbook", projectId: id })
+    const charged = await chargeMarketingPlaybook(user.id, id, intentKey)
     if (!charged) {
       return fail("INSUFFICIENT_CREDITS", "You need 75 credits to generate a marketing playbook.", 402)
     }
@@ -69,16 +71,35 @@ And a **Common Mistakes** section — what founders in this niche typically get 
 
     let text: string
     try {
-      const result = await generateText({
-        model: MODEL,
-        system: systemPrompt,
-        prompt: userPrompt,
-        maxOutputTokens: 3000,
-      })
-      text = result.text
+      text = await generateWithRetry(
+        { system: systemPrompt, prompt: userPrompt },
+        { maxOutputTokens: 3000 },
+      )
     } catch (aiError) {
-      await refundResources(user.id, id, "marketingPlaybook")
-      throw aiError
+      await refundResources(user.id, id, "marketingPlaybook", intentKey)
+      
+      logAIFailure("resources.marketing-playbook", aiError, {
+        projectId: id,
+        userId: user.id,
+        operation: "marketingPlaybook",
+      })
+      
+      // @ts-expect-error — dynamic cache fields not in strict type
+      const cachedPlaybook = project.resourcesCache?.marketingPlaybook
+      if (cachedPlaybook?.text) {
+        return ok({
+          text: cachedPlaybook.text,
+          generatedAt: cachedPlaybook.generatedAt,
+          cached: true,
+          note: "Using previously generated playbook. The AI service is temporarily unavailable.",
+        })
+      }
+      
+      return fail(
+        "AI_UNAVAILABLE",
+        "The AI service is temporarily unavailable. Your credits have been refunded. Please try again in a few moments.",
+        503,
+      )
     }
 
     await store.updateProject(id, {

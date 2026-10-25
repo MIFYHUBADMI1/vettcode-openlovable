@@ -7,7 +7,8 @@ import {
 } from "lucide-react"
 import type { ReactNode } from "react"
 import type { ProjectFinances } from "@/lib/finances/project-finances"
-import { DailyBarChart, ShareBar } from "./finance-charts"
+import { ShareBar } from "./finance-charts"
+import { BreakdownBarsChart, MoneyTrendChart } from "./finance-trend-charts"
 
 /**
  * Atai Finance — project-scoped finance dashboard (server-rendered).
@@ -75,10 +76,19 @@ export function ProjectFinancesView({ finances }: { finances: ProjectFinances })
   const projection = finances.projection
   const arr = finances.arr
 
-  const chartPoints = finances.daily.slice(-60).map((d) => [
-    { label: "API cost (credits)", value: d.creditsCharged, className: "fill-primary" },
-    { label: "Earnings", value: d.earningsMinor / 100, className: "fill-emerald-500" },
-  ])
+  const trendPoints = finances.daily.slice(-60).map((d) => ({
+    date: d.date,
+    costCredits: d.creditsCharged,
+    earnings: d.earningsMinor / 100,
+    providerCostUsd: d.providerCostUsd,
+  }))
+  const currency = totals.currencies[0] ?? null
+
+  const capabilityBars = finances.byCapability
+    .slice()
+    .sort((a, b) => b.creditsCharged - a.creditsCharged)
+    .slice(0, 8)
+    .map((r) => ({ key: r.key, value: r.creditsCharged }))
 
   const topCapabilityCredits = Math.max(
     ...finances.byCapability.map((r) => r.creditsCharged),
@@ -165,14 +175,16 @@ export function ProjectFinancesView({ finances }: { finances: ProjectFinances })
 
       {/* Daily chart */}
       <section className="rounded-xl border border-border bg-card p-4">
-        <h2 className="text-sm font-medium">Daily flow — API spend vs attributed earnings</h2>
+        <h2 className="text-sm font-medium">Costs vs earnings — daily flow and cumulative net</h2>
         <p className="mt-1 text-xs text-muted-foreground">
           UTC days · last {Math.min(60, finances.daily.length)} active days of the {win.days}-day
-          window. Earnings are in the payment currency&apos;s minor units scaled for display.
+          window. Bars compare runtime credit spend against attributed earnings; the line is the
+          running net position. Earnings are in {currency ?? "the payment currency"}; credits are a
+          separate unit (right axis: cumulative net in earnings units). Hover any day for details.
         </p>
-        {chartPoints.length > 0 ? (
+        {trendPoints.length > 0 ? (
           <div className="mt-4">
-            <DailyBarChart points={chartPoints} />
+            <MoneyTrendChart points={trendPoints} currency={currency} />
           </div>
         ) : (
           <p className="mt-4 rounded-lg bg-muted/20 px-3 py-6 text-center text-xs text-muted-foreground">
@@ -186,6 +198,11 @@ export function ProjectFinancesView({ finances }: { finances: ProjectFinances })
       <section className="rounded-xl border border-border bg-card p-4">
         <h2 className="text-sm font-medium">Where the credits go</h2>
         <p className="mt-1 text-xs text-muted-foreground">Runtime capability spend in the window.</p>
+        {capabilityBars.length > 0 ? (
+          <div className="mt-3">
+            <BreakdownBarsChart rows={capabilityBars} />
+          </div>
+        ) : null}
         {finances.byCapability.length > 0 ? (
           <div className="mt-3 overflow-x-auto">
             <table className="w-full text-left text-xs">

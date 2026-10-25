@@ -10,6 +10,12 @@ import { ThemeBuilder } from "@/components/collaborate/theme-builder"
 import { ExpectedVisuals } from "@/components/collaborate/expected-visuals"
 import { postJson, patchJson, jsonFetcher } from "@/lib/client/api"
 import {
+  readErrorCode,
+  trackPlanApproved,
+  trackPlanApprovalFailed,
+  trackPlanReady,
+} from "@/lib/analytics/start-funnel"
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -973,10 +979,12 @@ function ChatPanel({
 
 function LaunchButton({
   projectId,
+  projectMode,
   state,
   spec,
 }: {
   projectId: string
+  projectMode: Project["mode"]
   state: string
   spec: ApplicationSpecification
 }) {
@@ -1006,10 +1014,23 @@ function LaunchButton({
     setError(null)
     try {
       await postJson(`/api/projects/${projectId}/launch`)
+      trackPlanApproved({
+        projectId,
+        projectMode,
+        tier: spec.complexity,
+        surface: "collaborate_launch",
+      })
       toast.success("Build started — redirecting to your workspace…")
       router.push(`/project/${projectId}`)
       router.refresh()
     } catch (e) {
+      trackPlanApprovalFailed({
+        projectId,
+        projectMode,
+        tier: spec.complexity,
+        surface: "collaborate_launch",
+        errorCode: readErrorCode(e),
+      })
       setError(e instanceof Error ? e.message : "Failed to start build. Please try again.")
       setLaunching(false)
     }
@@ -1619,6 +1640,7 @@ export function CollaborateClient({
   initialCredits?: number
 }) {
   const [spec, setSpec] = useState<ApplicationSpecification | undefined>(initialProject.specification)
+  const planReadyTrackedRef = useRef(false)
   const [analysis, setAnalysis] = useState<PlanAnalysis | null>(initialProject.planAnalysis ?? null)
   const [activeSection, setActiveSection] = useState<PlanSectionId | null>(null)
   const [userCredits, setUserCredits] = useState(initialCredits)
@@ -1675,6 +1697,18 @@ export function CollaborateClient({
       window.clearInterval(id)
     }
   }, [spec, projectId])
+
+  // Funnel: the owner's plan became available for review.
+  useEffect(() => {
+    if (!isOwner || !spec || planReadyTrackedRef.current) return
+    planReadyTrackedRef.current = true
+    trackPlanReady({
+      projectId,
+      projectMode: initialProject.mode,
+      tier: spec.complexity,
+      projectCreatedAt: initialProject.createdAt,
+    })
+  }, [isOwner, spec, projectId, initialProject.mode, initialProject.createdAt])
   // Free estimate (no AI call, no charge) — refreshed whenever the plan
   // changes so the toolbar count and cost stay truthful.
   useEffect(() => {
@@ -2130,7 +2164,7 @@ export function CollaborateClient({
               onSpecChanged={setSpec}
             />
           )}
-          {isOwner && !runActive && <LaunchButton projectId={projectId} state={projectState} spec={spec} />}
+          {isOwner && !runActive && <LaunchButton projectId={projectId} projectMode={initialProject.mode} state={projectState} spec={spec} />}
         </main>
 
         <aside className="collab-scroll hidden w-80 shrink-0 overflow-y-auto border-l border-border xl:block" aria-label="Plan insights">
@@ -2265,7 +2299,7 @@ export function CollaborateClient({
             </div>
             {/* Pinned below every mobile tab — always reachable, never requires
             scrolling to the end of a long panel. */}
-            {isOwner && !runActive && <LaunchButton projectId={projectId} state={projectState} spec={spec} />}
+            {isOwner && !runActive && <LaunchButton projectId={projectId} projectMode={initialProject.mode} state={projectState} spec={spec} />}
           </div>
         </div>
       </div>

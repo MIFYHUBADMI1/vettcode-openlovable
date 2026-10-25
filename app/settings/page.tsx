@@ -31,7 +31,7 @@ export default async function SettingsPage() {
             <p className="mt-4 text-4xl font-semibold tabular-nums">{balance.toLocaleString()}</p>
             <p className="mt-2 text-sm text-muted-foreground">Available build credits</p>
             <div className="mt-4 flex gap-3">
-              <Link href="/billing/top-up" className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">+ Top Up</Link>
+              <Link href="/settings/billing" className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">+ Top Up</Link>
               <Link href="/settings/billing" className="inline-block font-mono text-xs text-primary hover:underline">View history →</Link>
             </div>
           </div>

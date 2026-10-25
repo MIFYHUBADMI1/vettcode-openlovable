@@ -183,13 +183,6 @@ export default function AdminDashboardPage() {
 
   const attention = useMemo(() => {
     const items: { href: string; title: string; detail: string }[] = []
-    if (stats?.topUps.pending) {
-      items.push({
-        href: "/admin/payments",
-        title: `${stats.topUps.pending} payment${stats.topUps.pending === 1 ? "" : "s"} waiting`,
-        detail: "Review mobile money top-ups",
-      })
-    }
     if (stats?.projects.failed) {
       items.push({
         href: "/admin/users",

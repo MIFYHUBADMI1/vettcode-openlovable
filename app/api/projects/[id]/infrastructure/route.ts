@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth/session"
 import { store } from "@/lib/store/store"
 import { activatePlan, getProjectInfrastructure } from "@/lib/infrastructure/service"
 import { getInfrastructurePlanWithRuntimePrice, ALL_PLAN_ORDER } from "@/lib/infrastructure/plans"
+import { scopedIntentKey } from "@/lib/billing/operation-identity"
 import type { InfrastructurePlanId } from "@/lib/infrastructure/plans"
 
 /**
@@ -56,7 +57,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const user = await requireUser()
     const { id } = await params
 
-    const body = (await req.json().catch(() => ({}))) as { planId?: string }
+    const body = (await req.json().catch(() => ({}))) as { planId?: string; requestId?: unknown }
     const planId = body.planId?.trim().toLowerCase()
 
     if (!planId) return fail("VALIDATION", "Plan ID is required.", 422)
@@ -64,7 +65,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const plan = await getInfrastructurePlanWithRuntimePrice(planId)
     if (!plan) return fail("VALIDATION", "Invalid plan.", 422)
 
-    const result = await activatePlan(id, user.id, planId as InfrastructurePlanId)
+    // Optional client intent id — validated + scoped by the authenticated user
+    // and the ownership-checked project inside `scopedIntentKey`. Identity
+    // only, never authorization.
+    const intentKey = scopedIntentKey(body.requestId, {
+      userId: user.id,
+      operation: "infrastructure_plan",
+      projectId: id,
+    })
+
+    const result = await activatePlan(id, user.id, planId as InfrastructurePlanId, intentKey)
 
     if (!result.success) return fail("ACTIVATION_FAILED", result.message, 400)
 

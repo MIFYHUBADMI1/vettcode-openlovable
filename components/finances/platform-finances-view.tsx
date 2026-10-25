@@ -10,7 +10,8 @@ import Link from "next/link"
 import type { ReactNode } from "react"
 import type { PlatformFinances } from "@/lib/finances/platform-finances"
 import { KpiCard, compact, money, when } from "./project-finances-view"
-import { DailyBarChart, ShareBar } from "./finance-charts"
+import { ShareBar } from "./finance-charts"
+import { BreakdownBarsChart, MoneyTrendChart } from "./finance-trend-charts"
 
 /**
  * Atai Finance — whole-business roll-up view (server-rendered).
@@ -26,10 +27,19 @@ export function PlatformFinancesView({ finances }: { finances: PlatformFinances 
   const { totals, window: win } = finances
   const netMinor = totals.earningsMinor !== null ? totals.earningsMinor : null
 
-  const chartPoints = finances.daily.slice(-60).map((d) => [
-    { label: "API cost (credits)", value: d.creditsCharged, className: "fill-primary" },
-    { label: "Earnings", value: d.earningsMinor / 100, className: "fill-emerald-500" },
-  ])
+  const trendPoints = finances.daily.slice(-60).map((d) => ({
+    date: d.date,
+    costCredits: d.creditsCharged,
+    earnings: d.earningsMinor / 100,
+    providerCostUsd: d.providerCostUsd,
+  }))
+  const currency = totals.currencies[0] ?? null
+
+  const projectBars = finances.byProject
+    .slice()
+    .sort((a, b) => b.creditsCharged - a.creditsCharged)
+    .slice(0, 8)
+    .map((r) => ({ key: r.projectName, value: r.creditsCharged }))
 
   const topProjectCredits = Math.max(...finances.byProject.map((r) => r.creditsCharged), 1)
   const mixedCurrencies = totals.currencies.length > 1
@@ -114,16 +124,17 @@ export function PlatformFinancesView({ finances }: { finances: PlatformFinances 
         />
       </section>
 
-      {/* Daily chart — same shared SVG chart component as the project page */}
+      {/* Daily chart — interactive recharts, same component as the project page */}
       <section className="rounded-xl border border-border bg-card p-4">
-        <h2 className="text-sm font-medium">Daily flow — API spend vs attributed earnings</h2>
+        <h2 className="text-sm font-medium">Costs vs earnings — daily flow and cumulative net</h2>
         <p className="mt-1 text-xs text-muted-foreground">
           UTC days · all projects combined · last {Math.min(60, finances.daily.length)} active days of the
-          {` ${win.days}-day`} window. Earnings are in payment minor units scaled for display.
+          {` ${win.days}-day`} window. Bars compare runtime credit spend against attributed earnings; the
+          line is the running net position in {currency ?? "payment"} units. Hover any day for details.
         </p>
-        {chartPoints.length > 0 ? (
+        {trendPoints.length > 0 ? (
           <div className="mt-4">
-            <DailyBarChart points={chartPoints} />
+            <MoneyTrendChart points={trendPoints} currency={currency} />
           </div>
         ) : (
           <p className="mt-4 rounded-lg bg-muted/20 px-3 py-6 text-center text-xs text-muted-foreground">
@@ -140,6 +151,11 @@ export function PlatformFinancesView({ finances }: { finances: PlatformFinances 
           Every project&apos;s slice of the window. Open a project&apos;s finance page for its capability
           breakdown, payments, and per-project estimates.
         </p>
+        {projectBars.length > 0 ? (
+          <div className="mt-3">
+            <BreakdownBarsChart rows={projectBars} />
+          </div>
+        ) : null}
         {finances.byProject.length > 0 ? (
           <div className="mt-3 overflow-x-auto">
             <table className="w-full text-left text-xs">

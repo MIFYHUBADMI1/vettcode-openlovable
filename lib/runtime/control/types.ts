@@ -55,7 +55,10 @@ export interface UsageSummary {
   succeeded: number
   failed: number
   creditsCharged: number
-  /** Sum of provider-reported USD when available; null if none were numeric. */
+  /** Sum of USD-denominated provider-reported costs; null when none.
+   * Phase 2: non-USD provider currencies are COUNTED separately — never
+   * mixed into this label, never silently converted. */
   providerCostUsd: number | null
   providerCostUnavailableCount: number
+  providerCostNonUsdCount?: number
 }

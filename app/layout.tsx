@@ -1,6 +1,7 @@
 import { Analytics } from "@vercel/analytics/next"
 import type { Metadata, Viewport } from "next"
 import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google"
+import Script from "next/script"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/components/auth/auth-provider"
 import { Toaster } from "@/components/ui/sonner"
@@ -56,9 +57,9 @@ export const viewport: Viewport = {
 }
 
 // Theme initialisation script — runs before first paint to avoid FOUC.
-// Inlined as a raw <script> in the server-rendered <head> below. React 19
-// never executes <script> elements emitted by client components, which is
-// what next/script renders, so next/script must not be used here.
+// Uses next/script with strategy="beforeInteractive" to ensure the script
+// executes before React hydration. In React 19, raw <script> tags inside
+// components trigger a warning and may not execute reliably during hydration.
 const THEME_INIT_SCRIPT = `(function(){try{
 var T=["system","dark","light","light-blue","glass"];
 var s=localStorage.getItem("atai:theme");
@@ -220,7 +221,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html suppressHydrationWarning lang="en" className={`bg-background ${jakarta.variable} ${geistMono.variable}`}>
       <head>
         {/* Theme initialization script - runs before first paint to avoid FOUC */}
-        <script id="theme-init" dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <Script id="theme-init" strategy="beforeInteractive">
+          {THEME_INIT_SCRIPT}
+        </Script>
         <script
           id="structured-data"
           type="application/ld+json"

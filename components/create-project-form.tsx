@@ -12,6 +12,13 @@ import { cn } from "@/lib/utils"
 import { ProjectPreferencesDialog } from "@/components/project-preferences-dialog"
 import { CrawlModeDialog, type CrawlMode } from "@/components/crawl-mode-dialog"
 import { peekPendingStart, takePendingStart } from "@/lib/auth/client-intent"
+import {
+  beginStartFlow,
+  readErrorCode,
+  trackStartSubmitted,
+  trackWorkspaceCreated,
+  trackWorkspaceCreateFailed,
+} from "@/lib/analytics/start-funnel"
 import { recordOnboardingActivation } from "@/lib/onboarding/activate"
 import { extractWebsiteUrl } from "@/lib/start/detect-input"
 
@@ -42,6 +49,10 @@ export function CreateProjectForm() {
   const [capturedIntent, setCapturedIntent] = useState<string | null>(null)
 
   useEffect(() => {
+    beginStartFlow({ method: "website", surface: "new_website" })
+  }, [])
+
+  useEffect(() => {
     const pending = peekPendingStart()
     if (!pending?.prompt) return
     if (!pending.href.includes("/new/website") && !/^https?:\/\//i.test(pending.prompt) && !/^www\./i.test(pending.prompt)) return
@@ -66,12 +77,20 @@ export function CreateProjectForm() {
     if (!valid) return
     setSubmitting(true)
     setError(null)
+    trackStartSubmitted({ method: "website", surface: "new_website", authenticated: true })
+    const createStartedAt = Date.now()
     try {
-      const { project } = await postJson<{ project: Project }>("/api/projects", {
+      const { project, reused } = await postJson<{ project: Project; reused?: boolean }>("/api/projects", {
         url: normalized,
         idea: capturedIntent ?? undefined,
         crawlMode: crawlMode ?? undefined,
         preferences: preferences ?? undefined,
+      })
+      trackWorkspaceCreated({
+        method: "website",
+        projectId: project.id,
+        reused,
+        createMs: Date.now() - createStartedAt,
       })
       await Promise.all([refreshProjects(), refreshSession()])
       try {
@@ -86,6 +105,7 @@ export function CreateProjectForm() {
       }
       router.push(`/project/${project.id}/collaborate`)
     } catch (err) {
+      trackWorkspaceCreateFailed({ method: "website", errorCode: readErrorCode(err) })
       setError(err instanceof Error ? err.message : "Could not create project")
       setSubmitting(false)
     }

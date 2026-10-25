@@ -3,7 +3,7 @@ import { ok, handleRouteError } from "@/lib/api/respond"
 import { listPendingTopUps } from "@/lib/billing/topup-service"
 import { usersCol } from "@/lib/db/collections"
 
-/** Admin endpoint: list pending top-ups for manual review. */
+/** Admin endpoint: read-only listing of historical Mobile Money top-ups (audit/support). */
 export async function GET() {
   try {
     await requireAdmin()

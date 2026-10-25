@@ -1,44 +1,21 @@
 import { requireAdmin } from "@/lib/auth/session"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
-import { awardCredits, rejectTopUp, getTopUp } from "@/lib/billing/topup-service"
 import { topupsCol, usersCol } from "@/lib/db/collections"
 
-/** Admin endpoint: approve or reject a specific top-up. */
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const user = await requireAdmin()
-
-    const { id } = await params
-    const body = (await req.json().catch(() => ({}))) as { action?: string; reason?: string }
-
-    if (body.action !== "approve" && body.action !== "reject") {
-      return fail("VALIDATION", "Action must be 'approve' or 'reject'.", 422)
-    }
-
-    const topUp = await getTopUp(id, "any") // Admin can access any top-up
-    if (!topUp) {
-      return fail("NOT_FOUND", "Top-up not found.", 404)
-    }
-
-    if (body.action === "approve") {
-      const awarded = await awardCredits(id, user.id)
-      if (awarded) {
-        return ok({ message: "Top-up approved. Credits awarded.", status: "approved" })
-      } else {
-        return fail("VALIDATION", "Could not approve this top-up. It may have already been processed.", 422)
-      }
-    } else {
-      const reason = (body.reason || "Rejected by administrator").slice(0, 500).trim()
-      const rejected = await rejectTopUp(id, reason, user.id)
-      if (rejected) {
-        return ok({ message: "Top-up rejected.", status: "rejected" })
-      } else {
-        return fail("VALIDATION", "Could not reject this top-up.", 422)
-      }
-    }
-  } catch (e) {
-    return handleRouteError("api.billing.admin.action", e)
-  }
+/**
+ * @deprecated Legacy Mobile Money gateway is discontinued. Dodo Payments is
+ * the only supported payment method.
+ *
+ * POST is disabled: historical top-ups can no longer be approved or rejected,
+ * and this route can never grant credits. GET remains for read-only audit and
+ * support access to historical records.
+ */
+export async function POST() {
+  return fail(
+    "DEPRECATED",
+    "Mobile Money top-up approvals are no longer supported. Dodo Payments is the only payment method.",
+    410,
+  )
 }
 
 /** Admin endpoint: get detailed info for a specific top-up. */

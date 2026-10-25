@@ -34,6 +34,36 @@ export const runSeoAuditSchema = z.object({
   projectId: z.string().min(1).max(80),
 }).strip()
 
+export const searchMarketingContentSchema = z
+  .object({
+    projectId: z.string().min(1),
+    query: z.string().max(100).optional(),
+    kind: z
+      .enum(["copy", "email", "social", "timeline", "blog", "brief", "image", "voice", "video"])
+      .optional(),
+  })
+  .strip()
+
+export const refineMarketingContentSchema = z
+  .object({
+    projectId: z.string().min(1),
+    contentId: z.string().min(1).max(80),
+    action: z.enum([
+      "improve",
+      "shorten",
+      "expand",
+      "professional",
+      "conversational",
+      "persuasive",
+      "different_audience",
+      "stronger_cta",
+      "improve_headline",
+      "key_messages",
+      "platform_version",
+    ]),
+  })
+  .strip()
+
 export const generateMarketingCopySchema = z.object({
   projectId: z.string().min(1).max(80),
   template: z.enum(["landing_hero", "feature_blurb", "email_welcome", "ad_headline"]),

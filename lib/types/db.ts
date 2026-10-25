@@ -293,7 +293,21 @@ export interface DocFeedbackDoc {
 
 // ─── Dodo Webhook Event Document ──────────────────────────────────────────
 
-export type WebhookEventStatus = "received" | "processed" | "failed" | "ignored"
+/**
+ * received → (live delivery) processed | unresolved | failed.
+ * Phase 3 recovery adds: processing (claimed by a recovery worker — the
+ * atomic claim itself, so two workers can never process one event), and
+ * manual_review (terminal for operators: retries exhausted or the event is
+ * not safely re-processable; NEVER auto-replayed).
+ */
+export type WebhookEventStatus =
+  | "received"
+  | "processed"
+  | "processing"
+  | "failed"
+  | "ignored"
+  | "unresolved"
+  | "manual_review"
 export type WebhookEventProvider = "dodo"
 
 export interface WebhookEventDoc {
@@ -317,6 +331,18 @@ export interface WebhookEventDoc {
   /** Timestamps. */
   receivedAt: number
   processedAt?: number
+  /**
+   * Phase 3 recovery bookkeeping (all optional — historical docs predate
+   * them and are treated as attempts: 0).
+   */
+  /** Number of processing attempts (live delivery counts as the first). */
+  attempts?: number
+  /** Last attempt start (live or recovery). */
+  lastAttemptAt?: number
+  /** Earliest time a recovery worker may claim this event (backoff). */
+  nextAttemptAt?: number
+  /** Safe, secret-free reason recorded at the terminal manual-review state. */
+  reviewReason?: string
 }
 
 // ─── Planning Run Document ─────────────────────────────────────────────────
@@ -456,6 +482,23 @@ export interface ProjectGitHubDoc {
 
 export type SeoFindingStatus = "pass" | "fail" | "not_observed"
 
+/**
+ * Atai's assessment of how much a finding could matter. This is an internal
+ * severity used to prioritise work and weight the audit score — it is NOT a
+ * prediction of search-engine impact.
+ */
+export type SeoFindingSeverity = "critical" | "high" | "medium" | "low" | "info"
+
+/** Grouping used by the SEO workspace to filter findings. */
+export type SeoFindingCategory =
+  | "security"
+  | "metadata"
+  | "structure"
+  | "content"
+  | "links"
+  | "media"
+  | "crawlability"
+
 export interface SeoFinding {
   /** Stable check id (e.g. "title_present"). */
   id: string
@@ -469,6 +512,75 @@ export interface SeoFinding {
   observed?: string
   /** Why a check could not be evaluated (missing evidence). */
   note?: string
+  /** Optional for audits stored before severity existed (v1.1 addition). */
+  severity?: SeoFindingSeverity
+  category?: SeoFindingCategory
+  /** Page URLs the finding applies to (bounded). Absent for site-wide checks. */
+  affectedUrls?: string[]
+}
+
+/**
+ * Transparent, reproducible internal audit score. Derived ONLY from checks
+ * that were actually evaluated (`pass`/`fail`) — a check whose evidence was
+ * missing (`not_observed`) is excluded, never counted as a failure.
+ */
+export interface SeoAuditScore {
+  /** Weighted 0-100 score; `null` when no check was eligible to be scored. */
+  value: number | null
+  /** Scoring algorithm version, so historical audits stay interpretable. */
+  version: string
+  /** Severity weight contributed by passing / failing eligible checks. */
+  passedWeight: number
+  failedWeight: number
+  /** Checks excluded from scoring because no evidence was available. */
+  notApplicable: number
+}
+
+/** Priority the model assigns to a recommendation. */
+export type SeoRecommendationPriority = "high" | "medium" | "low"
+
+/**
+ * AI-generated guidance, always derived from findings Atai actually observed.
+ * `origin` is the provenance marker: these are recommendations, never measured
+ * search-engine facts.
+ */
+export interface SeoRecommendation {
+  title: string
+  /** Why the finding matters, in plain language for a nontechnical founder. */
+  whyItMatters: string
+  /** The concrete change to make. */
+  action: string
+  /** Ids of the stored findings this recommendation is grounded in. */
+  findingIds: string[]
+  priority: SeoRecommendationPriority
+  requiresDeveloper: boolean
+  /** Page the recommendation applies to, when the finding is page-specific. */
+  pageUrl?: string
+  origin: "ai_generated_from_observed_findings"
+}
+
+/**
+ * Refund state for a charged run that did not complete. `pending` means the
+ * failed audit is stored but the reversal has not been confirmed yet — the
+ * history never claims a refund that did not happen.
+ */
+export type SeoRefundStatus = "pending" | "refunded" | "not_charged" | "failed"
+
+export interface SeoRefundInfo {
+  status: SeoRefundStatus
+  /** Credits involved in the reversal (the amount charged for this run). */
+  amount?: number
+  at?: number
+}
+
+/**
+ * Provenance of the recommendation step, so the UI can be honest when the AI
+ * step was skipped or failed while the deterministic audit succeeded.
+ */
+export interface SeoRecommendationsMeta {
+  status: "generated" | "no_findings" | "unavailable"
+  model?: string
+  generatedAt?: number
 }
 
 export type SeoAuditStatus = "completed" | "failed"
@@ -486,10 +598,18 @@ export interface SeoAuditDoc {
   findings: SeoFinding[]
   /** Counts by status for cheap display. */
   score: { pass: number; fail: number; notObserved: number }
+  /** Weighted, versioned score. Absent on audits stored before v1.1. */
+  auditScore?: SeoAuditScore
+  /** AI guidance grounded in `findings`. Absent when unavailable/skipped. */
+  recommendations?: SeoRecommendation[]
+  /** Why recommendations are present/absent — never inferred by the UI. */
+  recommendationsMeta?: SeoRecommendationsMeta
   /** Pages the crawl actually covered (breadth). */
   pagesCrawled: number
-  /** Credits charged for this run (0 when free/failed before charge). */
+  /** Credits charged for this run (0 when the run was free). */
   creditsCharged: number
+  /** Present on failed runs: what happened to the charge. */
+  refund?: SeoRefundInfo
   /** Set when status is "failed" — a safe, non-technical reason only. */
   error?: string
   /** Whether the crawl evidence came from the 7-day Firecrawl cache. */
@@ -509,7 +629,12 @@ export type StudioTemplate =
   | "email_welcome"
   | "ad_headline"
 
-export type ContentItemStatus = "draft"
+/**
+ * Draft-only lifecycle. There is deliberately NO `published` or `scheduled`
+ * status: no publishing integration exists, so the product must never claim
+ * one. `ready_for_review` means the founder considers the draft finished.
+ */
+export type ContentItemStatus = "draft" | "ready_for_review"
 
 /** Content kinds produced by the Market & Grow AI studio. */
 export type MarketAssetKind =
@@ -517,6 +642,8 @@ export type MarketAssetKind =
   | "email"
   | "social"
   | "timeline"
+  | "blog"
+  | "brief"
   | "image"
   | "voice"
   | "video"
@@ -604,6 +731,46 @@ export interface ContentItemDoc {
   brief?: MarketAssetBrief
   /** Credits charged to create THIS doc (0 for free saves/edits). */
   creditsCharged: number
+  /** Optional channel label from the brief (e.g. instagram, email). */
+  channel?: string
+  /** Founder-managed tags for library organisation (bounded). */
+  tags?: string[]
+  /**
+   * Planned publishing date, stored as an epoch ms. This is a PLAN only —
+   * nothing is scheduled with any external platform, and a passed date never
+   * means a post was published.
+   */
+  plannedAt?: number
+  /** Set on an alternative generated from this item (not a version chain). */
+  variantOf?: string
+  createdAt: number
+  updatedAt: number
+}
+
+// ─── Brand profile (Phase 4 v2) ─────────────────────────────────────────────
+
+/**
+ * One persisted, project-scoped brand profile. Values are founder-authored
+ * preferences (not measured facts) and are reused to ground every generation.
+ */
+export interface BrandProfileDoc {
+  _id: ObjectId
+  id: string
+  userId: string
+  projectId: string
+  /** Optional override for the project name used in copy. */
+  brandName?: string
+  /** One-line description of the business, if the founder wants it tighter. */
+  description?: string
+  tone?: string
+  audience?: string
+  valueProposition?: string
+  differentiators?: string[]
+  /** Words/phrases to favour. */
+  vocabulary?: string[]
+  /** Claims or words to avoid (e.g. "best in the world", "guaranteed"). */
+  avoid?: string[]
+  callToAction?: string
   createdAt: number
   updatedAt: number
 }

@@ -14,12 +14,14 @@ const globalForMongo = globalThis as unknown as {
   __mirrorMongoClientPromise?: Promise<MongoClient>
 }
 
-const DEFAULT_POOL = 50
+const DEFAULT_POOL = 100
 const MIN_POOL = 10
 const MAX_POOL = 200
 const DEFAULT_WAIT_QUEUE_MS = 20_000
-/** Keep one socket warm: re-dialing this cluster costs seconds per attempt. */
-const MIN_IDLE_POOL = 1
+/** Keep a handful of sockets warm: re-dialing this cluster costs seconds per
+ * attempt (DNS + TCP + TLS + auth). A higher floor prevents cold-start storms
+ * when a burst of requests hits an idle container. */
+const MIN_IDLE_POOL = 5
 const DEFAULT_SOCKET_TIMEOUT_MS = 120_000
 /** Atlas dials (DNS + TCP + TLS + auth) can take several seconds here. */
 const DEFAULT_CONNECT_TIMEOUT_MS = 20_000

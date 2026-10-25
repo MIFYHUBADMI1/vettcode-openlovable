@@ -25,31 +25,33 @@ const STATE_BADGE: Record<GrowthOverview["site"]["state"], string> = {
 
 function MetricBadge({ state }: { state: NumberMetric["state"] }) {
   if (state === "available") {
-    return <span className="rounded-full bg-primary/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-primary">measured</span>
+    return <span className="shrink-0 whitespace-nowrap rounded-full bg-primary/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-primary">measured</span>
   }
   if (state === "measured_zero") {
-    return <span className="rounded-full bg-muted px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">measured · zero</span>
+    return <span className="shrink-0 whitespace-nowrap rounded-full bg-muted px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">measured · zero</span>
   }
   if (state === "unavailable") {
-    return <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-amber-600 dark:text-amber-400">data unavailable</span>
+    return <span className="shrink-0 whitespace-nowrap rounded-full bg-amber-500/10 px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-amber-600 dark:text-amber-400">data unavailable</span>
   }
-  return <span className="rounded-full border border-dashed border-border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">not measured yet</span>
+  return <span className="shrink-0 whitespace-nowrap rounded-full border border-dashed border-border px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">not measured yet</span>
 }
 
 function MetricCard({ metric }: { metric: NumberMetric }) {
   const showValue = metric.state === "available" || metric.state === "measured_zero"
   return (
-    <div className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-5">
-      <div className="flex items-start justify-between gap-3">
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{metric.source ?? "measurement"}</p>
+    <div className="flex min-w-0 flex-col gap-2 rounded-2xl border border-border bg-card p-4 sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1.5">
+        {/* Source ids are long and unbreakable (e.g. runtime_usage(capability=payments*)) —
+            let them wrap instead of pushing the card wider than the viewport. */}
+        <p className="min-w-0 break-all font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{metric.source ?? "measurement"}</p>
         <MetricBadge state={metric.state} />
       </div>
-      <p className="text-2xl font-semibold tabular-nums tracking-tight">
+      <p className="text-xl font-semibold tabular-nums tracking-tight sm:text-2xl">
         {showValue ? (metric.value ?? 0).toLocaleString() : "—"}
       </p>
-      <p className="text-sm leading-6 text-foreground/80">{metric.definition}</p>
-      {metric.reason ? <p className="text-xs leading-5 text-muted-foreground">{metric.reason}</p> : null}
-      <p className="text-xs leading-5 text-muted-foreground italic">{metric.caveat}</p>
+      <p className="text-sm leading-6 text-foreground/80 break-words">{metric.definition}</p>
+      {metric.reason ? <p className="text-xs leading-5 text-muted-foreground break-words">{metric.reason}</p> : null}
+      <p className="text-xs leading-5 text-muted-foreground italic break-words">{metric.caveat}</p>
     </div>
   )
 }
@@ -59,11 +61,13 @@ export function GrowthOverviewView({ overview }: { overview: GrowthOverview }) {
   const windowDays = Math.round((overview.window.to - overview.window.from) / (24 * 60 * 60 * 1000))
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-6 py-12">
+    <div className="flex min-w-0 flex-col gap-6 sm:gap-8">
       {/* Header */}
       <header className="flex flex-col gap-2">
         <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Growth overview</p>
-        <h1 className="text-3xl font-semibold tracking-tight text-balance">How {overview.projectName} is doing</h1>
+        <h1 className="break-words text-2xl font-semibold tracking-tight text-balance sm:text-3xl lg:text-4xl">
+          How {overview.projectName} is doing
+        </h1>
         <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
           Everything below is either a real measurement from Atai&apos;s data, something Atai genuinely knows about this
           business, or an AI-generated plan that has <span className="text-foreground">not been executed</span>. Nothing
@@ -75,17 +79,17 @@ export function GrowthOverviewView({ overview }: { overview: GrowthOverview }) {
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold tracking-tight">Project state</h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="min-w-0 rounded-2xl border border-border bg-card p-4 sm:p-5">
             <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Lifecycle</p>
-            <p className="mt-2 text-base font-medium">{overview.projectStateLabel}</p>
+            <p className="mt-2 break-words text-base font-medium">{overview.projectStateLabel}</p>
           </div>
-          <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="min-w-0 rounded-2xl border border-border bg-card p-4 sm:p-5">
             <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Deployment</p>
             <div className="mt-2 flex items-center gap-2">
               <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATE_BADGE[site.state]}`}>{SITE_LABELS[site.state]}</span>
             </div>
             {site.url ? (
-              <a href={site.url} target="_blank" rel="noopener noreferrer" className="mt-1 block truncate text-xs text-primary hover:underline">
+              <a href={site.url} target="_blank" rel="noopener noreferrer" className="mt-1 block break-all text-xs text-primary hover:underline">
                 {site.url}
               </a>
             ) : null}
@@ -98,7 +102,7 @@ export function GrowthOverviewView({ overview }: { overview: GrowthOverview }) {
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold tracking-tight">What Atai knows about this business</h2>
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="min-w-0 rounded-2xl border border-border bg-card p-4 sm:p-5">
             <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Application plan</p>
             {whatAtaiKnows.plan.health ? (
               <>
@@ -116,19 +120,19 @@ export function GrowthOverviewView({ overview }: { overview: GrowthOverview }) {
               </p>
             )}
           </div>
-          <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="min-w-0 rounded-2xl border border-border bg-card p-4 sm:p-5">
             <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Who it is for</p>
             {whatAtaiKnows.plan.targetUsers.length > 0 ? (
               <ul className="mt-2 flex flex-col gap-1 text-sm leading-6">
                 {whatAtaiKnows.plan.targetUsers.slice(0, 5).map((u) => (
-                  <li key={u}>· {u}</li>
+                  <li key={u} className="break-words">· {u}</li>
                 ))}
               </ul>
             ) : (
               <p className="mt-2 text-sm leading-6 text-muted-foreground">Target users have not been defined in the plan yet.</p>
             )}
             {whatAtaiKnows.ownerGoals ? (
-              <p className="mt-3 border-t border-border pt-3 text-xs leading-5 text-muted-foreground">
+              <p className="mt-3 break-words border-t border-border pt-3 text-xs leading-5 text-muted-foreground">
                 From your onboarding — goal: {whatAtaiKnows.ownerGoals.businessGoal ?? "not set"} · revenue target:{" "}
                 {whatAtaiKnows.ownerGoals.revenueTarget ?? "not set"}
               </p>
@@ -144,17 +148,17 @@ export function GrowthOverviewView({ overview }: { overview: GrowthOverview }) {
           These documents were written by Atai&apos;s planner during analysis. They are <span className="text-foreground">planning
           context</span> — publishing, campaigns, and optimizations have not been run for you.
         </p>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {whatAtaiKnows.aiPlanDocuments.map((doc) => (
-            <div key={doc.id} className={`rounded-2xl border p-5 ${doc.present ? "border-border bg-card" : "border-dashed border-border bg-transparent"}`}>
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium">{doc.label}</p>
+            <div key={doc.id} className={`min-w-0 rounded-2xl border p-4 sm:p-5 ${doc.present ? "border-border bg-card" : "border-dashed border-border bg-transparent"}`}>
+              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                <p className="min-w-0 break-words text-sm font-medium">{doc.label}</p>
                 {doc.present ? (
-                  <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                  <span className="shrink-0 whitespace-nowrap rounded-full bg-muted px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
                     AI draft · not executed
                   </span>
                 ) : (
-                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">not drafted</span>
+                  <span className="shrink-0 whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground">not drafted</span>
                 )}
               </div>
               <p className="mt-1 text-xs leading-5 text-muted-foreground">
@@ -167,16 +171,16 @@ export function GrowthOverviewView({ overview }: { overview: GrowthOverview }) {
 
       {/* B4 — Measurements */}
       <section className="flex flex-col gap-3">
-        <div className="flex items-baseline justify-between gap-3">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
           <h2 className="text-lg font-semibold tracking-tight">Measurements</h2>
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">last {windowDays} days · real data only</p>
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <MetricCard metric={metrics.runtimeRequests} />
           <MetricCard metric={metrics.checkoutCalls} />
           <MetricCard metric={metrics.creditsConsumedByProject} />
         </div>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           <MetricCard metric={metrics.siteVisitors} />
           <MetricCard metric={metrics.completedPayments} />
           <MetricCard metric={metrics.appRevenue} />
@@ -184,7 +188,7 @@ export function GrowthOverviewView({ overview }: { overview: GrowthOverview }) {
           <MetricCard metric={metrics.ownerAccountReferrals} />
           <MetricCard metric={metrics.projectLevelReferrals} />
         </div>
-        <ul className="rounded-2xl border border-border bg-muted/40 p-5 text-xs leading-6 text-muted-foreground">
+        <ul className="break-words rounded-2xl border border-border bg-muted/40 p-4 text-xs leading-6 text-muted-foreground sm:p-5">
           {overview.trustNotes.map((note) => (
             <li key={note}>· {note}</li>
           ))}
@@ -198,15 +202,15 @@ export function GrowthOverviewView({ overview }: { overview: GrowthOverview }) {
           Derived by fixed rules from what Atai can currently observe. These are suggestions — nothing has been done for you.
         </p>
         {overview.nextSteps.length === 0 ? (
-          <p className="rounded-2xl border border-border bg-card p-5 text-sm leading-6 text-muted-foreground">
+          <p className="rounded-2xl border border-border bg-card p-4 text-sm leading-6 text-muted-foreground sm:p-5">
             No urgent next steps from the signals available right now.
           </p>
         ) : (
           <div className="grid gap-3">
             {overview.nextSteps.map((step) => (
-              <div key={step.id} className="flex flex-col gap-1 rounded-2xl border border-border bg-card p-5">
-                <p className="text-sm font-medium">{step.title}</p>
-                <p className="text-xs leading-5 text-muted-foreground">{step.detail}</p>
+              <div key={step.id} className="flex min-w-0 flex-col gap-1 rounded-2xl border border-border bg-card p-4 sm:p-5">
+                <p className="break-words text-sm font-medium">{step.title}</p>
+                <p className="break-words text-xs leading-5 text-muted-foreground">{step.detail}</p>
                 {step.navigation ? (
                   <Link href={`/project/${step.navigation.projectId}/${step.navigation.target}`} className="mt-1 w-fit text-xs font-medium text-primary hover:underline">
                     Open {step.navigation.target} →
@@ -219,7 +223,7 @@ export function GrowthOverviewView({ overview }: { overview: GrowthOverview }) {
       </section>
 
       {/* B6 — provenance footer */}
-      <footer className="border-t border-border pt-4 text-xs leading-5 text-muted-foreground">
+      <footer className="break-words border-t border-border pt-4 text-xs leading-5 text-muted-foreground">
         Generated {new Date(overview.generatedAt).toISOString()} · Sources: project record, runtime usage, credit ledger
         (project references), referral registry (account level), stored application plan. This page never charges credits
         and never calls external providers.

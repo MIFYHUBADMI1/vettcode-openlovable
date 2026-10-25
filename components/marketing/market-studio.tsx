@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
   AlertCircle,
+  BookOpen,
   CalendarDays,
   Check,
   Coins,
@@ -122,6 +123,8 @@ const KIND_ICON: Record<MarketContentKind, LucideIcon> = {
   email: Mail,
   social: Share2,
   timeline: CalendarDays,
+  blog: BookOpen,
+  brief: Megaphone,
   image: ImageIcon,
   voice: Mic,
   video: Video,

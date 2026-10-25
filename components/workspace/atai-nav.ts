@@ -18,6 +18,7 @@ import {
   Server,
   Settings,
   Sparkles,
+  LineChart,
   Swords,
   TrendingUp,
   Wallet,
@@ -52,6 +53,19 @@ export function workspaceProjectNav(projectId: string): AtaiNavItem[] {
     { href: `${root}/env`, label: "Environment", icon: Settings, kind: "link" },
     { href: `${root}/hosting`, label: "Hosting", icon: Globe, kind: "link" },
     { href: `/api/projects/${projectId}/export`, label: "Export snapshot", icon: Download, kind: "link", match: () => false },
+  ]
+}
+
+/**
+ * Application Intelligence section (its own product area — separate from
+ * Marketing & Monetization's grow nav). Sections activate as their data
+ * pipelines land; deferred entries stay "soon" rather than rendering fake
+ * capability, per the workspace nav convention.
+ */
+export function workspaceIntelligenceNav(projectId: string): AtaiNavItem[] {
+  const root = `/project/${projectId}/intelligence`
+  return [
+    { href: root, label: "Intelligence", icon: LineChart, kind: "link", match: (p) => p === root || p.startsWith(`${root}/`) },
   ]
 }
 

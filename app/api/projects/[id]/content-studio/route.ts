@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/auth/session"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { checkProjectOwnership } from "@/lib/runtime/ownership"
-import { isStudioEnabledForUser } from "@/lib/marketing/feature-flags"
+import { isStudioWorkspaceEnabled } from "@/lib/marketing/feature-flags"
 import { isGenerationConfigured } from "@/lib/marketing/studio/generator"
 import { getStudioAffordability, chargeStudioCredits, refundStudioCredits } from "@/lib/marketing/studio/credits"
 import { generateMarketingDraft, listContentItems, reviseContentItem } from "@/lib/marketing/studio/service"
@@ -54,7 +54,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     const ownership = await checkProjectOwnership(user.id, id)
     if (!ownership.ok) return fail("UNAUTHORIZED_PROJECT_ACCESS", "We couldn't find this project.", 404)
 
-    if (!isStudioEnabledForUser(user.id)) {
+    if (!isStudioWorkspaceEnabled(user.id)) {
       return ok({ enabled: false, cost: 0, items: [] })
     }
     const { cost, available } = await getStudioAffordability(user.id)
@@ -80,7 +80,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const ownership = await checkProjectOwnership(user.id, id)
     if (!ownership.ok) return fail("UNAUTHORIZED_PROJECT_ACCESS", "We couldn't find this project.", 404)
 
-    if (!isStudioEnabledForUser(user.id)) {
+    if (!isStudioWorkspaceEnabled(user.id)) {
       return fail("FEATURE_DISABLED", "The Marketing Studio isn't available for this account yet.", 403)
     }
     if (!isGenerationConfigured()) {
@@ -114,7 +114,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const ownership = await checkProjectOwnership(user.id, id)
     if (!ownership.ok) return fail("UNAUTHORIZED_PROJECT_ACCESS", "We couldn't find this project.", 404)
 
-    if (!isStudioEnabledForUser(user.id)) {
+    if (!isStudioWorkspaceEnabled(user.id)) {
       return fail("FEATURE_DISABLED", "The Marketing Studio isn't available for this account yet.", 403)
     }
 

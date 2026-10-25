@@ -1,12 +1,20 @@
 import { requireUser } from "@/lib/auth/session"
 import { store } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
-import { generateText } from "ai"
-import { MODEL } from "@/lib/analysis/model"
 import { chargeActionPlan, refundResources } from "@/lib/resources/resources-credits"
+import { scopedIntentKey } from "@/lib/billing/operation-identity"
+import { generateWithRetry, logAIFailure } from "@/lib/resources/ai-retry"
+
+/** Extract the optional client intent id (idempotency identity ONLY — never
+ * authorization; `scopedIntentKey` validates it and scopes it to this
+ * authenticated user + this ownership-checked project). */
+async function readIntentKey(req: Request, userId: string, projectId: string): Promise<string | undefined> {
+  const body = (await req.json().catch(() => null)) as { requestId?: unknown } | null
+  return scopedIntentKey(body?.requestId, { userId, operation: "resources_action_plan", projectId })
+}
 
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -21,7 +29,8 @@ export async function POST(
       return fail("VALIDATION", "No specification found for this project.", 409)
     }
 
-    const charged = await chargeActionPlan(user.id, id)
+    const intentKey = await readIntentKey(req, user.id, id)
+    const charged = await chargeActionPlan(user.id, id, intentKey)
     if (!charged) {
       return fail("INSUFFICIENT_CREDITS", "You need 50 credits to generate an action plan.", 402)
     }
@@ -53,16 +62,40 @@ Be ruthlessly specific to this business type and stage. No generic startup advic
 
     let text: string
     try {
-      const result = await generateText({
-        model: MODEL,
-        system: systemPrompt,
-        prompt: userPrompt,
-        maxOutputTokens: 2000,
-      })
-      text = result.text
+      text = await generateWithRetry(
+        { system: systemPrompt, prompt: userPrompt },
+        { maxOutputTokens: 2000 },
+      )
     } catch (aiError) {
-      await refundResources(user.id, id, "actionPlan")
-      throw aiError
+      // Refund credits on AI failure
+      await refundResources(user.id, id, "actionPlan", intentKey)
+      
+      // Log the error for debugging
+      logAIFailure("resources.action-plan", aiError, {
+        projectId: id,
+        userId: user.id,
+        operation: "actionPlan",
+      })
+      
+      // Check if we have a cached version to fall back to
+      // @ts-expect-error — dynamic cache fields not in strict type
+      const cachedPlan = project.resourcesCache?.actionPlan
+      if (cachedPlan?.text) {
+        // Return cached version with a note
+        return ok({
+          text: cachedPlan.text,
+          generatedAt: cachedPlan.generatedAt,
+          cached: true,
+          note: "Using a previously generated plan. The AI service is temporarily unavailable.",
+        })
+      }
+      
+      // No cache — return a user-friendly error
+      return fail(
+        "AI_UNAVAILABLE",
+        "The AI service is temporarily unavailable. Your credits have been refunded. Please try again in a few moments.",
+        503,
+      )
     }
 
     // Cache on project

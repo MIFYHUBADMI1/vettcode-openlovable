@@ -25,6 +25,14 @@ export interface VisualMockupRequest {
   model?: string // defaults to inclusionai/ming-image-0.1-design-layer
   aspectRatio?: "1:1" | "16:9" | "9:16" | "4:3" | "3:4"
   style?: string // additional style modifiers
+  /**
+   * Optional client INTENT id (Phase 3 — Workstream C). Idempotency identity
+   * only: the server validates it and scopes it to the authenticated user +
+   * this ownership-checked project before using it as the credit ledger key,
+   * so retrying the same generation cannot double-charge while distinct
+   * generations stay distinct. Grants nothing.
+   */
+  requestId?: string
 }
 
 export interface VisualMockupResponse {

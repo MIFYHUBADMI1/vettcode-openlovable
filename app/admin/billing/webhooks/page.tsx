@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 import useSWR from "swr"
 import {
   Loader2, AlertTriangle, Shield, RefreshCw, Webhook, CheckCircle2,
@@ -11,7 +12,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import { jsonFetcher } from "@/lib/client/api"
+import { jsonFetcher, postJson } from "@/lib/client/api"
+import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { AdminNav } from "@/components/admin-nav"
 
@@ -56,15 +58,84 @@ function timeAgo(ts: number): string {
   return `${days}d ago`
 }
 
+/** Queue health as reported by `getRecoveryQueueStats` (lib/billing/webhook-recovery). */
+interface RecoveryStats {
+  counts: {
+    failed: number
+    unresolved: number
+    processing: number
+    manual_review: number
+    stale_received: number
+  }
+  eligibleNow: number
+  oldestEligibleReceivedAt: number | null
+  nextScheduledAttemptAt: number | null
+}
+
+interface RecoveryEventResult {
+  eventId: string
+  eventType: string
+  attempts: number
+  outcome: "processed" | "unresolved" | "failed" | "manual_review"
+  reason?: string
+}
+
+interface RecoveryBatchResult {
+  startedAt: number
+  processed: number
+  resolved: number
+  stillPending: number
+  escalatedToManualReview: number
+  claimedButSkipped: number
+  results: RecoveryEventResult[]
+  hasMore: boolean
+}
+
 export default function AdminWebhooksPage() {
   const [search, setSearch] = useState("")
   const [selectedEvent, setSelectedEvent] = useState<WebhookEvent | null>(null)
+  const [batchLimit, setBatchLimit] = useState(10)
+  const [confirmRecovery, setConfirmRecovery] = useState(false)
+  const [recoveryRunning, setRecoveryRunning] = useState(false)
+  const [recoveryResult, setRecoveryResult] = useState<RecoveryBatchResult | null>(null)
+  const [recoveryError, setRecoveryError] = useState<string | null>(null)
 
   const { data, error, isLoading, mutate } = useSWR<{ events: WebhookEvent[]; total: number }>(
     "/api/admin/billing/audit-log?type=webhook",
     jsonFetcher,
     { refreshInterval: 15000 },
   )
+
+  // Recovery queue posture (Workstream B/G) — read-only counts from the same
+  // staleness rules the worker uses. Nothing here fires on a timer: this repo
+  // has no job substrate, so a batch runs only when an operator triggers it.
+  const { data: queue, mutate: mutateQueue } = useSWR<{ stats: RecoveryStats }>(
+    "/api/admin/billing/webhooks",
+    jsonFetcher,
+  )
+
+  const runRecoveryBatch = async () => {
+    setRecoveryRunning(true)
+    setRecoveryError(null)
+    try {
+      const res = await postJson<{ result: RecoveryBatchResult }>("/api/admin/billing/webhooks", { limit: batchLimit })
+      setRecoveryResult(res.result)
+      toast.success(
+        res.result.resolved > 0
+          ? `Recovery batch resolved ${res.result.resolved} event(s).`
+          : "Recovery batch ran — no event reached processed.",
+      )
+      void mutate()
+      void mutateQueue()
+    } catch (e) {
+      setRecoveryError(e instanceof Error ? e.message : "Recovery batch failed.")
+      toast.error("Recovery batch failed.")
+    } finally {
+      setRecoveryRunning(false)
+      setConfirmRecovery(false)
+    }
+  }
+
 
   if (isLoading) {
     return (
@@ -151,6 +222,117 @@ export default function AdminWebhooksPage() {
             <CardContent className="py-4">
               <p className="text-xs text-muted-foreground">Pending</p>
               <p className="mt-2 text-2xl font-semibold text-amber-500">{pending}</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ── Recovery queue (Phase 3 Workstream B/G) ── */}
+        <div className="mt-8">
+          <Card>
+            <CardContent className="py-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+                    Durable recovery
+                  </p>
+                  <h2 className="mt-1 text-lg font-semibold">Webhook recovery queue</h2>
+                  <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                    Failed, unresolved and stale deliveries stay discoverable. A batch re-runs them through the same
+                    idempotent logic as the live webhook, so a replay that already applied its effect is a no-op —
+                    never a second grant. Nothing self-fires: this repository has no scheduler, so a batch runs only
+                    when an authorized operator triggers it.
+                  </p>
+                </div>
+                <div className="flex items-end gap-2">
+                  <label className="text-xs text-muted-foreground">
+                    Batch size
+                    <select
+                      className="mt-1 block h-9 rounded-md border border-border bg-background px-2 text-sm"
+                      value={String(batchLimit)}
+                      onChange={(e) => setBatchLimit(Number(e.target.value))}
+                    >
+                      {[5, 10, 25, 50].map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <Button size="sm" className="gap-1.5" disabled={recoveryRunning} onClick={() => setConfirmRecovery(true)}>
+                    {recoveryRunning ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
+                    Run one batch
+                  </Button>
+                </div>
+              </div>
+
+              {queue ? (
+                <>
+                  <div className="mt-5 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                    {[
+                      ["Failed", queue.stats.counts.failed, "text-red-500"],
+                      ["Unresolved", queue.stats.counts.unresolved, "text-amber-500"],
+                      ["Processing", queue.stats.counts.processing, "text-sky-500"],
+                      ["Manual review", queue.stats.counts.manual_review, "text-foreground"],
+                      ["Stale received", queue.stats.counts.stale_received, "text-amber-500"],
+                      ["Eligible now", queue.stats.eligibleNow, "text-green-500"],
+                    ].map(([label, value, cls]) => (
+                      <div key={String(label)} className="rounded-lg border border-border bg-muted/20 px-3 py-2">
+                        <p className="text-[11px] text-muted-foreground">{label}</p>
+                        <p className={cn("mt-1 text-xl font-semibold tabular-nums", String(cls))}>{value as number}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted-foreground">
+                    <span>
+                      Oldest eligible event:{" "}
+                      {queue.stats.oldestEligibleReceivedAt ? timeAgo(queue.stats.oldestEligibleReceivedAt) : "none"}
+                    </span>
+                    <span>
+                      Next scheduled attempt:{" "}
+                      {queue.stats.nextScheduledAttemptAt
+                        ? new Date(queue.stats.nextScheduledAttemptAt).toLocaleString()
+                        : "nothing waiting on backoff"}
+                    </span>
+                    <Link href="/admin/billing/reconciliation" className="text-primary hover:underline">
+                      See reconciliation findings
+                    </Link>
+                  </div>
+                </>
+              ) : null}
+
+              {recoveryError ? (
+                <p className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+                  {recoveryError}
+                </p>
+              ) : null}
+
+              {recoveryResult ? (
+                <div className="mt-4 rounded-lg border border-border bg-muted/20 p-4">
+                  <p className="text-sm font-medium">
+                    Last batch — {recoveryResult.processed} claimed, {recoveryResult.resolved} resolved,{" "}
+                    {recoveryResult.stillPending} still pending, {recoveryResult.escalatedToManualReview} escalated to
+                    manual review.
+                  </p>
+                  {recoveryResult.hasMore ? (
+                    <p className="mt-1 text-xs text-amber-500">
+                      The batch hit its limit — more eligible events likely remain.
+                    </p>
+                  ) : null}
+                  <ul className="mt-3 space-y-1">
+                    {recoveryResult.results.map((r) => (
+                      <li key={r.eventId} className="flex flex-wrap items-center gap-2 text-xs">
+                        <Badge variant="outline" className="font-mono text-[10px]">
+                          {r.outcome}
+                        </Badge>
+                        <span className="font-mono">{r.eventType}</span>
+                        <span className="text-muted-foreground">{r.attempts} attempt(s)</span>
+                        <span className="font-mono text-muted-foreground">{r.eventId.slice(0, 16)}…</span>
+                        {r.reason ? <span className="text-muted-foreground">— {r.reason}</span> : null}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         </div>
@@ -294,6 +476,35 @@ export default function AdminWebhooksPage() {
               </DialogFooter>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+      {/* ── Recovery batch confirmation ── */}
+      <Dialog open={confirmRecovery} onOpenChange={(open) => !open && !recoveryRunning && setConfirmRecovery(false)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="size-4 text-amber-500" />
+              Run a recovery batch?
+            </DialogTitle>
+            <DialogDescription>
+              Up to {batchLimit} eligible event(s) will be re-processed through the same idempotent webhook logic used
+              for live deliveries. Effects already applied are recognized and skipped, so a replay cannot grant credits
+              twice. Historical ledger rows are never rewritten.
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-xs text-muted-foreground">
+            Events whose type is not safely re-processable, or whose attempt budget is exhausted, are parked in manual
+            review instead of being guessed at.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmRecovery(false)} disabled={recoveryRunning}>
+              Cancel
+            </Button>
+            <Button onClick={() => void runRecoveryBatch()} disabled={recoveryRunning} className="gap-1.5">
+              {recoveryRunning ? <Loader2 className="size-3.5 animate-spin" /> : null}
+              Run batch
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </main>

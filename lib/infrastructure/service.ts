@@ -100,6 +100,17 @@ export async function activatePlan(
   projectId: string,
   userId: string,
   planId: InfrastructurePlanId,
+  /**
+   * Phase 3 (Workstream C): stable server-scoped operation identity supplied
+   * by the route (validated + scoped to this user/project). When present the
+   * purchase key becomes `infra_${intentKey}`, so a retry of the SAME upgrade
+   * cannot debit twice. When absent we fall back to a MINUTE-bucketed key
+   * instead of the old millisecond one: a double-click or an instant retry
+   * lands in the same bucket (deduplicated), while a genuinely separate later
+   * upgrade stays a distinct operation. No stable id exists for this flow
+   * today, so this is best-effort dedupe — see the Phase 3 report.
+   */
+  intentKey?: string,
 ): Promise<{ success: boolean; message: string }> {
   await ensureIndexes()
 
@@ -136,7 +147,9 @@ export async function activatePlan(
         userId,
         amount: plan.AtaiPrice,
         transactionType: "infrastructure_purchase",
-        idempotencyKey: `infra_${projectId}_${plan.id}_${now}`,
+        idempotencyKey: intentKey
+          ? `infra_${intentKey}`
+          : `infra_${projectId}_${plan.id}_${Math.floor(now / 60_000)}`,
         // Trusted server-derived project context (ownership verified above).
         projectId,
         metadata: {

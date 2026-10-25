@@ -12,6 +12,8 @@ export const MARKET_CONTENT_KINDS = [
   "email",
   "social",
   "timeline",
+  "blog",
+  "brief",
   "image",
   "voice",
   "video",
@@ -143,6 +145,24 @@ export const MARKET_KIND_META: Record<MarketContentKind, MarketKindMeta> = {
     media: "text",
     promptPlaceholder: "What campaign or launch should the timeline cover?",
   },
+  blog: {
+    label: "Blog article",
+    shortLabel: "Blog",
+    description: "A structured article draft with headings you can edit.",
+    capability: "ai.text",
+    operation: "chat",
+    media: "text",
+    promptPlaceholder: "What should the article explain, who is it for, and what should they do next?",
+  },
+  brief: {
+    label: "Strategy brief",
+    shortLabel: "Brief",
+    description: "A concise marketing brief grounded in your project context.",
+    capability: "ai.text",
+    operation: "chat",
+    media: "text",
+    promptPlaceholder: "What goal, launch, or audience should the brief cover?",
+  },
   image: {
     label: "Image generation",
     shortLabel: "Image",
@@ -191,6 +211,10 @@ const KIND_INSTRUCTION: Record<MarketContentKind, string> = {
     "Write one platform-native post for EACH requested channel, labelled with the channel name. Include relevant hashtags only where the platform expects them. Keep each post under 120 words.",
   timeline:
     "Build a practical 14-day content calendar. Output exactly one line per day in the form 'Day N — <idea> — <channel> — <call to action>'. Mix formats (short video, carousel, text post, email, story) and build toward the campaign goal.",
+  blog:
+    "Write one complete blog article for this business. Start with a single '# ' H1 line, then 3–5 '## ' sections with short paragraphs. Aim for 600–900 words. Do not invent statistics, studies, quotes, or external sources — if evidence was not supplied, explain the idea without citing anything.",
+  brief:
+    "Write a concise marketing strategy brief with these labelled sections: Summary, Audience, Customer problem, Value proposition, Objective, Messaging, Channels, Content ideas, Next steps, Assumptions. Keep it practical and under 500 words. Put anything not supplied under Assumptions instead of inventing it.",
   voice:
     "Write a spoken voiceover script of about 20–45 seconds (roughly 50–110 words) in natural spoken language. End with one call to action. Return ONLY the spoken words — no headings, labels, camera directions, or stage notes.",
   image:

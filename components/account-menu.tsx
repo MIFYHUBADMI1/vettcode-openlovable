@@ -58,7 +58,11 @@ export function AccountMenu() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="flex items-center rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+      <DropdownMenuTrigger
+        aria-label="Account menu"
+        title={user.name}
+        className="flex shrink-0 items-center rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      >
         <div className="relative">
           <Avatar className="size-9 border border-border">
             <AvatarImage src={user.imageUrl || undefined} alt={user.name} />

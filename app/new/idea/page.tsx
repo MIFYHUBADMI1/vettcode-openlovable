@@ -1,9 +1,11 @@
 "use client"
 
+import { useEffect } from "react"
 import { Check, FileText, Hammer, Lightbulb } from "lucide-react"
 import { AuthGate } from "@/components/auth/auth-gate"
 import { LandingComposer } from "@/components/landing/composer"
 import { CreateWorkspaceShell } from "@/components/new-project/create-shell"
+import { beginStartFlow } from "@/lib/analytics/start-funnel"
 import { cn } from "@/lib/utils"
 
 const STEPS = [
@@ -13,6 +15,10 @@ const STEPS = [
 ]
 
 export default function NewIdeaProjectPage() {
+  useEffect(() => {
+    beginStartFlow({ method: "idea", surface: "new_idea" })
+  }, [])
+
   return (
     <AuthGate next="/new/idea">
       <CreateWorkspaceShell
@@ -29,7 +35,7 @@ export default function NewIdeaProjectPage() {
                 else Atai handles.
               </p>
             </div>
-            <LandingComposer lockedMode="idea" showModes={false} showIntro={false} />
+            <LandingComposer lockedMode="idea" showModes={false} showIntro={false} surface="new_idea" />
           </div>
 
           <aside className="flex flex-col gap-4 lg:sticky lg:top-36">

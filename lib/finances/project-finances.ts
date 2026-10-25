@@ -44,10 +44,12 @@ export interface DailyFinancePoint {
   date: string
   requests: number
   creditsCharged: number
-  /** Sum of numeric provider costs that day; null when none reported one. */
+  /** Sum of USD-denominated provider costs that day; null when none reported one. */
   providerCostUsd: number | null
   /** How many events that day reported no numeric provider cost. */
   providerCostUnavailableCount: number
+  /** Events with a numeric provider cost in a NON-USD currency (counted, never summed in). */
+  providerCostNonUsdCount?: number
   /** Attributed gross earnings that day, minor units (0 when none). */
   earningsMinor: number
   paymentsCount: number
@@ -62,6 +64,9 @@ export interface FinanceTotals {
   creditsCharged: number
   providerCostUsd: number | null
   providerCostUnavailableCount: number
+  /** Events whose provider reported numeric cost in a non-USD currency —
+   * deliberately excluded from providerCostUsd (no FX source is approved). */
+  providerCostNonUsdCount?: number
   /** Number of payments.createCheckout/createSubscription calls in the window. */
   checkoutAttempts: number
   /** Attributed earnings in the window; null when the provider is unavailable. */
@@ -174,6 +179,7 @@ interface ExpenseAggregate {
     creditsCharged: number
     providerCostUsd: number
     providerCostUnavailableCount: number
+    providerCostNonUsdCount?: number
   }>
   totals: {
     requests: number
@@ -182,11 +188,30 @@ interface ExpenseAggregate {
     creditsCharged: number
     providerCostUsd: number
     providerCostUnavailableCount: number
+    providerCostNonUsdCount?: number
     checkoutAttempts: number
   }
 }
 
 const NUMERIC_PROVIDER_TYPES: string[] = ["double", "int", "long", "decimal"]
+
+/**
+ * Phase 2 currency honesty: `providerCostUsd` sums ONLY provider-reported
+ * amounts explicitly denominated in USD. A numeric cost in another currency
+ * (e.g. Twilio `price_unit`) is COUNTED, never mixed into a "$" total and
+ * never silently converted (no approved FX source exists). Non-numeric costs
+ * stay "unavailable" — never 0.
+ */
+const USD_COST_COND = {
+  $and: [
+    { $in: [{ $type: "$costMetadata.providerCost" }, NUMERIC_PROVIDER_TYPES] },
+    { $eq: ["$costMetadata.providerCostCurrency", "USD"] },
+  ],
+} as const
+
+const NUMERIC_COST_COND = {
+  $in: [{ $type: "$costMetadata.providerCost" }, NUMERIC_PROVIDER_TYPES],
+} as const
 
 /**
  * Bounded Mongo aggregation over the project's runtime_usage records.
@@ -202,18 +227,17 @@ async function aggregateDailyExpenses(
   const match = { projectId, createdAt: { $gte: from, $lte: to } }
 
   const providerCostExpr = {
+    $cond: [USD_COST_COND, "$costMetadata.providerCost", 0],
+  }
+  const providerNonUsdExpr = {
     $cond: [
-      { $in: [{ $type: "$costMetadata.providerCost" }, NUMERIC_PROVIDER_TYPES] },
-      "$costMetadata.providerCost",
+      { $and: [NUMERIC_COST_COND, { $ne: ["$costMetadata.providerCostCurrency", "USD"] }] },
+      1,
       0,
     ],
   }
   const providerMissingExpr = {
-    $cond: [
-      { $in: [{ $type: "$costMetadata.providerCost" }, NUMERIC_PROVIDER_TYPES] },
-      0,
-      1,
-    ],
+    $cond: [NUMERIC_COST_COND, 0, 1],
   }
 
   const [dayRows, totalsRows] = await Promise.all([
@@ -233,6 +257,7 @@ async function aggregateDailyExpenses(
             failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } },
             creditsCharged: { $sum: "$creditsCharged" },
             providerCostUsd: { $sum: providerCostExpr },
+            providerNonUsd: { $sum: providerNonUsdExpr },
             providerMissing: { $sum: providerMissingExpr },
           },
         },
@@ -250,6 +275,7 @@ async function aggregateDailyExpenses(
             failed: { $sum: { $cond: [{ $eq: ["$status", "failed"] }, 1, 0] } },
             creditsCharged: { $sum: "$creditsCharged" },
             providerCostUsd: { $sum: providerCostExpr },
+            providerNonUsd: { $sum: providerNonUsdExpr },
             providerMissing: { $sum: providerMissingExpr },
             checkoutAttempts: {
               $sum: {
@@ -280,6 +306,7 @@ async function aggregateDailyExpenses(
       creditsCharged: r.creditsCharged,
       providerCostUsd: r.providerCostUsd,
       providerCostUnavailableCount: r.providerMissing,
+      providerCostNonUsdCount: r.providerNonUsd ?? 0,
     })),
     totals: {
       requests: totalsRows[0]?.requests ?? 0,
@@ -288,6 +315,7 @@ async function aggregateDailyExpenses(
       creditsCharged: totalsRows[0]?.creditsCharged ?? 0,
       providerCostUsd: totalsRows[0]?.providerCostUsd ?? 0,
       providerCostUnavailableCount: totalsRows[0]?.providerMissing ?? 0,
+      providerCostNonUsdCount: totalsRows[0]?.providerNonUsd ?? 0,
       checkoutAttempts: totalsRows[0]?.checkoutAttempts ?? 0,
     },
   }
@@ -303,6 +331,7 @@ interface ExpenseDailyRow {
   failed: number
   creditsCharged: number
   providerCostUsd: number
+  providerNonUsd?: number
   providerMissing: number
 }
 
@@ -345,7 +374,7 @@ function utcDateKey(ms: number): string {
  * missing days). Payments with no parseable date are not day-bucketed.
  */
 export function mergeDailySeries(
-  expenses: Array<{ date: string; creditsCharged: number; providerCostUsd: number | null; providerCostUnavailableCount: number; requests?: number }>,
+  expenses: Array<{ date: string; creditsCharged: number; providerCostUsd: number | null; providerCostUnavailableCount: number; providerCostNonUsdCount?: number; requests?: number }>,
   payments: ProjectPayment[],
 ): DailyFinancePoint[] {
   const byDate = new Map<string, DailyFinancePoint>()
@@ -357,6 +386,7 @@ export function mergeDailySeries(
       creditsCharged: expense.creditsCharged,
       providerCostUsd: expense.providerCostUsd,
       providerCostUnavailableCount: expense.providerCostUnavailableCount,
+      providerCostNonUsdCount: expense.providerCostNonUsdCount ?? 0,
       earningsMinor: 0,
       paymentsCount: 0,
     })
@@ -374,6 +404,7 @@ export function mergeDailySeries(
         creditsCharged: 0,
         providerCostUsd: null,
         providerCostUnavailableCount: 0,
+        providerCostNonUsdCount: 0,
         earningsMinor: 0,
         paymentsCount: 0,
       }
@@ -420,6 +451,7 @@ export function buildTotals(
         ? expenses.totals.providerCostUsd
         : null,
     providerCostUnavailableCount: expenses.totals.providerCostUnavailableCount,
+    providerCostNonUsdCount: expenses.totals.providerCostNonUsdCount ?? 0,
     checkoutAttempts: expenses.totals.checkoutAttempts,
     earningsMinor: earningsAvailable ? earningsMinor : null,
     earningsUnavailable: !earningsAvailable,

@@ -100,6 +100,8 @@ export type ToolResultType =
   | "growth_overview"
   | "seo_audit"
   | "marketing_content"
+  | "marketing_content_list"
+  | "marketing_refined"
   | "growth_task"
   | "growth_tasks_list"
   | "campaign"

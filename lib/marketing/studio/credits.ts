@@ -38,10 +38,19 @@ export async function getStudioAffordability(userId: string): Promise<{ cost: nu
 }
 
 /**
- * Charge for one generation. `intentKey` — when provided (e.g. the approved
- * pending-action id) — becomes the ledger idempotency key so a retried execution
- * of the SAME approval cannot double-charge. Returns false when the user cannot
- * afford it — the caller must respond INSUFFICIENT_CREDITS and not generate.
+ * Charge for one generation. `intentKey` — when provided — becomes the ledger
+ * idempotency key so a retried execution of the SAME approval cannot
+ * double-charge. Returns false when the user cannot afford it — the caller must
+ * respond INSUFFICIENT_CREDITS and not generate.
+ *
+ * Phase 3 (Workstream C) contract: `intentKey` MUST already be a server-scoped
+ * identity from `scopedIntentKey()` (bound to the session user, the operation
+ * and the ownership-checked project). `credit_ledger.idempotencyKey` has a
+ * GLOBAL unique index, so a bare client string here would be a shared
+ * namespace: two callers sending the same value would make the second charge a
+ * recognized no-op — a billable operation delivered for free. This module does
+ * not re-scope (it cannot know the operation), so callers own that duty; every
+ * current caller does it at its route/tool boundary.
  */
 export async function chargeStudioCredits(userId: string, projectId: string, intentKey?: string): Promise<boolean> {
   const amount = getStudioCost()
@@ -61,6 +70,9 @@ export async function chargeStudioCredits(userId: string, projectId: string, int
     idempotencyKey: intentKey ? `studio_${intentKey}` : cryptoId(),
     referenceType: "project",
     referenceId: projectId,
+    // First-class project attribution (Phase 2) — server-validated project,
+    // never a client guess.
+    projectId,
     metadata: { reason: "Marketing Studio copy generation", feature: "marketing_studio" },
   })
   if (!result.success) {
@@ -72,8 +84,11 @@ export async function chargeStudioCredits(userId: string, projectId: string, int
 }
 
 /** Best-effort refund after a charged generation failed. Never throws — a failed
- * refund must not mask the original generation error. */
-export async function refundStudioCredits(userId: string, projectId: string): Promise<void> {
+ * refund must not mask the original generation error. When the caller passes the
+ * same `intentKey` used to charge, the refund key is deterministic
+ * (`studio_${intentKey}_refund`) so a retried failure path cannot double-refund
+ * (the same discipline `charge.ts` uses for runtime refunds). */
+export async function refundStudioCredits(userId: string, projectId: string, intentKey?: string): Promise<void> {
   const amount = getStudioCost()
   if (amount <= 0) return
   try {
@@ -82,9 +97,11 @@ export async function refundStudioCredits(userId: string, projectId: string): Pr
       creditType: "permanent",
       amount,
       transactionType: "other_reversal",
-      idempotencyKey: `studio_refund_${cryptoId()}`,
+      idempotencyKey: intentKey ? `studio_${intentKey}_refund` : `studio_refund_${cryptoId()}`,
       referenceType: "project",
       referenceId: projectId,
+      // First-class project attribution (Phase 2) — mirrors the charge.
+      projectId,
       metadata: { reason: "Marketing Studio generation failed — automatic refund", feature: "marketing_studio" },
     })
     logger.info("credits.studio", "refunded after failure", { userId, projectId, amount })

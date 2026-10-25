@@ -1,16 +1,13 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import Link from "next/link"
 import useSWR from "swr"
-import { ArrowLeft, Check, X, Clock, Eye, Loader2, User, Phone, CreditCard, AlertTriangle, CheckCircle2, XCircle, RefreshCw, Shield } from "lucide-react"
+import { Loader2, User, Phone, CreditCard, AlertTriangle, CheckCircle2, Archive, RefreshCw, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { postJson, jsonFetcher } from "@/lib/client/api"
-import { toast } from "sonner"
+import { jsonFetcher } from "@/lib/client/api"
 import { AdminNav } from "@/components/admin-nav"
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -114,6 +111,14 @@ function statusLabel(status: string) {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 
+/**
+ * Legacy Mobile Money top-up history — READ ONLY.
+ *
+ * The MTN/Airtel gateway is discontinued; Dodo Payments is the sole
+ * supported payment method. These historical records are retained for
+ * audit, reconciliation, legal, and support purposes. No action here (or
+ * on its API) can approve a top-up or grant credits.
+ */
 export default function AdminPaymentsPage() {
   const { data, error, isLoading, mutate } = useSWR<AdminData>(
     "/api/billing/admin/top-ups",
@@ -124,9 +129,6 @@ export default function AdminPaymentsPage() {
   const [selectedTopUp, setSelectedTopUp] = useState<TopUpItem | null>(null)
   const [evidenceUrls, setEvidenceUrls] = useState<EvidenceUrl[]>([])
   const [loadingEvidence, setLoadingEvidence] = useState(false)
-  const [actionBusy, setActionBusy] = useState(false)
-  const [rejectReason, setRejectReason] = useState("")
-  const [showRejectDialog, setShowRejectDialog] = useState(false)
 
   const loadEvidence = useCallback(async (topUp: TopUpItem) => {
     if (!topUp.evidenceFileIds.length) {
@@ -148,43 +150,8 @@ export default function AdminPaymentsPage() {
 
   const handleSelect = useCallback(async (topUp: TopUpItem) => {
     setSelectedTopUp(topUp)
-    setRejectReason("")
     await loadEvidence(topUp)
   }, [loadEvidence])
-
-  const handleApprove = useCallback(async () => {
-    if (!selectedTopUp) return
-    setActionBusy(true)
-    try {
-      await postJson(`/api/billing/admin/top-ups/${selectedTopUp.id}`, { action: "approve" })
-      toast.success(`Approved ${selectedTopUp.credits.toLocaleString()} credits for ${selectedTopUp.userName ?? selectedTopUp.userEmail}`)
-      setSelectedTopUp(null)
-      await mutate()
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to approve")
-    } finally {
-      setActionBusy(false)
-    }
-  }, [selectedTopUp, mutate])
-
-  const handleReject = useCallback(async () => {
-    if (!selectedTopUp) return
-    setActionBusy(true)
-    try {
-      await postJson(`/api/billing/admin/top-ups/${selectedTopUp.id}`, {
-        action: "reject",
-        reason: rejectReason || "Rejected by administrator",
-      })
-      toast.success("Top-up rejected")
-      setSelectedTopUp(null)
-      setShowRejectDialog(false)
-      await mutate()
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to reject")
-    } finally {
-      setActionBusy(false)
-    }
-  }, [selectedTopUp, rejectReason, mutate])
 
   const topUps = data?.topUps ?? []
 
@@ -222,9 +189,9 @@ export default function AdminPaymentsPage() {
         <header className="flex items-start justify-between">
           <div>
             <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">Admin</p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight">Payment Verifications</h1>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight">Legacy Top-Up History</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Review and verify Mobile Money top-up payments.
+              Historical Mobile Money (MTN/Airtel) records, retained read-only for audit and support.
             </p>
           </div>
           <Button variant="outline" size="sm" onClick={() => mutate()} className="gap-1.5">
@@ -232,6 +199,21 @@ export default function AdminPaymentsPage() {
             Refresh
           </Button>
         </header>
+
+        {/* Discontinuation notice */}
+        <Card className="mt-8 border-amber-500/30 bg-amber-500/5">
+          <CardContent className="flex items-start gap-3 py-4">
+            <Archive className="mt-0.5 size-4 shrink-0 text-amber-500" />
+            <div className="text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">Mobile Money payments are no longer supported.</p>
+              <p className="mt-1">
+                All current payments go through Dodo Payments. Records left mid-flow when the gateway was
+                discontinued remain here for auditing only — they can no longer be approved, rejected, or used
+                to grant credits from this application.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Summary Cards */}
         <div className="mt-8 grid gap-4 sm:grid-cols-4">
@@ -451,64 +433,12 @@ export default function AdminPaymentsPage() {
               </div>
 
               <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => setSelectedTopUp(null)}
-                  disabled={actionBusy}
-                >
+                <Button variant="outline" onClick={() => setSelectedTopUp(null)}>
                   Close
                 </Button>
-                {selectedTopUp.status !== "approved" && selectedTopUp.status !== "rejected" && (
-                  <>
-                    <Button
-                      variant="destructive"
-                      onClick={() => setShowRejectDialog(true)}
-                      disabled={actionBusy}
-                      className="gap-1.5"
-                    >
-                      <X className="size-3.5" />
-                      Reject
-                    </Button>
-                    <Button
-                      onClick={handleApprove}
-                      disabled={actionBusy}
-                      className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
-                    >
-                      {actionBusy ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
-                      Approve · {selectedTopUp.credits.toLocaleString()} credits
-                    </Button>
-                  </>
-                )}
               </DialogFooter>
             </>
           )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Reject Reason Dialog */}
-      <Dialog open={showRejectDialog} onOpenChange={(open) => !open && setShowRejectDialog(false)}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Reject Payment</DialogTitle>
-            <DialogDescription>
-              Provide a reason for rejecting this payment. This will be stored for audit purposes.
-            </DialogDescription>
-          </DialogHeader>
-          <Textarea
-            value={rejectReason}
-            onChange={(e) => setRejectReason(e.target.value)}
-            placeholder="e.g., Amount does not match, screenshot is unclear..."
-            rows={3}
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRejectDialog(false)} disabled={actionBusy}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleReject} disabled={actionBusy} className="gap-1.5">
-              {actionBusy ? <Loader2 className="size-3.5 animate-spin" /> : <X className="size-3.5" />}
-              Confirm Reject
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </main>

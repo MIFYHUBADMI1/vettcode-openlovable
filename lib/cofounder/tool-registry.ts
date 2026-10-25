@@ -32,7 +32,11 @@ import {
 } from "./tools/navigation"
 import { getGrowthOverviewTool } from "./tools/growth"
 import { runSeoAuditTool } from "./tools/seo"
-import { generateMarketingCopyTool } from "./tools/studio"
+import {
+  generateMarketingCopyTool,
+  searchMarketingContentTool,
+  refineMarketingContentTool,
+} from "./tools/studio"
 import { proposeGrowthTaskTool, listGrowthTasksTool } from "./tools/tasks"
 import { proposeCampaignTool, listCampaignsTool } from "./tools/campaigns"
 import type { ToolDefinition, ToolRisk } from "./types"
@@ -70,6 +74,8 @@ const REGISTRY: readonly ToolDefinition[] = [
   listGrowthTasksTool,
   // READ — campaign list (Phase 6; read-only projection of the founder's own campaign plans)
   listCampaignsTool,
+  // READ — marketing library search (Phase 4 v2; the founder's own drafts only)
+  searchMarketingContentTool,
   // LOW_RISK_WRITE
   stopBuildTool,
   // CONFIRM
@@ -84,6 +90,9 @@ const REGISTRY: readonly ToolDefinition[] = [
   // generation, gated behind a pending action and the STUDIO flag; drafts only,
   // never publishes)
   generateMarketingCopyTool,
+  // CONFIRM — AI rewrite of an existing draft (Phase 4 v2; credits + one-shot AI,
+  // appends an immutable version; never overwrites and never publishes)
+  refineMarketingContentTool,
   // CONFIRM — growth task proposal (Phase 5; FREE AI-proposed task, gated behind
   // a pending action and the GROWTH_TASKS flag; the founder works through tasks
   // manually — nothing here runs on a timer)
