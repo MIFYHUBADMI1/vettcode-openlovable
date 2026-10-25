@@ -28,6 +28,10 @@ export const MAX_PROVIDER_RESPONSE_BYTES = 8 * 1024 * 1024
 export interface ProviderHttpResponse {
   status: number
   ok: boolean
+  /** Provider status text when the fetch surface exposed it (debug console). */
+  statusText?: string
+  /** Response content-type header when present (debug console). */
+  contentType?: string
   /** Body text, truncated to MAX_PROVIDER_RESPONSE_BYTES. */
   text: string
   /** Populated only when the caller asks for binary bodies. */
@@ -39,7 +43,7 @@ export interface ProviderFetchOptions {
   /** GET/POST cover reads and side effects; PATCH/DELETE exist for
    * providers whose edit/remove operations are HTTP-method-shaped
    * (e.g. the Totalum VCaaS data endpoints). */
-  method: "GET" | "POST" | "PATCH" | "DELETE"
+  method: "GET" | "POST" | "PATCH" | "DELETE" | "PUT"
   headers: Record<string, string>
   /** Pre-serialized body (JSON string or form-encoded). */
   body?: string
@@ -91,11 +95,24 @@ export async function providerFetch(opts: ProviderFetchOptions): Promise<Provide
           `binary response exceeded ${MAX_PROVIDER_RESPONSE_BYTES} bytes`,
         )
       }
-      return { status: res.status, ok: res.ok, text: "", bytes: buffer }
+      return {
+        status: res.status,
+        ok: res.ok,
+        statusText: res.statusText,
+        contentType: res.headers.get("content-type") ?? undefined,
+        text: "",
+        bytes: buffer,
+      }
     }
 
     const text = (await res.text().catch(() => "")).slice(0, MAX_PROVIDER_RESPONSE_BYTES)
-    return { status: res.status, ok: res.ok, text }
+    return {
+      status: res.status,
+      ok: res.ok,
+      statusText: res.statusText,
+      contentType: res.headers.get("content-type") ?? undefined,
+      text,
+    }
   } catch (e) {
     if (isAlreadyNormalized(e)) throw e
     const category = categoryForNetworkError(e)

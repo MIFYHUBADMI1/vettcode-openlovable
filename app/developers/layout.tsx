@@ -57,7 +57,7 @@ export default async function DevelopersLayout({ children }: { children: ReactNo
           {projects.length > 0 ? <ProjectPicker projects={projects.map((p) => ({ id: p.id, name: p.name }))} /> : null}
         </div>
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-10">
-          <DeveloperNav />
+          <DeveloperNav isAdmin={Boolean(user.isAdmin)} />
         </div>
       </header>
       <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-10">{children}</div>

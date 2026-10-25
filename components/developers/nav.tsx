@@ -9,17 +9,18 @@ const LINKS = [
   { href: "/keys", label: "API keys" },
   { href: "/usage", label: "Usage & health" },
   { href: "/playground", label: "Playground" },
+  { href: "/calcom", label: "Cal.com console", adminOnly: true },
 ] as const
 
 /** Portal nav. Every link preserves ?project=<id> so tabs stay on one project. */
-export function DeveloperNav() {
+export function DeveloperNav({ isAdmin = false }: { isAdmin?: boolean }) {
   const pathname = usePathname()
   const params = useSearchParams()
   const project = params.get("project")
 
   return (
     <nav aria-label="Developer portal" className="flex flex-wrap gap-1 border-b border-border pb-px">
-      {LINKS.map((link) => {
+      {LINKS.filter((link) => !("adminOnly" in link && link.adminOnly) || isAdmin).map((link) => {
         const href = `/developers${link.href}${project ? `?project=${project}` : ""}`
         const active = link.href === "" ? pathname === "/developers" : pathname === `/developers${link.href}`
         return (
