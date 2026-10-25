@@ -17,7 +17,12 @@ const globalForMongo = globalThis as unknown as {
 const DEFAULT_POOL = 50
 const MIN_POOL = 10
 const MAX_POOL = 200
-const DEFAULT_WAIT_QUEUE_MS = 10_000
+const DEFAULT_WAIT_QUEUE_MS = 20_000
+/** Keep one socket warm: re-dialing this cluster costs seconds per attempt. */
+const MIN_IDLE_POOL = 1
+const DEFAULT_SOCKET_TIMEOUT_MS = 120_000
+/** Atlas dials (DNS + TCP + TLS + auth) can take several seconds here. */
+const DEFAULT_CONNECT_TIMEOUT_MS = 20_000
 
 function boundedInt(raw: string | undefined, fallback: number, min: number, max: number): number {
   const n = raw ? Number(raw) : NaN
@@ -42,24 +47,27 @@ function connect(): Promise<MongoClient> {
   const pool = getMongoPoolOptions()
   const client = new MongoClient(uri, {
     maxPoolSize: pool.maxPoolSize,
+    minPoolSize: MIN_IDLE_POOL,
     waitQueueTimeoutMS: pool.waitQueueTimeoutMS,
-    maxIdleTimeMS: 30_000,
-    serverSelectionTimeoutMS: 8000,
-    connectTimeoutMS: 8000,
-    socketTimeoutMS: 20_000,
+    maxIdleTimeMS: 60_000,
+    serverSelectionTimeoutMS: DEFAULT_CONNECT_TIMEOUT_MS,
+    connectTimeoutMS: DEFAULT_CONNECT_TIMEOUT_MS,
+    // Long enough for the slowest report aggregation / index build. The driver
+    // reconnects a dead socket on its own; timing out a healthy-but-slow op
+    // only tears down the pool in the middle of legitimate work.
+    socketTimeoutMS: DEFAULT_SOCKET_TIMEOUT_MS,
   })
   // Without an error listener, socket resets become process-level uncaughtException.
   client.on("error", (error) => {
     if (isBenignDisconnect(error)) return
     logger.warn("mongo", error instanceof Error ? error.message : "Mongo client error")
   })
-  client.on("timeout", () => {
-    logger.warn("mongo", "Mongo socket timed out; next request will reconnect")
-    globalForMongo.__mirrorMongoClientPromise = undefined
-  })
-  client.on("close", () => {
-    globalForMongo.__mirrorMongoClientPromise = undefined
-  })
+  // NOTE: never discard `__mirrorMongoClientPromise` from a socket event. The
+  // driver already replaces a failed socket inside this client; dropping the
+  // cached promise instead builds a SECOND client (with its own pool) whose
+  // predecessor is never closed. Repeated socket timeouts leaked clients and
+  // connections until the cluster refused new ones, and every checkout then
+  // died with MongoWaitQueueTimeoutError.
   return client.connect()
 }
 

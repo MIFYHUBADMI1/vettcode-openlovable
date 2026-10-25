@@ -17,6 +17,9 @@ const globalForDb = globalThis as unknown as {
   // Shared across module instances (HMR / duplicated bundles) so the index
   // bootstrap runs exactly once per process no matter how many callers race.
   __mirrorIndexesPromise?: Promise<void>
+  __mirrorIndexesReady?: boolean
+  /** After a failed bootstrap, do not retry on every request (see below). */
+  __mirrorIndexesRetryAt?: number
 }
 let dbReady = false
 
@@ -229,15 +232,28 @@ async function dropLegacyIndexes() {
  * `createIndex` is a no-op if an equivalent index already exists, so this is
  * safe to call repeatedly and cheap after the first call per process.
  */
+const INDEX_RETRY_COOLDOWN_MS = 60_000
+
 export async function ensureIndexes(): Promise<void> {
-  if (!globalForDb.__mirrorIndexesPromise) {
-    globalForDb.__mirrorIndexesPromise = runEnsureIndexes().catch((error) => {
-      // Index creation is best-effort — never fail a request over it. Clear the
-      // cached promise so a later call can retry after a transient failure.
-      globalForDb.__mirrorIndexesPromise = undefined
-      console.error("[v0] ensureIndexes: failed", error)
+  if (globalForDb.__mirrorIndexesReady) return
+  if (globalForDb.__mirrorIndexesPromise) return globalForDb.__mirrorIndexesPromise
+  // A failed bootstrap used to be retried by every single caller (rate limits,
+  // auth helpers, …), which re-ran the whole index build concurrently and kept
+  // hammering an already-struggling pool. Back off instead.
+  if (globalForDb.__mirrorIndexesRetryAt && Date.now() < globalForDb.__mirrorIndexesRetryAt) return
+
+  globalForDb.__mirrorIndexesPromise = runEnsureIndexes()
+    .then(() => {
+      globalForDb.__mirrorIndexesReady = true
     })
-  }
+    .catch((error) => {
+      // Index creation is best-effort — never fail a request over it.
+      console.error("[v0] ensureIndexes: failed", error)
+      globalForDb.__mirrorIndexesRetryAt = Date.now() + INDEX_RETRY_COOLDOWN_MS
+    })
+    .finally(() => {
+      globalForDb.__mirrorIndexesPromise = undefined
+    })
   return globalForDb.__mirrorIndexesPromise
 }
 
@@ -299,10 +315,9 @@ async function runEnsureIndexes(): Promise<void> {
     topups.createIndex({ status: 1, createdAt: -1 }),
     topups.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
   ]).catch((error) => {
-    console.error("[v0] ensureIndexes: failed", error)
     // Log but don't crash — indexes are best-effort; the app can still
     // function (albeit slower) without them on the first request.
-    globalForDb.__mirrorIndexesPromise = undefined
+    console.error("[v0] ensureIndexes: failed", error)
   })
 
   // Referral indexes

@@ -45,6 +45,14 @@ const DAY_MS = 24 * 60 * 60 * 1000
 export const MAX_EARNINGS_PROJECTS = 25
 /** How many projects a portfolio roll-up considers at all. */
 const MAX_PROJECTS = 50
+/**
+ * How many earnings syncs may hit the payment provider at once. A portfolio
+ * sweep maps every project to up to MAX_PAGES provider reads; unbounded
+ * parallelism fired dozens of simultaneous requests per page load, which the
+ * provider throttles (slow responses / 429) and which stalls the page long
+ * after the local aggregation has finished.
+ */
+const EARNINGS_CONCURRENCY = 4
 
 export interface PlatformProjectFinanceRow {
   projectId: string
@@ -291,6 +299,23 @@ export function mergeRecentPayments(entries: PortfolioEntry[], limit = 20): Plat
     .slice(0, limit)
 }
 
+/** Run `fn` over `items` with at most `limit` in flight; order is preserved. */
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length)
+  let next = 0
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    for (let index = next++; index < items.length; index = next++) {
+      results[index] = await fn(items[index])
+    }
+  })
+  await Promise.all(workers)
+  return results
+}
+
 // ─── Expenses: one bounded aggregation across all projects ─────────────────
 
 const NUMERIC_PROVIDER_TYPES: string[] = ["double", "int", "long", "decimal"]
@@ -364,21 +389,23 @@ export async function getPlatformFinances(userId: string): Promise<PlatformFinan
   // and reports the truncation honestly instead of blocking the page.
   const sweep = projects.slice(0, MAX_EARNINGS_PROJECTS)
 
-  const [expenses, ...entries] = await Promise.all([
+  // The expense aggregation and the provider sweep run concurrently, but the
+  // portfolio rows are assembled only AFTER `Promise.all` resolves — reading
+  // the `expenses` binding from inside the map callbacks is a temporal dead
+  // zone error (it is not initialized until the destructuring completes).
+  const [expenses, earningsResults] = await Promise.all([
     aggregatePlatformExpenses(projectIds, from, to),
-    ...sweep.map((p) =>
-      getProjectEarnings(p.id, from).then(
-        (earnings): PortfolioEntry => ({
-          projectId: p.id,
-          projectName: p.name,
-          expense:
-            expenses.byProject.get(p.id) ??
-            { requests: 0, creditsCharged: 0, providerCostUsd: 0, providerCostUnavailableCount: 0 },
-          earnings,
-        }),
-      ),
-    ),
+    mapWithConcurrency(sweep, EARNINGS_CONCURRENCY, (p) => getProjectEarnings(p.id, from)),
   ])
+
+  const entries: PortfolioEntry[] = sweep.map((p, index) => ({
+    projectId: p.id,
+    projectName: p.name,
+    expense:
+      expenses.byProject.get(p.id) ??
+      { requests: 0, creditsCharged: 0, providerCostUsd: 0, providerCostUnavailableCount: 0 },
+    earnings: earningsResults[index],
+  }))
 
   const allPayments: ProjectPayment[] = entries.flatMap((e) =>
     e.earnings.status === "ok" ? e.earnings.payments : [],
@@ -503,7 +530,7 @@ export async function getPortfolioSpendTrend(userId: string): Promise<SpendTrend
   if (projectIds.length > 0) {
     const sweep = projects.slice(0, MAX_EARNINGS_PROJECTS)
     const [earningsResults] = await Promise.all([
-      Promise.all(sweep.map((p) => getProjectEarnings(p.id, from))),
+      mapWithConcurrency(sweep, EARNINGS_CONCURRENCY, (p) => getProjectEarnings(p.id, from)),
       (async () => {
         await ensureRuntimeIndexes()
         const col = await runtimeUsageCol()

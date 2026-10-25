@@ -30,6 +30,8 @@ const globalForRuntimeDb = globalThis as unknown as {
   // Shared across module instances (HMR / duplicated bundles) so the index
   // bootstrap runs exactly once per process no matter how many callers race.
   __ataiRuntimeIndexesPromise?: Promise<void>
+  __ataiRuntimeIndexesReady?: boolean
+  __ataiRuntimeIndexesRetryAt?: number
 }
 
 async function getRuntimeDb(): Promise<Db> {
@@ -63,15 +65,32 @@ export async function projectRuntimeConfigCol() {
  * request may fan out to multiple provider calls), by user and by project
  * time-series for dashboards and billing reconciliation.
  */
+const RUNTIME_INDEX_RETRY_COOLDOWN_MS = 60_000
+
 export async function ensureRuntimeIndexes(): Promise<void> {
-  if (!globalForRuntimeDb.__ataiRuntimeIndexesPromise) {
-    globalForRuntimeDb.__ataiRuntimeIndexesPromise = runEnsureRuntimeIndexes().catch((error) => {
-      // Index creation is best-effort — never fail a request over it. Clear the
-      // cached promise so a later call can retry after a transient failure.
-      globalForRuntimeDb.__ataiRuntimeIndexesPromise = undefined
-      console.error("[atai] ensureRuntimeIndexes: failed", error)
-    })
+  if (globalForRuntimeDb.__ataiRuntimeIndexesReady) return
+  if (globalForRuntimeDb.__ataiRuntimeIndexesPromise) return globalForRuntimeDb.__ataiRuntimeIndexesPromise
+  // Same backoff as the core index bootstrap: a transient DB failure must not
+  // make every finance/metering request rebuild every index again.
+  if (
+    globalForRuntimeDb.__ataiRuntimeIndexesRetryAt &&
+    Date.now() < globalForRuntimeDb.__ataiRuntimeIndexesRetryAt
+  ) {
+    return
   }
+
+  globalForRuntimeDb.__ataiRuntimeIndexesPromise = runEnsureRuntimeIndexes()
+    .then(() => {
+      globalForRuntimeDb.__ataiRuntimeIndexesReady = true
+    })
+    .catch((error) => {
+      // Index creation is best-effort — never fail a request over it.
+      console.error("[atai] ensureRuntimeIndexes: failed", error)
+      globalForRuntimeDb.__ataiRuntimeIndexesRetryAt = Date.now() + RUNTIME_INDEX_RETRY_COOLDOWN_MS
+    })
+    .finally(() => {
+      globalForRuntimeDb.__ataiRuntimeIndexesPromise = undefined
+    })
   return globalForRuntimeDb.__ataiRuntimeIndexesPromise
 }
 

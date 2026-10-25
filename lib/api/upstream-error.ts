@@ -14,7 +14,15 @@ export function isTlsClockError(error: unknown): boolean {
 
 export function isDatabaseConnectivityError(error: unknown): boolean {
   const message = errorMessageOf(error)
-  return /mongo|mongodb|topology|server selection|MongoWaitQueueTimeoutError|MongoServerSelectionError|MongoNetworkError|connection <monitor>/i.test(
+  // Driver errors identify themselves by NAME, not always by message — a
+  // pool checkout timeout says only "Timed out while checking out a connection
+  // from connection pool", so matching the message alone turned a transient DB
+  // problem into a generic 500.
+  const name = error instanceof Error ? error.name : ""
+  if (/^Mongo(Network|ServerSelection|WaitQueueTimeout|PoolCleared|Topology|NotConnected|Timeout)/.test(name)) {
+    return true
+  }
+  return /mongo|mongodb|topology|server selection|connection pool|checking out a connection|connection <monitor>/i.test(
     message,
   )
 }
