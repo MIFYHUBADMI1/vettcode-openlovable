@@ -1,6 +1,6 @@
 import { cookies, headers } from "next/headers"
 import { ObjectId } from "mongodb"
-import { sessionsCol, ensureIndexes } from "@/lib/db/collections"
+import { sessionsCol } from "@/lib/db/collections"
 import { generateToken, hashToken } from "@/lib/auth/crypto"
 import { findUserById, type UserDoc } from "@/lib/auth/users"
 import { AppError } from "@/lib/errors"
@@ -42,7 +42,6 @@ function isSecureOrigin(): boolean {
 }
 
 export async function createSession(userId: string): Promise<string> {
-  await ensureIndexes()
   const col = await sessionsCol()
   const token = generateToken()
   const tokenHash = hashToken(token)
