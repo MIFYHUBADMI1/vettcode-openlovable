@@ -54,6 +54,17 @@ export const RUNTIME_OPERATIONS = [
   "send",
   "geocode",
   "reverseGeocode",
+  // Maps expansion wave — full Mapbox coverage for runtime/playground
+  // testing (provider-neutral names; the mapbox adapter translates).
+  "search",
+  "placeDetails",
+  "isochrone",
+  "directions",
+  "matrix",
+  "tilesMetadata",
+  "styleSchema",
+  "staticImage",
+  "tokens",
   // Phase 10 second wave
   "listBookings",
   "createBooking",
@@ -107,7 +118,19 @@ export const CAPABILITY_OPERATIONS: Record<string, readonly RuntimeOperation[] |
   "sms": ["send"],
   "whatsapp": ["send"],
   "notifications": ["send"],
-  "maps": ["geocode", "reverseGeocode"],
+  "maps": [
+    "geocode",
+    "reverseGeocode",
+    "search",
+    "placeDetails",
+    "isochrone",
+    "directions",
+    "matrix",
+    "tilesMetadata",
+    "styleSchema",
+    "staticImage",
+    "tokens",
+  ],
   // Phase 10 second wave
   "calendar": ["listBookings", "createBooking"],
   "vectors": ["upsert", "search", "delete"],

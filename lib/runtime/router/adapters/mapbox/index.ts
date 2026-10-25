@@ -10,8 +10,20 @@ import { registerProviderAdapter } from "@/lib/runtime/router/provider-registry"
 
 export { mapboxAdapter, MAPBOX_PROVIDER_ID } from "./adapter"
 export { isMapboxConfigured } from "./config"
-export { GeocodeInputSchema, ReverseGeocodeInputSchema } from "./mapper"
-export type { MapsResultData, PlaceResultItem } from "./mapper"
+export {
+  GeocodeInputSchema,
+  ReverseGeocodeInputSchema,
+  SearchInputSchema,
+  PlaceDetailsInputSchema,
+  IsochroneInputSchema,
+  DirectionsInputSchema,
+  MatrixInputSchema,
+  TilesInputSchema,
+  StyleSchemaInputSchema,
+  StaticImageInputSchema,
+  TokensInputSchema,
+} from "./mapper"
+export type { MapsResultData, MapsDiagnosticResult, PlaceResultItem } from "./mapper"
 
 /** Register Mapbox as the provider for its capability+operation pairs. */
 export function registerMapboxAdapter(): void {

@@ -29,6 +29,10 @@ interface RunResult {
   latencyMs: number
   requestId?: string
   summary: string
+  capability: string
+  operation: string
+  requestJson?: string
+  debug?: boolean
   responseJson?: string
 }
 
@@ -65,14 +69,15 @@ const CAPABILITY_LABELS: Record<string, string> = {
   "sms": "SMS",
   "whatsapp": "WhatsApp",
   "notifications": "Push notifications",
-  "maps": "Maps & geocoding",
+  "maps": "Maps (Mapbox) — geocoding, search, routing, tiles, styles",
   "calendar": "Scheduling (Cal.com)",
   "vectors": "Vector storage",
   "db": "App database",
   "payments": "Payments (checkout · subscriptions · payment feed · payouts)",
 }
 
-const CAPABILITY_OPERATIONS: Record<string, readonly string[]> = {
+/** Fallback registry snapshot used until GET /api/runtime/v1 resolves. */
+const FALLBACK_CAPABILITY_OPERATIONS: Record<string, readonly string[]> = {
   "ai.text": ["chat", "completion", "embed"],
   "ai.embed": ["embed"],
   "ai.speak": ["synthesize"],
@@ -88,7 +93,19 @@ const CAPABILITY_OPERATIONS: Record<string, readonly string[]> = {
   "sms": ["send"],
   "whatsapp": ["send"],
   "notifications": ["send"],
-  "maps": ["geocode", "reverseGeocode"],
+  "maps": [
+    "geocode",
+    "reverseGeocode",
+    "search",
+    "placeDetails",
+    "isochrone",
+    "directions",
+    "matrix",
+    "tilesMetadata",
+    "styleSchema",
+    "staticImage",
+    "tokens",
+  ],
   "calendar": ["listBookings", "createBooking"],
   "vectors": ["upsert", "search", "delete"],
   "db": ["query", "create", "edit", "delete"],
@@ -110,6 +127,17 @@ const OPERATION_LABELS: Record<string, string> = {
   send: "Send",
   geocode: "Geocode",
   reverseGeocode: "Reverse geocode",
+  // "search" exists as an operation under BOTH maps and vectors — its label is
+  // resolved through the `${capability}/${operation}` key below, not here.
+  "maps/search": "Search box",
+  placeDetails: "Place details",
+  isochrone: "Isochrone",
+  directions: "Directions",
+  matrix: "Travel matrix",
+  tilesMetadata: "Tile reachability",
+  styleSchema: "Style schema",
+  staticImage: "Static image",
+  tokens: "List tokens",
   listBookings: "List bookings",
   createBooking: "Create booking",
   upsert: "Upsert",
@@ -154,6 +182,15 @@ const SAMPLE_INPUTS = (): Record<string, string> => ({
   "notifications/send": JSON.stringify({ token: "<device FCM token>", title: "Hello from Atai", body: "This push was sent through the runtime." }, null, 2),
   "maps/geocode": JSON.stringify({ query: "Kampala", limit: 3 }, null, 2),
   "maps/reverseGeocode": JSON.stringify({ longitude: 32.5828, latitude: 0.3136, limit: 1 }, null, 2),
+  "maps/search": JSON.stringify({ query: "coffee shops in Kampala", limit: 5, longitude: 32.5828, latitude: 0.3136 }, null, 2),
+  "maps/placeDetails": JSON.stringify({ poiId: "<feature id from maps/search>" }, null, 2),
+  "maps/isochrone": JSON.stringify({ coordinates: [32.5828, 0.3136], profile: "driving", minutes: [10, 20, 30] }, null, 2),
+  "maps/directions": JSON.stringify({ coordinates: [[32.5828, 0.3136], [32.5729, 0.3476]], profile: "driving" }, null, 2),
+  "maps/matrix": JSON.stringify({ coordinates: [[32.5828, 0.3136], [32.5729, 0.3476], [32.6005, 0.3002]], profile: "driving" }, null, 2),
+  "maps/tilesMetadata": JSON.stringify({ styleId: "mapbox.streets", z: 12, x: 2292, y: 1836 }, null, 2),
+  "maps/styleSchema": JSON.stringify({ username: "mapbox", styleId: "streets-v12" }, null, 2),
+  "maps/staticImage": JSON.stringify({ longitude: 32.5828, latitude: 0.3136, zoom: 11, width: 600, height: 400, marker: true }, null, 2),
+  "maps/tokens": JSON.stringify({}, null, 2),
   "calendar/listBookings": JSON.stringify({ limit: 10, status: "upcoming" }, null, 2),
   "calendar/createBooking": JSON.stringify({ start: futureDateIso(), attendee: { name: "Ada Tester", email: DEMO_EMAIL, timeZone: "Africa/Kampala" } }, null, 2),
   "vectors/upsert": JSON.stringify({ vectors: [{ id: "doc-1", values: [0.1, 0.2, 0.3], metadata: { kind: "demo" } }] }, null, 2),
@@ -188,6 +225,15 @@ const REQUEST_HINTS: Record<string, string> = {
   "notifications/send": "token (FCM device token), title and body — one device per request.",
   "maps/geocode": "query plus optional limit (≤5), country (ISO 3166, e.g. \"us\") and language tags.",
   "maps/reverseGeocode": "longitude (−180..180) and latitude (−90..90); optional limit.",
+  "maps/search": "Mapbox Search Box: query plus optional limit (≤10), lng/lat bias (ars), types[], bbox, country, language. Results normalize to the same shape as geocode.",
+  "maps/placeDetails": "poiId — a feature id from maps/search. Optional lng/lat proximity bias and language.",
+  "maps/isochrone": "coordinates [lng, lat], profile (driving|walking|cycling), minutes[] (1..240, ≤6). Returns Mapbox GeoJSON under payload — polygons are provider-reported.",
+  "maps/directions": "coordinates — 2..6 ordered [lng, lat] pairs; profile incl. driving-traffic. Optional alternatives. Routes come back under payload.",
+  "maps/matrix": "coordinates — 2..5 [lng, lat] pairs; profile (driving|walking). durations/distance matrices under payload (POST to Mapbox, form-encoded).",
+  "maps/tilesMetadata": "styleId + z/x/y tile coords (0 ≤ x,y < 2^z). Proves the key reaches the tile endpoint; returns byte-size metadata, not the tile content.",
+  "maps/styleSchema": "username + styleId — fetches the full style JSON from Mapbox (layers, sources, glyphs, sprite).",
+  "maps/staticImage": "longitude/latitude/zoom + width/height (≤1280). marker:true drops a pin. The PNG comes back inline as a data URL and renders below.",
+  "maps/tokens": "Lists the tokens on the Mapbox account (verification/diagnostics only — the raw token never appears in any response).",
   "calendar/listBookings": "Read-only. Optional limit (≤50) and status (upcoming | past | cancelled).",
   "calendar/createBooking": "Real side effect — books a meeting in the platform Cal.com account. start must be a future ISO timestamp; eventTypeId defaults to the server-configured event type.",
   "vectors/upsert": "vectors[] of { id, values } — values must match the Cloudflare Vectorize index dimensions. The namespace is derived from your project automatically.",
@@ -221,6 +267,9 @@ export function PlaygroundClient() {
   const [inputText, setInputText] = useState(SAMPLE_INPUTS()["ai.text/chat"] ?? "{}")
   const [running, setRunning] = useState(false)
   const [runs, setRuns] = useState<RunResult[]>([])
+  // Debug mode: attaches metadata.debug so the runtime echoes the raw
+  // provider body (capped) alongside the normalized data — playground only.
+  const [debugMode, setDebugMode] = useState(false)
   // Model choice (ai.text chat/completion only): use the platform-recommended
   // default, or configure a custom OpenRouter model id. One of the two is
   // always required before a chat/completion request can fire.
@@ -230,8 +279,23 @@ export function PlaygroundClient() {
   const supportsModel = capability === "ai.text" && (operation === "chat" || operation === "completion")
   const needsMediaModel = MEDIA_MODEL_CAPABILITIES.has(capability)
 
-  const operations = CAPABILITY_OPERATIONS[capability] ?? []
+  // Discovery-driven registry: GET /api/runtime/v1 is the source of truth;
+  // the static snapshot only covers the window before it resolves.
+  const capabilities = useMemo(() => {
+    if (discovery?.capabilities?.length) {
+      return discovery.capabilities
+        .filter((c) => c.id !== "test")
+        .map((c) => ({ id: c.id, operations: c.operations as readonly string[] }))
+    }
+    return Object.entries(FALLBACK_CAPABILITY_OPERATIONS).map(([id, ops]) => ({ id, operations: ops }))
+  }, [discovery])
+  const operationsById = useMemo(
+    () => Object.fromEntries(capabilities.map((c) => [c.id, c.operations])) as Record<string, readonly string[]>,
+    [capabilities],
+  )
+
   const status = discovery?.availability?.[capability] ?? null
+  const operations = operationsById[capability] ?? []
   const requestKey = `${capability}/${operation}`
   const shapeHint = REQUEST_HINTS[requestKey]
   const opAvailable = status
@@ -251,7 +315,7 @@ export function PlaygroundClient() {
 
   function pickCapability(next: string) {
     setCapability(next)
-    const ops = CAPABILITY_OPERATIONS[next] ?? []
+    const ops = operationsById[next] ?? []
     const op = ops[0] ?? "chat"
     setOperation(op)
     setInputText(SAMPLE_INPUTS()[`${next}/${op}`] ?? "{}")
@@ -304,11 +368,21 @@ export function PlaygroundClient() {
 
     setRunning(true)
     const started = performance.now()
+    const requestJson = JSON.stringify(
+      {
+        capability,
+        operation,
+        input,
+        ...(debugMode ? { metadata: { debug: true } } : {}),
+      },
+      null,
+      2,
+    )
     try {
       const res = await fetch("/api/runtime/v1", {
         method: "POST",
         headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-        body: JSON.stringify({ capability, operation, input }),
+        body: requestJson,
       })
       const latencyMs = Math.round(performance.now() - started)
       const body = (await res.json().catch(() => null)) as
@@ -327,7 +401,11 @@ export function PlaygroundClient() {
             latencyMs,
             requestId: data.requestId,
             summary: `${capability}/${operation} · ${res.status}`,
-            responseJson: JSON.stringify(data.data ?? data, null, 2).slice(0, 4000),
+            capability,
+            operation,
+            requestJson,
+            debug: debugMode,
+            responseJson: JSON.stringify(data.data ?? data, null, 2).slice(0, 16_000),
           },
           ...r,
         ])
@@ -343,13 +421,21 @@ export function PlaygroundClient() {
             status: res.status,
             latencyMs,
             summary,
-            responseJson: JSON.stringify(errBody?.error ?? body, null, 2).slice(0, 4000),
+            capability,
+            operation,
+            requestJson,
+            debug: debugMode,
+            responseJson: JSON.stringify(errBody?.error ?? body, null, 2).slice(0, 16_000),
           },
           ...r,
         ])
         if (errBody?.error?.code === "runtime_capability_unavailable") {
           toast.error(
             "This capability's provider isn't available on this deployment — check the capability coverage panel above for what's missing.",
+          )
+        } else if (errBody?.error?.code === "runtime_pricing_unconfigured") {
+          toast.error(
+            "This operation has no pricing rule yet — an admin must add one under Runtime → Pricing before it can be billed and executed.",
           )
         } else {
           toast.error(errBody?.error?.message ?? `Request failed (${res.status})`)
@@ -365,6 +451,10 @@ export function PlaygroundClient() {
           status: 0,
           latencyMs,
           summary: "network error",
+          capability,
+          operation,
+          requestJson,
+          debug: debugMode,
           responseJson: String(e),
         },
         ...r,
@@ -413,11 +503,11 @@ export function PlaygroundClient() {
           What this deployment can exercise with your key.
         </p>
         <ul className="mt-3 grid gap-1.5 text-xs sm:grid-cols-2">
-          {Object.keys(CAPABILITY_OPERATIONS).map((cap) => {
-            const a = discovery?.availability?.[cap] ?? null
+          {capabilities.map((cap) => {
+            const a = discovery?.availability?.[cap.id] ?? null
             return (
-              <li key={cap} className="flex items-center justify-between gap-2 rounded-lg bg-muted/20 px-3 py-1.5">
-                <span className="truncate font-medium text-foreground">{CAPABILITY_LABELS[cap] ?? cap}</span>
+              <li key={cap.id} className="flex items-center justify-between gap-2 rounded-lg bg-muted/20 px-3 py-1.5">
+                <span className="truncate font-medium text-foreground">{CAPABILITY_LABELS[cap.id] ?? cap.id}</span>
                 {a?.provider === null ? (
                   <span className="shrink-0 text-muted-foreground">no provider yet</span>
                 ) : a?.configured === false ? (
@@ -469,11 +559,11 @@ export function PlaygroundClient() {
               value={capability}
               onChange={(e) => pickCapability(e.target.value)}
             >
-              {Object.keys(CAPABILITY_OPERATIONS).map((c) => {
-                const a = discovery?.availability?.[c] ?? null
+              {capabilities.map((c) => {
+                const a = discovery?.availability?.[c.id] ?? null
                 const suffix = a?.provider === null ? " — no provider yet" : a?.configured === false ? " — needs setup" : ""
                 return (
-                  <option key={c} value={c}>{`[${c}] ${CAPABILITY_LABELS[c] ?? c}${suffix}`}</option>
+                  <option key={c.id} value={c.id}>{`[${c.id}] ${CAPABILITY_LABELS[c.id] ?? c.id}${suffix}`}</option>
                 )
               })}
             </select>
@@ -489,7 +579,7 @@ export function PlaygroundClient() {
               {operations.map((o) => {
                 const opOk = status ? (status.operations.find((s) => s.name === o)?.available ?? true) : true
                 return (
-                  <option key={o} value={o}>{`${OPERATION_LABELS[o] ?? o}${opOk ? "" : " — no provider yet"}`}</option>
+                  <option key={o} value={o}>{`${OPERATION_LABELS[`${capability}/${o}`] ?? OPERATION_LABELS[o] ?? o}${opOk ? "" : " — no provider yet"}`}</option>
                 )
               })}
             </select>
@@ -566,7 +656,7 @@ export function PlaygroundClient() {
             spellCheck={false}
           />
         </label>
-        <div className="mt-3 flex items-center gap-3">
+        <div className="mt-3 flex flex-wrap items-center gap-3">
           <Button type="button" onClick={() => void run()} disabled={running}>
             {running ? (
               <>
@@ -580,6 +670,15 @@ export function PlaygroundClient() {
               </>
             )}
           </Button>
+          <label className="flex items-center gap-2 text-xs text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={debugMode}
+              onChange={(e) => setDebugMode(e.target.checked)}
+              className="size-3.5"
+            />
+            Debug mode — attach raw provider payload (supported capabilities, e.g. maps)
+          </label>
           <p className="text-xs text-muted-foreground">
             POST /api/runtime/v1 — {requestKey}
           </p>
@@ -608,6 +707,24 @@ export function PlaygroundClient() {
                     {r.requestId ? ` · ${r.requestId}` : ""}
                   </span>
                 </div>
+                {r.debug ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    Debug mode on — the response below includes the raw provider payload under <code className="font-mono">raw</code>.
+                  </p>
+                ) : null}
+                {(() => {
+                  const m = r.responseJson?.match(/"dataUrl":\s*"(data:image\/[^"]+)"/)
+                  return m ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={m[1]} alt={`${r.capability}/${r.operation} result`} className="mt-1 max-h-72 rounded-lg border border-border" />
+                  ) : null
+                })()}
+                <details className="text-[11px] text-muted-foreground">
+                  <summary className="cursor-pointer select-none">Request sent</summary>
+                  <pre className="mt-1 max-h-40 overflow-auto rounded-lg bg-muted/30 p-2 font-mono text-[11px] leading-5">
+                    {r.requestJson}
+                  </pre>
+                </details>
                 {r.responseJson ? (
                   <pre className="max-h-64 overflow-auto rounded-lg bg-muted/40 p-2 font-mono text-[11px] leading-5">
                     {r.responseJson}
