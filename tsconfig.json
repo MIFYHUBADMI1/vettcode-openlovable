@@ -29,5 +29,14 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "mirror-site-import"]
+  "exclude": [
+    "node_modules",
+    "mirror-site-import",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/__tests__/**",
+    "packages/atai-sdk/tests/**"
+  ]
 }

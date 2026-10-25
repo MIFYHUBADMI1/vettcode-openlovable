@@ -20,3 +20,11 @@ tsconfig.tsbuildinfo
 
 # One-off agent scratch scripts
 .ohmyagent/tmp-*
+
+# Test files are kept locally but not tracked/deployed
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+**/__tests__/**
+packages/atai-sdk/tests/**
