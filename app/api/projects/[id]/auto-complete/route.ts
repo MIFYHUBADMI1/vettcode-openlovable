@@ -3,6 +3,9 @@ import { store, cryptoId } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { generateText } from "ai"
 import { MODEL } from "@/lib/analysis/model"
+import { requestRawCompletion } from "@/lib/analysis/raw-chat"
+import { logger } from "@/lib/logging/logger"
+import { aiTimeoutUserMessage, describeErrorChain } from "@/lib/api/upstream-error"
 import {
   buildPlanBrief,
   buildSectionFocusBlock,
@@ -15,6 +18,7 @@ import {
   getPlanSection,
   computePlanHealth,
   validatePlanSectionValue,
+  clampPlanSectionValue,
   applySectionUpdate,
   clearSectionUpdate,
   isPlaceholderValue,
@@ -210,24 +214,60 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return fail("INSUFFICIENT_CREDITS", "You don't have enough credits to continue auto-completing.", 402)
     }
 
-    let text: string
+    const prompt = [
+      buildPlanBrief(spec),
+      "",
+      buildSectionFocusBlock(section, spec),
+      "",
+      `Draft the "${def.label}" section now. Return ONLY the JSON object with {"value": ...}.`,
+    ].join("\n")
+
+    let text = ""
+    let aiFailure: unknown = null
     try {
-      const { text: reply } = await generateText({
+      const result = await generateText({
         model: MODEL,
         system: COFOUNDER_AUTOCOMPLETE_SYSTEM,
-        prompt: [
-          buildPlanBrief(spec),
-          "",
-          buildSectionFocusBlock(section, spec),
-          "",
-          `Draft the "${def.label}" section now. Return ONLY the JSON object with {"value": ...}.`,
-        ].join("\n"),
+        prompt,
+        maxOutputTokens: 2048,
+        // Free-tier models intermittently fail to open a connection at all;
+        // one retry cycle is cheaper than a failed section for the founder.
+        maxRetries: 3,
+        abortSignal: AbortSignal.timeout(180_000),
+      })
+      text = result.text
+    } catch (aiError) {
+      aiFailure = aiError
+    }
+
+    // The SDK validates the provider payload strictly and can reject an answer
+    // the model actually wrote. Read it directly before giving up — the
+    // founder should see the draft, not an error.
+    if (!text.trim()) {
+      const salvaged = await requestRawCompletion({
+        system: COFOUNDER_AUTOCOMPLETE_SYSTEM,
+        prompt,
         maxOutputTokens: 2048,
       })
-      text = reply
-    } catch (aiError) {
-      await refundCollaboration(user.id, id, "auto-complete")
-      throw aiError
+      if (salvaged?.text.trim()) {
+        text = salvaged.text
+        logger.warn("api.projects.auto-complete", "recovered draft from the raw provider response", {
+          projectId: id,
+          section,
+          detail: aiFailure ? describeErrorChain(aiFailure).join(" <- ") : "empty completion from SDK",
+        })
+      } else {
+        await refundCollaboration(user.id, id, "auto-complete")
+        if (aiFailure) {
+          logger.error("api.projects.auto-complete", "draft failed", {
+            projectId: id,
+            section,
+            detail: describeErrorChain(aiFailure).join(" <- "),
+          })
+          throw aiFailure
+        }
+        return fail("AI_UNAVAILABLE", aiTimeoutUserMessage(), 503)
+      }
     }
 
     const parsed = parseDraftResponse(text)
@@ -236,7 +276,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       return fail("UNKNOWN", "The co-founder's draft came back unreadable. You can retry — no credits were kept.", 502)
     }
 
-    const validated = validatePlanSectionValue(section, parsed.value)
+    // The length cap protects storage, not quality. A longer draft is real work
+    // the founder already paid for, so trim it to the accepted size instead of
+    // failing the section.
+    const validated = validatePlanSectionValue(section, clampPlanSectionValue(parsed.value))
     if (!validated.ok) {
       await refundCollaboration(user.id, id, "auto-complete")
       return fail("VALIDATION", validated.error, 422)

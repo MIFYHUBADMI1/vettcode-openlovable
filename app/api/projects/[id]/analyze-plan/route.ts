@@ -3,6 +3,9 @@ import { store, cryptoId } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { generateText } from "ai"
 import { MODEL } from "@/lib/analysis/model"
+import { requestRawCompletion } from "@/lib/analysis/raw-chat"
+import { logger } from "@/lib/logging/logger"
+import { aiTimeoutUserMessage, describeErrorChain } from "@/lib/api/upstream-error"
 import {
   buildCollaborateContext,
   COFOUNDER_ANALYZE_SYSTEM,
@@ -71,25 +74,61 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       sourceUrl: project.sourceUrl,
     })
 
-    let text: string
+    let text = ""
+    let aiFailure: unknown = null
     try {
       const result = await generateText({
         model: MODEL,
         system: COFOUNDER_ANALYZE_SYSTEM,
         prompt: context,
         maxOutputTokens: 4096,
+        maxRetries: 3,
+        abortSignal: AbortSignal.timeout(180_000),
       })
       text = result.text
     } catch (aiError) {
-      // Refund the charge taken above — a provider outage must not cost the
-      // user credits (spec section 43: no false success, no lost money).
-      await refundCollaboration(user.id, id, "analysis")
-      throw aiError
+      aiFailure = aiError
+    }
+
+    // The SDK can reject a reply the provider really did write (strict schema
+    // validation on an odd payload). Read it straight from the provider before
+    // treating the run as failed — the founder paid for this analysis.
+    if (!text.trim()) {
+      const salvaged = await requestRawCompletion({
+        system: COFOUNDER_ANALYZE_SYSTEM,
+        prompt: context,
+        maxOutputTokens: 4096,
+      })
+      if (salvaged?.text.trim()) {
+        text = salvaged.text
+        logger.warn("api.projects.analyze-plan", "recovered analysis from the raw provider response", {
+          projectId: id,
+          detail: aiFailure ? describeErrorChain(aiFailure).join(" <- ") : "empty completion from SDK",
+        })
+      } else {
+        // Refund the charge taken above — a provider outage must not cost the
+        // user credits (spec section 43: no false success, no lost money).
+        await refundCollaboration(user.id, id, "analysis")
+        if (aiFailure) {
+          logger.error("api.projects.analyze-plan", "analysis call failed", {
+            projectId: id,
+            detail: describeErrorChain(aiFailure).join(" <- "),
+          })
+          throw aiFailure
+        }
+        return fail("AI_UNAVAILABLE", aiTimeoutUserMessage(), 503)
+      }
     }
 
     const parsed = parseAnalysisResponse(text, spec)
     if (!parsed) {
-      return fail("UNKNOWN", "The analysis came back unreadable. Please try again.", 502)
+      // Nothing usable arrived either way, so the founder keeps their credits.
+      await refundCollaboration(user.id, id, "analysis")
+      logger.warn("api.projects.analyze-plan", "analysis response was unreadable", {
+        projectId: id,
+        length: text.length,
+      })
+      return fail("UNKNOWN", "The analysis came back unreadable. No credits were kept — please try again.", 502)
     }
 
     // Stamp proposals with the REAL current section values.
