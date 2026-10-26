@@ -54,19 +54,15 @@ export default async function CollaboratePage({
               <p className="hidden truncate font-mono text-xs text-primary sm:block">AI Co-Founder · Strengthen your plan together</p>
             </div>
             {/* The status chip has no room in the actions row on phones, so it
-              rides next to the project name instead. */}
-            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 font-mono text-[10px] text-primary sm:hidden">
-              <span className="size-1.5 rounded-full bg-primary animate-pulse" />
-              {project.state === "plan_ready" ? "Plan ready" : project.state.replace(/_/g, " ")}
-            </span>
+              rides next to the project name instead. The client portals the live
+              chip (state + plan quality) into these slots. */}
+            <div id="collab-header-status-xs" className="flex shrink-0 items-center sm:hidden" />
           </div>
 
           <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
-            <span className="hidden shrink-0 sm:inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 font-mono text-xs text-primary">
-              <span className="size-1.5 rounded-full bg-primary animate-pulse" />
-              {project.state === "plan_ready" ? "Plan ready" : project.state.replace(/_/g, " ")}
-            </span>
+            <div id="collab-header-status-sm" className="hidden min-w-0 shrink-0 items-center sm:flex" />
             <div id="collab-header-actions" className="flex min-w-0 flex-1 items-center sm:flex-none" />
+            <div id="collab-header-launch" className="flex min-w-0 shrink-0 items-center" />
           </div>
         </div>
       </div>

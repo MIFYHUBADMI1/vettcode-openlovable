@@ -1842,7 +1842,110 @@ function ChatPanel({
   )
 }
 
-// ─── Launch (restored from the original collaborate client) ──────────────
+// ─── Header: plan status chip (plan quality now lives here, not in the chat column) ──
+
+const QUALITY_TONES = {
+  excellent: { text: "text-emerald-600 dark:text-emerald-400" },
+  good: { text: "text-blue-600 dark:text-blue-400" },
+  acceptable: { text: "text-amber-600 dark:text-amber-400" },
+  needs_work: { text: "text-orange-600 dark:text-orange-400" },
+}
+
+function PlanStatusChip({ state, spec }: { state: string; spec: ApplicationSpecification }) {
+  const [open, setOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const health = useMemo(() => computePlanHealth(spec), [spec])
+  const quality = useMemo(() => calculatePlanQuality(spec), [spec])
+  const tone = QUALITY_TONES[quality.readinessLevel]
+
+  useEffect(() => {
+    if (!open) return
+    function onPointerDown(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false)
+    }
+    document.addEventListener("pointerdown", onPointerDown)
+    document.addEventListener("keydown", onKeyDown)
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown)
+      document.removeEventListener("keydown", onKeyDown)
+    }
+  }, [open])
+
+  const stateLabel = state === "plan_ready" ? "Plan ready" : state.replace(/_/g, " ")
+
+  return (
+    <div ref={rootRef} className="relative min-w-0">
+      <button
+        type="button"
+        onClick={() => setOpen((cur) => !cur)}
+        aria-expanded={open}
+        aria-haspopup="dialog"
+        className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2 py-1 font-mono text-[10px] text-primary transition-colors hover:bg-primary/10 sm:px-3 sm:text-xs"
+      >
+        <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-primary" />
+        <span className="truncate">{stateLabel}</span>
+        <span className={cx("flex shrink-0 items-center gap-0.5 border-l border-current/20 pl-1.5 font-semibold", tone.text)}>
+          <Star className="size-3" aria-hidden />
+          {quality.overallScore}%
+        </span>
+        <ChevronDown className={cx("size-3 shrink-0 opacity-60 transition-transform", open && "rotate-180")} aria-hidden />
+      </button>
+
+      {open && (
+        <div
+          role="dialog"
+          aria-label="Plan quality details"
+          className="absolute right-0 top-full z-50 mt-2 w-[min(20rem,calc(100vw-2rem))] rounded-xl border border-border bg-card p-3 shadow-xl"
+        >
+          <p className={cx("text-xs font-semibold", tone.text)}>
+            Plan quality {quality.overallScore}% · {quality.readinessLevel.replace("_", " ")}
+          </p>
+          <p className="mt-1 text-[11px] leading-4 text-muted-foreground">{quality.readinessMessage}</p>
+
+          {quality.sectionsWithIssues.length > 0 && (
+            <>
+              <p className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Sections needing more detail
+              </p>
+              <div className="mt-1.5 flex flex-col gap-1">
+                {quality.sectionsWithIssues.slice(0, 6).map((section) => (
+                  <div key={section.id} className="flex items-center justify-between gap-3 text-[11px]">
+                    <span className="min-w-0 truncate text-muted-foreground">{section.label}</span>
+                    <span className="shrink-0 font-mono text-muted-foreground">{section.score}%</span>
+                  </div>
+                ))}
+                {quality.sectionsWithIssues.length > 6 && (
+                  <p className="text-[10px] text-muted-foreground">+{quality.sectionsWithIssues.length - 6} more sections</p>
+                )}
+              </div>
+            </>
+          )}
+
+          {health.missing.length > 0 && (
+            <div className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-2" role="status">
+              <p className="text-[11px] font-medium leading-4 text-amber-600 dark:text-amber-400">
+                {health.missing.length} plan section{health.missing.length === 1 ? "" : "s"} still undefined — you can build
+                anyway, but a fuller plan gives the builder more to work with.
+              </p>
+              <p className="mt-1 text-[10px] leading-4 text-amber-600/80 dark:text-amber-400/80">
+                Missing: {health.missing.map((id) => getPlanSection(id)?.label ?? id).join(", ")}
+              </p>
+            </div>
+          )}
+
+          <p className="mt-3 border-t border-border pt-2 text-[10px] text-muted-foreground">
+            Credits will be reserved when the build starts.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Launch (header CTA) ─────────────────────────────────────────────────────
 
 function LaunchButton({
   projectId,
@@ -1857,28 +1960,12 @@ function LaunchButton({
 }) {
   const router = useRouter()
   const [launching, setLaunching] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [showQualityDetails, setShowQualityDetails] = useState(false)
 
-  const health = useMemo(() => computePlanHealth(spec), [spec])
-  const quality = useMemo(() => calculatePlanQuality(spec), [spec])
-  const missingCount = health.missing.length
-
-  const canLaunch = state === "plan_ready"
-
-  // Quality level styling
-  const qualityStyles = {
-    excellent: { bg: "bg-emerald-500/10", border: "border-emerald-500/30", text: "text-emerald-600 dark:text-emerald-400" },
-    good: { bg: "bg-blue-500/10", border: "border-blue-500/30", text: "text-blue-600 dark:text-blue-400" },
-    acceptable: { bg: "bg-amber-500/10", border: "border-amber-500/30", text: "text-amber-600 dark:text-amber-400" },
-    needs_work: { bg: "bg-orange-500/10", border: "border-orange-500/30", text: "text-orange-600 dark:text-orange-400" },
-  }
-  const qStyle = qualityStyles[quality.readinessLevel]
+  if (state !== "plan_ready") return null
 
   async function handleLaunch() {
-    if (!canLaunch || launching) return
+    if (launching) return
     setLaunching(true)
-    setError(null)
     try {
       await postJson(`/api/projects/${projectId}/launch`)
       trackPlanApproved({
@@ -1898,94 +1985,28 @@ function LaunchButton({
         surface: "collaborate_launch",
         errorCode: readErrorCode(e),
       })
-      setError(e instanceof Error ? e.message : "Failed to start build. Please try again.")
+      toast.error(e instanceof Error ? e.message : "Failed to start build. Please try again.")
       setLaunching(false)
     }
   }
 
-  if (!canLaunch) return null
-
   return (
-    <div className="shrink-0 border-t border-border p-3 sm:p-4">
-      {error && (
-        <p className="mb-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive" role="alert">
-          {error}
-        </p>
+    <button
+      onClick={handleLaunch}
+      disabled={launching}
+      title="Credits will be reserved when the build starts."
+      className="inline-flex min-w-0 shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      {launching ? (
+        "Starting build…"
+      ) : (
+        <>
+          <Rocket className="size-3.5 shrink-0" aria-hidden />
+          <span className="sm:hidden">Build</span>
+          <span className="hidden sm:inline">Submit &amp; build</span>
+        </>
       )}
-
-      {/* Quality Score Card */}
-      <div className={cx("mb-3 rounded-lg border", qStyle.border, qStyle.bg)}>
-        <button
-          onClick={() => setShowQualityDetails(!showQualityDetails)}
-          className="w-full px-3 py-2 text-left"
-          type="button"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Star className={cx("size-4", qStyle.text)} aria-hidden />
-              <span className={cx("text-xs font-semibold", qStyle.text)}>
-                Plan Quality: {quality.overallScore}%
-              </span>
-              <span className={cx("text-[10px] uppercase tracking-wide", qStyle.text, "opacity-80")}>
-                {quality.readinessLevel.replace('_', ' ')}
-              </span>
-            </div>
-            <ClipboardList className={cx("size-3", qStyle.text, "opacity-60")} aria-hidden />
-          </div>
-          <p className={cx("mt-1 text-[11px] leading-4", qStyle.text, "opacity-80")}>
-            {quality.readinessMessage}
-          </p>
-        </button>
-
-        {showQualityDetails && quality.sectionsWithIssues.length > 0 && (
-          <div className="border-t border-current/10 px-3 py-2 space-y-1.5">
-            <p className={cx("text-[10px] font-semibold uppercase tracking-wider", qStyle.text)}>
-              Sections needing more detail:
-            </p>
-            {quality.sectionsWithIssues.slice(0, 5).map((section) => (
-              <div key={section.id} className="flex items-center justify-between text-[11px]">
-                <span className={cx(qStyle.text, "opacity-90")}>{section.label}</span>
-                <span className={cx(qStyle.text, "font-mono opacity-70")}>{section.score}%</span>
-              </div>
-            ))}
-            {quality.sectionsWithIssues.length > 5 && (
-              <p className={cx("text-[10px]", qStyle.text, "opacity-70")}>
-                +{quality.sectionsWithIssues.length - 5} more sections
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-
-      {missingCount > 0 && (
-        <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2" role="status">
-          <p className="text-xs font-medium text-amber-600 dark:text-amber-400">
-            {missingCount} plan section{missingCount === 1 ? "" : "s"} still undefined — you can build anyway, but a fuller plan gives the builder more to work with.
-          </p>
-          {health.missing.length > 0 && (
-            <p className="mt-1 text-[11px] leading-4 text-amber-600/80 dark:text-amber-400/80">
-              Missing: {health.missing.map((id) => getPlanSection(id)?.label ?? id).join(", ")}
-            </p>
-          )}
-        </div>
-      )}
-      <button
-        onClick={handleLaunch}
-        disabled={launching}
-        className="w-full min-h-11 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {launching ? (
-          "Starting build…"
-        ) : (
-          <>
-            <Rocket className="size-4" aria-hidden /> Submit Plan & Start Building
-          </>
-        )}
-      </button>
-      <p className="mt-2 text-center text-[10px] text-muted-foreground">
-        Credits will be reserved when the build starts.
-      </p>
-    </div>
+    </button>
   )
 }
 
@@ -2527,11 +2548,16 @@ export function CollaborateClient({
   const [autoDismissed, setAutoDismissed] = useState(false)
   const [autoDiscardConfirm, setAutoDiscardConfirm] = useState(false)
   const autoStopRef = useRef(false)
-  // Header slot for the auto-complete button — resolved after mount since
-  // the header is server-rendered.
-  const [autoHeaderSlot, setAutoHeaderSlot] = useState<HTMLElement | null>(null)
+  // Header slots for the auto-complete button, the live status chip and the
+  // launch CTA — resolved after mount since the header is server-rendered.
+  const [headerSlots, setHeaderSlots] = useState<{ actions: HTMLElement | null; statusXs: HTMLElement | null; statusSm: HTMLElement | null; launch: HTMLElement | null }>({ actions: null, statusXs: null, statusSm: null, launch: null })
   useEffect(() => {
-    setAutoHeaderSlot(document.getElementById("collab-header-actions"))
+    setHeaderSlots({
+      actions: document.getElementById("collab-header-actions"),
+      statusXs: document.getElementById("collab-header-status-xs"),
+      statusSm: document.getElementById("collab-header-status-sm"),
+      launch: document.getElementById("collab-header-launch"),
+    })
   }, [])
   const [mobileView, setMobileView] = useState<"chat" | "plan" | "insights">("chat")
   /** Unsaved inline-editor drafts keyed by section — survives section
@@ -3163,10 +3189,22 @@ export function CollaborateClient({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      {/* Plan quality and the launch CTA live in the page header so the
+          co-founder column keeps its full height. The chip is portal-mounted
+          twice — once for the phone identity row, once for the actions row —
+          and CSS shows only one of them. */}
+      {headerSlots.statusXs ? createPortal(<PlanStatusChip state={projectState} spec={spec} />, headerSlots.statusXs) : null}
+      {headerSlots.statusSm ? createPortal(<PlanStatusChip state={projectState} spec={spec} />, headerSlots.statusSm) : null}
+      {isOwner && !runActive && headerSlots.launch
+        ? createPortal(
+          <LaunchButton projectId={projectId} projectMode={initialProject.mode} state={projectState} spec={spec} />,
+          headerSlots.launch,
+        )
+        : null}
       {/* Auto-complete button — portaled into the page header, where it takes
           the full width of its own row on phones and sits inline from sm up.
           Visible while the founder owns the workspace and a run isn't active. */}
-      {isOwner && autoEstimate && autoEstimate.missingSections.length > 0 && !runActive && autoHeaderSlot
+      {isOwner && autoEstimate && autoEstimate.missingSections.length > 0 && !runActive && headerSlots.actions
         ? createPortal(
           <button
             onClick={startAutoComplete}
@@ -3180,7 +3218,7 @@ export function CollaborateClient({
             )}
             <span className="hidden shrink-0 rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide sm:inline">New</span>
           </button>,
-          autoHeaderSlot,
+          headerSlots.actions,
         )
         : null}
       <div className="flex min-h-0 flex-1 overflow-hidden">
@@ -3247,7 +3285,6 @@ export function CollaborateClient({
               onSpecChanged={setSpec}
             />
           )}
-          {isOwner && !runActive && <LaunchButton projectId={projectId} projectMode={initialProject.mode} state={projectState} spec={spec} />}
         </main>
 
         <aside className="collab-scroll hidden w-80 shrink-0 overflow-y-auto border-l border-border xl:block" aria-label="Plan insights">
@@ -3269,10 +3306,9 @@ export function CollaborateClient({
         </aside>
 
         {/* Phone / tablet: single-column flow with view switcher — the only
-          mount of chat/section/launch below lg, so the plan, the co-founder and
+          mount of chat/section/insights below lg, so the plan, the co-founder and
           the insights all stay reachable at any width. min-h-0 keeps the flex
-          chain height-constrained so each tab panel scrolls internally and the
-          launch button stays pinned. */}
+          chain height-constrained so each tab panel scrolls internally. */}
         <div className="flex w-full min-h-0 flex-col lg:hidden">
           {runActive && autoRun && (
             <div className="flex min-h-0 flex-1 flex-col">
@@ -3389,9 +3425,6 @@ export function CollaborateClient({
                 </div>
               )}
             </div>
-            {/* Pinned below every mobile tab — always reachable, never requires
-            scrolling to the end of a long panel. */}
-            {isOwner && !runActive && <LaunchButton projectId={projectId} projectMode={initialProject.mode} state={projectState} spec={spec} />}
           </div>
         </div>
       </div>
