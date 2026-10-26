@@ -33,30 +33,40 @@ export default async function CollaboratePage({
   const userCredits = user ? (await getBalance(user.id)).total : 0
 
   return (
-    <main className="collab-shell h-dvh h-svh overflow-hidden bg-background text-foreground flex flex-col">
+    <main className="collab-shell collab-safe-b flex min-h-0 flex-col overflow-hidden bg-background text-foreground">
       <AppHeader />
 
       <div className="border-b border-border bg-card/50">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-6 py-4 lg:px-10">
-          <div className="flex items-center gap-3 min-w-0">
+        {/* Phones get two rows: identity on top, actions across the full width
+          below — the auto-complete CTA would otherwise crush the project name. */}
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-2.5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 lg:px-10">
+          <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
             <Link
               href={`/project/${projectId}`}
-              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-accent hover:text-foreground"
+              aria-label="Back to workspace"
+              className="inline-flex size-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-border bg-card text-xs font-medium text-muted-foreground transition-all hover:border-primary/30 hover:bg-accent hover:text-foreground sm:w-auto sm:px-3"
             >
-              <ArrowLeft className="size-3.5" aria-hidden /> Workspace
+              <ArrowLeft className="size-3.5" aria-hidden />
+              <span className="hidden sm:inline">Workspace</span>
             </Link>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1 sm:flex-none">
               <h1 className="truncate text-sm font-semibold text-foreground">{project.name}</h1>
-              <p className="font-mono text-xs text-primary">AI Co-Founder · Strengthen your plan together</p>
+              <p className="hidden truncate font-mono text-xs text-primary sm:block">AI Co-Founder · Strengthen your plan together</p>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 font-mono text-xs text-primary">
+            {/* The status chip has no room in the actions row on phones, so it
+              rides next to the project name instead. */}
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2 py-0.5 font-mono text-[10px] text-primary sm:hidden">
               <span className="size-1.5 rounded-full bg-primary animate-pulse" />
               {project.state === "plan_ready" ? "Plan ready" : project.state.replace(/_/g, " ")}
             </span>
-            <div id="collab-header-actions" className="flex items-center" />
+          </div>
+
+          <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
+            <span className="hidden shrink-0 sm:inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 font-mono text-xs text-primary">
+              <span className="size-1.5 rounded-full bg-primary animate-pulse" />
+              {project.state === "plan_ready" ? "Plan ready" : project.state.replace(/_/g, " ")}
+            </span>
+            <div id="collab-header-actions" className="flex min-w-0 flex-1 items-center sm:flex-none" />
           </div>
         </div>
       </div>

@@ -527,6 +527,82 @@
   }
 }
 
+@keyframes cofounder-step-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cofounder-sheen {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes cofounder-ping {
+  0% {
+    transform: scale(0.9);
+    opacity: .5;
+  }
+
+  70%,
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+.cofounder-worklog {
+  animation: cofounder-step-in 260ms ease-out;
+}
+
+.cofounder-step-in {
+  animation: cofounder-step-in 360ms cubic-bezier(.22, 1, .36, 1) backwards;
+}
+
+.cofounder-progress {
+  position: relative;
+  overflow: hidden;
+  transition: width 650ms cubic-bezier(.22, 1, .36, 1);
+}
+
+.cofounder-progress-live::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / .45), transparent);
+  animation: cofounder-sheen 1.6s ease-in-out infinite;
+}
+
+.cofounder-ping {
+  animation: cofounder-ping 1.6s ease-out infinite;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .cofounder-worklog,
+  .cofounder-step-in,
+  .cofounder-progress-live::after,
+  .cofounder-ping {
+    animation: none;
+  }
+
+  .cofounder-progress {
+    transition: none;
+  }
+}
+
 .workspace-environment {
   position: relative;
   isolation: isolate;
@@ -803,6 +879,21 @@ body:has(.collab-shell) {
 
 .collab-scroll::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+/* Keyboard-aware height. iOS never shrinks the layout viewport for the
+   on-screen keyboard, so a dvh-locked workspace leaves the composer parked
+   behind it. The collaborate client writes --collab-viewport-height from
+   visualViewport, which does shrink; dvh stays as the fallback. */
+.collab-shell {
+  height: var(--collab-viewport-height, 100dvh);
+}
+
+/* Gesture-area inset for the bottom-pinned controls (launch button, composer).
+   Applied once, on the page shell, so each region keeps its own padding on top
+   of the inset. */
+.collab-safe-b {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @keyframes find-bar-in {
