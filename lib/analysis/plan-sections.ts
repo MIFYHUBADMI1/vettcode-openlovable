@@ -1,5 +1,5 @@
 import type { ApplicationSpecification } from "@/lib/types/specification"
-import type { BusinessPlanField } from "@/lib/types/specification"
+import type { BusinessPlanField, CoreFlow, SpecDataEntity, SuggestedFeature } from "@/lib/types/specification"
 import { isRuntimeIntegrationsGrounded } from "@/lib/analysis/runtime-capabilities"
 
 /**
@@ -313,11 +313,15 @@ export function clearSectionUpdate(
     "revenueModel",
     "runtimeIntegrations",
     "marketPositioning",
+    "brandIdentity",
+    "themePreferences",
     "marketingPlan",
     "launchPlan",
     "growthPlan",
   ])
   if (sectionId === "seo") return { ...spec, seoPlan: "" }
+  // Pricing & Tiers reads pricingStructure — the field the build consumes.
+  if (sectionId === "pricingTiers") return { ...spec, pricingStructure: "" }
   if (businessFields.has(sectionId)) {
     return { ...spec, [sectionId]: "" }
   }
@@ -331,11 +335,88 @@ export function clearSectionUpdate(
   }
 }
 
+// ─── Structured list sections (features / flows / data) ──────────────────────
+//
+// These three sections render a comma-separated list of names, so a manual
+// save must update the typed catalog those names come from. AI proposals keep
+// the older behaviour (append their prose to additionalInstructions) because
+// they carry instructions, not a replacement catalog.
+
+function splitListValue(value: string): string[] {
+  const seen = new Set<string>()
+  const parts: string[] = []
+  for (const raw of value.split(",")) {
+    const part = raw.trim()
+    if (!part) continue
+    const key = part.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    parts.push(part)
+  }
+  return parts
+}
+
+function uniqueFeatureKey(label: string, used: Set<string>): string {
+  const base = label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "feature"
+  let key = base
+  let suffix = 2
+  while (used.has(key)) key = `${base}-${suffix++}`
+  used.add(key)
+  return key
+}
+
+function mergeFeatureCatalog(existing: SuggestedFeature[], value: string): SuggestedFeature[] {
+  const labels = splitListValue(value)
+  const byLabel = new Map(existing.map((f) => [f.label.toLowerCase(), f]))
+  const used = new Set(existing.map((f) => f.key))
+  const selected = labels.map((label) => {
+    const match = byLabel.get(label.toLowerCase())
+    return match
+      ? { ...match, label, enabled: true }
+      : { key: uniqueFeatureKey(label, used), label, description: undefined, enabled: true }
+  })
+  // Features the founder removed stay in the catalog but disabled, so their
+  // descriptions survive and re-adding them is lossless.
+  const keptOff = existing
+    .filter((f) => !labels.some((label) => label.toLowerCase() === f.label.toLowerCase()))
+    .map((f) => ({ ...f, enabled: false }))
+  return [...selected, ...keptOff]
+}
+
+function mergeFlowList(existing: CoreFlow[], value: string): CoreFlow[] {
+  const names = splitListValue(value)
+  const byName = new Map(existing.map((f) => [f.name.toLowerCase(), f]))
+  return names.map((name) => {
+    const match = byName.get(name.toLowerCase())
+    return match ? { ...match, name } : { name, description: undefined }
+  })
+}
+
+function mergeEntityList(existing: SpecDataEntity[], value: string): SpecDataEntity[] {
+  const names = splitListValue(value)
+  const byName = new Map(existing.map((e) => [e.name.toLowerCase(), e]))
+  return names.map((name) => {
+    const match = byName.get(name.toLowerCase())
+    return match ? { ...match, name } : { name, description: undefined, fields: [] }
+  })
+}
+
+export interface ApplySectionUpdateOptions {
+  /**
+   * "manual" — the founder edited the section in the workspace, so a list of
+   * names replaces the structured catalog.
+   * "proposal" (default) — an AI-authored change; list sections keep their
+   * catalog and the prose is recorded as extra build instructions.
+   */
+  mode?: "manual" | "proposal"
+}
+
 /** Apply an approved section update to a specification immutably. */
 export function applySectionUpdate(
   spec: ApplicationSpecification,
   sectionId: PlanSectionId,
   value: string,
+  options?: ApplySectionUpdateOptions,
 ): ApplicationSpecification {
   const businessFields = new Set<string>([
     "vision",
@@ -346,6 +427,8 @@ export function applySectionUpdate(
     "revenueModel",
     "runtimeIntegrations",
     "marketPositioning",
+    "brandIdentity",
+    "themePreferences",
     "launchPlan",
     "marketingPlan",
     "growthPlan",
@@ -353,25 +436,31 @@ export function applySectionUpdate(
   // The SEO & Search section stores under seoPlan — the plan content itself
   // is kept verbatim and becomes mandatory build instructions.
   if (sectionId === "seo") return { ...spec, seoPlan: value }
+  // Pricing & Tiers reads pricingStructure — the field the build consumes.
+  if (sectionId === "pricingTiers") return { ...spec, pricingStructure: value }
   if (businessFields.has(sectionId)) {
     return { ...spec, [sectionId]: value }
   }
+  const manual = options?.mode === "manual"
   switch (sectionId) {
     case "overview":
       return { ...spec, description: value }
     case "targetUsers":
       return { ...spec, targetUsers: value.split(",").map((v) => v.trim()).filter(Boolean) }
     case "features": {
+      if (manual) return { ...spec, suggestedFeatures: mergeFeatureCatalog(spec.suggestedFeatures, value) }
       // Section-level features editing stays in the plan editor; proposals
       // here append instructions rather than corrupt the feature catalog.
       const note = `Key features: ${value}`
       return { ...spec, additionalInstructions: spec.additionalInstructions ? `${spec.additionalInstructions}\n${note}` : note }
     }
     case "flows": {
+      if (manual) return { ...spec, coreFlows: mergeFlowList(spec.coreFlows, value) }
       const note = `User flows: ${value}`
       return { ...spec, additionalInstructions: spec.additionalInstructions ? `${spec.additionalInstructions}\n${note}` : note }
     }
     case "data": {
+      if (manual) return { ...spec, dataEntities: mergeEntityList(spec.dataEntities, value) }
       const note = `Data model: ${value}`
       return { ...spec, additionalInstructions: spec.additionalInstructions ? `${spec.additionalInstructions}\n${note}` : note }
     }

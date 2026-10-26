@@ -394,12 +394,6 @@ export async function applyPlanSectionUpdate(
     return { ok: false, status: 409, code: "VALIDATION", message: "This project has no plan yet." }
   }
 
-  const nextSpec = applySectionUpdate(current, section as PlanSectionId, validated.value)
-  const reparsed = ApplicationSpecificationSchema.safeParse(nextSpec)
-  if (!reparsed.success) {
-    return { ok: false, status: 422, code: "VALIDATION", message: "The proposed value is invalid for this section." }
-  }
-
   let decisionNote: string | null = null
   let acceptedProposal: PlanProposal | null = null
   if (params.acceptedProposal) {
@@ -407,6 +401,15 @@ export async function applyPlanSectionUpdate(
     decisionNote = acceptedProposal
       ? decisionForProposal(acceptedProposal)
       : `Updated ${getPlanSection(section)?.label ?? section}`
+  }
+
+  // Accepted proposals carry AI prose; direct edits replace list catalogs.
+  const nextSpec = applySectionUpdate(current, section as PlanSectionId, validated.value, {
+    mode: acceptedProposal ? "proposal" : "manual",
+  })
+  const reparsed = ApplicationSpecificationSchema.safeParse(nextSpec)
+  if (!reparsed.success) {
+    return { ok: false, status: 422, code: "VALIDATION", message: "The proposed value is invalid for this section." }
   }
 
   const patch: Record<string, unknown> = {

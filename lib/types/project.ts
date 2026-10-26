@@ -195,6 +195,9 @@ export interface MirrorProject {
   planAnalysis?: PlanAnalysis
   /** Accepted plan-change decisions, fed back into the AI context. */
   planUpdateNotes?: string[]
+  /** Set once the legacy `conversation` history has been imported into the
+   * project-scoped chat threads, so deleting that thread cannot resurrect it. */
+  collabChatHistoryImportedAt?: number
   /** GitHub mode: README content from the repository */
   githubReadme?: string
   /** GitHub mode: structured file tree string */

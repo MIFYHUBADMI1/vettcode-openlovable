@@ -455,7 +455,6 @@ Be complete — this becomes the database schema in the built app.`,
 - Email + Password?
 - Google OAuth?
 - Magic link (passwordless email)?
-- Phone/SMS?
 Which are enabled?
 
 **Login Options**:
@@ -639,15 +638,72 @@ Rules:
 const SECTION_ID_SET = new Set(PLAN_SECTIONS.flatMap((d) => [d.id as string]))
 
 /** Extract the optional <plan-update> block from a chat reply. */
+/**
+ * Read one string field out of a JSON object the provider never finished
+ * writing. Walks the literal honouring escapes and stops at the closing quote
+ * or wherever the response ran out — so a draft cut at the token limit is still
+ * usable instead of being thrown away.
+ */
+function readJsonStringField(fragment: string, key: string): string {
+  const keyIdx = fragment.search(new RegExp(`"${key}"\\s*:\\s*"`))
+  if (keyIdx < 0) return ""
+  const raw = fragment.slice(fragment.indexOf('"', fragment.indexOf(':', keyIdx)) + 1)
+  let value = ""
+  for (let i = 0; i < raw.length; i++) {
+    const ch = raw[i]
+    if (ch === "\\") {
+      const next = raw[++i]
+      if (next === undefined) break
+      if (next === "u") {
+        const hex = raw.slice(i + 1, i + 5)
+        if (!/^[0-9a-fA-F]{4}$/.test(hex)) break
+        value += String.fromCharCode(parseInt(hex, 16))
+        i += 4
+        continue
+      }
+      value += next === "n" ? "\n" : next === "t" ? "\t" : next === "r" ? "\r" : next
+      continue
+    }
+    if (ch === '"') break
+    value += ch
+  }
+  return value.trim()
+}
+
+type ParsedPlanUpdate = { section: string; proposedValue: string; reason: string } | null
+
+/**
+ * Recover a `<plan-update>` block the provider never finished writing.
+ *
+ * Long section drafts exceed the output limit mid-string, so the JSON is valid
+ * up to the cut. Without this the whole proposal is thrown away and the founder
+ * loses the Add-to-plan card for an answer they can see — so read the fields we
+ * have and close the string where it stopped.
+ */
+function parsePartialPlanUpdate(fragment: string): ParsedPlanUpdate {
+  const section = fragment.match(/"section"\s*:\s*"([^"]*)"/)?.[1] ?? ""
+  const proposedValue = readJsonStringField(fragment, "proposedValue")
+  if (!section || !proposedValue) return null
+  const reason = fragment.match(/"reason"\s*:\s*"([^"]*)"/)?.[1]?.trim() || "Drafted by the co-founder."
+  return { section, proposedValue, reason }
+}
+
 export function parseChatProposal(
   reply: string,
-): { cleanReply: string; proposal: { section: string; proposedValue: string; reason: string } | null } {
-  const match = reply.match(/<plan-update>([\s\S]*?)<\/plan-update>/)
-  if (!match) return { cleanReply: reply.trim(), proposal: null }
+): { cleanReply: string; proposal: ParsedPlanUpdate } {
+  const blockStart = reply.indexOf("<plan-update>")
+  if (blockStart === -1) return { cleanReply: reply.trim(), proposal: null }
 
-  let proposal: { section: string; proposedValue: string; reason: string } | null = null
+  const afterTag = blockStart + "<plan-update>".length
+  const closeTag = reply.indexOf("</plan-update>", afterTag)
+  const fragment = closeTag === -1 ? reply.slice(afterTag) : reply.slice(afterTag, closeTag)
+  // Everything from the opening tag onward is protocol, complete or not.
+  const prose = closeTag === -1 ? "" : reply.slice(closeTag + "</plan-update>".length)
+  const cleanReply = (reply.slice(0, blockStart) + prose.replace(/<plan-update>[\s\S]*$/, "")).trim()
+
+  let proposal: ParsedPlanUpdate = null
   try {
-    const raw = JSON.parse(match[1].trim()) as Record<string, unknown>
+    const raw = JSON.parse(fragment.trim()) as Record<string, unknown>
     const section = typeof raw.section === "string" ? raw.section : ""
     const proposedValue = typeof raw.proposedValue === "string" ? raw.proposedValue : ""
     const reason = typeof raw.reason === "string" ? raw.reason : ""
@@ -655,10 +711,10 @@ export function parseChatProposal(
       proposal = { section, proposedValue: proposedValue.trim(), reason: reason.trim() || "Improves the plan." }
     }
   } catch {
-    proposal = null // malformed AI output is discarded, reply still shown
+    proposal = parsePartialPlanUpdate(fragment)
   }
 
-  const cleanReply = reply.replace(/<plan-update>[\s\S]*?<\/plan-update>/g, "").trim()
+  if (proposal && !SECTION_ID_SET.has(proposal.section)) proposal = null
   return { cleanReply, proposal }
 }
 
@@ -787,7 +843,7 @@ You will receive the project's compact plan brief (every section, one line each)
 Write the complete replacement text for the focus section:
 - Business language, concrete and specific to THIS business — no generic filler, no technical jargon.
 - 2-5 short paragraphs or tight bullet points. This is a founder's plan, not an essay.
-- For the "Runtime & Integrations" section: write THIS product's Atai runtime contract, not a generic architecture list. Always include (1) @atai-group/sdk, (2) ATAI_API_KEY that Atai provisions for unified access, (3) origin https://atai.ink and path /api/runtime/v1, (4) only catalog capabilities this product genuinely needs, each named as capability id and SDK call (e.g. ai.text / atai.ai.chat) plus one sentence on what it does here. Never list generic infrastructure (data storage, file storage, websockets, background jobs, admin dashboards, logging, unnamed third-party APIs). Never mention OpenAI, Stripe, Twilio, Resend, or other provider keys. End-user sign-in stays the app's built-in auth. If no catalog capability applies, say so and still name the SDK and ATAI_API_KEY.
+- For the "Runtime & Integrations" section: write THIS product's Atai runtime contract, not a generic architecture list. Always include (1) @atai-group/sdk, (2) ATAI_API_KEY that Atai provisions for unified access, (3) origin https://atai.ink and path /api/runtime/v1, (4) only catalog capabilities this product genuinely needs, each named as capability id and SDK call (e.g. ai.text / atai.ai.chat) plus one sentence on what it does here. Never list generic infrastructure (data storage, file storage, websockets, background jobs, admin dashboards, logging, unnamed third-party APIs). Never mention OpenAI, Stripe, Resend, or other provider keys. End-user sign-in stays the app's built-in auth. If no catalog capability applies, say so and still name the SDK and ATAI_API_KEY.
 - For the "SEO & Search" section: derive everything from the brief — target keywords from what the product actually does and who it serves, the pages those keywords map to, on-page metadata (titles and descriptions), whether a blog or content pages genuinely help THIS business, local or niche directories if relevant, and verifying the deployed domain in Google Search Console. Concrete and specific — never generic SEO advice.
 - If the plan lacks information you would need, choose sensible defaults consistent with the brief rather than asking questions — the founder can edit anything afterwards.
 - Same language as the plan brief.
@@ -802,18 +858,26 @@ export function parseDraftResponse(text: string): { value: string } | null {
   const candidate = fenceMatch ? fenceMatch[1] : text
   const braceStart = candidate.indexOf("{")
   const braceEnd = candidate.lastIndexOf("}")
-  if (braceStart === -1 || braceEnd <= braceStart) {
-    // Tolerate a bare-text reply — if the model skipped the JSON entirely,
-    // non-empty prose is still a usable draft.
-    const bare = text.trim()
-    if (bare && !bare.startsWith("<")) return { value: bare }
+  if (braceStart !== -1 && braceEnd > braceStart) {
+    try {
+      const raw = JSON.parse(candidate.slice(braceStart, braceEnd + 1)) as { value?: unknown }
+      const value = typeof raw.value === "string" ? raw.value.trim() : ""
+      return value ? { value } : null
+    } catch {
+      const value = readJsonStringField(candidate, "value")
+      return value ? { value } : null
+    }
+  }
+  // An opening brace with no closing one means the draft hit the output limit —
+  // take the text the model wrote instead of refunding and failing the section.
+  if (braceStart !== -1) {
+    const value = readJsonStringField(candidate, "value")
+    if (value) return { value }
     return null
   }
-  try {
-    const raw = JSON.parse(candidate.slice(braceStart, braceEnd + 1)) as { value?: unknown }
-    const value = typeof raw.value === "string" ? raw.value.trim() : ""
-    return value ? { value } : null
-  } catch {
-    return null
-  }
+  // Tolerate a bare-text reply — if the model skipped the JSON entirely,
+  // non-empty prose is still a usable draft.
+  const bare = text.trim()
+  if (bare && !bare.startsWith("<")) return { value: bare }
+  return null
 }

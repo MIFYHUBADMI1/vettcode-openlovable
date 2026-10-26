@@ -2,15 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
-import { Sparkles, X, ArrowUp, Loader2 } from "lucide-react"
+import { Sparkles, X, ArrowUp, Loader2, Mic } from "lucide-react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CofounderActionCard } from "@/components/cofounder/action-cards"
+import { CofounderWorklog, buildCofounderWorklogSteps } from "@/components/cofounder/cofounder-worklog"
 import { jsonFetcher } from "@/lib/client/api"
 import { sendCofounderMessage } from "@/lib/client/cofounder"
+import { useVoiceDictation } from "@/lib/client/use-voice-dictation"
 import { resolveNavigationTarget } from "@/lib/navigation/routes"
 import type { CofounderConversationMessage } from "@/lib/cofounder/types"
 import { cn } from "@/lib/utils"
@@ -81,7 +83,10 @@ export function CofounderPanel() {
   const [sending, setSending] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const scrollRef = useRef<HTMLDivElement>(null)
+  const [lastRun, setLastRun] = useState<{ id: number; message: string } | null>(null)
+  const [worklogVisible, setWorklogVisible] = useState(false)
+  const bottomRef = useRef<HTMLDivElement>(null)
+  const dictation = useVoiceDictation({ value: draft, setValue: setDraft })
 
   // Expose the imperative opener.
   useEffect(() => {
@@ -126,11 +131,33 @@ export function CofounderPanel() {
   // the co-founder follows the founder across surfaces (spec section 48).
   const routeContext = useMemo(() => surfaceFromPathname(pathname), [pathname])
 
-  // Auto-scroll to the newest message.
+  // Auto-scroll to the newest message. The ScrollArea viewport owns the
+  // scroll (the inner content div does not), so anchor to a sentinel and let
+  // the viewport follow it — including when the worklog appears.
   useEffect(() => {
-    const el = scrollRef.current
-    if (el) el.scrollTop = el.scrollHeight
-  }, [messages, sending])
+    const anchor = bottomRef.current
+    if (!anchor) return
+    const viewport = anchor.closest<HTMLElement>('[data-slot="scroll-area-viewport"]')
+    if (viewport) viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" })
+    else anchor.scrollIntoView({ behavior: "smooth", block: "end" })
+  }, [messages, sending, worklogVisible, loading])
+
+  // Keep the completed worklog on screen briefly, then return to the
+  // transcript; failures hide it immediately (the error card replaces it).
+  useEffect(() => {
+    if (sending) {
+      setWorklogVisible(true)
+      return
+    }
+    if (!worklogVisible) return
+    const timer = window.setTimeout(() => setWorklogVisible(false), 900)
+    return () => window.clearTimeout(timer)
+  }, [sending, worklogVisible])
+
+  const worklogSteps = useMemo(
+    () => (lastRun ? buildCofounderWorklogSteps({ message: lastRun.message, surface: "workspace" }) : []),
+    [lastRun],
+  )
 
   // Follow structured navigation results (spec section 65). The model never
   // produces an href — the client resolves the target through the registry.
@@ -153,11 +180,16 @@ export function CofounderPanel() {
   )
 
   async function handleSend() {
-    const text = draft.trim()
+    // Catch a sentence the user finished speaking but didn't finalize before
+    // hitting send — the interim transcript is not in the field yet.
+    const pendingSpeech = dictation.listening ? dictation.partial.trim() : ""
+    const text = [draft.trim(), pendingSpeech].filter(Boolean).join(" ")
     if (!text || sending) return
+    if (dictation.listening) dictation.stop()
     setSending(true)
     setError(null)
     setDraft("")
+    setLastRun({ id: Date.now(), message: text })
     // Optimistic user message for immediate feedback; the server response
     // replaces the tail with the persisted canonical messages.
     const optimistic: CofounderConversationMessage = {
@@ -192,7 +224,13 @@ export function CofounderPanel() {
   const hour = new Date().getHours()
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) dictation.stop()
+        setOpen(next)
+      }}
+    >
       <DialogContent
         showCloseButton={false}
         className={cn(
@@ -225,7 +263,7 @@ export function CofounderPanel() {
 
         {/* Conversation */}
         <ScrollArea className="min-h-0 flex-1">
-          <div ref={scrollRef} className="flex flex-col gap-3 px-4 py-4">
+          <div className="flex flex-col gap-3 px-4 py-4">
             {loading ? (
               <div className="space-y-2 py-4">
                 <Skeleton className="h-4 w-3/4" />
@@ -242,17 +280,23 @@ export function CofounderPanel() {
               </div>
             ) : (
               messages.map((m) => (
-                <div key={m.id} className={cn("flex flex-col", m.role === "user" ? "items-end" : "items-start")}>
-                  <div
-                    className={cn(
-                      "max-w-[85%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm",
-                      m.role === "user"
-                        ? "rounded-br-md bg-primary text-primary-foreground"
-                        : "rounded-bl-md border border-border bg-card",
-                    )}
-                  >
-                    {m.content}
-                  </div>
+                <div key={m.id} className={cn("flex flex-col gap-2", m.role === "user" ? "items-end" : "items-start")}>
+                  {m.role === "assistant" ? (
+                    <div className="w-full">
+                      <p className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                        <Sparkles className="size-3 text-primary" aria-hidden />
+                        Co-founder
+                      </p>
+                      <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">{m.content}</p>
+                    </div>
+                  ) : (
+                    <div className="max-w-[88%] text-right">
+                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70">
+                        You
+                      </p>
+                      <p className="whitespace-pre-wrap text-sm leading-6 text-foreground/80">{m.content}</p>
+                    </div>
+                  )}
                   {m.action ? (
                     <div className="w-full max-w-[95%]">
                       <CofounderActionCard
@@ -268,37 +312,117 @@ export function CofounderPanel() {
                 </div>
               ))
             )}
-            {sending ? (
-              <div className="flex items-start">
-                <div className="flex items-center gap-2 rounded-2xl rounded-bl-md border border-border bg-card px-3.5 py-2.5 text-sm text-muted-foreground">
-                  <Loader2 className="size-3.5 animate-spin" /> Thinking…
-                </div>
-              </div>
+            {lastRun && worklogVisible && !error ? (
+              <CofounderWorklog key={lastRun.id} steps={worklogSteps} active={sending} />
             ) : null}
             {error ? (
               <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
                 {error}
               </div>
             ) : null}
+            <div ref={bottomRef} aria-hidden />
           </div>
         </ScrollArea>
 
         {/* Composer */}
         <div className="border-t border-border px-3 py-3">
-          <div className="flex items-end gap-2 rounded-2xl border border-border bg-background px-3 py-2 focus-within:border-ring">
+          {dictation.listening ? (
+            <div
+              className="voice-panel mb-2 flex items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-3 py-2"
+              role="status"
+              aria-live="polite"
+            >
+              <span className="relative grid size-8 shrink-0 place-items-center rounded-full bg-primary/10">
+                <span className="voice-halo absolute inset-0 rounded-full border border-primary/40" aria-hidden />
+                <span className="flex h-4 items-end gap-[3px]" aria-hidden>
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <span
+                      key={i}
+                      className="voice-bar w-[3px] rounded-full bg-primary"
+                      style={{
+                        height: `${Math.max(4, Math.min(18, 5 + dictation.level * 64 + (i % 2 === 0 ? 3 : 0)))}px`,
+                      }}
+                    />
+                  ))}
+                </span>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+                  Listening
+                </span>
+                <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                  {dictation.partial ? (
+                    <>
+                      {dictation.partial}
+                      <span
+                        className="voice-caret ml-0.5 inline-block h-3 w-px translate-y-0.5 bg-primary align-middle"
+                        aria-hidden
+                      />
+                    </>
+                  ) : (
+                    "Speak — each phrase lands in the box as you finish it."
+                  )}
+                </span>
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={dictation.stop}
+                className="h-7 shrink-0 px-2.5 text-xs"
+              >
+                Stop
+              </Button>
+            </div>
+          ) : null}
+          <div
+            className={cn(
+              "flex items-end gap-2 rounded-2xl border border-border bg-background px-3 py-2 transition-[border-color,box-shadow] duration-200 focus-within:border-ring",
+              dictation.listening && "border-primary/50 ring-2 ring-primary/15",
+            )}
+          >
             <Textarea
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
+              onChange={(e) => dictation.typeText(e.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Message your co-founder…"
+              placeholder={dictation.listening ? "Listening — speak now…" : "Message your co-founder…"}
               aria-label="Message your co-founder"
               rows={1}
               className="max-h-32 min-h-6 flex-1 resize-none border-0 p-0 text-sm shadow-none focus-visible:ring-0 dark:bg-transparent"
             />
-            <Button size="icon-sm" onClick={() => void handleSend()} disabled={sending || draft.trim().length === 0} aria-label="Send message">
+            <Button
+              type="button"
+              size="icon-sm"
+              variant="ghost"
+              onClick={dictation.toggle}
+              disabled={sending}
+              aria-pressed={dictation.listening}
+              aria-label={dictation.listening ? "Stop voice input" : "Voice input"}
+              className={cn(
+                "relative shrink-0 text-muted-foreground hover:text-foreground",
+                dictation.listening &&
+                  "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+              )}
+            >
+              {dictation.listening ? (
+                <span className="voice-halo absolute -inset-1 rounded-full border border-primary/50" aria-hidden />
+              ) : null}
+              <Mic className={cn("size-4", dictation.listening && "relative")} />
+            </Button>
+            <Button
+              size="icon-sm"
+              onClick={() => void handleSend()}
+              disabled={sending || (draft.trim().length === 0 && !dictation.partial.trim())}
+              aria-label="Send message"
+            >
               {sending ? <Loader2 className="size-4 animate-spin" /> : <ArrowUp className="size-4" />}
             </Button>
           </div>
+          {dictation.error ? (
+            <p role="alert" className="mt-1.5 px-1 text-[11px] text-destructive">
+              {dictation.error}
+            </p>
+          ) : null}
           <p className="mt-1.5 px-1 text-[11px] text-muted-foreground">
             I&apos;ll ask before anything consequential — projects, plans, builds, deployments.{" "}
             <a

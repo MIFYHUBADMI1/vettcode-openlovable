@@ -9,6 +9,7 @@ import type {
 } from "@/lib/feature-requests/types"
 import type { MirrorProject, BuildRun } from "@/lib/types/project"
 import type { CofounderConversationMongoDoc, PendingActionRecord } from "@/lib/cofounder/types"
+import type { ProjectChatMongoDoc } from "@/lib/types/collab-chat"
 import type { CreditLedgerEntry, BuildAuthorization, PaymentRecord, SubscriptionRecord } from "@/lib/billing/billing-types"
 
 /** Cache the Db reference across hot reloads so we don't re-resolve per call. */
@@ -203,6 +204,11 @@ export async function cofounderConversationsCol() {
 
 export async function cofounderPendingActionsCol() {
   return (await getDbCached()).collection<PendingActionRecord>("cofounder_pending_actions")
+}
+
+/** Project-scoped co-founder conversation threads (Collaborate workspace). */
+export async function projectChatsCol() {
+  return (await getDbCached()).collection<ProjectChatMongoDoc>("project_chats")
 }
 
 // ─── Type Definitions for Firecrawl Cache ────────────────────────────────────
@@ -540,6 +546,7 @@ async function runEnsureIndexes(): Promise<void> {
   // efficient, ownership-scoped pending-action claims.
   const cofounderConversations = await cofounderConversationsCol()
   const cofounderPendingActions = await cofounderPendingActionsCol()
+  const projectChats = await projectChatsCol()
   await batchedIndexCreation([
     cofounderConversations.createIndex({ id: 1 }, { unique: true, sparse: true, name: "cofounder_conversations_id_unique" }),
     cofounderConversations.createIndex({ userId: 1, updatedAt: -1 }),
@@ -547,6 +554,8 @@ async function runEnsureIndexes(): Promise<void> {
     cofounderPendingActions.createIndex({ userId: 1, status: 1, createdAt: -1 }),
     cofounderPendingActions.createIndex({ conversationId: 1, status: 1 }),
     cofounderPendingActions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0, sparse: true }),
+    projectChats.createIndex({ id: 1 }, { unique: true, name: "project_chats_id_unique" }),
+    projectChats.createIndex({ projectId: 1, userId: 1, updatedAt: -1 }),
   ])
 
   await batchedIndexCreation([

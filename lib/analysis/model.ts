@@ -1,9 +1,11 @@
 ﻿import { createOpenAICompatible } from "@ai-sdk/openai-compatible"
 
+export const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+
 const openrouter = createOpenAICompatible({
   name: "openrouter",
   apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: "https://openrouter.ai/api/v1",
+  baseURL: OPENROUTER_BASE_URL,
 })
 
 /** 
@@ -17,6 +19,9 @@ const modelName = process.env.OPENROUTER_MODEL
   || "openrouter/auto"
 
 export const MODEL = openrouter.chatModel(modelName)
+
+/** The resolved id, for callers that need the raw HTTP shape (see raw-chat). */
+export const MODEL_ID = modelName
 
 console.log(`[AI Model] Using: ${modelName}`)
 

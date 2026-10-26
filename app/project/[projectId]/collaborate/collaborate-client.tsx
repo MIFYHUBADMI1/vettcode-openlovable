@@ -1,14 +1,16 @@
 "use client"
 
-import { useState, useRef, useEffect, useMemo, useCallback } from "react"
+import { useState, useRef, useEffect, useMemo, useCallback, type KeyboardEvent as ReactKeyboardEvent } from "react"
 import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { CofounderMarkdown } from "@/components/cofounder/markdown"
+import { CofounderWorklog, buildCofounderWorklogSteps } from "@/components/cofounder/cofounder-worklog"
 import { PricingTierBuilder } from "@/components/collaborate/pricing-tier-builder"
 import { ThemeBuilder } from "@/components/collaborate/theme-builder"
 import { ExpectedVisuals } from "@/components/collaborate/expected-visuals"
-import { postJson, patchJson, jsonFetcher } from "@/lib/client/api"
+import { postJson, patchJson, deleteJson, jsonFetcher } from "@/lib/client/api"
+import { useVoiceDictation } from "@/lib/client/use-voice-dictation"
 import {
   readErrorCode,
   trackPlanApproved,
@@ -25,8 +27,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import type { Project } from "@/lib/types/project"
+import type { Project, ProjectEvent } from "@/lib/types/project"
+import type { ProjectChat, ProjectChatSummary } from "@/lib/types/collab-chat"
 import type { ApplicationSpecification } from "@/lib/types/specification"
+import { buildJourneySteps } from "@/lib/workspace/workspace-view-model"
+import { cn } from "@/lib/utils"
 import { PLAN_SECTIONS, computePlanHealth, sectionStatus, getPlanSection, isPlaceholderValue, applySectionUpdate, clearSectionUpdate, TEXT_PLAN_SECTIONS, calculatePlanQuality, calculateSectionQuality, type PlanSectionId } from "@/lib/analysis/plan-sections"
 import type { PlanAnalysis, PlanProposal } from "@/lib/types/plan-analysis"
 import { SECTION_DEPENDENCIES } from "@/lib/types/plan-analysis"
@@ -53,6 +58,17 @@ import {
   DollarSign,
   Palette,
   Monitor,
+  Mic,
+  ArrowUp,
+  Loader2,
+  Plus,
+  X,
+  History,
+  ChevronDown,
+  SquarePen,
+  Pencil,
+  Trash2,
+  Check,
   type LucideIcon,
 } from "lucide-react"
 
@@ -90,6 +106,49 @@ function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ")
 }
 
+function formatDuration(ms: number): string {
+  const totalSeconds = Math.max(0, Math.floor(ms / 1000))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+  if (hours > 0) return `${hours}h ${minutes}m`
+  return minutes > 0 ? `${minutes}m ${seconds.toString().padStart(2, "0")}s` : `${seconds}s`
+}
+
+/**
+ * Keep the workspace inside the visible viewport. iOS never shrinks the layout
+ * viewport when the keyboard opens, so a dvh-locked shell hides the composer
+ * behind it; visualViewport does shrink, so driving the shell height from it
+ * makes the transcript, composer and tab bar ride above the keyboard.
+ */
+function useViewportLockedShell() {
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!vv) return
+    const root = document.documentElement
+    // 1px of slack absorbs rounding between the visual and layout viewport,
+    // which otherwise leaves the bottom control a hair below the fold.
+    const sync = () => {
+      // A narrowed vv.width means the customer pinch-zoomed rather than opened
+      // the keyboard, and the layout viewport doesn't scale with it — dvh is
+      // the honest height there.
+      if (vv.width < window.innerWidth - 1) {
+        root.style.removeProperty("--collab-viewport-height")
+        return
+      }
+      root.style.setProperty("--collab-viewport-height", `${Math.floor(vv.height) - 1}px`)
+    }
+    sync()
+    vv.addEventListener("resize", sync)
+    vv.addEventListener("scroll", sync)
+    return () => {
+      vv.removeEventListener("resize", sync)
+      vv.removeEventListener("scroll", sync)
+      root.style.removeProperty("--collab-viewport-height")
+    }
+  }, [])
+}
+
 const STATUS_STYLES: Record<string, string> = {
   complete: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
   needs_work: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
@@ -117,13 +176,14 @@ function PlanNav({
   activeSection,
   onSelect,
   analysis,
-  collapsedOnMobile,
+  forMobile,
 }: {
   spec: ApplicationSpecification
   activeSection: PlanSectionId | null
   onSelect: (id: PlanSectionId) => void
   analysis: PlanAnalysis | null
-  collapsedOnMobile?: boolean
+  /** Phone tab: wider gutters and 40px rows so every section is tappable. */
+  forMobile?: boolean
 }) {
   const health = useMemo(() => computePlanHealth(spec), [spec])
   const groups = useMemo(() => {
@@ -145,7 +205,7 @@ function PlanNav({
   }, [analysis])
 
   return (
-    <div className="flex flex-col gap-5 p-4">
+    <div className={cx("flex flex-col gap-5", forMobile ? "p-3" : "p-4")}>
       <div className="rounded-xl border border-border bg-card p-4">
         <div className="flex items-baseline justify-between">
           <h3 className="font-mono text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -182,6 +242,7 @@ function PlanNav({
                       aria-current={active ? "true" : undefined}
                       className={cx(
                         "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
+                        forMobile && "min-h-11",
                         active
                           ? "bg-primary/10 font-medium text-foreground ring-1 ring-primary/30"
                           : "text-foreground/80 hover:bg-muted",
@@ -249,7 +310,7 @@ function SectionDetail({
   onClose: () => void
   canEdit: boolean
   /** Persist an edited section value through the validated PATCH endpoint. */
-  onSave: (section: PlanSectionId, value: string) => Promise<void>
+  onSave: (section: PlanSectionId, value: string) => Promise<boolean>
   draft: string
   onDraftChange: (value: string) => void
   projectId: string
@@ -330,10 +391,11 @@ function SectionDetail({
     const value = draft.trim()
     if (!value || saving) return
     setSaving(true)
-    // editing stays true until success — on failure the editor stays open
-    // with the draft intact (onSave throws), on success we drop out.
     try {
-      await onSave(sectionId, value)
+      // A failed save must keep the editor open with the draft intact — the
+      // founder's text is never silently discarded on an error.
+      const saved = await onSave(sectionId, value)
+      if (!saved) return
       setEditing(false)
       onDraftChange("")
     } finally {
@@ -342,9 +404,9 @@ function SectionDetail({
   }
 
   return (
-    <div className="flex flex-col gap-4 p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1">
+    <div className="flex flex-col gap-4 p-4 sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <SectionIcon name={def.icon} className="size-4.5 text-primary" />
             <h2 className="text-lg font-semibold text-foreground">{def.label}</h2>
@@ -377,18 +439,18 @@ function SectionDetail({
           </div>
           <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">{def.group}</p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2 sm:justify-end">
           {canEdit && !editing && (
             <button
               onClick={startEditing}
-              className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent"
+              className="min-h-10 flex-1 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent sm:flex-none sm:min-h-0"
             >
               <PenLine className="mr-1 inline size-3.5" aria-hidden /> Edit
             </button>
           )}
           <button
             onClick={() => requestClose(onClose)}
-            className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="min-h-10 flex-1 rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:flex-none sm:min-h-0"
           >
             Close
           </button>
@@ -411,18 +473,18 @@ function SectionDetail({
                 readonly={false}
               />
             )}
-            <div className="flex items-center gap-2 pt-2">
+            <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:items-center">
               <button
                 onClick={save}
                 disabled={saving || !draft.trim()}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
+                className="min-h-11 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 sm:min-h-0"
               >
                 {saving ? "Saving…" : "Save to plan"}
               </button>
               <button
                 onClick={() => requestClose(() => setEditing(false))}
                 disabled={saving}
-                className="rounded-lg border border-border bg-background px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent disabled:opacity-40"
+                className="min-h-11 rounded-lg border border-border bg-background px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent disabled:opacity-40 sm:min-h-0"
               >
                 Cancel
               </button>
@@ -435,8 +497,8 @@ function SectionDetail({
               value={draft}
               onChange={(e) => onDraftChange(e.target.value)}
               onKeyDown={(e) => {
-                // Esc = abandon edit — confirms first when the draft is dirty;
-                // plain Enter inserts a newline.
+                // Esc = abandon edit — confirms first when the founder's draft
+                // is dirty; a plain Enter inserts a newline.
                 if (e.key === "Escape") {
                   e.preventDefault()
                   requestClose(() => setEditing(false))
@@ -445,43 +507,43 @@ function SectionDetail({
               rows={12}
               placeholder={`Write the ${def.label.toLowerCase()} for your plan…`}
               aria-label={`Edit ${def.label} section`}
-              className="collab-scroll w-full resize-y rounded-xl border border-primary/40 bg-background px-4 py-3 text-sm leading-6 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="collab-scroll max-h-[70dvh] w-full resize-y rounded-xl border border-primary/40 bg-background px-4 py-3 text-base leading-6 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 sm:max-h-none sm:text-sm"
             />
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={save}
                 disabled={saving || !draft.trim()}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
+                className="min-h-11 flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 sm:min-h-0 sm:flex-none"
               >
                 {saving ? "Saving…" : "Save to plan"}
               </button>
               <button
                 onClick={() => requestClose(() => setEditing(false))}
                 disabled={saving}
-                className="rounded-lg border border-border bg-background px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent disabled:opacity-40"
+                className="min-h-11 flex-1 rounded-lg border border-border bg-background px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent disabled:opacity-40 sm:min-h-0 sm:flex-none"
               >
                 Cancel
               </button>
-              <span className="ml-auto font-mono text-[10px] text-muted-foreground">{draft.trim().length}/8000</span>
+              <span className="w-full font-mono text-[10px] text-muted-foreground sm:ml-auto sm:w-auto sm:text-right">{draft.trim().length}/8000</span>
             </div>
           </div>
         )
       ) : missing ? (
         <>
-        <div className="rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center">
+        <div className="rounded-xl border border-dashed border-border bg-muted/30 p-4 text-center sm:p-6">
           <p className="text-sm font-medium text-foreground">Not defined yet.</p>
           <p className="mx-auto mt-1 max-w-sm text-sm text-muted-foreground">{def.emptyHint}</p>
           {canEdit && (
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-center">
               <button
                 onClick={() => requestClose(onWorkOnThis)}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:min-h-0"
               >
                 <Sparkles className="size-4" aria-hidden /> Work on this with AI
               </button>
               <button
                 onClick={startEditing}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-4 py-2 text-sm text-foreground transition-colors hover:bg-accent"
+                className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-4 py-2 text-sm text-foreground transition-colors hover:bg-accent sm:min-h-0"
               >
                 <PenLine className="size-4" aria-hidden /> Write it myself
               </button>
@@ -491,7 +553,7 @@ function SectionDetail({
 
         {/* Expected Visuals — every segment gets a visuals area, even empty ones */}
         {canEdit && (
-          <div className="rounded-xl border border-border bg-card p-5">
+          <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
             <ExpectedVisuals
               projectId={projectId}
               sectionId={sectionId}
@@ -624,6 +686,7 @@ function ProposalCard({
   onReject: () => void
 }) {
   const [editing, setEditing] = useState(false)
+  const [showRaw, setShowRaw] = useState(false)
   const [draft, setDraft] = useState(proposal.proposedValue)
   const def = getPlanSection(proposal.section)
 
@@ -648,19 +711,33 @@ function ProposalCard({
       )}
 
       <div className="mt-2">
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Suggested</p>
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Suggested</p>
+          {!editing && (
+            <button
+              onClick={() => setShowRaw((v) => !v)}
+              className="text-[10px] font-semibold uppercase tracking-widest text-primary/80 transition-colors hover:text-primary"
+            >
+              {showRaw ? "Show formatted" : "Show raw"}
+            </button>
+          )}
+        </div>
         {editing ? (
           <textarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             rows={6}
-            className="mt-1 w-full resize-y rounded-lg border border-primary/40 bg-background px-3 py-2 text-sm leading-6 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="mt-1 max-h-[60dvh] w-full resize-y rounded-lg border border-primary/40 bg-background px-3 py-2 text-base leading-6 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 sm:max-h-none sm:text-sm"
             aria-label="Edit suggested value"
           />
-        ) : (
+        ) : showRaw ? (
           <p className="mt-1 whitespace-pre-wrap rounded-lg border border-primary/20 bg-background px-3 py-2 text-sm leading-6 text-foreground">
             {proposal.proposedValue}
           </p>
+        ) : (
+          <div className="mt-1 rounded-lg border border-primary/20 bg-background px-3 py-2">
+            <CofounderMarkdown>{proposal.proposedValue}</CofounderMarkdown>
+          </div>
         )}
       </div>
 
@@ -684,13 +761,13 @@ function ProposalCard({
             <button
               onClick={() => onAccept(draft)}
               disabled={busy || !draft.trim()}
-              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
+              className="min-h-10 flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 sm:flex-none sm:py-1.5"
             >
               Save to plan
             </button>
             <button
               onClick={() => { setEditing(false); setDraft(proposal.proposedValue) }}
-              className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent"
+              className="min-h-10 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground hover:bg-accent sm:flex-none sm:py-1.5"
             >
               Cancel
             </button>
@@ -700,21 +777,21 @@ function ProposalCard({
             <button
               onClick={() => onAccept(proposal.proposedValue)}
               disabled={busy}
-              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
+              className="min-h-10 flex-1 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-40 sm:flex-none sm:py-1.5"
             >
               Add to Plan
             </button>
             <button
               onClick={() => setEditing(true)}
               disabled={busy}
-              className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-foreground hover:bg-accent disabled:opacity-40"
+              className="min-h-10 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-xs text-foreground hover:bg-accent disabled:opacity-40 sm:flex-none sm:py-1.5"
             >
               Edit
             </button>
             <button
               onClick={onReject}
               disabled={busy}
-              className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground hover:bg-accent disabled:opacity-40"
+              className="min-h-10 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-xs text-muted-foreground hover:bg-accent disabled:opacity-40 sm:flex-none sm:py-1.5"
             >
               Reject
             </button>
@@ -732,6 +809,19 @@ interface ChatMessage {
   role: "user" | "assistant"
   content: string
   proposal?: PlanProposal | null
+  /** The provider ran out of output tokens, so this answer stops mid-thought. */
+  truncated?: boolean
+}
+
+function formatChatTime(at: number): string {
+  const minutes = Math.round((Date.now() - at) / 60_000)
+  if (minutes < 1) return "just now"
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.round(hours / 24)
+  if (days < 7) return `${days}d ago`
+  return new Date(at).toLocaleDateString(undefined, { month: "short", day: "numeric" })
 }
 
 const QUICK_ACTIONS = [
@@ -759,38 +849,337 @@ function ChatPanel({
   const [input, setInput] = useState("")
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [chats, setChats] = useState<ProjectChatSummary[]>([])
+  const [activeChatId, setActiveChatId] = useState<string | null>(null)
+  const [chatsLoading, setChatsLoading] = useState(true)
+  const [chatsError, setChatsError] = useState<string | null>(null)
+  const [chatLoading, setChatLoading] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameDraft, setRenameDraft] = useState("")
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [chatActionError, setChatActionError] = useState<string | null>(null)
+  const activeChatKey = `atai:collab-chat:${projectId}`
   const bottomRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const promptMenuRef = useRef<HTMLDetailsElement>(null)
+  const dictation = useVoiceDictation({ value: input, setValue: setInput })
+  const [includeSection, setIncludeSection] = useState(true)
+  const [lastRun, setLastRun] = useState<{ id: number; message: string; section: PlanSectionId | null } | null>(null)
+  const [worklogVisible, setWorklogVisible] = useState(false)
+  const draftKey = `atai:collab-draft:${projectId}`
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
   }, [messages, sending])
 
+  // Hold the finished worklog briefly so the founder sees every step complete
+  // before the transcript takes over; hide it at once if the request failed.
+  useEffect(() => {
+    if (sending) {
+      setWorklogVisible(true)
+      return
+    }
+    if (!worklogVisible) return
+    const timer = window.setTimeout(() => setWorklogVisible(false), 900)
+    return () => window.clearTimeout(timer)
+  }, [sending, worklogVisible])
+
+  // Keep the composer's context chip re-armed when the founder switches
+  // sections — dismissing context is a per-section decision, not permanent.
+  useEffect(() => {
+    setIncludeSection(true)
+  }, [activeSection])
+
+  // Drafts survive tab switches (the mobile chat panel unmounts) and page
+  // navigations, but never leave a stale message after it is sent.
+  const draftRestored = useRef(false)
+  useEffect(() => {
+    if (!draftRestored.current) {
+      draftRestored.current = true
+      try {
+        const saved = window.localStorage.getItem(draftKey)
+        if (saved) {
+          setInput(saved)
+          return
+        }
+      } catch {
+        // Storage can be unavailable (private mode / disabled cookies).
+      }
+    }
+    try {
+      if (input) window.localStorage.setItem(draftKey, input)
+      else window.localStorage.removeItem(draftKey)
+    } catch {
+      // Ignore quota/security errors — the composer still works in-memory.
+    }
+  }, [draftKey, input])
+
+  // Grow to fit the message, then scroll — one line on load, compact on
+  // every viewport, never taller than ~7 lines on a phone.
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = "auto"
+    // scrollHeight is 0 while the desktop panel is display:none on mobile —
+    // keep the intrinsic single-row height instead of collapsing to 0px.
+    el.style.height = el.scrollHeight ? `${Math.min(el.scrollHeight, 168)}px` : ""
+  }, [input])
+
+  const contextSection = includeSection ? activeSection : null
+
+  // ── Conversation history ────────────────────────────────────────────────
+  // Threads live in the project's own store, so history survives navigation
+  // and remounts. The open thread is mirrored to localStorage so the founder
+  // lands back on the conversation they were reading.
+
+  const rememberActiveChat = useCallback(
+    (chatId: string | null) => {
+      try {
+        if (chatId) window.localStorage.setItem(activeChatKey, chatId)
+        else window.localStorage.removeItem(activeChatKey)
+      } catch {
+        // Storage can be unavailable (private mode / disabled cookies).
+      }
+    },
+    [activeChatKey],
+  )
+
+  const refreshChatList = useCallback(async () => {
+    try {
+      const data = await jsonFetcher<{ chats: ProjectChatSummary[] }>(`/api/projects/${projectId}/chats`)
+      setChats(data.chats ?? [])
+      setChatsError(null)
+      return data.chats ?? []
+    } catch (e) {
+      setChatsError(e instanceof Error ? e.message : "Could not load conversation history.")
+      return []
+    } finally {
+      setChatsLoading(false)
+    }
+  }, [projectId])
+
+  const loadChat = useCallback(
+    async (chatId: string) => {
+      setChatLoading(true)
+      setChatActionError(null)
+      try {
+        const data = await jsonFetcher<{ chat: ProjectChat }>(`/api/projects/${projectId}/chats/${chatId}`)
+        setMessages(
+          data.chat.messages
+            .filter((m) => m.role !== "system")
+            .map((m) => ({ id: m.id, role: m.role as "user" | "assistant", content: m.content })),
+        )
+        setActiveChatId(data.chat.id)
+        rememberActiveChat(data.chat.id)
+        setHistoryOpen(false)
+        return true
+      } catch (e) {
+        setChatActionError(e instanceof Error ? e.message : "Could not open that conversation.")
+        return false
+      } finally {
+        setChatLoading(false)
+      }
+    },
+    [projectId, rememberActiveChat],
+  )
+
+  // Restore the last-open conversation (or the newest one) on mount.
+  useEffect(() => {
+    let cancelled = false
+    // A project switch must never show the previous project's transcript.
+    setMessages([])
+    setActiveChatId(null)
+    setChatsLoading(true)
+    ;(async () => {
+      const list = await refreshChatList()
+      if (cancelled) return
+      let saved: string | null = null
+      try {
+        saved = window.localStorage.getItem(activeChatKey)
+      } catch {
+        // Ignore storage failures — pick the newest thread instead.
+      }
+      const target = saved && list.some((c) => c.id === saved) ? saved : list[0]?.id ?? null
+      if (target) {
+        const opened = await loadChat(target)
+        if (!opened && !cancelled && saved && saved !== list[0]?.id) {
+          // The remembered thread is gone (deleted elsewhere) — fall back.
+          rememberActiveChat(null)
+          if (list[0]) await loadChat(list[0].id)
+        }
+      }
+      if (cancelled) return
+      setChatsLoading(false)
+    })()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId])
+
+  const startNewChat = useCallback(() => {
+    setMessages([])
+    setActiveChatId(null)
+    setError(null)
+    setChatActionError(null)
+    setHistoryOpen(false)
+    rememberActiveChat(null)
+    requestAnimationFrame(() => textareaRef.current?.focus())
+  }, [rememberActiveChat])
+
+  // Escape backs out of the drawer (an in-progress rename cancels first).
+  useEffect(() => {
+    if (!historyOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return
+      if (renamingId) {
+        setRenamingId(null)
+        return
+      }
+      setHistoryOpen(false)
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [historyOpen, renamingId])
+
+  const beginRename = useCallback((chat: ProjectChatSummary) => {
+    setChatActionError(null)
+    setRenamingId(chat.id)
+    setRenameDraft(chat.title)
+  }, [])
+
+  const submitRename = useCallback(
+    async (chatId: string) => {
+      const title = renameDraft.replace(/\s+/g, " ").trim()
+      if (!title) {
+        setChatActionError("Give the conversation a name.")
+        return
+      }
+      setRenamingId(null)
+      setChatActionError(null)
+      // The server bumps updatedAt on rename, so mirror it (and the newest-
+      // first order) instead of letting the row jump on the next refresh.
+      setChats((prev) =>
+        prev
+          .map((c) => (c.id === chatId ? { ...c, title, updatedAt: Date.now() } : c))
+          .sort((a, b) => b.updatedAt - a.updatedAt),
+      )
+      try {
+        await patchJson(`/api/projects/${projectId}/chats/${chatId}`, { title })
+      } catch (e) {
+        setChatActionError(e instanceof Error ? e.message : "Could not rename that conversation.")
+        void refreshChatList()
+      }
+    },
+    [projectId, renameDraft, refreshChatList],
+  )
+
+  const removeChat = useCallback(
+    async (chatId: string) => {
+      setConfirmDeleteId(null)
+      setChatActionError(null)
+      try {
+        await deleteJson(`/api/projects/${projectId}/chats/${chatId}`)
+        setChats((prev) => prev.filter((c) => c.id !== chatId))
+        if (chatId === activeChatId) {
+          setMessages([])
+          setActiveChatId(null)
+          rememberActiveChat(null)
+        }
+        toast.success("Conversation deleted.")
+      } catch (e) {
+        setChatActionError(e instanceof Error ? e.message : "Could not delete that conversation.")
+        void refreshChatList()
+      }
+    },
+    [projectId, activeChatId, rememberActiveChat, refreshChatList],
+  )
+
+  const activeSummary = activeChatId ? chats.find((c) => c.id === activeChatId) : undefined
+  const activeTitle = activeChatId ? activeSummary?.title ?? "Conversation" : "New conversation"
+  const activeMeta = activeChatId
+    ? `${activeSummary?.messageCount ?? messages.length} message${
+        (activeSummary?.messageCount ?? messages.length) === 1 ? "" : "s"
+      }${activeSummary ? ` · ${formatChatTime(activeSummary.updatedAt)}` : ""}`
+    : "History is saved with this project"
+
   const send = useCallback(
     async (text: string) => {
       const trimmed = text.trim()
-      if (!trimmed || sending || !isOwner) return
+      if (!trimmed || sending || !isOwner || chatsLoading || chatLoading) return
+      dictation.stop()
       setInput("")
       setError(null)
+      setLastRun({ id: Date.now(), message: trimmed, section: contextSection })
       const localId = `local-${Date.now()}`
       setMessages((prev) => [...prev, { id: localId, role: "user", content: trimmed }])
       setSending(true)
       try {
-        const data = await postJson<{ reply: string; proposal: PlanProposal | null; decisions: number }>(
-          `/api/projects/${projectId}/plan-chat`,
-          { message: trimmed, activeSection },
-        )
+        const data = await postJson<{
+          reply: string
+          proposal: PlanProposal | null
+          decisions: number
+          chatId?: string
+          truncated?: boolean
+        }>(`/api/projects/${projectId}/plan-chat`, {
+          message: trimmed,
+          activeSection: contextSection,
+          chatId: activeChatId ?? undefined,
+          newChat: !activeChatId,
+        })
         setMessages((prev) => [
           ...prev,
-          { id: `a-${Date.now()}`, role: "assistant", content: data.reply, proposal: data.proposal },
+          {
+            id: `a-${Date.now()}`,
+            role: "assistant",
+            content: data.reply,
+            proposal: data.proposal,
+            truncated: data.truncated,
+          },
         ])
+        if (data.chatId) {
+          setActiveChatId(data.chatId)
+          rememberActiveChat(data.chatId)
+          void refreshChatList()
+        }
       } catch (e) {
+        // Never lose a message to a failed request — put it back in the
+        // composer unless the founder has already started typing again.
+        setInput((cur) => (cur ? cur : trimmed))
+        const code = (e as Error & { code?: string }).code
+        if (code === "CHAT_NOT_FOUND") {
+          // The thread was removed elsewhere; the next send starts a new one.
+          setActiveChatId(null)
+          rememberActiveChat(null)
+          void refreshChatList()
+        }
         setError(e instanceof Error ? e.message : "Something went wrong. Please try again.")
       } finally {
         setSending(false)
       }
     },
-    [sending, isOwner, projectId, activeSection],
+    [
+      sending,
+      isOwner,
+      chatsLoading,
+      chatLoading,
+      projectId,
+      contextSection,
+      dictation.stop,
+      activeChatId,
+      rememberActiveChat,
+      refreshChatList,
+    ],
   )
+
+  // Enter / Send include the phrase currently being spoken — the interim
+  // transcript isn't in the field until SpeechRecognition finalizes it.
+  const handleSend = useCallback(() => {
+    const pending = dictation.listening ? dictation.partial.trim() : ""
+    const text = [input.trim(), pending].filter(Boolean).join(" ")
+    if (text) void send(text)
+  }, [input, dictation.listening, dictation.partial, send])
 
   const acceptProposal = useCallback(
     async (proposal: PlanProposal, value: string) => {
@@ -819,6 +1208,60 @@ function ChatPanel({
 
   const activeDef = activeSection ? getPlanSection(activeSection) : null
 
+  const worklogSteps = useMemo(
+    () =>
+      lastRun
+        ? buildCofounderWorklogSteps({
+            message: lastRun.message,
+            section: lastRun.section
+              ? getPlanSection(lastRun.section)?.label ?? lastRun.section
+              : null,
+            surface: "plan",
+          })
+        : [],
+    [lastRun],
+  )
+
+  // Generic starters plus one tailored to the section currently in focus.
+  const suggestions = useMemo(
+    () =>
+      activeDef
+        ? [
+            {
+              label: `Improve ${activeDef.label}`,
+              prompt: `Draft a stronger ${activeDef.label} section for my plan, and explain the tradeoffs of your version.`,
+            },
+            ...QUICK_ACTIONS,
+          ]
+        : QUICK_ACTIONS,
+    [activeDef],
+  )
+
+  // Fill the composer instead of sending, appending to an existing draft so
+  // the founder can review and edit before pressing send.
+  const insertPrompt = useCallback((prompt: string) => {
+    promptMenuRef.current?.removeAttribute("open")
+    setInput((cur) => (cur.trim() ? `${cur.trimEnd()} ${prompt}` : prompt))
+    requestAnimationFrame(() => {
+      const el = textareaRef.current
+      if (!el) return
+      el.focus()
+      el.setSelectionRange(el.value.length, el.value.length)
+    })
+  }, [])
+
+  const onComposerKeyDown = (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+    // IME composition (e.g. Chinese input) must own Enter until it commits.
+    if (event.nativeEvent.isComposing) return
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault()
+      handleSend()
+    } else if (event.key === "Escape") {
+      if (dictation.listening) dictation.stop()
+      else event.currentTarget.blur()
+    }
+  }
+
   if (!isOwner) {
     return (
       <div className="flex flex-1 items-center justify-center p-8 text-center">
@@ -833,16 +1276,60 @@ function ChatPanel({
   return (
     // flex-1 (not h-full): fills the space left by the pinned launch button
     // instead of pushing it out of the clipped column.
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="relative flex min-h-0 flex-1 flex-col">
+      {/* Conversation header — history, active thread, new conversation */}
+      <div className="flex items-center gap-1 border-b border-border bg-background px-3 py-2 sm:px-4">
+        <div className="mx-auto flex w-full max-w-2xl items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              setHistoryOpen((open) => !open)
+              setRenamingId(null)
+              setChatActionError(null)
+            }}
+            aria-expanded={historyOpen}
+            aria-label="Conversation history"
+            title="Conversation history"
+            className={cn(
+              "grid size-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+              historyOpen && "bg-accent text-foreground",
+            )}
+          >
+            <History className="size-4" aria-hidden />
+          </button>
+          <div className="min-w-0 flex-1 px-0.5">
+            <p className="truncate text-xs font-medium text-foreground">{activeTitle}</p>
+            <p className="truncate text-[10px] text-muted-foreground">{activeMeta}</p>
+          </div>
+          <button
+            type="button"
+            onClick={startNewChat}
+            disabled={sending || chatLoading || chatsLoading}
+            aria-label="New conversation"
+            title="New conversation"
+            className="grid size-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <SquarePen className="size-4" aria-hidden />
+          </button>
+        </div>
+      </div>
+
       {/* Conversation */}
-      <div className="min-h-0 flex-1 overflow-y-auto collab-scroll px-5 py-6">
+      <div className="min-h-0 flex-1 overflow-y-auto collab-scroll px-3 py-4 sm:px-5 sm:py-6">
         <div className="mx-auto flex max-w-2xl flex-col gap-5">
           {/* Intro — lightweight, no AI call on load (spec section 15).
               Context-aware: when the founder is working on a section, the
               intro speaks to that section instead of generic onboarding. */}
-          {messages.length === 0 && (
-            <div className="rounded-xl border border-border bg-card p-6">
-              <h2 className="text-lg font-semibold text-foreground">Your AI Co-Founder</h2>
+          {(chatLoading || (chatsLoading && messages.length === 0)) && (
+            <div className="flex items-center justify-center gap-2 py-10 text-xs text-muted-foreground" role="status">
+              <Loader2 className="size-3.5 animate-spin" aria-hidden />
+              Opening conversation…
+            </div>
+          )}
+
+          {messages.length === 0 && !chatLoading && !chatsLoading && (
+            <div className="rounded-xl border border-border bg-card p-4 sm:p-6">
+              <h2 className="text-base font-semibold text-foreground sm:text-lg">Your AI Co-Founder</h2>
               {activeDef ? (
                 <p className="mt-0.5 text-sm text-primary">
                   Working on {activeDef.label} — {activeDef.emptyHint}
@@ -870,34 +1357,33 @@ function ChatPanel({
           )}
 
           {messages.map((m) => (
-            <div key={m.id} className="flex flex-col gap-2">
-              <div className={cx("flex gap-3", m.role === "user" && "flex-row-reverse")}>
-                <div
-                  className={cx(
-                    "flex size-7 shrink-0 items-center justify-center rounded-full text-[10px] font-bold",
-                    m.role === "user" ? "bg-primary text-primary-foreground" : "bg-foreground/10 text-foreground",
-                  )}
-                  aria-hidden
-                >
-                  {m.role === "user" ? "You" : "AI"}
-                </div>
-                <div
-                  className={cx(
-                    "max-w-[92%] rounded-2xl px-4 py-3 text-sm leading-6",
-                    m.role === "user"
-                      ? "rounded-tr-sm bg-primary text-primary-foreground"
-                      : "rounded-tl-sm border border-border bg-card text-foreground",
-                  )}
-                >
-                  {m.role === "assistant" ? (
+            <div key={m.id} className={cx("flex flex-col gap-2", m.role === "user" ? "items-end" : "items-start")}>
+              {m.role === "assistant" ? (
+                <div className="w-full">
+                  <p className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                    <Sparkles className="size-3 text-primary" aria-hidden />
+                    Co-founder
+                  </p>
+                  <div className="text-sm leading-6 text-foreground">
                     <CofounderMarkdown>{m.content}</CofounderMarkdown>
-                  ) : (
-                    m.content
-                  )}
+                    {m.truncated && (
+                      <p className="mt-2 border-t border-border/60 pt-2 text-xs text-muted-foreground">
+                        That answer hit the length limit and stops here — ask me to continue and I&apos;ll finish
+                        the thought.
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="max-w-[92%] text-right">
+                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70">
+                    You
+                  </p>
+                  <p className="whitespace-pre-wrap text-sm leading-6 text-foreground/80">{m.content}</p>
+                </div>
+              )}
               {m.proposal && (
-                <div className="ml-10">
+                <div className="w-full">
                   <ProposalCard
                     proposal={m.proposal}
                     busy={false}
@@ -910,19 +1396,9 @@ function ChatPanel({
             </div>
           ))}
 
-          {sending && (
-            <div className="flex gap-3">
-              <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-foreground/10 text-[10px] font-bold text-foreground" aria-hidden>
-                AI
-              </div>
-              <div className="flex items-center gap-2 rounded-2xl rounded-tl-sm border border-border bg-card px-4 py-3">
-                <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:0ms]" />
-                <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:150ms]" />
-                <span className="size-1.5 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:300ms]" />
-                <span className="ml-1 text-xs text-muted-foreground">Your AI co-founder is thinking…</span>
-              </div>
-            </div>
-          )}
+          {lastRun && worklogVisible && !error ? (
+            <CofounderWorklog key={lastRun.id} steps={worklogSteps} active={sending} />
+          ) : null}
 
           {error && (
             <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-2 text-xs text-destructive" role="alert">
@@ -935,42 +1411,389 @@ function ChatPanel({
       </div>
 
       {/* Composer */}
-      <div className="border-t border-border bg-background px-4 py-3">
-        <div className="mx-auto max-w-2xl">
-          {activeDef && (
-            <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/5 px-3 py-1 text-[11px] text-primary">
-              Working on: {activeDef.label}
-              <span className="sr-only">(context sent with your next message)</span>
+      <div className="border-t border-border bg-background px-3 py-2.5 sm:px-4 sm:py-3">
+        <div className="mx-auto w-full max-w-2xl">
+          {dictation.listening && (
+            <div
+              className="voice-panel mb-2 flex items-center gap-3 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2"
+              role="status"
+              aria-live="polite"
+            >
+              <span className="relative grid size-8 shrink-0 place-items-center rounded-full bg-primary/10">
+                <span className="voice-halo absolute inset-0 rounded-full border border-primary/40" aria-hidden />
+                <span className="flex h-4 items-end gap-[3px]" aria-hidden>
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <span
+                      key={i}
+                      className="voice-bar w-[3px] rounded-full bg-primary"
+                      style={{
+                        height: `${Math.max(4, Math.min(18, 5 + dictation.level * 64 + (i % 2 === 0 ? 3 : 0)))}px`,
+                      }}
+                    />
+                  ))}
+                </span>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+                  Listening
+                </span>
+                <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                  {dictation.partial ? (
+                    <>
+                      {dictation.partial}
+                      <span
+                        className="voice-caret ml-0.5 inline-block h-3 w-px translate-y-0.5 bg-primary align-middle"
+                        aria-hidden
+                      />
+                    </>
+                  ) : (
+                    "Speak — each phrase lands in the box as you finish it."
+                  )}
+                </span>
+              </span>
+              <button
+                type="button"
+                onClick={dictation.stop}
+                className="shrink-0 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-destructive/40 hover:text-foreground"
+              >
+                Stop
+              </button>
             </div>
           )}
-          <div className="flex items-end gap-2">
+          <form
+            onSubmit={(event) => {
+              event.preventDefault()
+              handleSend()
+            }}
+            className={cn(
+              "rounded-2xl border border-border bg-muted/30 transition-[border-color,box-shadow] focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-primary/15",
+              dictation.listening && "border-primary/50 ring-2 ring-primary/15",
+            )}
+          >
             <textarea
+              ref={textareaRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault()
-                  send(input)
-                }
-              }}
-              placeholder="Ask your co-founder anything about the plan…"
-              rows={2}
+              onChange={(e) => dictation.typeText(e.target.value)}
+              onKeyDown={onComposerKeyDown}
+              placeholder={
+                dictation.listening
+                  ? "Listening — speak now…"
+                  : activeDef
+                    ? `Ask about ${activeDef.label}…`
+                    : "Ask your co-founder anything about the plan…"
+              }
+              rows={1}
+              maxLength={8000}
               aria-label="Message your AI co-founder"
-              className="flex-1 resize-none rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-sm placeholder:text-muted-foreground focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              aria-describedby="collab-composer-hint"
+              className="block max-h-[168px] w-full resize-none overflow-y-auto bg-transparent px-3.5 pb-1 pt-3 text-base leading-6 placeholder:text-muted-foreground focus:outline-none sm:text-sm"
             />
-            <button
-              onClick={() => send(input)}
-              disabled={sending || !input.trim()}
-              className="shrink-0 self-end rounded-xl bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {sending ? "Sending…" : "Send"}
-            </button>
-          </div>
-          <p className="mt-1.5 text-center text-[10px] text-muted-foreground">
-            Enter to send · Shift+Enter for a new line · Small credit cost per message
+            <div className="flex items-center gap-0.5 px-1.5 pb-1.5">
+              <details
+                ref={promptMenuRef}
+                className="relative"
+                onBlur={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                    promptMenuRef.current?.removeAttribute("open")
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if (event.key !== "Escape") return
+                  promptMenuRef.current?.removeAttribute("open")
+                  promptMenuRef.current?.querySelector("summary")?.focus()
+                }}
+              >
+                <summary
+                  aria-label="Suggested prompts"
+                  title="Suggested prompts"
+                  className="grid size-9 cursor-pointer list-none place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground [&::-webkit-details-marker]:hidden"
+                >
+                  <Sparkles className="size-4" aria-hidden />
+                </summary>
+                <div className="absolute bottom-full left-0 z-20 mb-2 w-64 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-border bg-popover p-1 shadow-lg">
+                  <p className="px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    Suggested prompts
+                  </p>
+                  {suggestions.map((item) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      onClick={() => insertPrompt(item.prompt)}
+                      className="block w-full rounded-lg px-2.5 py-2 text-left text-xs leading-5 text-foreground transition-colors hover:bg-accent"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </details>
+              <button
+                type="button"
+                onClick={dictation.toggle}
+                disabled={sending}
+                aria-pressed={dictation.listening}
+                aria-label={dictation.listening ? "Stop voice input" : "Voice input"}
+                className={cn(
+                  "relative grid size-9 shrink-0 place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40",
+                  dictation.listening &&
+                    "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
+                )}
+              >
+                {dictation.listening ? (
+                  <span className="voice-halo absolute inset-0 rounded-xl border border-primary/50" aria-hidden />
+                ) : null}
+                <Mic className="size-4" />
+              </button>
+              {activeDef ? (
+                includeSection ? (
+                  <span className="ml-0.5 inline-flex h-9 min-w-0 items-center gap-0.5 rounded-xl bg-primary/10 pl-2 pr-0.5 text-[11px] font-medium text-primary">
+                    <span className="max-w-24 truncate sm:max-w-44">{activeDef.label}</span>
+                    <button
+                      type="button"
+                      onClick={() => setIncludeSection(false)}
+                      aria-label={`Stop including ${activeDef.label} in the context`}
+                      title="Remove section context"
+                      className="grid size-6 shrink-0 place-items-center rounded-lg transition-colors hover:bg-primary/15"
+                    >
+                      <X className="size-3" aria-hidden />
+                    </button>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIncludeSection(true)}
+                    title="Send this section as context"
+                    className="ml-0.5 inline-flex h-9 min-w-0 items-center gap-1 rounded-xl px-2 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  >
+                    <Plus className="size-3.5 shrink-0" aria-hidden />
+                    <span className="max-w-20 truncate sm:max-w-40">{activeDef.label}</span>
+                  </button>
+                )
+              ) : null}
+              <div className="flex-1" />
+              {input.length > 7600 && (
+                <span className="pr-1 font-mono text-[10px] tabular-nums text-muted-foreground" aria-live="polite">
+                  {input.length}/8000
+                </span>
+              )}
+              <button
+                type="submit"
+                disabled={sending || chatLoading || chatsLoading || (!input.trim() && !dictation.partial.trim())}
+                aria-label={sending ? "Sending message" : "Send message"}
+                className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {sending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <ArrowUp className="size-4" aria-hidden />}
+              </button>
+            </div>
+          </form>
+          {dictation.error && (
+            <p role="alert" className="mt-1.5 px-1 text-xs text-destructive">
+              {dictation.error}
+            </p>
+          )}
+          <p id="collab-composer-hint" className="mt-1.5 truncate text-center text-[10px] text-muted-foreground">
+            Enter to send · Shift+Enter for a new line · Tap the mic to dictate · Small credit cost per message
           </p>
         </div>
       </div>
+
+      {/* History drawer — project-scoped memory, rename/delete inline */}
+      {historyOpen && (
+        <div
+          className="absolute inset-0 z-30 flex flex-col bg-background"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Conversation history"
+        >
+          <div className="flex items-center justify-between border-b border-border px-4 py-2.5">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Project memory</p>
+              <p className="text-xs font-medium text-foreground">
+                {chats.length} conversation{chats.length === 1 ? "" : "s"}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setHistoryOpen(false)}
+              aria-label="Close conversation history"
+              className="grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <X className="size-4" aria-hidden />
+            </button>
+          </div>
+
+          <div className="border-b border-border p-2">
+            <button
+              type="button"
+              onClick={startNewChat}
+              className="flex w-full items-center gap-2 rounded-xl border border-dashed border-border px-3 py-2.5 text-left transition-colors hover:border-primary/40 hover:bg-accent"
+            >
+              <SquarePen className="size-4 shrink-0 text-primary" aria-hidden />
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs font-medium text-foreground">New conversation</span>
+                <span className="block text-[10px] text-muted-foreground">
+                  Clean slate — your plan stays in context
+                </span>
+              </span>
+            </button>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto collab-scroll p-2">
+            {chatsLoading ? (
+              <div className="flex items-center justify-center gap-2 py-10 text-xs text-muted-foreground" role="status">
+                <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                Loading history…
+              </div>
+            ) : chatsError ? (
+              <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive" role="alert">
+                {chatsError}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setChatsLoading(true)
+                    void refreshChatList()
+                  }}
+                  className="ml-1 underline underline-offset-2"
+                >
+                  Retry
+                </button>
+              </div>
+            ) : chats.length === 0 ? (
+              <p className="px-3 py-10 text-center text-xs text-muted-foreground">
+                No conversations yet. Your first message starts one.
+              </p>
+            ) : (
+              <ul className="flex flex-col gap-1">
+                {chats.map((chat) => (
+                  <li
+                    key={chat.id}
+                    className={cn(
+                      "rounded-xl border p-2.5 transition-colors",
+                      chat.id === activeChatId
+                        ? "border-primary/30 bg-primary/5"
+                        : "border-transparent hover:bg-accent/60",
+                    )}
+                  >
+                    {renamingId === chat.id ? (
+                      <form
+                        onSubmit={(event) => {
+                          event.preventDefault()
+                          void submitRename(chat.id)
+                        }}
+                        className="flex items-center gap-1"
+                      >
+                        <input
+                          autoFocus
+                          value={renameDraft}
+                          onChange={(event) => setRenameDraft(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Escape") {
+                              event.preventDefault()
+                              setRenamingId(null)
+                            }
+                          }}
+                          maxLength={80}
+                          aria-label="Conversation name"
+                          className="h-10 min-w-0 flex-1 rounded-lg border border-border bg-background px-2 text-base text-foreground focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/15 sm:h-8 sm:text-xs"
+                        />
+                        <button
+                          type="submit"
+                          aria-label="Save name"
+                          className="grid size-10 shrink-0 place-items-center rounded-lg text-primary transition-colors hover:bg-primary/10 sm:size-8"
+                        >
+                          <Check className="size-4" aria-hidden />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRenamingId(null)}
+                          aria-label="Cancel rename"
+                          className="grid size-10 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:size-8"
+                        >
+                          <X className="size-4" aria-hidden />
+                        </button>
+                      </form>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => void loadChat(chat.id)}
+                          disabled={chatLoading}
+                          className="block w-full text-left disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <span className="flex items-center gap-2">
+                            <span className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
+                              {chat.title}
+                            </span>
+                            <span className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+                              {formatChatTime(chat.updatedAt)}
+                            </span>
+                          </span>
+                          <span className="mt-0.5 block truncate text-[11px] text-muted-foreground">
+                            {chat.preview ?? "No messages yet"}
+                          </span>
+                          <span className="mt-1 block text-[10px] text-muted-foreground/80">
+                            {chat.messageCount} message{chat.messageCount === 1 ? "" : "s"}
+                          </span>
+                        </button>
+                        <div className="mt-1.5 flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => beginRename(chat)}
+                            className="inline-flex min-h-9 items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:min-h-0 sm:text-[10px]"
+                          >
+                            <Pencil className="size-3" aria-hidden />
+                            Rename
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmDeleteId(chat.id)}
+                            className="inline-flex min-h-9 items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive sm:min-h-0 sm:text-[10px]"
+                          >
+                            <Trash2 className="size-3" aria-hidden />
+                            Delete
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {chatActionError && (
+              <p role="alert" className="mt-2 px-2 text-xs text-destructive">
+                {chatActionError}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      <AlertDialog
+        open={confirmDeleteId !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDeleteId(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this conversation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The messages in this conversation are removed permanently. Your plan and its accepted changes are
+              untouched.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (confirmDeleteId) void removeChat(confirmDeleteId)
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
@@ -1039,7 +1862,7 @@ function LaunchButton({
   if (!canLaunch) return null
 
   return (
-    <div className="shrink-0 border-t border-border p-4">
+    <div className="shrink-0 border-t border-border p-3 sm:p-4">
       {error && (
         <p className="mb-3 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive" role="alert">
           {error}
@@ -1105,7 +1928,7 @@ function LaunchButton({
       <button
         onClick={handleLaunch}
         disabled={launching}
-        className="w-full rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+        className="w-full min-h-11 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {launching ? (
           "Starting build…"
@@ -1230,7 +2053,7 @@ function InsightsPanel({
             <button
               onClick={onRefresh}
               disabled={analyzing || !isOwner}
-              className="text-[11px] text-primary hover:underline disabled:opacity-40"
+              className="min-h-8 rounded-md px-2 text-[11px] text-primary hover:bg-accent hover:underline disabled:opacity-40"
             >
               Re-analyze
             </button>
@@ -1281,7 +2104,7 @@ function InsightsPanel({
                           {f.why && <p className="mt-0.5 text-[11px] leading-4 text-muted-foreground">{f.why}</p>}
                           <button
                             onClick={() => onWorkOn(f.section as PlanSectionId)}
-                            className="mt-1.5 text-[11px] font-medium text-primary hover:underline"
+                            className="mt-1.5 inline-flex min-h-8 items-center text-[11px] font-medium text-primary hover:underline"
                           >
                             Work on this →
                           </button>
@@ -1380,7 +2203,7 @@ function AnalysisProposalRow({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           rows={4}
-          className="mt-1 w-full rounded-lg border border-primary/40 bg-background px-2.5 py-1.5 text-xs leading-5"
+          className="mt-1 max-h-[55dvh] w-full resize-y rounded-lg border border-primary/40 bg-background px-2.5 py-1.5 text-base leading-5 sm:max-h-none sm:text-xs"
           aria-label="Edit suggested value"
         />
       ) : (
@@ -1389,25 +2212,25 @@ function AnalysisProposalRow({
       <div className="mt-2 flex flex-wrap gap-1.5">
         {mode === "editing" ? (
           <>
-            <button onClick={accept} disabled={busy || !value.trim()} className="rounded-md bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground disabled:opacity-40">
+            <button onClick={accept} disabled={busy || !value.trim()} className="min-h-9 flex-1 rounded-md bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground disabled:opacity-40 sm:flex-none">
               Save
             </button>
-            <button onClick={() => { setMode("view"); setValue(proposal.proposedValue) }} className="rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground">
+            <button onClick={() => { setMode("view"); setValue(proposal.proposedValue) }} className="min-h-9 flex-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground sm:flex-none">
               Cancel
             </button>
           </>
         ) : (
           <>
-            <button onClick={accept} disabled={busy} className="rounded-md bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground disabled:opacity-40">
+            <button onClick={accept} disabled={busy} className="min-h-9 flex-1 rounded-md bg-primary px-2 py-1 text-[11px] font-medium text-primary-foreground disabled:opacity-40 sm:flex-none">
               Add to Plan
             </button>
-            <button onClick={() => setMode("editing")} className="rounded-md border border-border px-2 py-1 text-[11px] text-foreground">
+            <button onClick={() => setMode("editing")} className="min-h-9 flex-1 rounded-md border border-border px-2 py-1 text-[11px] text-foreground sm:flex-none">
               Edit
             </button>
-            <button onClick={reject} disabled={busy} className="rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground">
+            <button onClick={reject} disabled={busy} className="min-h-9 flex-1 rounded-md border border-border px-2 py-1 text-[11px] text-muted-foreground sm:flex-none">
               Reject
             </button>
-            <button onClick={onWorkOn} className="rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground">
+            <button onClick={onWorkOn} className="min-h-9 flex-1 rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground sm:flex-none">
               Discuss →
             </button>
           </>
@@ -1476,8 +2299,8 @@ function AutoCompleteRunView({
   const [expanded, setExpanded] = useState<string | null>(null)
 
   return (
-    <div className="mx-auto flex h-full max-w-2xl flex-col overflow-y-auto collab-scroll px-5 py-6">
-      <div className="rounded-xl border border-primary/25 bg-primary/5 p-5">
+    <div className="mx-auto flex h-full max-w-2xl flex-col overflow-y-auto collab-scroll px-3 py-4 sm:px-5 sm:py-6">
+      <div className="rounded-xl border border-primary/25 bg-primary/5 p-4 sm:p-5">
         <div className="flex items-center gap-2">
           <span
             className={cx(
@@ -1521,7 +2344,7 @@ function AutoCompleteRunView({
             key={r.id}
             className="flex flex-col rounded-lg border border-border bg-card px-3 py-2"
           >
-            <div className="flex items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
               <span className="w-4 shrink-0 text-center" aria-hidden>
                 {r.status === "working" ? (
                   <span className="inline-block size-3 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
@@ -1537,7 +2360,7 @@ function AutoCompleteRunView({
               </span>
               <span
                 className={cx(
-                  "flex-1 truncate text-sm",
+                  "min-w-0 flex-1 basis-32 truncate text-sm",
                   r.status === "pending" || r.status === "skipped" ? "text-muted-foreground" : "text-foreground",
                   r.status === "working" && "font-medium",
                 )}
@@ -1546,24 +2369,24 @@ function AutoCompleteRunView({
                 {r.status === "working" && <span className="ml-2 text-xs text-muted-foreground">drafting…</span>}
               </span>
               {r.status === "done" && (
-                <span className="flex shrink-0 items-center gap-1.5">
+                <span className="flex shrink-0 items-center gap-0.5">
                   <button
                     onClick={() => setExpanded(expanded === r.id ? null : r.id)}
                     aria-expanded={expanded === r.id}
-                    className="text-[11px] font-medium text-primary hover:underline"
+                    className="min-h-8 rounded-md px-2 text-[11px] font-medium text-primary hover:bg-primary/10 hover:underline"
                   >
                     {expanded === r.id ? "Hide" : "Review"}
                   </button>
                   <button
                     onClick={() => onOpenSection(r.id)}
-                    className="text-[11px] text-muted-foreground hover:text-foreground hover:underline"
+                    className="min-h-8 rounded-md px-2 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground hover:underline"
                   >
                     Open
                   </button>
                   <button
                     onClick={() => onUndo(r.id)}
                     disabled={undoing === r.id}
-                    className="text-[11px] text-muted-foreground hover:text-foreground hover:underline disabled:opacity-40"
+                    className="min-h-8 rounded-md px-2 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground hover:underline disabled:opacity-40"
                   >
                     {undoing === r.id ? "Undoing…" : "Undo"}
                   </button>
@@ -1583,14 +2406,14 @@ function AutoCompleteRunView({
         {run.phase === "working" ? (
           <button
             onClick={onStop}
-            className="rounded-lg border border-border bg-background px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="min-h-11 w-full rounded-lg border border-border bg-background px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:w-auto sm:min-h-0"
           >
             I&apos;ll take it from here
           </button>
         ) : run.phase === "paused" ? (
           <button
             onClick={onContinue}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="min-h-11 w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:w-auto sm:min-h-0"
           >
             Continue ({run.remaining.length} left)
           </button>
@@ -1598,14 +2421,14 @@ function AutoCompleteRunView({
           <>
             <button
               onClick={onDismiss}
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              className="min-h-11 w-full rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 sm:w-auto sm:min-h-0"
             >
               Back to my co-founder
             </button>
             {run.doneCount > 0 && (
               <button
                 onClick={onDiscardAll}
-                className="rounded-lg border border-border bg-background px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                className="min-h-11 w-full rounded-lg border border-border bg-background px-4 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:w-auto sm:min-h-0"
               >
                 Discard all drafted sections
               </button>
@@ -1639,6 +2462,7 @@ export function CollaborateClient({
   isOwner: boolean
   initialCredits?: number
 }) {
+  useViewportLockedShell()
   const [spec, setSpec] = useState<ApplicationSpecification | undefined>(initialProject.specification)
   const planReadyTrackedRef = useRef(false)
   const [analysis, setAnalysis] = useState<PlanAnalysis | null>(initialProject.planAnalysis ?? null)
@@ -1677,26 +2501,97 @@ export function CollaborateClient({
       return next
     })
   }, [])
-  const [projectState] = useState(initialProject.state)
+  const [projectState, setProjectState] = useState(initialProject.state)
+  const [pipelineError, setPipelineError] = useState<string | null>(initialProject.error ?? null)
+  const [pipelineNonce, setPipelineNonce] = useState(0)
+  const [retryingPipeline, setRetryingPipeline] = useState(false)
+  // Live snapshot of the record while the plan is still being produced — feeds
+  // the same per-step model the workspace uses, so both surfaces agree.
+  const [liveEvents, setLiveEvents] = useState<ProjectEvent[]>(initialProject.events ?? [])
+  const [liveUpdatedAt, setLiveUpdatedAt] = useState(initialProject.updatedAt ?? Date.now())
+  const [recovery, setRecovery] = useState(initialProject.pipelineRecovery ?? null)
+  const [clock, setClock] = useState(() => Date.now())
+  const [pollFailures, setPollFailures] = useState(0)
+  const [pollError, setPollError] = useState<string | null>(null)
+  const [retryNote, setRetryNote] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (spec) return
+    const id = window.setInterval(() => setClock(Date.now()), 1000)
+    return () => window.clearInterval(id)
+  }, [spec])
 
   useEffect(() => {
     if (spec) return
     let cancelled = false
+    let interval: number | undefined
+    const stop = () => {
+      if (interval !== undefined) window.clearInterval(interval)
+      interval = undefined
+    }
     async function tick() {
       try {
         const data = await jsonFetcher<{ project: Project }>(`/api/projects/${projectId}`)
-        if (!cancelled && data.project?.specification) setSpec(data.project.specification)
-      } catch {
-        /* keep waiting */
+        if (cancelled) return
+        const next = data.project
+        if (!next) return
+        setPollFailures(0)
+        setPollError(null)
+        setLiveEvents(next.events ?? [])
+        setLiveUpdatedAt(next.updatedAt ?? Date.now())
+        setRecovery(next.pipelineRecovery ?? null)
+        if (next.specification) {
+          setSpec(next.specification)
+          stop()
+          return
+        }
+        setProjectState(next.state)
+        setPipelineError(next.error ?? null)
+        // A failed step will not produce a plan on its own — stop polling and
+        // let the founder retry instead of waiting forever.
+        if (next.state === "analysis_failed" || next.state === "plan_failed") stop()
+      } catch (e) {
+        if (cancelled) return
+        // Keep polling (the server may come back), but stop pretending the
+        // wait is healthy once refreshes keep failing.
+        setPollFailures((n) => n + 1)
+        setPollError(e instanceof Error ? e.message : "We couldn't reach the server.")
       }
     }
-    const id = window.setInterval(() => { void tick() }, 3000)
+    interval = window.setInterval(() => { void tick() }, 3000)
     void tick()
     return () => {
       cancelled = true
-      window.clearInterval(id)
+      stop()
     }
-  }, [spec, projectId])
+  }, [spec, projectId, pipelineNonce])
+
+  const retryPipeline = useCallback(async () => {
+    if (retryingPipeline) return
+    setRetryingPipeline(true)
+    setRetryNote(null)
+    try {
+      await postJson(`/api/projects/${projectId}/retry`, {})
+      setPipelineError(null)
+      setProjectState("analyzing")
+      setLiveUpdatedAt(Date.now())
+      setRecovery(null)
+      setPipelineNonce((n) => n + 1)
+      toast.success("Retrying — this page updates as soon as the plan is ready.")
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "This step could not be retried."
+      setRetryNote(message)
+      toast.error(message)
+    } finally {
+      setRetryingPipeline(false)
+    }
+  }, [projectId, retryingPipeline])
+
+  const refreshPolling = useCallback(() => {
+    setPollFailures(0)
+    setPollError(null)
+    setPipelineNonce((n) => n + 1)
+  }, [])
 
   // Funnel: the owner's plan became available for review.
   useEffect(() => {
@@ -1751,19 +2646,25 @@ export function CollaborateClient({
    * still authorizes, validates, prunes cached analysis findings for the
    * section, and writes the audit event. */
   const saveSection = useCallback(
-    async (section: PlanSectionId, value: string) => {
+    async (section: PlanSectionId, value: string): Promise<boolean> => {
+      const label = getPlanSection(section)?.label ?? "Section"
       try {
         const data = await patchJson<{ project: Project }>(`/api/projects/${projectId}`, {
           sectionUpdate: { section, value },
         })
-        if (data.project?.specification) setSpec(data.project.specification)
-        if (data.project?.planAnalysis !== undefined) setAnalysis(data.project.planAnalysis ?? null)
-        toast.success(`${getPlanSection(section)?.label ?? "Section"} saved to your plan.`)
+        if (!data.project?.specification) {
+          toast.error(`${label} didn't come back from the server. Your draft is still open — try saving again.`)
+          return false
+        }
+        setSpec(data.project.specification)
+        if (data.project.planAnalysis !== undefined) setAnalysis(data.project.planAnalysis ?? null)
+        toast.success(`${label} saved to your plan.`)
+        return true
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Could not update the plan. Please try again.")
-        // Swallowed: the SectionDetail editor is mounted from the same state
-        // as its container; rethrowing surfaced as an unhandled rejection in
-        // the console without adding anything the toast doesn't already show.
+        // Return false instead of throwing: SectionDetail keeps the editor open
+        // and the draft intact, and there is no unhandled rejection in console.
+        return false
       }
     },
     [projectId],
@@ -1828,9 +2729,12 @@ export function CollaborateClient({
               : prev,
           )
           try {
-            // Same validated PATCH as clicking Add on an insight card.
+            // Same validated PATCH as clicking Add on an insight card. The
+            // proposal id marks it as AI-authored so list sections (features/
+            // flows/data) keep their catalogs and record the prose as build
+            // instructions.
             const data = await patchJson<{ project: Project }>(`/api/projects/${projectId}`, {
-              sectionUpdate: { section: s.section, value: s.proposedValue },
+              sectionUpdate: { section: s.section, value: s.proposedValue, acceptedProposal: { id: s.id } },
             })
             if (data.project?.specification) setSpec(data.project.specification)
             queue = queue.filter((q) => q.id !== s.section)
@@ -2061,16 +2965,149 @@ export function CollaborateClient({
   }, [])
 
   if (!spec) {
+    const pipelineFailed = projectState === "analysis_failed" || projectState === "plan_failed"
+    const planning = projectState === "analysis_complete" || projectState === "pending_plan"
+    const title = pipelineFailed
+      ? projectState === "plan_failed"
+        ? "The plan needs attention"
+        : "Understanding needs attention"
+      : planning
+        ? "Drafting your plan"
+        : "Preparing your starting context"
+    const body = pipelineFailed
+      ? pipelineError ?? "This step stopped before it finished. Retry it — anything already learned is kept."
+      : projectState === "created"
+        ? "Your project is ready. Your co-founder is starting with what you shared."
+        : planning
+          ? "Your team has what it needs. The plan is being drafted now — this page updates automatically."
+          : "Atai is turning your vision into a plan you can shape together. This usually takes a minute."
+
+    // Same journey model as the workspace, so both surfaces agree on which
+    // step is running, how quiet it has been, and when a restart is allowed.
+    const steps = buildJourneySteps(
+      {
+        state: projectState,
+        events: liveEvents,
+        updatedAt: liveUpdatedAt,
+        error: pipelineError ?? undefined,
+        pipelineRecovery: recovery ?? undefined,
+        mode: initialProject.mode,
+      },
+      clock,
+    )
+    const activeStep = steps.find((s) => s.status === "at_work" || s.status === "getting_ready") ?? null
+    const canRestart = Boolean(activeStep?.action?.restart)
+    const restartLabel = activeStep?.id === "plan" ? "Restart planning" : "Restart understanding"
+    const retryLabel = recovery?.phase === "plan" || projectState === "plan_failed" ? "Retry planning" : "Retry understanding"
+    const automaticRetryRan = (recovery?.attempts ?? 0) > 1
+
     return (
-      <div className="flex flex-1 items-center justify-center p-12 text-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="flex size-16 items-center justify-center rounded-full bg-muted" aria-hidden>
-            <ClipboardList className="size-7 text-muted-foreground" />
+      <div className="flex flex-1 items-center justify-center p-8 text-center sm:p-12">
+        <div className="flex max-w-md flex-col items-center gap-4">
+          <div
+            className={cn(
+              "flex size-16 items-center justify-center rounded-full",
+              pipelineFailed ? "bg-destructive/10" : "bg-muted",
+            )}
+            aria-hidden
+          >
+            <ClipboardList className={cn("size-7", pipelineFailed ? "text-destructive" : "text-muted-foreground")} />
           </div>
-          <h2 className="text-xl font-semibold">Preparing your starting context</h2>
-          <p className="max-w-sm text-sm text-muted-foreground">
-            Atai is turning your vision into a plan you can shape together. This usually takes a minute.
-          </p>
+          <h2 className="text-xl font-semibold">{title}</h2>
+          <p className="text-sm text-muted-foreground">{body}</p>
+
+          {/* What the running step is actually doing, straight from its events. */}
+          {!pipelineFailed && activeStep && (activeStep.detail || activeStep.elapsedMs !== null) && (
+            <div className="flex flex-col items-center gap-1">
+              {activeStep.detail && <p className="text-xs text-muted-foreground">{activeStep.detail}</p>}
+              {activeStep.elapsedMs !== null && (
+                <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+                  {activeStep.label} · {formatDuration(activeStep.elapsedMs)} since the last update
+                </p>
+              )}
+            </div>
+          )}
+
+          {pipelineFailed && automaticRetryRan && (
+            <p className="text-xs text-muted-foreground">
+              We already retried this step automatically and it stopped again. Retrying now keeps everything already
+              learned.
+            </p>
+          )}
+
+          {retryNote && (
+            <p
+              role="alert"
+              className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+            >
+              {retryNote}
+            </p>
+          )}
+
+          {pollFailures >= 3 && (
+            <div
+              role="status"
+              className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-600 dark:text-amber-400"
+            >
+              <p>
+                We can&apos;t refresh this project right now{pollError ? ` — ${pollError}` : ""}. We keep trying
+                automatically.
+              </p>
+              <button
+                type="button"
+                onClick={refreshPolling}
+                className="mt-1.5 font-medium underline underline-offset-2"
+              >
+                Try again now
+              </button>
+            </div>
+          )}
+
+          {pipelineFailed ? (
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              {isOwner ? (
+                <button
+                  type="button"
+                  disabled={retryingPipeline}
+                  onClick={() => void retryPipeline()}
+                  className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+                >
+                  {retryingPipeline ? "Retrying…" : retryLabel}
+                </button>
+              ) : null}
+              <a
+                href={`/project/${projectId}`}
+                className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground hover:border-primary/40 hover:text-primary"
+              >
+                Open workspace
+              </a>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-2">
+              {canRestart && isOwner ? (
+                <button
+                  type="button"
+                  disabled={retryingPipeline}
+                  onClick={() => void retryPipeline()}
+                  className="inline-flex items-center justify-center rounded-xl border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-50"
+                >
+                  {retryingPipeline ? "Restarting…" : restartLabel}
+                </button>
+              ) : null}
+              {activeStep?.stalled && !canRestart ? (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  This is taking longer than usual. If the run stops responding it restarts automatically.
+                </p>
+              ) : null}
+              <p className="text-xs text-muted-foreground">
+                Taking longer than expected?{" "}
+                <a href={`/project/${projectId}`} className="font-medium text-primary hover:underline">
+                  Open the workspace
+                </a>{" "}
+                to see each step and restart it.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -2082,28 +3119,30 @@ export function CollaborateClient({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-      {/* Auto-complete button — portaled into the page header (with a
-          graceful in-page fallback below lg, where the header actions are
-          hidden). Visible while the founder owns the workspace and a run
-          isn't active. */}
+      {/* Auto-complete button — portaled into the page header, where it takes
+          the full width of its own row on phones and sits inline from sm up.
+          Visible while the founder owns the workspace and a run isn't active. */}
       {isOwner && autoEstimate && autoEstimate.missingSections.length > 0 && !runActive && autoHeaderSlot
         ? createPortal(
           <button
             onClick={startAutoComplete}
-            className="group inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-1.5 text-xs font-semibold text-white shadow-md shadow-fuchsia-600/20 transition-all hover:shadow-lg hover:shadow-fuchsia-600/30 hover:brightness-110"
+            className="group inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-xs font-semibold text-white shadow-md shadow-fuchsia-600/20 transition-all hover:shadow-lg hover:shadow-fuchsia-600/30 hover:brightness-110 sm:flex-none sm:py-1.5"
           >
-            <Sparkles className="size-3.5" aria-hidden />
-            Auto-complete {autoEstimate.missingSections.length} section{autoEstimate.missingSections.length === 1 ? "" : "s"}
+            <Sparkles className="size-3.5 shrink-0" aria-hidden />
+            Auto-complete {autoEstimate.missingSections.length}
+            <span className="hidden sm:inline">section{autoEstimate.missingSections.length === 1 ? "" : "s"}</span>
             {autoEstimate.sectionCost > 0 && (
               <span className="font-mono text-[11px] font-medium text-white/85">· {autoEstimate.totalCost}</span>
             )}
-            <span className="rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide">New</span>
+            <span className="hidden shrink-0 rounded-full bg-white/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide sm:inline">New</span>
           </button>,
           autoHeaderSlot,
         )
         : null}
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        {/* Desktop: 3 areas — plan (left), AI (center, dominant), insights (right) */}
+        {/* Desktop: 3 areas — plan (left), AI (center, dominant), insights
+          (right). Tablets stay in the tab flow below so all three are reachable
+          at any width. */}
         <aside className="collab-scroll hidden w-64 shrink-0 overflow-y-auto border-r border-border lg:block" aria-label="My plan">
           <PlanNav
             spec={spec}
@@ -2116,8 +3155,8 @@ export function CollaborateClient({
           />
         </aside>
 
-        {/* Desktop center column — hidden below lg so the mobile container is
-          the single source of these components (no duplicate mounts). */}
+        {/* Center column — hidden below lg so the tab flow is the single
+          source of these components on phones and tablets. */}
         <main className="hidden min-w-0 flex-1 flex-col overflow-hidden lg:flex">
           {runActive && autoRun ? (
             <AutoCompleteRunView
@@ -2185,10 +3224,11 @@ export function CollaborateClient({
           />
         </aside>
 
-        {/* Mobile / tablet: single-column flow with view switcher. The only
-          mount of chat/section/launch below lg — the desktop column is hidden.
-          min-h-0 keeps the flex chain height-constrained so each tab panel
-          scrolls internally and the launch button stays pinned. */}
+        {/* Phone / tablet: single-column flow with view switcher — the only
+          mount of chat/section/launch below lg, so the plan, the co-founder and
+          the insights all stay reachable at any width. min-h-0 keeps the flex
+          chain height-constrained so each tab panel scrolls internally and the
+          launch button stays pinned. */}
         <div className="flex w-full min-h-0 flex-col lg:hidden">
           {runActive && autoRun && (
             <div className="flex min-h-0 flex-1 flex-col">
@@ -2209,8 +3249,12 @@ export function CollaborateClient({
             </div>
           )}
           <div className={cx("flex w-full min-h-0 flex-col", runActive && "hidden")}>
-            <div className="flex border-b border-border bg-card" role="tablist" aria-label="Workspace views">
-              {(["plan", "chat", "insights"] as const).map((v) => (
+            <div className="flex shrink-0 border-b border-border bg-card" role="tablist" aria-label="Workspace views">
+              {([
+                { v: "plan", label: "My Plan", Icon: ClipboardList },
+                { v: "chat", label: "Co-Founder", Icon: Sparkles },
+                { v: "insights", label: "Insights", Icon: Lightbulb },
+              ] as const).map(({ v, label, Icon }) => (
                 <button
                   key={v}
                   id={`collab-tab-${v}`}
@@ -2219,17 +3263,21 @@ export function CollaborateClient({
                   aria-controls={`collab-panel-${v}`}
                   onClick={() => setMobileView(v)}
                   className={cx(
-                    "flex-1 px-3 py-2.5 text-xs font-medium capitalize transition-colors",
-                    mobileView === v ? "border-b-2 border-primary text-foreground" : "text-muted-foreground",
+                    // min-h-11 keeps the whole strip inside the 44px touch target.
+                    "flex min-h-11 flex-1 items-center justify-center gap-1.5 border-b-2 px-1 text-xs font-medium transition-colors",
+                    mobileView === v
+                      ? "border-primary bg-primary/5 text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
                   )}
                 >
-                  {v === "plan" ? "My Plan" : v === "chat" ? "AI Co-Founder" : "Insights"}
+                  <Icon className="size-3.5 shrink-0" aria-hidden />
+                  <span className="truncate">{label}</span>
                 </button>
               ))}
             </div>
             <div className="flex flex-1 min-h-0 flex-col">
               {mobileView === "plan" && (
-                <div id="collab-panel-plan" role="tabpanel" aria-labelledby="collab-tab-plan" className="min-h-0 flex-1 overflow-y-auto collab-scroll">
+                <div id="collab-panel-plan" role="tabpanel" aria-labelledby="collab-tab-plan" className="collab-scroll min-h-0 flex-1 overflow-y-auto md:mx-auto md:w-full md:max-w-3xl">
                   <PlanNav
                     spec={spec}
                     activeSection={activeSection}
@@ -2240,7 +3288,7 @@ export function CollaborateClient({
                       if (selecting) setMobileView("chat")
                     }}
                     analysis={analysis}
-                    collapsedOnMobile
+                    forMobile
                   />
                 </div>
               )}
@@ -2277,7 +3325,7 @@ export function CollaborateClient({
                 </div>
               )}
               {mobileView === "insights" && (
-                <div id="collab-panel-insights" role="tabpanel" aria-labelledby="collab-tab-insights" className="min-h-0 flex-1 overflow-y-auto collab-scroll">
+                <div id="collab-panel-insights" role="tabpanel" aria-labelledby="collab-tab-insights" className="collab-scroll min-h-0 flex-1 overflow-y-auto md:mx-auto md:w-full md:max-w-3xl">
                   <InsightsPanel
                     spec={spec}
                     analysis={analysis}

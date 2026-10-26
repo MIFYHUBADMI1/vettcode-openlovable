@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Plus, X, Check, DollarSign, Sparkles, Zap } from "lucide-react"
+import { CofounderMarkdown } from "@/components/cofounder/markdown"
 
 export interface PricingTier {
   id: string
@@ -50,28 +51,94 @@ const DEFAULT_TIERS: PricingTier[] = [
   },
 ]
 
+function normalizeTier(raw: Partial<PricingTier>, index: number): PricingTier {
+  const interval =
+    raw.interval === "year" || raw.interval === "one-time" || raw.interval === "month" ? raw.interval : "month"
+  return {
+    id: typeof raw.id === "string" && raw.id ? raw.id : `tier-${index}`,
+    name: typeof raw.name === "string" && raw.name.trim() ? raw.name.trim() : `Tier ${index + 1}`,
+    price: typeof raw.price === "string" ? raw.price : typeof raw.price === "number" ? String(raw.price) : "0",
+    interval,
+    description: typeof raw.description === "string" ? raw.description : "",
+    features: Array.isArray(raw.features) ? raw.features.filter((f): f is string => typeof f === "string") : [],
+    highlighted: raw.highlighted === true,
+    comingSoon: raw.comingSoon === true,
+  }
+}
+
+/** Parse the markdown `serializeTiers` emits so opening the editor on a saved
+ * section round-trips instead of resetting it to the default tiers. */
+function parseMarkdownTiers(value: string): PricingTier[] {
+  // The serializer always emits "## Tier" blocks with a **Price** line; both
+  // markers must be present, otherwise this is free-form prose, not a tier
+  // list, and the caller keeps it as text.
+  if (!/\*\*Price\*\*:/i.test(value) || !/(?:^|\n)##\s+\S/.test(value)) return []
+  const tiers: PricingTier[] = []
+  for (const block of `\n${value}`.split(/\n##\s+/)) {
+    if (!block.trim()) continue
+    const newline = block.indexOf("\n")
+    const name = (newline === -1 ? block : block.slice(0, newline)).trim()
+    if (!name || name.startsWith("#")) continue
+    const body = newline === -1 ? "" : block.slice(newline + 1)
+
+    const priceLine = body.match(/\*\*Price\*\*:\s*(.+)/i)?.[1]?.trim() ?? ""
+    let price = "0"
+    let interval: PricingTier["interval"] = "month"
+    if (/^\$?\s*custom$/i.test(priceLine)) {
+      price = "Custom"
+    } else {
+      const match = priceLine.match(/\$?\s*([\d.,]+)\s*(?:\/\s*(month|year|one-time))?/i)
+      if (match) {
+        price = match[1]
+        if (match[2] === "year" || match[2] === "one-time") interval = match[2]
+      }
+    }
+
+    const description = body.match(/\*\*Description\*\*:\s*(.+)/i)?.[1]?.trim() ?? ""
+    const features: string[] = []
+    const featuresAt = body.search(/\*\*Features\*\*:/i)
+    if (featuresAt !== -1) {
+      for (const line of body.slice(featuresAt).split("\n").slice(1)) {
+        if (/^\s*(?:\*\*|##|---)/.test(line)) break
+        const feature = line.match(/^\s*-\s+(.+)$/)?.[1]?.trim()
+        if (feature) features.push(feature)
+      }
+    }
+
+    tiers.push({
+      id: name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || `tier-${tiers.length}`,
+      name,
+      price,
+      interval,
+      description,
+      features,
+      highlighted: /\*\*Recommended\*\*/i.test(body),
+      comingSoon: /\*\*Status\*\*:\s*Coming soon/i.test(body),
+    })
+  }
+  return tiers
+}
+
 function parseTiers(value: string): PricingTier[] {
   if (!value || value.trim().length === 0) return []
-  
   try {
-    // Try parsing as JSON first
-    const parsed = JSON.parse(value)
-    if (Array.isArray(parsed)) return parsed
+    const parsed = JSON.parse(value) as unknown
+    if (Array.isArray(parsed)) {
+      return parsed.map((tier, index) => normalizeTier((tier ?? {}) as Partial<PricingTier>, index))
+    }
   } catch {
-    // Not JSON, try parsing markdown format
-    // This is a simplified parser - could be enhanced
+    // Not JSON — fall through to the markdown parser.
   }
-  
-  return []
+  return parseMarkdownTiers(value)
 }
 
 function serializeTiers(tiers: PricingTier[]): string {
   // Generate markdown format for the AI builder
   let markdown = "# Pricing Tiers\n\n"
-  
+
   tiers.forEach((tier, idx) => {
     markdown += `## ${tier.name}\n\n`
-    markdown += `**Price**: $${tier.price}${tier.price === "Custom" ? "" : `/${tier.interval}`}\n\n`
+    markdown += `**Price**: ${tier.price === "Custom" ? "Custom" : `$${tier.price}/${tier.interval}`}\n\n`
     markdown += `**Description**: ${tier.description}\n\n`
     markdown += `**Features**:\n`
     tier.features.forEach(feature => {
@@ -85,14 +152,18 @@ function serializeTiers(tiers: PricingTier[]): string {
     }
     if (idx < tiers.length - 1) markdown += `\n---\n\n`
   })
-  
+
   return markdown
 }
 
 export function PricingTierBuilder({ value, onChange, readonly = false }: PricingTierBuilderProps) {
+  const [initial] = useState(() => parseTiers(value))
+  // Free-form text (an AI-drafted pricing section) isn't a tier list — editing
+  // it as text preserves the founder's content instead of replacing it with
+  // the default tiers.
+  const rawMode = value.trim().length > 0 && initial.length === 0
   const [tiers, setTiers] = useState<PricingTier[]>(() => {
-    const parsed = parseTiers(value)
-    return parsed.length > 0 ? parsed : DEFAULT_TIERS
+    return initial.length > 0 ? initial : DEFAULT_TIERS
   })
   const [editingId, setEditingId] = useState<string | null>(null)
 
@@ -145,6 +216,31 @@ export function PricingTierBuilder({ value, onChange, readonly = false }: Pricin
         ? { ...t, features: t.features.map((f, i) => i === featureIndex ? newValue : f) }
         : t
     ))
+  }
+
+  if (rawMode) {
+    if (readonly) {
+      return (
+        <div className="rounded-xl border border-border bg-card p-5 text-sm leading-6 text-foreground">
+          <CofounderMarkdown>{value}</CofounderMarkdown>
+        </div>
+      )
+    }
+    return (
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">
+          This section holds free-form pricing notes from your co-founder, so it&apos;s edited as text — nothing is
+          reset to default tiers.
+        </p>
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          rows={12}
+          aria-label="Edit pricing section"
+          className="collab-scroll max-h-[70dvh] w-full resize-y rounded-xl border border-primary/40 bg-background px-4 py-3 text-base leading-6 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 sm:max-h-none sm:text-sm"
+        />
+      </div>
+    )
   }
 
   if (readonly) {

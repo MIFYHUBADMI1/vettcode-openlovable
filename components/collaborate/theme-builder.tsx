@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Palette, Moon, Sun, Monitor, Check, Sparkles } from "lucide-react"
+import { CofounderMarkdown } from "@/components/cofounder/markdown"
 
 export interface ThemeConfig {
   mode: "light" | "dark" | "system"
@@ -82,24 +83,78 @@ const THEME_PRESETS = [
   },
 ]
 
+const DEFAULT_THEME: ThemeConfig = {
+  mode: "system",
+  primaryColor: "#3b82f6",
+  density: "comfortable",
+  borderRadius: "medium",
+}
+
+const HEX_COLOR = /^#[0-9a-f]{3,8}$/i
+
+function normalizeTheme(raw: Partial<ThemeConfig>): ThemeConfig {
+  const mode = raw.mode === "light" || raw.mode === "dark" ? raw.mode : "system"
+  const density = raw.density === "compact" || raw.density === "spacious" ? raw.density : "comfortable"
+  const borderRadius =
+    raw.borderRadius === "none" || raw.borderRadius === "small" || raw.borderRadius === "large"
+      ? raw.borderRadius
+      : "medium"
+  return {
+    mode,
+    density,
+    borderRadius,
+    primaryColor: typeof raw.primaryColor === "string" && HEX_COLOR.test(raw.primaryColor) ? raw.primaryColor : DEFAULT_THEME.primaryColor,
+    ...(typeof raw.accentColor === "string" && HEX_COLOR.test(raw.accentColor) ? { accentColor: raw.accentColor } : {}),
+    ...(typeof raw.fontHeading === "string" && raw.fontHeading ? { fontHeading: raw.fontHeading } : {}),
+    ...(typeof raw.fontBody === "string" && raw.fontBody ? { fontBody: raw.fontBody } : {}),
+    ...(typeof raw.fontMono === "string" && raw.fontMono ? { fontMono: raw.fontMono } : {}),
+    ...(typeof raw.preset === "string" && THEME_PRESETS.some((p) => p.id === raw.preset) ? { preset: raw.preset } : {}),
+  }
+}
+
+/** Parse the markdown `serializeTheme` emits so opening the editor on a saved
+ * section round-trips instead of resetting it to defaults. Returns null when
+ * the text isn't a recognizable theme description (free-form AI prose). */
+function parseThemeMarkdown(value: string): ThemeConfig | null {
+  const primary = value.match(/\*\*Primary Color\*\*:\s*([^\s]+)/i)?.[1]
+  const accent = value.match(/\*\*Accent Color\*\*:\s*([^\s]+)/i)?.[1]
+  const modeRaw = value.match(/\*\*Mode\*\*:\s*(.+)/i)?.[1]?.trim().toLowerCase() ?? ""
+  const fontHeading = value.match(/\*\*Headings\*\*:\s*(.+)/i)?.[1]?.trim()
+  const fontBody = value.match(/\*\*Body Text\*\*:\s*(.+)/i)?.[1]?.trim()
+  const fontMono = value.match(/\*\*Monospace(?: \(code\))?\*\*:\s*(.+)/i)?.[1]?.trim()
+  const density = value.match(/\*\*Density\*\*:\s*(compact|comfortable|spacious)/i)?.[1]?.toLowerCase()
+  const radius = value.match(/\*\*Border Radius\*\*:\s*(none|small|medium|large)/i)?.[1]?.toLowerCase()
+  const direction = value.match(/\*\*Design Direction\*\*:\s*([^\n-]+)/i)?.[1]?.trim()
+
+  const recognized = primary || accent || modeRaw || fontHeading || fontBody || fontMono || density || radius
+  if (!recognized) return null
+
+  const preset = THEME_PRESETS.find((p) => direction && p.name.toLowerCase() === direction.toLowerCase())
+
+  return normalizeTheme({
+    mode: modeRaw.startsWith("dark") ? "dark" : modeRaw.startsWith("light") ? "light" : "system",
+    ...(primary ? { primaryColor: primary } : {}),
+    ...(accent ? { accentColor: accent } : {}),
+    ...(fontHeading ? { fontHeading } : {}),
+    ...(fontBody ? { fontBody } : {}),
+    ...(fontMono ? { fontMono } : {}),
+    ...(density ? { density: density as ThemeConfig["density"] } : {}),
+    ...(radius ? { borderRadius: radius as ThemeConfig["borderRadius"] } : {}),
+    ...(preset ? { preset: preset.id } : {}),
+  })
+}
+
 function parseTheme(value: string): ThemeConfig | null {
   if (!value || value.trim().length === 0) return null
-  
-  try {
-    return JSON.parse(value)
-  } catch {
-    // Parse markdown format
-    const config: ThemeConfig = {
-      mode: "system",
-      primaryColor: "#3b82f6",
+  const trimmed = value.trim()
+  if (trimmed.startsWith("{")) {
+    try {
+      return normalizeTheme(JSON.parse(trimmed) as Partial<ThemeConfig>)
+    } catch {
+      // Malformed JSON — let the markdown parser decide.
     }
-    
-    // Simple extraction
-    if (value.includes("dark mode") || value.includes("Dark:")) config.mode = "dark"
-    else if (value.includes("light mode") || value.includes("Light:")) config.mode = "light"
-    
-    return config
   }
+  return parseThemeMarkdown(trimmed)
 }
 
 function serializeTheme(config: ThemeConfig): string {
@@ -138,14 +193,11 @@ function serializeTheme(config: ThemeConfig): string {
 }
 
 export function ThemeBuilder({ value, onChange, readonly = false }: ThemeBuilderProps) {
-  const [config, setConfig] = useState<ThemeConfig>(() => {
-    return parseTheme(value) ?? {
-      mode: "system",
-      primaryColor: "#3b82f6",
-      density: "comfortable",
-      borderRadius: "medium",
-    }
-  })
+  const [initial] = useState(() => parseTheme(value))
+  // Free-form theme prose (an AI draft) is kept as text; only recognized
+  // theme descriptions are safe to round-trip through the visual controls.
+  const rawMode = value.trim().length > 0 && initial === null
+  const [config, setConfig] = useState<ThemeConfig>(() => initial ?? DEFAULT_THEME)
 
   function updateConfig(updates: Partial<ThemeConfig>) {
     const newConfig = { ...config, ...updates }
@@ -158,6 +210,31 @@ export function ThemeBuilder({ value, onChange, readonly = false }: ThemeBuilder
     if (preset) {
       updateConfig({ ...preset.config, preset: presetId })
     }
+  }
+
+  if (rawMode) {
+    if (readonly) {
+      return (
+        <div className="rounded-xl border border-border bg-card p-5 text-sm leading-6 text-foreground">
+          <CofounderMarkdown>{value}</CofounderMarkdown>
+        </div>
+      )
+    }
+    return (
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground">
+          This section holds free-form theme notes from your co-founder, so it&apos;s edited as text — nothing is
+          reset to the default theme.
+        </p>
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          rows={12}
+          aria-label="Edit theme section"
+          className="collab-scroll max-h-[70dvh] w-full resize-y rounded-xl border border-primary/40 bg-background px-4 py-3 text-base leading-6 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 sm:max-h-none sm:text-sm"
+        />
+      </div>
+    )
   }
 
   if (readonly) {

@@ -105,14 +105,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       const validated = validatePlanSectionValue(section, su?.value)
       if (!validated.ok) return fail("VALIDATION", validated.error, 422)
 
-      const current = project.specification
-      if (!current) return fail("VALIDATION", "This project has no plan yet.", 409)
-      const nextSpec = applySectionUpdate(current, section as PlanSectionId, validated.value)
-      const reparsed = ApplicationSpecificationSchema.safeParse(nextSpec)
-      if (!reparsed.success) return fail("VALIDATION", "The proposed value is invalid for this section.", 422)
-      patch.specification = reparsed.data
-      patch.specSanitized = false
-
       if (su.acceptedProposal) {
         acceptedProposal =
           (project.planAnalysis?.proposals ?? []).find((p) => p.id === su.acceptedProposal?.id) ?? null
@@ -120,6 +112,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           ? decisionForProposal(acceptedProposal)
           : `Updated ${getPlanSection(section)?.label ?? section}`
       }
+
+      const current = project.specification
+      if (!current) return fail("VALIDATION", "This project has no plan yet.", 409)
+      // An accepted proposal carries AI prose (which list sections record as
+      // build instructions); an edit typed by the founder replaces the
+      // structured catalog for features/flows/data.
+      const nextSpec = applySectionUpdate(current, section as PlanSectionId, validated.value, {
+        mode: acceptedProposal ? "proposal" : "manual",
+      })
+      const reparsed = ApplicationSpecificationSchema.safeParse(nextSpec)
+      if (!reparsed.success) return fail("VALIDATION", "The proposed value is invalid for this section.", 422)
+      patch.specification = reparsed.data
+      patch.specSanitized = false
     }
 
     if (!Object.keys(patch).length) return fail("VALIDATION", "No editable project data was provided.", 422)
