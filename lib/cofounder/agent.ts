@@ -7,6 +7,7 @@ import { buildAgentContextBlock, COFOUNDER_AGENT_SYSTEM } from "./prompts"
 import { buildActiveProjectBrief } from "./context"
 import { getTool, immediateTools, listTools } from "./tool-registry"
 import { toToolOutcome } from "./errors"
+import { isAbortTimeoutError } from "@/lib/api/upstream-error"
 import { cofounderMessage, appendCofounderMessages } from "./conversation"
 import type { CofounderConversationMessage, ToolContext, ToolDefinition } from "./types"
 
@@ -24,6 +25,12 @@ import type { CofounderConversationMessage, ToolContext, ToolDefinition } from "
 
 /** Hard bound on tool steps per turn — no infinite loops. */
 export const MAX_TOOL_STEPS = 6
+
+/** Ceiling for one whole agent turn (all tool steps plus SDK retries). A free
+ * model can queue for tens of seconds per step, so this is deliberately larger
+ * than a single call — but it must exist, or a stalled turn holds the HTTP
+ * request open indefinitely and the panel never resolves. */
+export const AGENT_TURN_TIMEOUT_MS = 240_000
 
 /** Structured request the model uses to reach a confirmation tool. */
 const prepareRequestSchema = z.object({
@@ -174,6 +181,10 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResu
       tools,
       stopWhen: stepCountIs(MAX_TOOL_STEPS),
       maxOutputTokens: 4096,
+      maxRetries: 2,
+      // One bound for the whole multi-step turn. Without it a queued free-tier
+      // model can hold the request open for minutes and the panel just spins.
+      abortSignal: AbortSignal.timeout(AGENT_TURN_TIMEOUT_MS),
     })
 
     finalText = result.text
@@ -211,8 +222,14 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResu
       )
     }
   } catch (e) {
-    loggerSafe("error", "agent loop failed", { message: e instanceof Error ? e.message : String(e) })
-    finalText = "I hit a problem reaching my tools. Please try again in a moment."
+    const timedOut = isAbortTimeoutError(e)
+    loggerSafe(timedOut ? "warn" : "error", timedOut ? "agent loop timed out" : "agent loop failed", {
+      message: e instanceof Error ? e.message : String(e),
+      limitMs: AGENT_TURN_TIMEOUT_MS,
+    })
+    finalText = timedOut
+      ? `That took longer than ${Math.round(AGENT_TURN_TIMEOUT_MS / 1000)}s and I stopped waiting — the co-founder is probably queued behind a busy model. Send it again and I'll pick it up.`
+      : "I hit a problem reaching my tools. Please try again in a moment."
   }
 
   const assistantMsg = cofounderMessage("assistant", finalText)
