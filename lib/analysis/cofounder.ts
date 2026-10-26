@@ -1,5 +1,5 @@
 import type { ApplicationSpecification } from "@/lib/types/specification"
-import { PLAN_SECTIONS, sectionStatus, computePlanHealth, isPlaceholderValue, type PlanSectionDef } from "@/lib/analysis/plan-sections"
+import { PLAN_SECTIONS, sectionStatus, computePlanHealth, isPlaceholderValue, clampPlanSectionValue, type PlanSectionDef } from "@/lib/analysis/plan-sections"
 import { PlanAnalysisSchema, type PlanAnalysis, type PlanProposal } from "@/lib/types/plan-analysis"
 import { SECTION_DEPENDENCIES } from "@/lib/types/plan-analysis"
 import type { ConversationMessage, ProjectPreferences } from "@/lib/types/project"
@@ -734,7 +734,7 @@ function toProposal(p: { section?: unknown; proposedValue?: unknown; reason?: un
     id: cryptoId(),
     section,
     currentValue: "", // filled by the route from the real spec
-    proposedValue,
+    proposedValue: clampPlanSectionValue(proposedValue),
     reason: typeof p.reason === "string" && p.reason.trim() ? p.reason.trim() : "Improves the plan.",
     source,
     createdAt: new Date().toISOString(),
@@ -821,7 +821,7 @@ export function buildProposal(spec: ApplicationSpecification, parsed: { section:
     id: cryptoId(),
     section: parsed.section,
     currentValue: def ? def.read(spec) : "",
-    proposedValue: parsed.proposedValue,
+    proposedValue: clampPlanSectionValue(parsed.proposedValue),
     reason: parsed.reason,
     source,
     createdAt: new Date().toISOString(),

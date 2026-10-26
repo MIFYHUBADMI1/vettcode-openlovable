@@ -251,6 +251,21 @@ export function computePlanHealth(spec: ApplicationSpecification): {
 
 const MAX_SECTION_VALUE_LENGTH = 8000
 
+/** The largest section value the plan accepts. Proposal builders need it so
+ * they never offer something the accept PATCH is guaranteed to reject. */
+export const MAX_PLAN_SECTION_LENGTH = MAX_SECTION_VALUE_LENGTH
+
+/** Trim AI prose down to the accepted length, cutting at the last whitespace
+ * so the sentence doesn't stop mid-word. Deterministic and visible: the card
+ * shows the exact text that will be saved. */
+export function clampPlanSectionValue(value: string): string {
+  const trimmed = value.trim()
+  if (trimmed.length <= MAX_PLAN_SECTION_LENGTH) return trimmed
+  const cut = trimmed.slice(0, MAX_PLAN_SECTION_LENGTH)
+  const lastBreak = Math.max(cut.lastIndexOf(" "), cut.lastIndexOf("\n"))
+  return (lastBreak > MAX_PLAN_SECTION_LENGTH * 0.6 ? cut.slice(0, lastBreak) : cut).trimEnd()
+}
+
 /** Validate an AI-proposed (or user-edited) section update server-side.
  * The allowed section set and value shape are enforced here — the AI never
  * receives arbitrary mutation capability (spec section 31). */
