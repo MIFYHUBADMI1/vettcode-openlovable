@@ -110,6 +110,55 @@ export async function patchJson<T>(url: string, payload?: unknown): Promise<T> {
   return unwrap<T>(body, res.status)
 }
 
+/** POST a JSON body and read the reply as newline-delimited JSON, handing each
+ * prose frame to `onDelta` while the server is still writing. Resolves with the
+ * terminal `{ done: true, … }` frame; throws like `unwrap` on an error frame or
+ * a non-OK response, so callers keep one failure path. */
+export async function postNdjson<T>(
+  url: string,
+  payload: unknown,
+  handlers: { onDelta: (text: string) => void; onMeta?: (frame: Record<string, unknown>) => void },
+): Promise<T> {
+  const res = await fetch(url, {
+    method: "POST",
+    credentials: "include",
+    headers: { "content-type": "application/json", accept: "application/x-ndjson" },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok || !res.body) {
+    const body = await res.json().catch(() => null)
+    return unwrap<T>(body, res.status)
+  }
+
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ""
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buffer += decoder.decode(value, { stream: true })
+    let newlineAt = buffer.indexOf("\n")
+    while (newlineAt !== -1) {
+      const line = buffer.slice(0, newlineAt).trim()
+      buffer = buffer.slice(newlineAt + 1)
+      if (!line) continue
+      const frame = JSON.parse(line) as Record<string, unknown>
+      if (typeof frame.delta === "string") handlers.onDelta(frame.delta)
+      else if (frame.error) {
+        const error = frame.error as { code?: string; message?: string }
+        const err = new Error(error.message ?? "Request failed.") as Error & { code?: string }
+        err.code = error.code
+        throw err
+      } else if (frame.done) return frame as unknown as T
+      else handlers.onMeta?.(frame)
+      newlineAt = buffer.indexOf("\n")
+    }
+  }
+  // Truncated stream (proxy cut, tab closed): never pretend it succeeded.
+  throw new Error("The co-founder's reply ended before it finished. Please try again.")
+}
+
 export async function deleteJson<T>(url: string): Promise<T> {
   const res = await fetch(url, {
     method: "DELETE",
@@ -246,7 +295,18 @@ export function useProject(id: string | null, options?: { pollWhileBuilding?: bo
       refreshInterval: (latest) => {
         if (!options?.pollWhileBuilding) return 0
         const state = latest?.project?.state
-        return state === "building" || state === "analyzing" || state === "deploying" ? 3000 : 0
+        if (
+          state === "building" ||
+          state === "analyzing" ||
+          state === "analysis_complete" ||
+          state === "deploying"
+        ) {
+          return 3000
+        }
+        // `created` / `pending_plan` are pre-pipeline waiting states; polling
+        // lets the GET route notice a run that never started and self-heal it.
+        if (state === "created" || state === "pending_plan") return 5000
+        return 0
       },
     },
   )

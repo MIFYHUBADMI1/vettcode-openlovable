@@ -3,13 +3,15 @@ import { store, cryptoId } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { generateText } from "ai"
 import { MODEL } from "@/lib/analysis/model"
-import { requestRawCompletion } from "@/lib/analysis/raw-chat"
+import { requestRawCompletion, streamRawCompletion } from "@/lib/analysis/raw-chat"
+import { createPlanUpdateFilter } from "@/lib/analysis/plan-update-stream"
 import { logger } from "@/lib/logging/logger"
 import {
   aiTimeoutUserMessage,
   describeErrorChain,
 } from "@/lib/api/upstream-error"
 import type { ConversationMessage, ProjectEvent } from "@/lib/types/project"
+import type { ApplicationSpecification } from "@/lib/types/specification"
 import {
   buildCollaborateContext,
   COFOUNDER_CHAT_SYSTEM,
@@ -41,8 +43,15 @@ function event(stage: string, message: string, level: ProjectEvent["level"] = "i
  * (spec sections 22, 28, 31).
  *
  * Charges a small credit amount per message (existing ledger).
- * Request body: { message, activeSection?, chatId?, newChat? }
+ * Request body: { message, activeSection?, chatId?, newChat?, stream? }
  * Response: { reply, proposal?, decisions, chatId, truncated }
+ *
+ * With `stream: true` the response is newline-delimited JSON instead, so the
+ * founder watches the answer being written rather than waiting for it:
+ *   {chatId}                                    — the thread this turn belongs to
+ *   {delta}                                     — visible prose, protocol withheld
+ *   {done, proposal, truncated, decisions}      — the turn is finished and stored
+ *   {error: { code, message }}                  — nothing usable arrived (refunded)
  *
  * Threads are project-scoped (see lib/collab-chat/store.ts): each thread's own
  * messages form the model's collaboration memory, so past conversations stay
@@ -70,6 +79,8 @@ export async function POST(
       activeSection?: string
       chatId?: string
       newChat?: boolean
+      /** NDJSON streaming response: prose arrives as it is written. */
+      stream?: boolean
     }
     const message = (body.message ?? "").trim()
     if (!message) {
@@ -133,6 +144,23 @@ export async function POST(
       : ""
       }${message}`
 
+    const turnContext = {
+      spec,
+      projectId: id,
+      userId: user.id,
+      chatId: activeChat.id,
+      message,
+      decisions: project.planUpdateNotes ?? [],
+      context: chatPrompt,
+      createdChat,
+    }
+
+    // Streaming: the founder watches the co-founder write instead of staring
+    // at a spinner through a 30–90s free-tier wait.
+    if (body.stream === true) {
+      return streamChatTurn(turnContext)
+    }
+
     let reply = ""
     let truncated = false
     let aiFailure: unknown = null
@@ -184,40 +212,159 @@ export async function POST(
       }
     }
 
-    const { cleanReply, proposal: parsedProposal } = parseChatProposal(reply)
-
-    // Build the reviewable proposal (current value stamped from the real spec).
-    const proposal = parsedProposal ? buildProposal(spec, parsedProposal, "chat") : undefined
-
-    // Persist the exchange so the co-founder remembers the collaboration.
-    const userMsg: ConversationMessage = {
-      id: cryptoId(),
-      role: "user",
-      content: message,
-      at: Date.now(),
-    }
-    const assistantMsg: ConversationMessage = {
-      id: cryptoId(),
-      role: "assistant",
-      content: cleanReply,
-      at: Date.now(),
-    }
-    await appendProjectChatMessages(activeChat.id, id, user.id, [userMsg, assistantMsg])
-    await store.appendMessage(id, userMsg)
-    await store.appendMessage(id, assistantMsg)
-    await store.appendEvent(
-      id,
-      event("plan", `💬 Co-founder session: "${message.slice(0, 60)}${message.length > 60 ? "…" : ""}"`),
-    )
-
-    return ok({
-      reply: cleanReply,
-      proposal: proposal ?? null,
-      decisions: (project.planUpdateNotes ?? []).length,
-      chatId: activeChat.id,
-      truncated,
-    })
+    return ok(await finalizeChatTurn(turnContext, reply, truncated))
   } catch (e) {
     return handleRouteError("api.projects.plan-chat", e)
   }
+}
+
+interface ChatTurnContext {
+  spec: ApplicationSpecification
+  projectId: string
+  userId: string
+  chatId: string
+  message: string
+  decisions: string[]
+  /** The fully built prompt (context + founder message). */
+  context: string
+  createdChat: boolean
+}
+
+/** Parse the reply, persist the exchange and shape the client payload. Shared
+ * by the JSON and streaming responses so both store the same transcript. */
+async function finalizeChatTurn(ctx: ChatTurnContext, rawReply: string, truncated: boolean) {
+  const { cleanReply, proposal: parsedProposal } = parseChatProposal(rawReply)
+
+  // Build the reviewable proposal (current value stamped from the real spec).
+  const proposal = parsedProposal ? buildProposal(ctx.spec, parsedProposal, "chat") : undefined
+
+  // Persist the exchange so the co-founder remembers the collaboration.
+  const userMsg: ConversationMessage = {
+    id: cryptoId(),
+    role: "user",
+    content: ctx.message,
+    at: Date.now(),
+  }
+  const assistantMsg: ConversationMessage = {
+    id: cryptoId(),
+    role: "assistant",
+    content: cleanReply,
+    at: Date.now(),
+  }
+  await appendProjectChatMessages(ctx.chatId, ctx.projectId, ctx.userId, [userMsg, assistantMsg])
+  await store.appendMessage(ctx.projectId, userMsg)
+  await store.appendMessage(ctx.projectId, assistantMsg)
+  await store.appendEvent(
+    ctx.projectId,
+    event("plan", `💬 Co-founder session: "${ctx.message.slice(0, 60)}${ctx.message.length > 60 ? "…" : ""}"`),
+  )
+
+  return {
+    reply: cleanReply,
+    proposal: proposal ?? null,
+    decisions: ctx.decisions.length,
+    chatId: ctx.chatId,
+    truncated,
+  }
+}
+
+function ndjsonFrame(value: unknown): Uint8Array {
+  return new TextEncoder().encode(`${JSON.stringify(value)}\n`)
+}
+
+/**
+ * NDJSON turn: `{chatId}` then `{delta}` frames, ending with either
+ * `{done, proposal, truncated, decisions}` or `{error}`.
+ *
+ * The headers are sent before the model answers, so every failure path has to
+ * be reported inside the stream. Nothing arrived means the founder's credits
+ * go back; anything at all arriving means they keep them — the reply is real
+ * work even when the provider cut it short.
+ */
+async function streamChatTurn(ctx: ChatTurnContext): Promise<Response> {
+  const dropEmptyChat = async () => {
+    if (!ctx.createdChat) return
+    await deleteProjectChat(ctx.chatId, ctx.projectId, ctx.userId).catch(() => {})
+  }
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (value: unknown) => controller.enqueue(ndjsonFrame(value))
+      const filter = createPlanUpdateFilter()
+      let visible = ""
+
+      try {
+        send({ chatId: ctx.chatId })
+
+        const streamed = await streamRawCompletion({
+          system: COFOUNDER_CHAT_SYSTEM,
+          prompt: ctx.context,
+          maxOutputTokens: 4096,
+          onDelta: (chunk) => {
+            const safe = filter.push(chunk)
+            if (!safe) return
+            visible += safe
+            send({ delta: safe })
+          },
+        })
+
+        let rawReply = streamed.text
+        let truncated = streamed.truncated
+
+        // A stream that never started is exactly the case the raw single-shot
+        // reader was built for: the provider answered, the transport didn't.
+        if (streamed.failed) {
+          const salvaged = await requestRawCompletion({
+            system: COFOUNDER_CHAT_SYSTEM,
+            prompt: ctx.context,
+            maxOutputTokens: 4096,
+          })
+          if (salvaged?.text.trim()) {
+            rawReply = salvaged.text
+            truncated = salvaged.truncated
+            logger.warn("api.projects.plan-chat", "streaming unavailable, recovered the reply in one piece", {
+              projectId: ctx.projectId,
+            })
+            const safe = filter.push(salvaged.text) + filter.flush()
+            if (safe) {
+              visible += safe
+              send({ delta: safe })
+            }
+          }
+        }
+
+        if (!rawReply.trim()) {
+          await dropEmptyChat()
+          await refundCollaboration(ctx.userId, ctx.projectId, "chat")
+          send({ error: { code: "AI_UNAVAILABLE", message: aiTimeoutUserMessage() } })
+          return
+        }
+
+        const result = await finalizeChatTurn(ctx, rawReply, truncated)
+        send({ done: true, proposal: result.proposal, truncated: result.truncated, decisions: result.decisions })
+      } catch (e) {
+        // Whatever the founder already watched get written is worth keeping.
+        logger.error("api.projects.plan-chat", "streamed turn failed", {
+          projectId: ctx.projectId,
+          visibleLength: visible.length,
+          detail: describeErrorChain(e).join(" <- "),
+        })
+        if (!visible.trim()) {
+          await dropEmptyChat().catch(() => {})
+          await refundCollaboration(ctx.userId, ctx.projectId, "chat").catch(() => {})
+        }
+        send({ error: { code: "UNKNOWN", message: "The co-founder's reply stopped mid-sentence. Please try again." } })
+      } finally {
+        controller.close()
+      }
+    },
+  })
+
+  return new Response(stream, {
+    headers: {
+      "content-type": "application/x-ndjson; charset=utf-8",
+      "cache-control": "no-store, no-transform",
+      "x-accel-buffering": "no",
+    },
+  })
 }

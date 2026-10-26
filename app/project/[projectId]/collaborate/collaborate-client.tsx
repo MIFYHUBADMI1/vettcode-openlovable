@@ -9,7 +9,7 @@ import { CofounderWorklog, buildCofounderWorklogSteps } from "@/components/cofou
 import { PricingTierBuilder } from "@/components/collaborate/pricing-tier-builder"
 import { ThemeBuilder } from "@/components/collaborate/theme-builder"
 import { ExpectedVisuals } from "@/components/collaborate/expected-visuals"
-import { postJson, patchJson, deleteJson, jsonFetcher } from "@/lib/client/api"
+import { postJson, patchJson, deleteJson, jsonFetcher, postNdjson } from "@/lib/client/api"
 import { useVoiceDictation } from "@/lib/client/use-voice-dictation"
 import {
   readErrorCode,
@@ -809,6 +809,8 @@ interface ChatMessage {
   role: "user" | "assistant"
   content: string
   proposal?: PlanProposal | null
+  /** The co-founder is still writing this answer. */
+  streaming?: boolean
   /** The provider ran out of output tokens, so this answer stops mid-thought. */
   truncated?: boolean
 }
@@ -1115,38 +1117,74 @@ function ChatPanel({
       const localId = `local-${Date.now()}`
       setMessages((prev) => [...prev, { id: localId, role: "user", content: trimmed }])
       setSending(true)
-      try {
-        const data = await postJson<{
-          reply: string
-          proposal: PlanProposal | null
-          decisions: number
-          chatId?: string
-          truncated?: boolean
-        }>(`/api/projects/${projectId}/plan-chat`, {
-          message: trimmed,
-          activeSection: contextSection,
-          chatId: activeChatId ?? undefined,
-          newChat: !activeChatId,
-        })
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: `a-${Date.now()}`,
-            role: "assistant",
-            content: data.reply,
-            proposal: data.proposal,
-            truncated: data.truncated,
-          },
-        ])
-        if (data.chatId) {
-          setActiveChatId(data.chatId)
-          rememberActiveChat(data.chatId)
-          void refreshChatList()
+      // The reply bubble is created by the first words that land, so the staged
+      // worklog owns the waiting state and never competes with half an answer.
+      let bubbleId: string | null = null
+      const showDelta = (delta: string) => {
+        if (!bubbleId) {
+          bubbleId = `a-${Date.now()}`
+          const id = bubbleId
+          setMessages((prev) => [...prev, { id, role: "assistant", content: delta, streaming: true }])
+          return
         }
+        const id = bubbleId
+        setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, content: m.content + delta } : m)))
+      }
+      try {
+        const data = await postNdjson<{
+          proposal?: PlanProposal | null
+          truncated?: boolean
+        }>(
+          `/api/projects/${projectId}/plan-chat`,
+          {
+            message: trimmed,
+            activeSection: contextSection,
+            chatId: activeChatId ?? undefined,
+            newChat: !activeChatId,
+            stream: true,
+          },
+          {
+            onDelta: showDelta,
+            onMeta: (frame) => {
+              // A brand-new thread exists as soon as the server says so, so the
+              // founder can switch tabs mid-answer without losing it.
+              const chatId = typeof frame.chatId === "string" ? frame.chatId : null
+              if (chatId && chatId !== activeChatId) {
+                setActiveChatId(chatId)
+                rememberActiveChat(chatId)
+              }
+            },
+          },
+        )
+        if (bubbleId) {
+          const id = bubbleId
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === id
+                ? {
+                    ...m,
+                    streaming: false,
+                    proposal: data.proposal ?? null,
+                    truncated: data.truncated === true,
+                  }
+                : m,
+            ),
+          )
+        } else if (data.proposal) {
+          // A reply that was only the plan-update block: the card is the answer.
+          setMessages((prev) => [
+            ...prev,
+            { id: `a-${Date.now()}`, role: "assistant", content: "", proposal: data.proposal },
+          ])
+        }
+        void refreshChatList()
       } catch (e) {
+        const id = bubbleId
+        if (id) setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, streaming: false } : m)))
         // Never lose a message to a failed request — put it back in the
-        // composer unless the founder has already started typing again.
-        setInput((cur) => (cur ? cur : trimmed))
+        // composer unless the founder already saw an answer (or has started
+        // typing again).
+        if (!id) setInput((cur) => (cur ? cur : trimmed))
         const code = (e as Error & { code?: string }).code
         if (code === "CHAT_NOT_FOUND") {
           // The thread was removed elsewhere; the next send starts a new one.
@@ -1364,8 +1402,14 @@ function ChatPanel({
                     <Sparkles className="size-3 text-primary" aria-hidden />
                     Co-founder
                   </p>
-                  <div className="text-sm leading-6 text-foreground">
+                  <div className="text-sm leading-6 text-foreground" aria-busy={m.streaming ? true : undefined}>
                     <CofounderMarkdown>{m.content}</CofounderMarkdown>
+                    {m.streaming && (
+                      <span
+                        className="ml-0.5 inline-block h-4 w-[3px] translate-y-0.5 rounded-full bg-primary motion-reduce:hidden"
+                        aria-hidden
+                      />
+                    )}
                     {m.truncated && (
                       <p className="mt-2 border-t border-border/60 pt-2 text-xs text-muted-foreground">
                         That answer hit the length limit and stops here — ask me to continue and I&apos;ll finish
@@ -1396,7 +1440,7 @@ function ChatPanel({
             </div>
           ))}
 
-          {lastRun && worklogVisible && !error ? (
+          {lastRun && worklogVisible && !error && !messages.some((m) => m.streaming) ? (
             <CofounderWorklog key={lastRun.id} steps={worklogSteps} active={sending} />
           ) : null}
 
