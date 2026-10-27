@@ -55,9 +55,7 @@ const REQUIRED_ENV_VARS: Record<string, readonly string[]> = {
   "search.web": ["FIRECRAWL_API_KEY"],
   "web.scrape": ["FIRECRAWL_API_KEY"],
   "email": ["RESEND_API_KEY", "RESEND_FROM_EMAIL"],
-  "sms": ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM_NUMBER"],
-  "whatsapp": ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_WHATSAPP_FROM_NUMBER"],
-  "notifications": ["FIREBASE_PROJECT_ID", "FIREBASE_CLIENT_EMAIL", "FIREBASE_PRIVATE_KEY"],
+  "notifications": ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"],
   "maps": ["MAPBOX_ACCESS_TOKEN"],
   // CALCOM_DEFAULT_EVENT_TYPE_ID becomes required for createBooking only when
   // the caller does not supply eventTypeId (see the calendar hint).

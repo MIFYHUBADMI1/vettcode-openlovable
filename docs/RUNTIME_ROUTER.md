@@ -84,8 +84,11 @@ Scope: `ai.text`/`chat` only, official endpoint
 provider-neutral data (`id`, `model` actually used, `content`, `finishReason`,
 `usage`); failures become `ProviderExecutionError` categories, including
 `provider_rate_limited` for a provider 429 (distinct from Atai's own
-`runtime_rate_limited`). Streaming, model fallbacks, and provider routing
-options are deliberately not exposed yet.
+`runtime_rate_limited`) and `provider_not_entitled` for a provider 402 — the
+platform's own provider credential has no balance, so no caller-side change
+helps and the router surfaces `503 runtime_provider_not_entitled` plus an
+`error`-level log for the operator. Streaming, model fallbacks, and provider
+routing options are deliberately not exposed yet.
 
 Adapter rules: normalized input in, normalized output out; credentials never
 cross the boundary; all failures wrapped in `ProviderExecutionError`;

@@ -21,7 +21,6 @@ export {
   TilesInputSchema,
   StyleSchemaInputSchema,
   StaticImageInputSchema,
-  TokensInputSchema,
 } from "./mapper"
 export type { MapsResultData, MapsDiagnosticResult, PlaceResultItem } from "./mapper"
 

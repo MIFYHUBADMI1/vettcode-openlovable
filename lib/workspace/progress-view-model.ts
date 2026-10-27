@@ -39,7 +39,14 @@ export const WORKSTREAM_STATUS_LABEL: Record<WorkstreamStatus, string> = {
   status_unavailable: "Status unavailable",
 }
 
-export type ProgressMutation = "build" | "retry_build" | "retry_launch" | "deploy" | null
+export type ProgressMutation =
+  | "build"
+  | "retry_analysis"
+  | "retry_plan"
+  | "retry_build"
+  | "retry_launch"
+  | "deploy"
+  | null
 
 export interface WorkstreamCommand {
   kind: "mutation" | "navigate" | "brief"
@@ -167,8 +174,8 @@ export interface BuildRunView {
 // ─── Internals ────────────────────────────────────────────────────────────────
 
 const KNOWN_STATES = new Set<ProjectState>([
-  "created", "analyzing", "analysis_complete", "specification_ready", "plan_ready",
-  "awaiting_build_confirmation", "building", "build_complete", "build_failed",
+  "created", "analyzing", "analysis_complete", "analysis_failed", "specification_ready", "plan_ready",
+  "plan_failed", "awaiting_build_confirmation", "building", "build_complete", "build_failed",
   "ready", "deploying", "deployed", "deployment_failed", "pending_plan",
 ])
 
@@ -197,15 +204,17 @@ function devUrl(value: string | undefined): string | null {
  * is genuinely the latest server state; historical failure events that a later
  * good state superseded stay in history, not in the "Now"/attention sections. */
 function failureMessage(events: ProjectEvent[] | undefined, state: ProjectState): { at: number; message: string } | null {
-  if (state !== "build_failed" && state !== "deployment_failed") return null
+  if (state !== "analysis_failed" && state !== "plan_failed" && state !== "build_failed" && state !== "deployment_failed") return null
+  const matcher =
+    state === "analysis_failed"
+      ? /analy|understand|research|crawl/i
+      : state === "plan_failed"
+        ? /specify|plan/i
+        : state === "build_failed"
+          ? /build/i
+          : /deploy|launch/i
   const recent = [...(events ?? [])]
-    .filter(
-      (e) =>
-        e.level === "error" &&
-        (state === "build_failed"
-          ? /build/i.test(e.stage) || /build/i.test(e.message)
-          : /deploy|launch/i.test(e.stage) || /deploy|launch/i.test(e.message)),
-    )
+    .filter((e) => e.level === "error" && (matcher.test(e.stage) || matcher.test(e.message)))
     .sort((a, b) => b.at - a.at)
   const latest = recent[0]
   return latest ? { at: latest.at, message: latest.message } : null
@@ -233,6 +242,8 @@ function attentionFromNext(next: WorkspaceNextStep, projectId: string, project: 
 
   let mutation: ProgressMutation = null
   if (next.mutation === "build") mutation = "build"
+  else if (next.mutation === "retry_analysis") mutation = "retry_analysis"
+  else if (next.mutation === "retry_plan") mutation = "retry_plan"
   else if (next.mutation === "retry_build") mutation = "retry_build"
   else if (next.mutation === "retry_launch") mutation = "retry_launch"
   else if (next.kind === "launch" && (project.state === "ready" || project.state === "build_complete") && project.totalumProjectId) {
@@ -256,7 +267,10 @@ function attentionFromNext(next: WorkspaceNextStep, projectId: string, project: 
       action,
       secondaryAction: mutation
         ? { label: "Open workspace", href: base }
-        : project.state === "build_failed" || project.state === "deployment_failed"
+        : project.state === "analysis_failed" ||
+            project.state === "plan_failed" ||
+            project.state === "build_failed" ||
+            project.state === "deployment_failed"
           ? { label: "Ask your co-founder", href: `${base}/progress` }
           : null,
       mutation,
@@ -300,6 +314,7 @@ function workstreamStates(
 
   const research: WorkstreamStatus = (() => {
     if (!isKnownState(state)) return "status_unavailable"
+    if (state === "analysis_failed") return "needs_attention"
     if (state === "analyzing" || state === "pending_plan") return "working"
     if (state === "analysis_complete") return "completed_this_phase"
     if (understood || specExists) return "completed_this_phase"
@@ -309,6 +324,8 @@ function workstreamStates(
 
   const product: WorkstreamStatus = (() => {
     if (!isKnownState(state)) return "status_unavailable"
+    if (state === "plan_failed") return "needs_attention"
+    if (state === "analysis_complete") return "working"
     if (planReady || state === "specification_ready") return "waiting_on_you"
     if (state === "created") return specExists ? "waiting_on_you" : "not_started"
     if (state === "ready" || state === "build_complete") return "idle"
@@ -486,9 +503,18 @@ function buildJourney(project: Project, phase: JourneyPhase): JourneyStageView[]
       // when the real completion condition has already been met (a successful
       // build genuinely finishes the build stage; a successful deployment
       // genuinely finishes the launch stage).
-      if (project.state === "build_failed" || project.state === "deployment_failed") {
+      if (
+        project.state === "analysis_failed" ||
+        project.state === "plan_failed" ||
+        project.state === "build_failed" ||
+        project.state === "deployment_failed"
+      ) {
         status = "attention"
-        note = "This phase needs attention."
+        note = project.state === "analysis_failed"
+          ? "Understanding needs attention."
+          : project.state === "plan_failed"
+            ? "Planning needs attention."
+            : "This phase needs attention."
       } else if (step.id === "build" && (project.state === "build_complete" || project.state === "ready")) {
         status = "complete"
       } else if (step.id === "launch" && project.state === "deployed") {
@@ -572,7 +598,12 @@ function buildDeliverables(project: Project): Deliverable[] {
 
 // ─── Now section ─────────────────────────────────────────────────────────────
 
-const FAILED_STATES: ReadonlySet<ProjectState> = new Set(["build_failed", "deployment_failed"])
+const FAILED_STATES: ReadonlySet<ProjectState> = new Set([
+  "analysis_failed",
+  "plan_failed",
+  "build_failed",
+  "deployment_failed",
+])
 
 function buildNow(
   project: Project,
@@ -583,7 +614,14 @@ function buildNow(
   // Failed states must read as needs_attention, not "waiting on you", even
   // though workspaceNextStep marks failure as needsYou (retry is a founder action).
   if (!live && FAILED_STATES.has(project.state)) {
-    const nextFor = project.state === "build_failed" ? "engineering" : "launch"
+    const nextFor: WorkstreamId =
+      project.state === "analysis_failed"
+        ? "research"
+        : project.state === "plan_failed"
+          ? "product"
+          : project.state === "build_failed"
+            ? "engineering"
+            : "launch"
     return {
       state: "needs_attention",
       headline: next.title,

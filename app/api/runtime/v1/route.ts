@@ -30,7 +30,7 @@ import { enforceProjectRuntimeLimits } from "@/lib/runtime/control/enforce-limit
  */
 
 // Phase 6/10: register ALL production adapters (OpenRouter, ElevenLabs,
-// Firecrawl, Resend, Twilio, Firebase, Mapbox) with the Phase 5 provider
+// Firecrawl, Resend, Supabase, Mapbox) with the Phase 5 provider
 // registry — one idempotent call, no router changes. Module top-level runs
 // once per server process, before any request is routed.
 registerAllRuntimeAdapters()

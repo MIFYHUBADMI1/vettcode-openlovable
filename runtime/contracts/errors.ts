@@ -32,6 +32,10 @@ export const RUNTIME_ERROR_CODES = [
   "runtime_provider_error",
   "runtime_provider_timeout",
   "runtime_provider_rate_limited",
+  /** The platform's provider credential cannot serve the request (provider
+   * HTTP 402 — no purchased credits on Atai's own account). Admin action
+   * required; retrying the same request never succeeds. */
+  "runtime_provider_not_entitled",
   "runtime_model_unavailable",
   "runtime_capability_unavailable",
   /** Billing subsystem could not complete an authoritative charge (fail-closed). */
@@ -57,6 +61,8 @@ export const RUNTIME_ERROR_MESSAGES: Record<RuntimeErrorCode, string> = {
   runtime_provider_error: "The upstream provider returned an error.",
   runtime_provider_timeout: "The upstream provider timed out.",
   runtime_provider_rate_limited: "The upstream provider is rate limiting requests. Please retry later.",
+  runtime_provider_not_entitled:
+    "This capability is temporarily unavailable on the platform. Contact the platform administrator.",
   runtime_model_unavailable: "The requested model is not available.",
   runtime_capability_unavailable: "This capability is not available yet.",
   runtime_billing_unavailable: "The request could not be completed right now. Please retry shortly.",
@@ -77,6 +83,7 @@ export const RUNTIME_ERROR_STATUS: Record<RuntimeErrorCode, number> = {
   runtime_provider_error: 502,
   runtime_provider_timeout: 504,
   runtime_provider_rate_limited: 429,
+  runtime_provider_not_entitled: 503,
   runtime_model_unavailable: 400,
   runtime_capability_unavailable: 501,
   runtime_billing_unavailable: 503,

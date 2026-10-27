@@ -6,6 +6,7 @@ import type {
 } from "@/runtime/contracts/router"
 import type { RuntimeProviderAdapter } from "@/lib/runtime/router/adapter"
 import { ProviderExecutionError } from "@/lib/runtime/router/adapter"
+import { getDodoDefaultCheckoutProductId } from "./config"
 import {
   executeCreateCheckout,
   executeCreateSubscription,
@@ -85,7 +86,7 @@ class DodoAdapter implements RuntimeProviderAdapter {
     const { operation } = request.request
     if (operation === "createCheckout") {
       // 1. Translate (validates; bad caller input → normalized 422-class error).
-      const translated = toDodoCheckoutRequest(request.request.input)
+      const translated = toDodoCheckoutRequest(request.request.input, getDodoDefaultCheckoutProductId())
       // 2. Attribute: stamp trusted server-side metadata onto the checkout.
       const body: typeof translated.body = {
         ...translated.body,

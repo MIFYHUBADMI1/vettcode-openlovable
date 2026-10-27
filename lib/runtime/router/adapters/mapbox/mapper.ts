@@ -1,4 +1,5 @@
 import "server-only"
+import { randomUUID } from "node:crypto"
 import { z } from "zod"
 import type { ProviderExecutionResponse } from "@/runtime/contracts/router"
 import { ProviderExecutionError } from "@/lib/runtime/router/adapter"
@@ -7,13 +8,19 @@ import { ProviderExecutionError } from "@/lib/runtime/router/adapter"
  * Atai Runtime — Mapbox request/response mapper (server-only).
  *
  * Maps provider-neutral `maps` operations onto the Mapbox API surface for
- * playground/runtime testing: search (forward geocoding), reverseGeocode,
- * placeDetails, isochrone, directions, matrix, tilesMetadata, styleSchema,
- * staticImage and tokens. Every operation keeps the §16 invariants: strict
- * input schemas (unknown fields rejected, never forwarded), a fixed set of
- * reachable endpoint paths (constructed here — caller strings are
- * length/charset bounded and URL-encoded), and the access token appended
- * server-side only.
+ * playground/runtime testing: Search Box text search / place retrieval, the v6
+ * geocoding pair (forward + reverse), routing (isochrone/directions/matrix),
+ * vector-tile and style metadata, and static images. Every operation keeps the
+ * §16 invariants: strict input schemas (unknown fields rejected, never
+ * forwarded), a fixed set of reachable endpoint paths (constructed here —
+ * caller strings are length/charset bounded and URL-encoded), and the access
+ * token appended server-side only.
+ *
+ * Path/parameter forms below were verified against the live API, including
+ * where Mapbox 404s: geocoding is `/search/geocode/v6/*`, Search Box is
+ * `/search/searchbox/v1/*`, routing profiles are path-prefixed `mapbox/`,
+ * Matrix is `/directions-matrix/v1/*`, and static-image overlays precede the
+ * position segment.
  *
  * @module lib/runtime/router/adapters/mapbox/mapper
  */
@@ -36,6 +43,9 @@ const LonLatSchema = z
   .refine(([lng, lat]) => lng >= -180 && lng <= 180 && lat >= -90 && lat <= 90, {
     message: "coordinates must be [longitude (-180..180), latitude (-90..90)]",
   })
+
+/** Mapbox static overlay colours: bare 6-digit hex, no '#'. */
+const HexColorSchema = z.string().regex(/^[0-9a-fA-F]{6}$/, "colour must be 6-digit hex without #")
 
 /**
  * Path-segment sanitizer for caller strings that reach the URL PATH. The
@@ -97,10 +107,14 @@ export const SearchInputSchema = z
 
 export const PlaceDetailsInputSchema = z
   .object({
-    /** Mapbox feature/POI id returned by search. */
-    poiId: z.string().regex(/^[A-Za-z0-9._@-]{1,64}$/, "poiId must be a Mapbox feature id"),
-    longitude: z.number().min(-180).max(180).optional(),
-    latitude: z.number().min(-90).max(90).optional(),
+    /** Mapbox feature id (`mapbox_id`) returned by search / geocode. */
+    poiId: z.string().regex(/^[A-Za-z0-9._:@-]{1,512}$/, "poiId must be a Mapbox feature id"),
+    /**
+     * Search Box session token. `retrieve` requires one; the contract has no
+     * autocomplete flow to supply it, so one is minted server-side when the
+     * caller does not provide it.
+     */
+    sessionToken: z.string().min(8).max(128).optional(),
     language: z.string().regex(/^[a-z]{2}(-[A-Za-z]{2,4})?$/, "language must be a BCP 47 tag").optional(),
   })
   .strict()
@@ -136,9 +150,7 @@ export interface MapsDiagnosticResult {
 export interface TranslatedGeocodeRequest {
   path: string
   query: URLSearchParams
-  /** Set when the call must be a POST (Matrix API form-encoded query). */
-  postForm?: boolean
-  /** Set when the response body is binary (static maps PNG). */
+  /** Set when the response body is binary (static maps PNG, vector tiles). */
   binary?: boolean
 }
 
@@ -150,7 +162,7 @@ export function toMapboxGeocodeRequest(input: unknown): TranslatedGeocodeRequest
   query.set("limit", String(parsed.data.limit ?? 5))
   if (parsed.data.country) query.set("country", parsed.data.country)
   if (parsed.data.language) query.set("language", parsed.data.language)
-  return { path: "/search/geocoding/v6/forward", query }
+  return { path: "/search/geocode/v6/forward", query }
 }
 
 export function toMapboxReverseGeocodeRequest(input: unknown): TranslatedGeocodeRequest {
@@ -160,7 +172,7 @@ export function toMapboxReverseGeocodeRequest(input: unknown): TranslatedGeocode
   query.set("longitude", String(parsed.data.longitude))
   query.set("latitude", String(parsed.data.latitude))
   query.set("limit", String(parsed.data.limit ?? 1))
-  return { path: "/search/geocoding/v6/reverse", query }
+  return { path: "/search/geocode/v6/reverse", query }
 }
 
 export function toMapboxSearchRequest(input: unknown): TranslatedGeocodeRequest {
@@ -169,27 +181,30 @@ export function toMapboxSearchRequest(input: unknown): TranslatedGeocodeRequest 
   const query = new URLSearchParams()
   query.set("q", parsed.data.query)
   query.set("limit", String(parsed.data.limit ?? 5))
+  // Search Box biases with `proximity` (lng,lat) — it ignores `ars`, which is
+  // a Geocoding v6 parameter.
   if (parsed.data.longitude !== undefined && parsed.data.latitude !== undefined) {
-    query.set("ars", `${parsed.data.longitude},${parsed.data.latitude}`)
+    query.set("proximity", `${parsed.data.longitude},${parsed.data.latitude}`)
   }
   if (parsed.data.types?.length) query.set("types", parsed.data.types.join(","))
   if (parsed.data.bbox) query.set("bbox", parsed.data.bbox.join(","))
   if (parsed.data.country) query.set("country", parsed.data.country)
   if (parsed.data.language) query.set("language", parsed.data.language)
-  return { path: "/search/v6/mapbox", query }
+  return { path: "/search/searchbox/v1/forward", query }
 }
 
 export function toMapboxPlaceDetailsRequest(input: unknown): TranslatedGeocodeRequest {
   const parsed = PlaceDetailsInputSchema.safeParse(input)
   if (!parsed.success) invalid("placeDetails", parsed.error)
   const query = new URLSearchParams()
-  query.set("poi.id", encodedSegment(parsed.data.poiId, 64))
-  query.set("limit", "1")
-  if (parsed.data.longitude !== undefined && parsed.data.latitude !== undefined) {
-    query.set("ars", `${parsed.data.longitude},${parsed.data.latitude}`)
-  }
+  // Search Box `retrieve` refuses the call without a session token; the
+  // contract has no autocomplete session, so one is minted per request.
+  query.set("session_token", parsed.data.sessionToken ?? randomUUID())
   if (parsed.data.language) query.set("language", parsed.data.language)
-  return { path: "/search/v6/mapbox", query }
+  return {
+    path: `/search/searchbox/v1/retrieve/${encodedSegment(parsed.data.poiId, 512, ":")}`,
+    query,
+  }
 }
 
 // ─── routing family: isochrone / directions / matrix ───────────────────────
@@ -222,7 +237,8 @@ export const MatrixInputSchema = z
     /** Ordered [longitude, latitude] points — 2..5 (playground-sized cap). */
     coordinates: z.array(LonLatSchema).min(2).max(5),
     profile: MatrixProfileSchema.default("driving"),
-    distribution: z.enum(["measured", "distributed"]).default("measured"),
+    /** Which value matrices Mapbox returns alongside durations. */
+    annotations: z.array(z.enum(["duration", "distance"])).max(2).optional(),
   })
   .strict()
 
@@ -236,7 +252,8 @@ export function toMapboxIsochroneRequest(input: unknown): TranslatedGeocodeReque
   const query = new URLSearchParams()
   query.set("contours_minutes", String(parsed.data.minutes?.join(",") ?? "10,20,30"))
   return {
-    path: `/isochrone/v1/${parsed.data.profile}/${parsed.data.coordinates[0]},${parsed.data.coordinates[1]}`,
+    // Mapbox paths the profile as `mapbox/{profile}` — a bare profile 404s.
+    path: `/isochrone/v1/mapbox/${parsed.data.profile}/${parsed.data.coordinates[0]},${parsed.data.coordinates[1]}`,
     query,
   }
 }
@@ -246,6 +263,9 @@ export function toMapboxDirectionsRequest(input: unknown): TranslatedGeocodeRequ
   if (!parsed.success) invalid("directions", parsed.error)
   const query = new URLSearchParams()
   if (parsed.data.alternatives) query.set("alternatives", String(parsed.data.coordinates.length))
+  // Default geometry is an encoded polyline; GeoJSON coordinates are what a
+  // caller (or the playground map) can actually draw.
+  query.set("geometries", "geojson")
   return {
     path: `/directions/v5/mapbox/${parsed.data.profile}/${encodedSegment(formatCoordinates(parsed.data.coordinates), 256, ".,;")}`,
     query,
@@ -256,23 +276,26 @@ export function toMapboxMatrixRequest(input: unknown): TranslatedGeocodeRequest 
   const parsed = MatrixInputSchema.safeParse(input)
   if (!parsed.success) invalid("matrix", parsed.error)
   const query = new URLSearchParams()
-  query.set("profile", `mapbox/${parsed.data.profile}`)
-  query.set("coordinates", formatCoordinates(parsed.data.coordinates))
-  query.set("distribution", parsed.data.distribution)
-  return { path: "/matrix/v1", query, postForm: true }
+  if (parsed.data.annotations?.length) query.set("annotations", parsed.data.annotations.join(","))
+  // The legacy POST /matrix/v1 is retired (403) — Matrix is path-addressed now.
+  return {
+    path: `/directions-matrix/v1/mapbox/${parsed.data.profile}/${encodedSegment(formatCoordinates(parsed.data.coordinates), 256, ".,;")}`,
+    query,
+  }
 }
 
 // ─── tilesMetadata / styleSchema ────────────────────────────────────────────
 
 export const TilesInputSchema = z
   .object({
-    kind: z.enum(["vector", "raster-dem", "raster-array"]).default("vector"),
-    styleId: z.string().regex(/^[A-Za-z0-9._@-]{1,128}$/, "styleId must be a Mapbox style id"),
+    /**
+     * Mapbox TILESET id (`/v4/{tilesetId}/{z}/{x}/{y}.mvt`) — not a style id:
+     * a style id here is a 404/422 from the tiles API.
+     */
+    tilesetId: z.string().regex(/^[A-Za-z0-9._@-]{1,128}$/, "tilesetId must be a Mapbox tileset id"),
     z: z.number().int().min(0).max(22),
     x: z.number().int().min(0),
     y: z.number().int().min(0),
-    /** Ask Mapbox for @2x instead of @1x (vector/raster-array). */
-    retina: z.boolean().optional(),
   })
   .strict()
   .refine((d) => d.x >= 0 && d.x < 2 ** d.z && d.y >= 0 && d.y < 2 ** d.z, {
@@ -293,16 +316,14 @@ export type StyleSchemaInput = z.infer<typeof StyleSchemaInputSchema>
 export function toMapboxTilesRequest(input: unknown): TranslatedGeocodeRequest {
   const parsed = TilesInputSchema.safeParse(input)
   if (!parsed.success) invalid("tilesMetadata", parsed.error)
-  const { kind, styleId, z, x, y } = parsed.data
-  const scale = parsed.data.retina ? "@2x" : ""
-  const ext = kind === "vector" ? "mvt" : kind === "raster-dem" ? "png" : "webp"
-  const path =
-    kind === "raster-dem"
-      ? `/v4/${encodedSegment(styleId, 128)}/${z}/${x}/${y}.${ext}`
-      : `/v4/${encodedSegment(styleId, 128)}/${z}/${x}/${y}${scale}.${ext}`
-  // Tile bodies are binary (mvt/png/webp) — return reachability metadata,
+  const { tilesetId, z, x, y } = parsed.data
+  // Tile bodies are binary (mvt) — return reachability metadata,
   // never parse the tile content.
-  return { path, query: new URLSearchParams(), binary: true }
+  return {
+    path: `/v4/${encodedSegment(tilesetId, 128)}/${z}/${x}/${y}.mvt`,
+    query: new URLSearchParams(),
+    binary: true,
+  }
 }
 
 export function toMapboxStyleSchemaRequest(input: unknown): TranslatedGeocodeRequest {
@@ -318,18 +339,78 @@ export function toMapboxStyleSchemaRequest(input: unknown): TranslatedGeocodeReq
 
 export const StaticImageInputSchema = z
   .object({
-    longitude: z.number().min(-180).max(180),
-    latitude: z.number().min(-90).max(90),
+    /** Image centre. Required unless `fit` frames the overlay instead. */
+    longitude: z.number().min(-180).max(180).optional(),
+    latitude: z.number().min(-90).max(90).optional(),
     zoom: z.number().min(0).max(22).default(12),
     width: z.number().int().min(2).max(1280).default(600),
     height: z.number().int().min(2).max(1280).default(400),
     styleId: z.string().regex(/^[A-Za-z0-9._@-]{1,128}$/, "styleId must be a Mapbox style id").optional(),
-    /** Single marker pin at the center. */
+    /** Single pin at the centre. */
     marker: z.boolean().optional(),
+    markerSize: z.enum(["s", "m", "l"]).default("m"),
+    markerColor: HexColorSchema.default("0f6bd3"),
+    /**
+     * One polyline — a route geometry, an isochrone contour ring, or any path
+     * the caller holds. Mapbox draws exactly ONE overlay per static image, so
+     * `path` and `marker` are mutually exclusive.
+     */
+    path: z.array(LonLatSchema).min(2).max(600).optional(),
+    pathColor: HexColorSchema.default("00b0ff"),
+    pathWidth: z.number().int().min(1).max(20).default(6),
+    /** Frame the overlay automatically instead of centre + zoom. */
+    fit: z.boolean().optional(),
+    /** Retina (2x) render — doubles pixel size and payload. */
+    retina: z.boolean().optional(),
   })
   .strict()
+  .superRefine((d, ctx) => {
+    if (d.marker && d.path) {
+      ctx.addIssue({
+        code: "custom",
+        message: "Mapbox renders one overlay per static image — send either marker or path, not both",
+        path: ["marker"],
+      })
+    }
+    if (d.marker && (d.longitude === undefined || d.latitude === undefined)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "longitude/latitude are required when marker is set — the pin is placed there",
+        path: ["longitude"],
+      })
+    }
+    if (!d.fit && !d.marker && (d.longitude === undefined || d.latitude === undefined)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "set longitude/latitude, or fit:true to frame the overlay",
+        path: ["longitude"],
+      })
+    }
+  })
 
 export type StaticImageInput = z.infer<typeof StaticImageInputSchema>
+
+/** Mapbox 414s past ~6.5k chars; 200 five-decimal points stays well inside. */
+const MAX_STATIC_PATH_POINTS = 200
+
+/** Even-stride thinning that always keeps the first and last point. */
+function downsamplePath(coords: readonly (readonly number[])[]): string {
+  // Reserve one slot for the exact endpoint so the cap is never exceeded.
+  const step = Math.max(1, Math.ceil(coords.length / (MAX_STATIC_PATH_POINTS - 1)))
+  const kept: string[] = []
+  for (let i = 0; i < coords.length; i += step) {
+    const [lng, lat] = coords[i]
+    kept.push(`${fmtStaticCoord(lng)},${fmtStaticCoord(lat)}`)
+  }
+  const last = coords[coords.length - 1]
+  const lastKey = `${fmtStaticCoord(last[0])},${fmtStaticCoord(last[1])}`
+  if (kept[kept.length - 1] !== lastKey) kept.push(lastKey)
+  return kept.join(",")
+}
+
+function fmtStaticCoord(value: number): string {
+  return value.toFixed(5)
+}
 
 export function toMapboxStaticImageRequest(input: unknown): TranslatedGeocodeRequest {
   const parsed = StaticImageInputSchema.safeParse(input)
@@ -339,44 +420,53 @@ export function toMapboxStaticImageRequest(input: unknown): TranslatedGeocodeReq
   const styleRef = d.styleId ?? "mapbox/streets-v12"
   const [owner, ...rest] = styleRef.split("/")
   const style = `${encodedSegment(owner ?? "mapbox", 64)}/${encodedSegment(rest.join("/"), 128)}`
-  const pos = `${d.longitude},${d.latitude},${d.zoom}`
-  const overlay = d.marker
-    ? `/pin-l-circle-stroked-blue(${d.longitude},${d.latitude})`
-    : ""
+  // Overlays come BEFORE the position in the v1 static path. Live-verified
+  // forms: `pin-{s|m|l}+{rrggbb}(lng,lat)` and `path-{w}+{rrggbb}(lng,lat,…)`.
+  // Labelled pins (`pin-m-A+…`) and stroke variants (`…-ffffff+4`) are rejected.
+  const overlay = d.path
+    ? `/path-${d.pathWidth}+${d.pathColor}(${downsamplePath(d.path)})`
+    : d.marker
+      ? `/pin-${d.markerSize}+${d.markerColor}(${fmtStaticCoord(d.longitude ?? 0)},${fmtStaticCoord(d.latitude ?? 0)})`
+      : ""
+  const position =
+    d.fit || d.longitude === undefined || d.latitude === undefined
+      ? "auto"
+      : `${d.longitude},${d.latitude},${d.zoom}`
   return {
-    path: `/styles/v1/${style}/static/${pos}/${d.width}x${d.height}${overlay}/`,
+    path: `/styles/v1/${style}/static${overlay}/${position}/${d.width}x${d.height}${d.retina ? "@2x" : ""}`,
     query: new URLSearchParams(),
     binary: true,
   }
 }
 
-// ─── tokens ─────────────────────────────────────────────────────────────────
-
-export const TokensInputSchema = z
-  .object({
-    searchable: z.boolean().optional(),
-  })
-  .strict()
-
-export function toMapboxTokensRequest(input: unknown): TranslatedGeocodeRequest {
-  const parsed = TokensInputSchema.safeParse(input ?? {})
-  if (!parsed.success) invalid("tokens", parsed.error)
-  const query = new URLSearchParams()
-  if (parsed.data.searchable !== undefined) query.set("searchable", String(parsed.data.searchable))
-  return { path: "/tokens", query }
-}
-
 // ─── response normalizers ───────────────────────────────────────────────────
 
-/** Documented Mapbox v6 geocoding response (defensive subset). */
-export interface MapboxGeocodeResponse {
-  features?: Array<{
-    id?: unknown
+/**
+ * Documented Mapbox GeoJSON response (v6 geocoding + Search Box, defensive
+ * subset). Both APIs carry the descriptive fields inside `feature.properties`
+ * — top-level `name`/`coordinates` do not exist on the real payloads, and
+ * Search Box features have no top-level `id` at all (the id is
+ * `properties.mapbox_id`).
+ */
+interface MapboxFeature {
+  id?: unknown
+  geometry?: { coordinates?: unknown }
+  properties?: {
+    mapbox_id?: unknown
     name?: unknown
+    name_preferred?: unknown
     full_address?: unknown
+    place_formatted?: unknown
     coordinates?: { longitude?: unknown; latitude?: unknown }
-    geometry?: { coordinates?: unknown }
-  }>
+  }
+}
+
+export interface MapboxGeocodeResponse {
+  features?: MapboxFeature[]
+}
+
+function stringValue(value: unknown): string | null {
+  return typeof value === "string" && value.length > 0 ? value : null
 }
 
 function coordinatePair(raw: unknown): [number, number] | null {
@@ -385,6 +475,17 @@ function coordinatePair(raw: unknown): [number, number] | null {
   const lat = raw[1]
   if (typeof lng !== "number" || typeof lat !== "number" || !Number.isFinite(lng) || !Number.isFinite(lat)) return null
   return [lng, lat]
+}
+
+/** longitude/latitude pair from either carrier shape Mapbox uses. */
+function featureCoordinates(feature: MapboxFeature | undefined): [number, number] | null {
+  const props = feature?.properties?.coordinates
+  if (typeof props?.longitude === "number" && typeof props?.latitude === "number") {
+    if (Number.isFinite(props.longitude) && Number.isFinite(props.latitude)) {
+      return [props.longitude, props.latitude]
+    }
+  }
+  return coordinatePair(feature?.geometry?.coordinates)
 }
 
 export function toMapsResult(
@@ -401,20 +502,21 @@ export function toMapsResult(
 
   const results: PlaceResultItem[] = []
   for (const f of features) {
-    // v6 carries coordinates.longitude/latitude; geometry.coordinates is the
-    // defensive fallback ([lng, lat]). Both are provider-reported numbers.
-    const fromCoords =
-      typeof f?.coordinates?.longitude === "number" && typeof f?.coordinates?.latitude === "number"
-        ? ([f.coordinates.longitude, f.coordinates.latitude] as [number, number])
-        : coordinatePair(f?.geometry?.coordinates)
-    if (!fromCoords) continue
-    if (typeof f?.id !== "string" || typeof f?.name !== "string") continue
+    const coords = featureCoordinates(f)
+    if (!coords) continue
+    const id = stringValue(f?.properties?.mapbox_id) ?? stringValue(f?.id)
+    const name =
+      stringValue(f?.properties?.name) ??
+      stringValue(f?.properties?.name_preferred) ??
+      stringValue(f?.properties?.place_formatted)
+    if (!id || !name) continue
+    const address = stringValue(f?.properties?.full_address) ?? stringValue(f?.properties?.place_formatted)
     results.push({
-      id: f.id,
-      name: f.name,
-      ...(typeof f.full_address === "string" && f.full_address ? { formattedAddress: f.full_address } : {}),
-      longitude: fromCoords[0],
-      latitude: fromCoords[1],
+      id,
+      name,
+      ...(address ? { formattedAddress: address } : {}),
+      longitude: coords[0],
+      latitude: coords[1],
     })
   }
 

@@ -41,7 +41,8 @@ export class ProviderNotConfiguredError extends Error {
  * Map a documented OpenRouter HTTP status to a normalized failure category
  * (Phase 6 §35). Distinctions preserved where the Phase 5 taxonomy has them:
  * timeout (408) ≠ unavailable (502/503) ≠ rate limit (429) ≠ rejected request
- * (400/402/403) ≠ Atai-side configuration problem (401).
+ * (400/403) ≠ Atai-side configuration problem (401) ≠ platform account has no
+ * provider credits (402).
  */
 export function categoryForStatus(status: number): ProviderExecutionError["category"] {
   switch (status) {
@@ -56,12 +57,15 @@ export function categoryForStatus(status: number): ProviderExecutionError["categ
     case 502:
     case 503:
       return "provider_unavailable"
-    case 400:
     case 402:
+      // The PLATFORM's OpenRouter account is out of credits. Nothing the
+      // caller changes can fix it — an administrator must top up or repoint
+      // the key, so it must not be lumped with request rejections.
+      return "provider_not_entitled"
+    case 400:
     case 403:
-      // 402 = OpenRouter account out of credits; 403 = forbidden/moderation.
-      // All three are "OpenRouter rejected the request" from the caller's
-      // perspective — the request itself or the account behind it.
+      // 403 = forbidden/moderation. Both are "OpenRouter rejected the
+      // request" — the request itself or the account behind it.
       return "provider_error"
     default:
       return "provider_error"
@@ -74,7 +78,85 @@ const CATEGORY_MESSAGES: Record<ProviderExecutionError["category"], string> = {
   provider_rate_limited: "The AI provider is rate limiting requests. Please retry later.",
   provider_unavailable: "The AI provider is temporarily unavailable.",
   provider_error: "The AI provider returned an error.",
+  provider_not_entitled:
+    "This capability is temporarily unavailable on the platform. Contact the platform administrator.",
+  model_unavailable: "The selected model is not available on this provider.",
   unsupported_operation: "The requested operation is not supported.",
+}
+
+/**
+ * OpenRouter's router rejects some well-formed requests because no provider
+ * endpoint for the resolved model accepts a modality the request carries — a
+ * text-only model given an image part, or an image URL it cannot resolve:
+ *
+ *   { code: 404, message: "No endpoints found that support image input",
+ *     metadata: { failed_routing_step: "Filter by Image Support" } }
+ *
+ * Re-sending identical input can never succeed, so this is an invalid
+ * model/input selection (422-class) rather than a provider failure (502) — and
+ * it must not burn a charge/refund cycle pretending to be an outage. The
+ * client-facing message stays provider-neutral; the provider's wording goes to
+ * the server-side detail.
+ */
+export function routingCapabilityFailure(
+  error: { code?: number; message?: string; metadata?: Record<string, unknown> } | undefined,
+): ProviderExecutionError | null {
+  const message = typeof error?.message === "string" ? error.message : ""
+  if (message.length === 0) return null
+  const detail = message.slice(0, 300)
+
+  if (/no endpoints found/i.test(message)) {
+    return new ProviderExecutionError(
+      "unsupported_operation",
+      "The selected model cannot serve this request. Pick a model that supports this input (image input needs an image-capable model).",
+      detail,
+    )
+  }
+
+  // OpenRouter rejects a TTS call without a voice unless the provider has a
+  // documented default. This is fixable by the caller, not an outage.
+  if (/explicit voice is required|voice is required for this tts provider/i.test(message)) {
+    return new ProviderExecutionError(
+      "unsupported_operation",
+      "This text-to-speech model requires a voice. Add a `voice` id from the model's supported voices.",
+      detail,
+    )
+  }
+
+  // Formats are model-specific (Gemini TTS: pcm only, MiniMax: mp3 only).
+  if (/(response[_ ]format|audio format).*(not supported|unsupported|only (returns|supports)|invalid)/i.test(message)) {
+    return new ProviderExecutionError(
+      "unsupported_operation",
+      "This model does not support the requested audio format. Use a format the model supports (for example `pcm` for Gemini TTS or `mp3` for MiniMax).",
+      detail,
+    )
+  }
+
+  // A model id that the provider cannot resolve is a selection problem. It is
+  // critical not to report this as a 502 outage: retrying identical input can
+  // never succeed, and the developer needs to change the model.
+  if (
+    /\bmodel\b[^.]{0,160}\b(does not exist|not found|not available|unknown|invalid)\b/i.test(message) ||
+    /\b(invalid|unknown)\s+model\b/i.test(message)
+  ) {
+    return new ProviderExecutionError(
+      "model_unavailable",
+      "The selected model is not available on this provider. Choose a supported model for this capability.",
+      detail,
+    )
+  }
+
+  return null
+}
+
+/** Parse a raw provider error body enough to classify it. Never throws. */
+export function readErrorEnvelope(text: string): { code?: number; message?: string; metadata?: Record<string, unknown> } | undefined {
+  try {
+    const parsed = JSON.parse(text) as { error?: { code?: number; message?: string; metadata?: Record<string, unknown> } }
+    return parsed?.error
+  } catch {
+    return undefined
+  }
 }
 
 /**

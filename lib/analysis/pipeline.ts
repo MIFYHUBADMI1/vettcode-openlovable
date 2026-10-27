@@ -3,6 +3,7 @@ import { store, cryptoId } from "@/lib/store/store"
 import { logger } from "@/lib/logging/logger"
 import { crawlWebsite, crawlWebsiteDeep, isFirecrawlConfigured } from "@/lib/integrations/firecrawl/service"
 import { launchProject, isTotalumConfigured } from "@/lib/integrations/totalum/service"
+import { TotalumError } from "@/lib/integrations/totalum/errors"
 import { initializeProjectInfrastructure } from "@/lib/infrastructure/service"
 import { getInfrastructurePlan } from "@/lib/infrastructure/plans"
 import { chargeScrapeCredits, chargePlanCredits, chargeDeepCrawlCredits, reserveCredits, refundReservation, getTierCost, classifyComplexity, hasSufficientCredits, getScrapeCost, getDeepCrawlCost } from "@/lib/credits/credits"
@@ -10,9 +11,58 @@ import { buildInitialBuildPrompt } from "./prompt-builder"
 import { analyzeWebsite } from "./understanding"
 import { generateSpecificationFromUnderstanding, generateSpecificationFromIdea } from "./specification"
 import type { ProjectEvent, BuildRun } from "@/lib/types/project"
+import { recordAIArtifacts } from "@/lib/projects/ai-artifacts"
+import { makeAIArtifact, rawTextFromError, stageFromError, type NewAIArtifact } from "@/lib/types/ai-artifacts"
 
 function event(stage: string, message: string, level: ProjectEvent["level"] = "info"): ProjectEvent {
   return { id: cryptoId(), at: Date.now(), level, stage, message }
+}
+
+/** Persist AI outputs for the Collaborate view — never fatal. */
+async function captureArtifacts(projectId: string, artifacts: NewAIArtifact[]): Promise<void> {
+  await recordAIArtifacts(projectId, artifacts.map(makeAIArtifact))
+}
+
+/** Keep the exact model text when a stage fails before producing a plan. */
+async function captureFailureArtifact(projectId: string, error: unknown): Promise<void> {
+  const rawText = rawTextFromError(error)
+  if (!rawText) return
+  const stage = stageFromError(error) ?? "planning"
+  await captureArtifacts(projectId, [
+    {
+      kind: "raw_failure",
+      stage,
+      label: `Raw ${stage.replace(/_/g, " ")} output (unparsed)`,
+      status: "unparsed",
+      rawText,
+      note: "The model answered, but the response could not be parsed. This is the exact text it returned.",
+    },
+  ])
+}
+
+/**
+ * Persists a failure against the journey step that actually failed. Before
+ * this, every analysis/planning failure was written as `build_failed`, so the
+ * workspace blamed the Build step and offered a retry that could never work.
+ */
+export async function markPipelineFailure(
+  projectId: string,
+  phase: "understand" | "plan",
+  logMessage: string,
+  errorMessage: string,
+): Promise<void> {
+  const project = await store.getProject(projectId).catch(() => null)
+  await store.updateProject(projectId, {
+    state: phase === "understand" ? "analysis_failed" : "plan_failed",
+    error: errorMessage,
+    pipelineRecovery: {
+      phase,
+      attempts: project?.pipelineRecovery?.attempts ?? 0,
+      lastAttemptAt: Date.now(),
+      autoRestarts: project?.pipelineRecovery?.autoRestarts ?? 0,
+    },
+  })
+  await store.appendEvent(projectId, event(phase === "understand" ? "analyze" : "specify", logMessage, "error"))
 }
 
 /**
@@ -31,6 +81,11 @@ export async function autoLaunchBuild(projectId: string) {
     await store.appendEvent(projectId, event("build", "⚙️ Build engine needs a tune-up. Click Build when you're ready!", "warn"))
     return
   }
+  if (!project.requestedProjectId) {
+    await store.updateProject(projectId, { state: "plan_ready" })
+    await store.appendEvent(projectId, event("build", "Choose your app address before starting the build.", "warn"))
+    return
+  }
 
   const tier = project.specification.complexity ?? classifyComplexity(project.specification)
   const pipelineMode = project.pipelineMode ?? "legacy"
@@ -42,6 +97,8 @@ export async function autoLaunchBuild(projectId: string) {
     return
   }
 
+  let activeRun: BuildRun | null = null
+  let reservationMade = false
   try {
     await store.appendEvent(projectId, event("build", "🎪 Setting up the build circus... Juggling code, APIs, and databases!"))
     const prompt = buildInitialBuildPrompt(project.specification, project.understanding, project.preferences)
@@ -55,6 +112,7 @@ export async function autoLaunchBuild(projectId: string) {
       startedAt: Date.now(),
       creditsReserved: creditsNeeded,
     }
+    activeRun = run
     await store.createBuildRun(run)
 
     const claimed = await store.claimBuildSlot(projectId, { state: "building" })
@@ -71,6 +129,7 @@ export async function autoLaunchBuild(projectId: string) {
       console.log("[v0] pipeline.autoBuild: insufficient credits after claim", { projectId })
       return
     }
+    reservationMade = true
 
     await store.appendEvent(projectId, event("build", `💎 Reserved ${creditsNeeded} credits. Time to build something amazing!`))
 
@@ -80,21 +139,14 @@ export async function autoLaunchBuild(projectId: string) {
 
     await store.appendEvent(projectId, event("build", "🏗️ Assembling the construction crew (AI agents, APIs, databases)..."))
 
-    // Create a memorable project name: mirror-{projectName}-{shortId}
-    // e.g., mirror-myapp-a1b2c3 or mirror-example-com-x9y8z7
-    const sanitizedName = project.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
-      .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
-      .slice(0, 20) // Limit to 20 chars for the name part
-    const shortId = projectId.replace(/-/g, '').slice(0, 6) // 6 char unique suffix
-    const totalumProjectName = `mirror-${sanitizedName}-${shortId}` // e.g., mirror-myapp-a1b2c3
-
     const launch = await launchProject({
-      projectId: totalumProjectName,
+      projectId: project.requestedProjectId,
       prompt,
       maxInfrastructureCreditsPerMonth: infraCap,
     })
+    if (launch.projectId !== project.requestedProjectId) {
+      throw new TotalumError("PROJECT_ID_UNAVAILABLE")
+    }
     await store.updateBuildRun(run.id, { status: "running", totalumProjectId: launch.projectId })
     await store.updateProject(projectId, {
       state: "building",
@@ -111,6 +163,10 @@ export async function autoLaunchBuild(projectId: string) {
   } catch (e) {
     console.log("[v0] pipeline.autoBuild: FAILED", { projectId, message: (e as Error).message })
     logger.error("pipeline.autoBuild", "auto-build failed", { projectId, message: (e as Error).message })
+    if (reservationMade && activeRun) {
+      await refundReservation(project.userId, creditsNeeded, activeRun.id, projectId)
+      await store.updateBuildRun(activeRun.id, { status: "failed", error: (e as Error).message })
+    }
     await store.updateProject(projectId, { state: "plan_ready" })
     await store.appendEvent(projectId, event("build", "🛠️ Auto-build tripped over a cable. No worries—click Build to give it another go!", "error"))
   }
@@ -130,6 +186,7 @@ export async function runWebsiteAnalysis(projectId: string, pipelineMode?: "lega
     return
   }
 
+  let phase: "understand" | "plan" = "understand"
   try {
     await store.updateProject(projectId, { state: "analyzing" })
     await store.appendEvent(projectId, event("analyze", `🔍 Putting on detective hat... Time to stalk ${project.sourceUrl} (legally!)`))
@@ -137,10 +194,11 @@ export async function runWebsiteAnalysis(projectId: string, pipelineMode?: "lega
 
     if (!isFirecrawlConfigured()) {
       console.log("[v0] pipeline.website: FIRECRAWL_API_KEY missing, aborting", { projectId })
-      await store.updateProject(projectId, { state: "build_failed", error: "Firecrawl is not configured." })
-      await store.appendEvent(
+      await markPipelineFailure(
         projectId,
-        event("analyze", "🚫 Our web crawler took a day off. Add FIRECRAWL_API_KEY to wake it up!", "error"),
+        "understand",
+        "🚫 Our web crawler took a day off. Add FIRECRAWL_API_KEY to wake it up!",
+        "Firecrawl is not configured.",
       )
       return
     }
@@ -150,8 +208,12 @@ export async function runWebsiteAnalysis(projectId: string, pipelineMode?: "lega
     const canAfford = await hasSufficientCredits(project.userId, scrapeCost)
     if (!canAfford) {
       console.log("[v0] pipeline.website: insufficient credits, aborting", { projectId, userId: project.userId, required: scrapeCost })
-      await store.updateProject(projectId, { state: "build_failed", error: "Not enough credits for website analysis." })
-      await store.appendEvent(projectId, event("analyze", "💳 Oops! Your credit card is doing cardio elsewhere. Need more credits to continue!", "error"))
+      await markPipelineFailure(
+        projectId,
+        "understand",
+        "💳 Oops! Your credit card is doing cardio elsewhere. Need more credits to continue!",
+        "Not enough credits for website analysis.",
+      )
       return
     }
 
@@ -200,8 +262,19 @@ export async function runWebsiteAnalysis(projectId: string, pipelineMode?: "lega
     const understanding = await analyzeWebsite(evidence)
     console.log("[v0] pipeline.website: step 2/3 analyzeWebsite done", { projectId })
     await store.updateProject(projectId, { state: "analysis_complete", understanding })
+    await captureArtifacts(projectId, [
+      {
+        kind: "understanding",
+        stage: "understanding",
+        label: "Website understanding",
+        status: "ready",
+        content: understanding,
+        note: "What the AI understood from the crawled website — pages, flows, entities, and design system.",
+      },
+    ])
     await store.appendEvent(projectId, event("understand", "🎓 Aha! The AI just had its 'eureka' moment. We understand your website now!"))
 
+    phase = "plan"
     await store.appendEvent(projectId, event("specify", `📝 Time to write the master plan... Think of this as your app's blueprint, but cooler!`))
     console.log("[v0] pipeline.website: step 3/3 generateSpecificationFromUnderstanding starting", { projectId, pipelineMode })
     const specification = await generateSpecificationFromUnderstanding(understanding, project.userId, projectId, pipelineMode)
@@ -214,8 +287,20 @@ export async function runWebsiteAnalysis(projectId: string, pipelineMode?: "lega
       state: "plan_ready",
       specification,
       name: specification.title || project.name,
+      error: undefined,
+      pipelineRecovery: undefined,
       ...(wasSanitized ? { specSanitized: true } : {}),
     })
+    await captureArtifacts(projectId, [
+      {
+        kind: "final_spec",
+        stage: "final",
+        label: "Final plan (stored)",
+        status: "ready",
+        content: specification,
+        note: "This exact plan is what the plan sections and the build receive.",
+      },
+    ])
     if (wasSanitized) {
       await store.appendEvent(projectId, event("specify", "⚙️ Pro tip: We swapped some tech for Totalum SDK. Think of it as upgrading from a bicycle to a Tesla!", "warn"))
     }
@@ -237,12 +322,20 @@ export async function runWebsiteAnalysis(projectId: string, pipelineMode?: "lega
   } catch (e) {
     console.log("[v0] pipeline.website: FAILED", {
       projectId,
+      phase,
       message: (e as Error).message,
       stack: (e as Error).stack,
     })
-    logger.error("pipeline.website", "analysis failed", { projectId, message: (e as Error).message })
-    await store.updateProject(projectId, { state: "build_failed", error: "We couldn't finish analyzing this website." })
-    await store.appendEvent(projectId, event("analyze", "😢 Oops! Something went wrong. Even robots have bad days. Try again?", "error"))
+    logger.error("pipeline.website", "analysis failed", { projectId, phase, message: (e as Error).message })
+    await captureFailureArtifact(projectId, e)
+    await markPipelineFailure(
+      projectId,
+      phase,
+      phase === "plan"
+        ? "😢 The plan couldn't be finished. Retry it and we'll keep what we already learned."
+        : "😢 Oops! Something went wrong while getting to know your website. Try again?",
+      phase === "plan" ? "We couldn't finish your plan." : "We couldn't finish analyzing this website.",
+    )
   }
 }
 
@@ -269,8 +362,20 @@ export async function runScratchAnalysis(projectId: string, pipelineMode?: "lega
       state: "plan_ready",
       specification,
       name: specification.title || project.name,
+      error: undefined,
+      pipelineRecovery: undefined,
       ...(wasSanitized ? { specSanitized: true } : {}),
     })
+    await captureArtifacts(projectId, [
+      {
+        kind: "final_spec",
+        stage: "final",
+        label: "Final plan (stored)",
+        status: "ready",
+        content: specification,
+        note: "This exact plan is what the plan sections and the build receive.",
+      },
+    ])
     if (wasSanitized) {
       await store.appendEvent(projectId, event("specify", "🔧 Heads up! We upgraded your tech stack to Totalum SDK. It's like swapping dial-up for fiber!", "warn"))
     }
@@ -295,8 +400,13 @@ export async function runScratchAnalysis(projectId: string, pipelineMode?: "lega
       stack: (e as Error).stack,
     })
     logger.error("pipeline.scratch", "failed", { projectId, message: (e as Error).message })
-    await store.updateProject(projectId, { state: "build_failed", error: "We couldn't generate a plan from your idea." })
-    await store.appendEvent(projectId, event("specify", "💔 The plan hit a snag. Even great ideas need a second shot. Try again!", "error"))
+    await captureFailureArtifact(projectId, e)
+    await markPipelineFailure(
+      projectId,
+      "plan",
+      "💔 The plan hit a snag. Your idea is safe — retry and we'll pick it up from here.",
+      "We couldn't generate a plan from your idea.",
+    )
   }
 }
 
@@ -320,22 +430,26 @@ export async function runDeepCrawlAnalysis(projectId: string, pipelineMode?: "le
   const mode = pipelineMode ?? "legacy"
   const deepCrawlCost = await getDeepCrawlCost(mode)
 
+  let phase: "understand" | "plan" = "understand"
   try {
     await store.updateProject(projectId, { state: "analyzing" })
     await store.appendEvent(projectId, event("analyze", `Deep crawling ${project.sourceUrl} — collecting entire site (${mode} mode)`))
     console.log("[v0] pipeline.deepCrawl: state -> analyzing", { projectId, sourceUrl: project.sourceUrl, mode, cost: deepCrawlCost })
 
     if (!isFirecrawlConfigured()) {
-      await store.updateProject(projectId, { state: "build_failed", error: "Firecrawl is not configured." })
-      await store.appendEvent(projectId, event("analyze", "Firecrawl is not connected.", "error"))
+      await markPipelineFailure(projectId, "understand", "Firecrawl is not connected.", "Firecrawl is not configured.")
       return
     }
 
     // Check credits before crawling (500 for legacy, 1000 for heavy)
     const canAfford = await hasSufficientCredits(project.userId, deepCrawlCost)
     if (!canAfford) {
-      await store.updateProject(projectId, { state: "build_failed", error: `Not enough credits for deep crawl (${deepCrawlCost} credits required).` })
-      await store.appendEvent(projectId, event("analyze", `Not enough credits for deep crawl (${deepCrawlCost} required).`, "error"))
+      await markPipelineFailure(
+        projectId,
+        "understand",
+        `Not enough credits for deep crawl (${deepCrawlCost} required).`,
+        `Not enough credits for deep crawl (${deepCrawlCost} credits required).`,
+      )
       return
     }
 
@@ -385,7 +499,18 @@ export async function runDeepCrawlAnalysis(projectId: string, pipelineMode?: "le
     }
 
     await store.updateProject(projectId, { understanding })
+    await captureArtifacts(projectId, [
+      {
+        kind: "understanding",
+        stage: "understanding",
+        label: "Deep-crawl understanding",
+        status: "ready",
+        content: understanding,
+        note: `Built from a deep crawl of ${evidence.pages.length} page${evidence.pages.length === 1 ? "" : "s"}.`,
+      },
+    ])
 
+    phase = "plan"
     // Generate specification based on pipeline mode
     let specification: import("@/lib/types/specification").ApplicationSpecification
 
@@ -424,7 +549,19 @@ export async function runDeepCrawlAnalysis(projectId: string, pipelineMode?: "le
       state: "plan_ready",
       specification,
       name: specification.title || project.name,
+      error: undefined,
+      pipelineRecovery: undefined,
     })
+    await captureArtifacts(projectId, [
+      {
+        kind: "final_spec",
+        stage: "final",
+        label: "Final plan (stored)",
+        status: "ready",
+        content: specification,
+        note: "This exact plan is what the plan sections and the build receive.",
+      },
+    ])
 
     const modeLabel = mode === "heavy" ? "heavy mode pipeline" : "legacy AI analysis"
     await store.appendEvent(projectId, event("specify", `Plan ready (${modeLabel}) — ${specification.complexity} tier. Review and refine before building.`))
@@ -432,12 +569,17 @@ export async function runDeepCrawlAnalysis(projectId: string, pipelineMode?: "le
     console.log("[v0] pipeline.deepCrawl: plan_ready — awaiting founder review", { projectId, mode })
   } catch (e) {
     const errorMessage = e instanceof Error ? e.message : String(e)
-    console.log("[v0] pipeline.deepCrawl: FAILED", { projectId, message: errorMessage })
-    logger.error("pipeline.deepCrawl", "failed", { projectId, message: errorMessage })
+    console.log("[v0] pipeline.deepCrawl: FAILED", { projectId, phase, message: errorMessage })
+    logger.error("pipeline.deepCrawl", "failed", { projectId, phase, message: errorMessage })
+    await captureFailureArtifact(projectId, e)
 
     // Store the detailed error message so users can see what went wrong and how to fix it
-    await store.updateProject(projectId, { state: "build_failed", error: errorMessage })
-    await store.appendEvent(projectId, event("analyze", errorMessage, "error"))
+    await markPipelineFailure(
+      projectId,
+      phase,
+      phase === "plan" ? `Plan failed: ${errorMessage}` : errorMessage,
+      errorMessage,
+    )
   }
 }
 

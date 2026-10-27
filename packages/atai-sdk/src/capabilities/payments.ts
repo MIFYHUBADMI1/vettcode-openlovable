@@ -33,14 +33,14 @@ function validateCheckoutInput(input: PaymentsCreateCheckoutInput): void {
     throw new AtaiError("atai_invalid_request", "Checkout requires at least one item.")
   }
   for (const item of input.items) {
-    if (typeof item.name !== "string" || item.name.length === 0) {
-      throw new AtaiError("atai_invalid_request", "Each item must have a non-empty `name`.")
+    if (item.productId !== undefined && typeof item.productId !== "string") {
+      throw new AtaiError("atai_invalid_request", "Each item's `productId` must be a Dodo product id (`pdt_…`).")
     }
-    if (typeof item.quantity !== "number" || item.quantity < 1) {
+    if (item.quantity !== undefined && (typeof item.quantity !== "number" || !Number.isInteger(item.quantity) || item.quantity < 1)) {
       throw new AtaiError("atai_invalid_request", "Each item must have a positive integer `quantity`.")
     }
-    if (typeof item.price !== "number" || item.price <= 0) {
-      throw new AtaiError("atai_invalid_request", "Each item must have a positive `price`.")
+    if (item.price !== undefined && (typeof item.price !== "number" || item.price <= 0)) {
+      throw new AtaiError("atai_invalid_request", "Each item's `price` must be a positive number.")
     }
   }
 }

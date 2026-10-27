@@ -29,26 +29,26 @@ export function generateBuildMessages(opts: {
   // Each bank is a function of (subject) so we can permute across many subjects
 
   const AI_WORKING = (s: string) => [
-    `🧠 The AI just read everything about ${s} in 0.003 seconds and already has opinions about the button radius...`,
-    `🤖 47 neural networks are debating the best way to build ${s}. The loudest one is winning...`,
-    `🔬 Studying every nuance of ${s} like a detective who takes things personally...`,
-    `🧬 Mapping the DNA of ${s} — every feature, every edge case, every weird user behavior...`,
-    `🎓 The AI crammed for this build specifically. It knows ${s} better than you do now...`,
-    `🔮 Predicting what users of ${s} will want before they even know they want it...`,
-    `💡 Having ideas about ${s} at a rate that should honestly be illegal...`,
-    `🤯 The model just found a pattern in ${s} that no human developer would've spotted in 10 years...`,
-    `🧠 Debating the best architecture for ${s}. It's a passionate internal monologue with no resolution in sight...`,
-    `🔭 Looking at ${s} from 10,000 feet and 1 millimeter at the exact same time...`,
-    `🎯 The AI is asking: what does ${s} need to do? Then building that, perfectly...`,
-    `🧪 Testing wild theories about ${s} and only keeping the ones that spark joy...`,
-    `🌌 Exploring every possible version of ${s} and choosing the best one...`,
-    `🔐 The AI just made a design decision for ${s} that will save future users 11 seconds per session...`,
-    `🎭 Method-acting as the ideal user of ${s} to make sure every interaction is right...`,
-    `⚗️ Running experiments on ${s}'s architecture. The results are looking very, very good...`,
-    `🧭 Navigating the complexity of ${s} like someone who definitely has a map...`,
-    `🏋️ Flexing serious engineering muscle to get ${s} exactly right...`,
-    `🦠 Stress-testing assumptions about ${s} at a molecular level...`,
-    `🎪 The AI is juggling 200 decisions about ${s} simultaneously without dropping a single one...`,
+    `🧠 Research team just analyzed everything about ${s} in 0.003 seconds and already has opinions about the button radius...`,
+    `🤖 Engineering specialists are debating the best way to build ${s}. The loudest one is winning...`,
+    `🔬 Product team studying every nuance of ${s} like a detective who takes things personally...`,
+    `🧬 Architecture team mapping the DNA of ${s} — every feature, every edge case, every weird user behavior...`,
+    `🎓 Strategy team crammed for this build specifically. They know ${s} better than you do now...`,
+    `🔮 UX Research team predicting what users of ${s} will want before they even know they want it...`,
+    `💡 Innovation team having ideas about ${s} at a rate that should honestly be illegal...`,
+    `🤯 Data Science team just found a pattern in ${s} that no human developer would've spotted in 10 years...`,
+    `🧠 Engineering leadership debating the best architecture for ${s}. It's a passionate discussion with breakthrough in sight...`,
+    `🔭 Systems team looking at ${s} from 10,000 feet and 1 millimeter at the exact same time...`,
+    `🎯 Product Strategy team is asking: what does ${s} need to do? Then building that, perfectly...`,
+    `🧪 R&D team testing wild theories about ${s} and only keeping the ones that spark joy...`,
+    `🌌 Design team exploring every possible version of ${s} and choosing the best one...`,
+    `🔐 UX team just made a design decision for ${s} that will save future users 11 seconds per session...`,
+    `🎭 Customer Success team method-acting as the ideal user of ${s} to make sure every interaction is right...`,
+    `⚗️ Platform team running experiments on ${s}'s architecture. The results are looking very, very good...`,
+    `🧭 Technical leadership navigating the complexity of ${s} like someone who definitely has a map...`,
+    `🏋️ Engineering team flexing serious technical muscle to get ${s} exactly right...`,
+    `🦠 QA team stress-testing assumptions about ${s} at a molecular level...`,
+    `🎪 Product team is juggling 200 decisions about ${s} simultaneously without dropping a single one...`,
   ]
 
   const CODE_WRITING = (s: string) => [
@@ -172,7 +172,7 @@ export function generateBuildMessages(opts: {
     `🌟 In parallel universes, other versions of you are still on slide 3 of the ${s} pitch deck...`,
     `🎯 Most apps never ship. ${s} is shipping. That distinction alone puts you in rare company...`,
     `🪞 ${s} is becoming the version of the idea that was always inside it — just waiting to be built...`,
-    `💭 The AI is building ${s} the way it always should have been built — from the right foundations...`,
+    `💭 Our teams are building ${s} the way it always should have been built — from the right foundations...`,
     `🌱 A real thing is being born right now. It started as a thought. In minutes, it's ${s}...`,
     `🎬 This is the moment just before the demo. The stillness before 'let me show you ${s}'...`,
     `⏳ Every second in this screen is exactly one second closer to '${s} is live'...`,
@@ -190,23 +190,23 @@ export function generateBuildMessages(opts: {
   ]
 
   const ROAST = (s: string) => [
-    `😅 The AI noticed some bold assumptions in the ${s} spec. Quietly corrected them. No charge...`,
+    `😅 Engineering team noticed some bold assumptions in the ${s} spec. Quietly corrected them. No charge...`,
     `🤭 ${s} had a few 'creative' architecture choices in the original plan. Silently upgraded. You're welcome...`,
     `😏 We changed ${s}'s original data model from 'optimistic' to 'will actually work under load'...`,
     `🫢 The first 3 approaches to building ${s} didn't work. You'll never know. The fourth one is beautiful...`,
-    `😬 The AI considered a different tech choice for ${s} as an internal joke. Immediately rejected it. You're safe...`,
-    `🧐 You didn't specify pagination for ${s}. It was added anyway. Because experience...`,
+    `😬 Architecture team considered a different tech choice for ${s} as an internal joke. Immediately rejected it. You're safe...`,
+    `🧐 You didn't specify pagination for ${s}. Product team added it anyway. Because experience...`,
     `🙃 ${s} is getting significantly more than what was asked for. Perfectionism is a condition...`,
-    `😤 ${s} had a circular dependency in the original design. Sighed. Fixed it in 0.2 seconds. Moving on...`,
+    `😤 ${s} had a circular dependency in the original design. Engineering sighed. Fixed it in 0.2 seconds. Moving on...`,
     `🤫 Some decisions were made for ${s} that your future self will appreciate at a very specific moment...`,
     `😎 ${s}'s codebase is already better than what 5 senior devs would've shipped after 6 months. Metrics don't lie...`,
-    `🙈 The AI saw your original ERD for ${s}. Made a few enhancements. The word 'few' is doing work here...`,
+    `🙈 Product team saw your original ERD for ${s}. Made a few enhancements. The word 'few' is doing work here...`,
     `🤔 ${s} asked for a simple feature. Got a simple feature plus the three things that make it actually work...`,
     `🪄 We turned '${s} but make it work' into a production-grade application. Standard procedure...`,
     `😬 The names you picked for some of ${s}'s functions have been... improved. Growth mindset...`,
-    `🧐 ${s} had some implicit requirements that weren't written down. The AI found them and handled them anyway...`,
+    `🧐 ${s} had some implicit requirements that weren't written down. Strategy team found them and handled them anyway...`,
     `🫠 One part of ${s}'s spec was quietly impossible. We built something better that does the same thing...`,
-    `🕵️ The AI reverse-engineered what ${s} was actually trying to accomplish and built that instead. More efficient...`,
+    `🕵️ Product team reverse-engineered what ${s} was actually trying to accomplish and built that instead. More efficient...`,
     `😅 A comment in ${s}'s build log reads: 'fixed what user meant, not what user wrote.' High compliment, actually...`,
     `🤏 ${s}'s original plan had one tiny flaw. 'Tiny' is relative. It's been addressed...`,
     `😌 ${s}'s scope has been gently managed behind the scenes so it ships instead of becoming a myth...`,
@@ -254,9 +254,9 @@ export function generateBuildMessages(opts: {
   ]
 
   const DOES_WHAT = (s: string, action: string) => [
-    `🚀 Building an app that ${action} with the care that makes users actually come back...`,
+    `🚀 Engineering team building an app that ${action} with the care that makes users actually come back...`,
     `🎯 Every design decision in ${s} is optimized around one thing: making it effortless to ${action}...`,
-    `🧠 The AI has thought deeply about what it really means to ${action} — and built ${s} around that truth...`,
+    `🧠 Product Strategy team has thought deeply about what it really means to ${action} — and built ${s} around that truth...`,
     `💡 ${s}'s entire architecture exists to serve one purpose: helping people ${action}, beautifully...`,
     `⚡ ${s} will help people ${action} faster and more elegantly than anything like it currently does...`,
     `🌟 The best version of an app that ${action} is what's being built right now. Not good enough. Best...`,
@@ -268,7 +268,7 @@ export function generateBuildMessages(opts: {
 
   const FUN_FACTS = (s: string) => [
     `📊 Fun fact: 73% of great app ideas were conceived while waiting for a different app to load. ${s} is the exception...`,
-    `☕ Fun fact: The average developer needs 3.2 coffees per bug fixed. The AI handles ${s} on pure logic. No coffee...`,
+    `☕ Fun fact: The average developer needs 3.2 coffees per bug fixed. Our teams handle ${s} on pure logic. No coffee...`,
     `🐛 Fun fact: The original computer 'bug' in 1947 was a literal moth. ${s} has no moths. We checked...`,
     `🌍 Fun fact: There are 5.35 billion internet users. ${s} is about to be available to all of them...`,
     `⚡ Fun fact: Light travels 299,792 km per second. ${s}'s API responses are aiming for the same neighborhood...`,
@@ -284,6 +284,81 @@ export function generateBuildMessages(opts: {
     `🌱 Fun fact: Bamboo doesn't grow for 5 years, then shoots up 30 meters. ${s} skips the 5-year part...`,
   ]
 
+  const TEAM_COORDINATION = (s: string) => [
+    `🎯 Research team just briefed Engineering on ${s}'s user behavior patterns — implementation is already adapting...`,
+    `🤝 Product and Engineering teams syncing on ${s}'s core workflows — this coordination is what makes it seamless...`,
+    `📊 Strategy team analyzed market positioning for ${s} — the Co-founder team is incorporating insights in real-time...`,
+    `🔬 Research specialists identified 3 hidden user needs in ${s} — Engineering is building them in right now...`,
+    `💼 Business Strategy team validated ${s}'s value proposition — Product team is ensuring every feature aligns...`,
+    `🎨 Design Systems team set the visual language for ${s} — Engineering is implementing it pixel-perfectly...`,
+    `🧪 QA Automation team is writing tests for ${s} — every feature gets validated before you even see it...`,
+    `🔐 Security specialists hardened ${s}'s authentication layer — your users will never know how protected they are...`,
+    `⚡ Performance team optimized ${s}'s critical path — load times that will make competitors wonder how...`,
+    `🌐 Infrastructure team scaled ${s}'s backend — ready for 10 users or 10 million without breaking a sweat...`,
+    `📱 Mobile Experience team ensured ${s} works flawlessly on every device — from flip phones to foldables...`,
+    `🎯 Growth team mapped ${s}'s user acquisition funnels — ready to scale from day one...`,
+    `💡 Innovation lab prototyped ${s}'s most ambitious features — the ones competitors will copy next year...`,
+    `🔄 DevOps team automated ${s}'s entire deployment pipeline — one-click updates, zero downtime...`,
+    `📈 Analytics team instrumented ${s} to surface insights you didn't know you needed — but will...`,
+    `🎓 Documentation team wrote guides for ${s} that actually make sense — future developers will thank us...`,
+    `🛡️ Compliance team ensured ${s} meets every regulation — GDPR, CCPA, and standards that don't exist yet...`,
+    `🌟 Customer Success team planned ${s}'s onboarding flow — users will feel guided, not lost...`,
+    `🔧 Platform team built ${s}'s foundation for extensibility — today's MVP, tomorrow's ecosystem...`,
+    `🎪 Launch team coordinated ${s}'s go-live sequence — every system checks out, every backup tested...`,
+  ]
+
+  const RESEARCH_INSIGHTS = (s: string) => [
+    `🔬 Market Research team discovered that ${s}'s target users have been waiting for exactly this solution...`,
+    `📊 Competitive Analysis team found gaps in every alternative to ${s} — we're filling them all...`,
+    `🎯 User Research specialists interviewed 1000+ potential users of ${s} — their feedback shaped every decision...`,
+    `🧠 Behavioral Science team identified cognitive shortcuts users will take in ${s} — we optimized for them...`,
+    `💎 Value Proposition team validated that ${s} solves a problem worth 10x what users currently pay...`,
+    `📈 Growth Research determined ${s}'s viral coefficient potential — the math looks very, very good...`,
+    `🌍 Market Sizing team calculated ${s}'s TAM at $2.3B — and that's being conservative...`,
+    `🎓 Academic Research team applied the latest HCI studies to ${s} — this is informed by science, not guesswork...`,
+    `🔮 Trend Analysis team identified 3 macro shifts ${s} is perfectly positioned to ride...`,
+    `🧪 A/B Test Strategy team designed ${s}'s experimentation framework — continuous improvement from day one...`,
+  ]
+
+  const ENGINEERING_EXCELLENCE = (s: string) => [
+    `⚙️ Backend Engineering team architected ${s}'s services for 99.99% uptime — because downtime is expensive...`,
+    `💻 Frontend Engineering team built ${s}'s UI components with accessibility baked in — everyone can use this...`,
+    `🔗 API Engineering team designed ${s}'s endpoints to be developer-friendly — future integrations will be trivial...`,
+    `🏗️ Platform Engineering team provisioned ${s}'s infrastructure for auto-scaling — traffic spikes won't faze it...`,
+    `🔐 Security Engineering team implemented ${s}'s zero-trust architecture — breach-resistant by design...`,
+    `⚡ Performance Engineering team shaved 2.3 seconds off ${s}'s load time — every millisecond was earned...`,
+    `🧩 Systems Engineering team integrated ${s}'s third-party services — everything talks to everything, seamlessly...`,
+    `📊 Data Engineering team built ${s}'s analytics pipeline — insights flow from user action to dashboard instantly...`,
+    `🛠️ DevOps Engineering team automated ${s}'s entire CI/CD — deploy 50 times a day if you want to...`,
+    `🌐 Network Engineering team optimized ${s}'s CDN strategy — fast everywhere, not just in Silicon Valley...`,
+  ]
+
+  const PRODUCT_CRAFT = (s: string) => [
+    `🎨 Product Design team spent 3 days on ${s}'s primary CTA alone — the conversion rate will show why...`,
+    `📐 UX Architecture team mapped ${s}'s user journeys with surgical precision — no dead ends, no confusion...`,
+    `💅 Visual Design team chose ${s}'s color palette based on color theory and accessibility science — beautiful and inclusive...`,
+    `🎭 Interaction Design team prototyped ${s}'s animations 47 times — the final version feels effortless...`,
+    `📱 Product Strategy team defined ${s}'s feature prioritization framework — every release builds on the last...`,
+    `🔍 Usability team tested ${s} with 200 real users — every pain point found was fixed before you see this...`,
+    `🧩 Information Architecture team organized ${s}'s content structure — finding things will feel intuitive, not learned...`,
+    `🎯 Product Marketing team positioned ${s} to highlight its strongest differentiators — the message is sharp...`,
+    `📈 Product Analytics team identified ${s}'s key metrics — we'll know what's working within hours of launch...`,
+    `🌟 Product Excellence team audited ${s} against industry standards — it exceeds them in every category...`,
+  ]
+
+  const BUSINESS_STRATEGY = (s: string) => [
+    `💼 Business Strategy team modeled ${s}'s unit economics — profitable at scale, sustainable from day one...`,
+    `📊 Financial Planning team projected ${s}'s revenue trajectory — the numbers are conservative and still impressive...`,
+    `🎯 Go-to-Market team crafted ${s}'s launch strategy — awareness, acquisition, activation all mapped out...`,
+    `🤝 Partnership Strategy team identified integration opportunities for ${s} — growth accelerators built in...`,
+    `💡 Innovation Strategy team future-proofed ${s}'s roadmap — prepared for market shifts that haven't happened yet...`,
+    `🌍 Market Entry team analyzed ${s}'s international expansion potential — this scales beyond borders...`,
+    `📈 Growth Strategy team designed ${s}'s acquisition loops — users will bring users will bring users...`,
+    `🔮 Competitive Strategy team war-gamed ${s} against every known competitor — we have an answer for everything...`,
+    `💎 Pricing Strategy team optimized ${s}'s monetization model — captures value without leaving money on table...`,
+    `🏆 Brand Strategy team defined ${s}'s market position — memorable, defensible, and authentically different...`,
+  ]
+
   // ─── Combine all banks ────────────────────────────────────────────────────
   const all: string[] = [
     ...AI_WORKING(app),
@@ -296,6 +371,11 @@ export function generateBuildMessages(opts: {
     ...ROAST(app),
     ...HYPE(app),
     ...FUN_FACTS(app),
+    ...TEAM_COORDINATION(app),
+    ...RESEARCH_INSIGHTS(app),
+    ...ENGINEERING_EXCELLENCE(app),
+    ...PRODUCT_CRAFT(app),
+    ...BUSINESS_STRATEGY(app),
     // Additional passes with slight variation
     ...AI_WORKING(forX),
     ...CODE_WRITING(forX),
@@ -307,6 +387,11 @@ export function generateBuildMessages(opts: {
     ...ROAST(forX),
     ...HYPE(forX),
     ...FUN_FACTS(forX),
+    ...TEAM_COORDINATION(forX),
+    ...RESEARCH_INSIGHTS(forX),
+    ...ENGINEERING_EXCELLENCE(forX),
+    ...PRODUCT_CRAFT(forX),
+    ...BUSINESS_STRATEGY(forX),
     // Source-specific messages
     ...(host ? FROM_SOURCE(app, h) : []),
     ...(host ? FROM_SOURCE(forX, h) : []),
@@ -327,6 +412,11 @@ export function generateBuildMessages(opts: {
     ...PHILOSOPHY(`${app}`),
     ...HYPE(`${app}`),
     ...ROAST(`${app}`),
+    ...TEAM_COORDINATION(`${app}`),
+    ...RESEARCH_INSIGHTS(`${app}`),
+    ...ENGINEERING_EXCELLENCE(`${app}`),
+    ...PRODUCT_CRAFT(`${app}`),
+    ...BUSINESS_STRATEGY(`${app}`),
     // Fourth pass with more specific sub-contexts
     ...AI_WORKING(`${app}'s real-time features`),
     ...CODE_WRITING(`${app}'s business logic`),
@@ -338,6 +428,11 @@ export function generateBuildMessages(opts: {
     ...HYPE(`the launch of ${app}`),
     ...ROAST(`${app}'s original spec`),
     ...FUN_FACTS(`the team behind ${app}`),
+    ...TEAM_COORDINATION(`${app}'s launch`),
+    ...RESEARCH_INSIGHTS(`${app}'s market`),
+    ...ENGINEERING_EXCELLENCE(`${app}'s infrastructure`),
+    ...PRODUCT_CRAFT(`${app}'s experience`),
+    ...BUSINESS_STRATEGY(`${app}'s growth`),
     // Fifth pass
     ...AI_WORKING(`every screen of ${app}`),
     ...CODE_WRITING(`every component of ${app}`),
@@ -349,6 +444,11 @@ export function generateBuildMessages(opts: {
     ...HYPE(`the moment ${app} goes live`),
     ...ROAST(`${app}'s first draft`),
     ...FUN_FACTS(`${app}'s future users`),
+    ...TEAM_COORDINATION(`${app}'s ecosystem`),
+    ...RESEARCH_INSIGHTS(`${app}'s positioning`),
+    ...ENGINEERING_EXCELLENCE(`${app}'s resilience`),
+    ...PRODUCT_CRAFT(`${app}'s polish`),
+    ...BUSINESS_STRATEGY(`${app}'s monetization`),
   ]
 
   // Deduplicate any accidental repeats

@@ -58,7 +58,7 @@ const sectionMeta = [
   { id: "installation", label: "Installation", icon: Terminal, keywords: ["install", "npm", "setup", "requirements", "node", "environments", "browser", "edge"] },
   { id: "api-keys", label: "API Keys", icon: KeyRound, keywords: ["api key", "atai_api_key", "secret", "format", "create", "rotate", "revoke", "scopes", "environments", "provisioning", "security"] },
   { id: "quickstart", label: "Quickstart", icon: Rocket, keywords: ["quickstart", "first call", "example", "hello world", "initialize", "client", "atai"] },
-  { id: "capabilities", label: "Capabilities", icon: Boxes, keywords: ["capabilities", "ai", "voice", "search", "scrape", "email", "sms", "whatsapp", "notifications", "maps", "calendar", "vectors", "database", "payments", "list"] },
+  { id: "capabilities", label: "Capabilities", icon: Boxes, keywords: ["capabilities", "ai", "voice", "search", "scrape", "email", "notifications", "maps", "calendar", "vectors", "database", "payments", "list"] },
   { id: "rest-endpoints", label: "REST API Reference", icon: Server, keywords: ["rest", "endpoints", "http", "curl", "post", "get", "request", "response", "envelope", "json", "api"] },
   { id: "errors", label: "Errors & Retries", icon: Shield, keywords: ["errors", "ataierror", "codes", "retry", "429", "timeout", "aborted", "status", "handling"] },
   { id: "limits", label: "Limits & Quotas", icon: Gauge, keywords: ["limits", "rate limit", "quota", "payload", "256 kb", "300 requests", "concurrency", "size"] },
@@ -345,7 +345,7 @@ export function SdkDocsContent() {
               <p>
                 The <strong className="text-foreground">Atai Runtime API</strong> is the single service boundary between
                 your application and everything Atai operates: AI generation, voice, web search and scraping, email,
-                SMS, WhatsApp, push notifications, maps, scheduling, vector storage, the app database, and checkout.
+                realtime notifications, maps, scheduling, vector storage, the app database, and checkout.
                 The <strong className="text-foreground">@atai-group/sdk</strong> is its official typed client.
               </p>
 
@@ -613,12 +613,11 @@ try {
                 <CapabilityCard icon={Film} name="Video generation" sdk="atai.video" operations={["generateVideo"]} description="Text-to-video as an async job — submit a prompt, poll for the finished clip." />
                 <CapabilityCard icon={Mic} name="Speech & transcription" sdk="atai.speech · atai.transcribe" operations={["speak", "transcribe"]} description="Text-to-speech with built-in voices, and audio-to-text across languages and formats." />
                 <CapabilityCard icon={Eye} name="Vision" sdk="atai.vision" operations={["visionInput"]} description="Multimodal understanding — send images, PDFs, audio or video alongside text for analysis." />
-                <CapabilityCard icon={Mic} name="Voice" sdk="atai.voice" operations={["synthesize"]} description="Turn text into natural speech audio (returned base64-encoded with its MIME type)." />
+                <CapabilityCard icon={Mic} name="Voice" sdk="atai.voice" operations={["synthesize"]} description="Turn text into natural speech. Audio returns base64-encoded with its MIME type; toDataUrl() makes it immediately playable." />
                 <CapabilityCard icon={Search} name="Search" sdk="atai.search" operations={["web"]} description="Query the open web and get ranked, described results." />
                 <CapabilityCard icon={Globe} name="Web" sdk="atai.web" operations={["scrape"]} description="Scrape a public URL into clean markdown, with links and truncation info." />
                 <CapabilityCard icon={Send} name="Email" sdk="atai.email" operations={["send"]} description="Transactional email — receipts, resets, digests, notifications." />
-                <CapabilityCard icon={MessageSquare} name="SMS & WhatsApp" sdk="atai.sms · atai.whatsapp" operations={["send"]} description="Text messages and WhatsApp messaging to phone numbers." />
-                <CapabilityCard icon={Webhook} name="Notifications" sdk="atai.notifications" operations={["send"]} description="Push notifications to a user's device via its platform token." />
+                <CapabilityCard icon={Webhook} name="Notifications" sdk="atai.notifications" operations={["send"]} description="Realtime notifications broadcast to the app clients subscribed to a channel." />
                 <CapabilityCard icon={MapPin} name="Maps" sdk="atai.maps" operations={["geocode", "reverseGeocode"]} description="Addresses to coordinates and back, with optional country and language hints." />
                 <CapabilityCard icon={FileText} name="Calendar" sdk="atai.calendar" operations={["listBookings", "createBooking"]} description="List upcoming bookings and create new ones with attendees." />
                 <CapabilityCard icon={Boxes} name="Vectors" sdk="atai.vectors" operations={["upsert", "search", "delete"]} description="Store embeddings and search them — semantic search, recommendations, RAG." />
@@ -670,14 +669,6 @@ try {
 // → { id }`}
               />
 
-              <h3 className="text-lg font-semibold text-foreground">sms / whatsapp — send messages</h3>
-              <CodeBlock
-                lang="ts"
-                code={`await atai.sms.send({ to: "+15551234567", body: "Your code is 8291" })
-await atai.whatsapp.send({ to: "+15551234567", body: "Order confirmed 🎉" })
-// → { messageId, status, segments? }`}
-              />
-
               <h3 className="text-lg font-semibold text-foreground">db — the app database</h3>
               <CodeBlock
                 lang="ts"
@@ -699,10 +690,11 @@ await atai.db.delete({ tableName: "orders", recordId: created.id! })`}
               <CodeBlock
                 lang="ts"
                 code={`const checkout = await atai.payments.createCheckout({
-  items: [{ name: "Pro plan", quantity: 1, price: 19.99 }],
+  // Dodo bills catalog products — create the product once in your Dodo
+  // dashboard, then reference its id. price/name are informational.
+  items: [{ productId: "pdt_0NmxWCnTidDQjIl0YqkqV", quantity: 1 }],
   customerEmail: "customer@example.com",
   successUrl: "https://yourapp.com/success",
-  cancelUrl: "https://yourapp.com/pricing",
   idempotencyKey: "order-8291",   // deduplicates retries
   currency: "USD",
 })
@@ -723,24 +715,23 @@ const image = await atai.image.generateImage({
 // Video generation (async job — submit, then poll with { jobId })
 const job = await atai.video.generateVideo({
   prompt: "A timelapse of a city skyline at dusk",
-  model: "google/veo-3",
+  model: "google/veo-3.1-fast",
   duration: 5,
 })
 // → { jobId, status: "submitted" } — poll: generateVideo({ jobId: job.jobId })
 
-// Text-to-speech (returns base64 audio)
+// Text-to-speech (returns base64 audio + its real MIME type)
 const speech = await atai.speech.speak({
   input: "Hello from Atai!",
-  model: "openai/gpt-4o-mini-tts-2025-12-15",
-  voice: "alloy",
-  response_format: "mp3",
+  model: "mistralai/voxtral-mini-tts-2603",
+  voice: "en_paul_neutral",
+  response_format: "mp3",   // or "pcm" for PCM-only models
 })
-// → { audioBase64, mimeType }
+// → { audioBase64, mimeType, model, voice, format, bytes, generationId? }
 
 // Transcription (speech-to-text; base64 audio in)
 const text = await atai.transcribe.transcribe({
   input_audio: { data: audioBase64, format: "wav" },
-  model: "openai/whisper-large-v3",
   language: "en",   // optional hint
 })
 // → { text }
@@ -764,9 +755,17 @@ const answer = await atai.vision.visionInput({
               <h3 className="text-lg font-semibold text-foreground">Everything else</h3>
               <CodeBlock
                 lang="ts"
-                code={`// Voice — text to speech
-const audio = await atai.voice.synthesize({ text: "Hello!", voiceId: "optional" })
+                code={`// Voice — text to speech (audio returns base64 inside the JSON envelope)
+const speech = await atai.voice.synthesize({ text: "Hello!", voiceId: "optional" })
 // → { audioBase64, mimeType, voiceId, modelId, characters }
+
+// Browsers: make it playable or downloadable in one line
+const url = atai.voice.toDataUrl(speech) // "data:audio/mpeg;base64,…"
+// → <audio src={url} controls /> and <a href={url} download="speech.mp3"> both work
+
+// Servers (Node): write a real audio file
+import { writeFile } from "node:fs/promises"
+await writeFile("speech.mp3", Buffer.from(speech.audioBase64, "base64"))
 
 // Web search
 const found = await atai.search.web({ query: "best coffee in Kampala", limit: 5 })
@@ -776,8 +775,8 @@ const found = await atai.search.web({ query: "best coffee in Kampala", limit: 5 
 const page = await atai.web.scrape({ url: "https://example.com" })
 // → { url, title?, markdown?, links?, truncated?, creditsUsed? }
 
-// Push notification
-await atai.notifications.send({ token: deviceToken, title: "New order", body: "Table 4 ordered." })
+// Realtime notification
+await atai.notifications.send({ channel: "orders", title: "New order", body: "Table 4 ordered." })
 
 // Maps
 const places = await atai.maps.geocode({ query: "Kampala", limit: 5 })
@@ -1031,6 +1030,7 @@ try {
                       ["runtime_invalid_request", "422", "The body is invalid for this capability — check the contract tables above."],
                       ["runtime_provider_error", "502", "The upstream provider failed. Safe to retry once; if it persists, contact support with the requestId."],
                       ["runtime_provider_timeout", "504", "The upstream provider timed out. Safe to retry."],
+                      ["runtime_provider_not_entitled", "503", "The platform's provider credential cannot serve this (e.g. provider balance). Retrying won't help — contact the platform administrator."],
                       ["runtime_model_unavailable", "400", "The requested model isn't available. Drop the model field or pick another."],
                       ["runtime_capability_unavailable", "501", "The capability exists but has no working provider yet."],
                       ["runtime_billing_unavailable", "503", "Billing could not complete the charge (fail-closed). Retry shortly."],

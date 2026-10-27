@@ -5,6 +5,7 @@ import type {
   ProjectEvent,
   ConversationMessage,
   DeploymentHistoryEntry,
+  ProjectState,
 } from "@/lib/types/project"
 import type {
   RuntimeEnvironment,
@@ -35,12 +36,22 @@ export interface DataStore {
   getProject(id: string): Promise<MirrorProject | null>
   listProjects(userId: string, limit?: number): Promise<MirrorProject[]>
   updateProject(id: string, patch: Partial<MirrorProject>): Promise<MirrorProject | null>
+  isRequestedProjectIdAvailable(requestedProjectId: string, excludeProjectId?: string): Promise<boolean>
+  claimRequestedProjectId(id: string, requestedProjectId: string): Promise<MirrorProject | null>
   /** Atomically transitions a project into `building` only if it is not
    * already in an active build/deploy state, preventing a duplicate build
    * or follow-up prompt from double-launching a provider run
    * (check-then-act race). Returns null if the project could not be
    * claimed (already active, or not found). */
   claimBuildSlot(id: string, patch: Partial<MirrorProject>): Promise<MirrorProject | null>
+  /** Atomically moves a project from one of `fromStates` into `analyzing`,
+   * clearing the previous error. Returns null when another run already holds
+   * the slot (or the project vanished), so a retry can never double-start a
+   * pipeline. When `expectUpdatedAt` is provided, the claim only succeeds if
+   * the record has not changed since it was read — needed when the source
+   * state is also `analyzing`, where the state filter alone cannot
+   * distinguish a stale run from a fresh one. */
+  claimPipelineSlot(id: string, fromStates: ProjectState[], expectUpdatedAt?: number): Promise<MirrorProject | null>
   appendEvent(id: string, event: ProjectEvent): Promise<void>
   appendMessage(id: string, message: ConversationMessage): Promise<void>
   appendDeploymentRecord(id: string, record: DeploymentHistoryEntry): Promise<void>

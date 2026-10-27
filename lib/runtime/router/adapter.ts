@@ -28,6 +28,13 @@ export class ProviderExecutionError extends Error {
   readonly category: ProviderFailureCategory
   /** Server-side detail — for logs only, never client responses. */
   readonly detail?: string
+  /**
+   * Undici/node network cause code (UND_ERR_CONNECT_TIMEOUT, ENOTFOUND, …)
+   * when this error came from a raw network fault. Kept server-side only —
+   * lets callers distinguish never-delivered requests (safe to retry) from
+   * post-connect failures (§45). Never serialized to clients.
+   */
+  networkCauseCode?: string
 
   constructor(category: ProviderFailureCategory, message: string, detail?: string) {
     super(message)
@@ -70,8 +77,16 @@ export function providerFailureToRuntimeError(e: ProviderExecutionError): AppErr
       return runtimeError("runtime_provider_timeout")
     case "provider_rate_limited":
       return runtimeError("runtime_provider_rate_limited")
+    case "provider_not_entitled":
+      return runtimeError("runtime_provider_not_entitled")
+    case "model_unavailable":
+      return runtimeError("runtime_model_unavailable", e.message)
     case "unsupported_operation":
-      return runtimeError("runtime_invalid_request")
+      // Adapter-authored messages for this category are neutral, actionable
+      // literals ("choose an image-capable model"), so they are forwarded —
+      // a caller-side failure the developer can actually fix. Provider wording
+      // lives in `detail`, which never leaves the server.
+      return runtimeError("runtime_invalid_request", e.message)
     case "provider_error":
     default:
       return runtimeError("runtime_provider_error")

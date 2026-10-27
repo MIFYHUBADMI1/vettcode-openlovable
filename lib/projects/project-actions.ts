@@ -4,7 +4,9 @@ import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { logger } from "@/lib/logging/logger"
 import { reserveCredits, releaseReservation, getAvailableCredits } from "@/lib/billing/credit-service"
 import { classifyComplexity } from "@/lib/credits/credits"
-import { launchProject, runAgent, deployProject, getDeploymentStatus, isTotalumConfigured } from "@/lib/integrations/totalum/service"
+import { launchProject, runAgent, deployProject, getDeploymentStatus, isTotalumConfigured, isProjectIdAvailable } from "@/lib/integrations/totalum/service"
+import { TotalumError } from "@/lib/integrations/totalum/errors"
+import { validateProjectId } from "@/lib/projects/project-id"
 import { initializeProjectInfrastructure } from "@/lib/infrastructure/service"
 import { getInfrastructurePlan } from "@/lib/infrastructure/plans"
 import { buildInitialBuildPrompt } from "@/lib/analysis/prompt-builder"
@@ -35,6 +37,56 @@ function event(stage: string, message: string, level: ProjectEvent["level"] = "i
 
 // ─── Build (initial) ─────────────────────────────────────────────────────────
 
+export type PreparedProjectId =
+  | { ok: true; requestedProjectId: string }
+  | { ok: false; status: number; code: string; message: string }
+
+export async function prepareRequestedProjectId(
+  project: MirrorProject,
+  input?: string,
+): Promise<PreparedProjectId> {
+  if (project.totalumProjectId) {
+    return { ok: true, requestedProjectId: project.requestedProjectId ?? project.totalumProjectId }
+  }
+
+  const requestedProjectId = input?.trim() || project.requestedProjectId
+  if (!requestedProjectId) {
+    return {
+      ok: false,
+      status: 422,
+      code: "PROJECT_ID_REQUIRED",
+      message: "Choose your app address before starting the build.",
+    }
+  }
+
+  const validationError = validateProjectId(requestedProjectId)
+  if (validationError) {
+    return { ok: false, status: 422, code: "VALIDATION", message: validationError }
+  }
+
+  const locallyAvailable = await store.isRequestedProjectIdAvailable(requestedProjectId, project.id)
+  if (!locallyAvailable || !(await isProjectIdAvailable(requestedProjectId))) {
+    return {
+      ok: false,
+      status: 409,
+      code: "PROJECT_ID_UNAVAILABLE",
+      message: "That app address is already in use. Choose another project ID.",
+    }
+  }
+
+  const claimed = await store.claimRequestedProjectId(project.id, requestedProjectId)
+  if (!claimed) {
+    return {
+      ok: false,
+      status: 409,
+      code: "PROJECT_ID_UNAVAILABLE",
+      message: "That app address was just taken. Choose another project ID.",
+    }
+  }
+
+  return { ok: true, requestedProjectId }
+}
+
 export interface StartBuildResult {
   ok: boolean
   status: number
@@ -63,6 +115,10 @@ export async function startProjectBuild(userId: string, projectId: string): Prom
   if (!isTotalumConfigured()) {
     return { ok: false, status: 503, code: "PROVIDER_NOT_CONFIGURED", message: "The application builder isn't connected yet. Add your Totalum API key to enable building." }
   }
+
+  const preparedProjectId = await prepareRequestedProjectId(project)
+  if (!preparedProjectId.ok) return preparedProjectId
+  const requestedProjectId = preparedProjectId.requestedProjectId
 
   const tier = project.specification.complexity ?? classifyComplexity(project.specification)
   const creditsNeeded = await getBuildCost(tier)
@@ -104,19 +160,14 @@ export async function startProjectBuild(userId: string, projectId: string): Prom
     const defaultPlan = getInfrastructurePlan(project.infrastructure?.planId ?? "testing")
     const infraCap = defaultPlan?.totalumInfrastructureCredits ?? 5
 
-    const sanitizedName = project.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 20)
-    const shortId = projectId.replace(/-/g, "").slice(0, 6)
-    const totalumProjectName = `mirror-${sanitizedName}-${shortId}`
-
     const launch = await launchProject({
-      projectId: totalumProjectName,
+      projectId: requestedProjectId,
       prompt: run.prompt,
       maxInfrastructureCreditsPerMonth: infraCap,
     })
+    if (launch.projectId !== requestedProjectId) {
+      throw new TotalumError("PROJECT_ID_UNAVAILABLE")
+    }
     await store.updateBuildRun(run.id, { status: "running", totalumProjectId: launch.projectId })
     await store.updateProject(projectId, { state: "building", totalumProjectId: launch.projectId })
 

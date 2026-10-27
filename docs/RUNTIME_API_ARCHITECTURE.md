@@ -363,8 +363,7 @@ responses, or error messages.
 | `payments` | Dodo | Yes (dodopayments SDK) — but as Atai's own PSP | Provider-mode for generated apps: UNVERIFIED |
 | `auth` | Clerk | No (Clerk appears nowhere; Atai has its own auth) | UNVERIFIED |
 | `email` | Resend | No (Atai uses SMTP/nodemailer; RESEND only in a doc file) | UNVERIFIED |
-| `sms` / WhatsApp | Twilio | No | UNVERIFIED |
-| `notifications` (push) | Firebase | No | UNVERIFIED |
+| `notifications` (realtime) | Supabase | Yes (Realtime Broadcast HTTP API) | Implemented |
 | `maps` | Mapbox | No | UNVERIFIED |
 | `calendar` | Cal.com | No | UNVERIFIED |
 | `vectors` / RAG | Cloudflare | No | UNVERIFIED |

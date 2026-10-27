@@ -411,6 +411,9 @@ function StatusCard({ state, credits, developmentUrl }: { state: string; credits
     ready: { label: "Ready", color: "text-green-500" },
     build_complete: { label: "Build complete", color: "text-green-500" },
     build_failed: { label: "Build failed", color: "text-destructive" },
+    analysis_failed: { label: "Understanding failed", color: "text-destructive" },
+    plan_failed: { label: "Plan failed", color: "text-destructive" },
+    deployment_failed: { label: "Launch failed", color: "text-destructive" },
     analyzing: { label: "Analyzing", color: "text-primary", pulse: true },
   }
   const c = config[state] ?? { label: state, color: "text-muted-foreground" }

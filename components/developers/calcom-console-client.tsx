@@ -62,10 +62,10 @@ const CATALOG: CatalogGroup[] = [
     endpoints: [
       { id: "bookings-list", label: "List bookings", method: "GET", path: "/v2/bookings", query: "bookingStatus=UPCOMING&limit=20&offset=0", note: "bookingStatus: UPCOMING | PAST | CANCELLED | ALL (older deploys use &status=)." },
       { id: "bookings-get", label: "Get booking by UID", method: "GET", path: "/v2/bookings/{uid}", note: "Replace {uid} with a real booking UID from a list call." },
-      { id: "bookings-create", label: "Create booking", method: "POST", path: "/v2/bookings", body: JSON.stringify({ start: FUTURE_START, eventTypeId: 1, attendee: { name: "Ada Tester", email: "you@example.com", timeZone: "Africa/Kampala" }, metadata: {} }, null, 2), note: "Needs start, eventTypeId, attendee. Requires the cal-api-version set (default prefilled for this call).", sideEffect: true },
+      { id: "bookings-create", label: "Create booking", method: "POST", path: "/v2/bookings", body: JSON.stringify({ start: FUTURE_START, eventTypeId: 7618341, attendee: { name: "Ada Tester", email: "you@example.com", timeZone: "Africa/Kampala" }, metadata: {} }, null, 2), note: "Needs start, eventTypeId, attendee. eventTypeId 7618341 is the platform 15min type — swap in your own or list via /v2/event-types. Cal.com rejects placeholder emails like example.com — use a real address.", sideEffect: true },
       { id: "bookings-cancel", label: "Cancel booking", method: "POST", path: "/v2/bookings/{uid}/cancel", body: JSON.stringify({ cancellationReason: "Debug console test — cancelling my own booking", noShow: false }, null, 2), note: "Cancels a real booking on the platform account.", sideEffect: true },
       { id: "bookings-confirm", label: "Confirm booking", method: "POST", path: "/v2/bookings/{uid}/confirm", note: "Confirms a pending-approval booking.", sideEffect: true },
-      { id: "bookings-reschedule-request", label: "Request reschedule", method: "POST", path: "/v2/bookings/{uid}/reschedule", body: JSON.stringify({ start: FUTURE_START, reducedEventTypeId: 1 }, null, 2), note: "Starts a reschedule; the attendee (or requireConfirmation flow) completes it.", sideEffect: true },
+      { id: "bookings-reschedule-request", label: "Request reschedule", method: "POST", path: "/v2/bookings/{uid}/reschedule", body: JSON.stringify({ start: FUTURE_START, reducedEventTypeId: 7618341 }, null, 2), note: "Starts a reschedule; the attendee (or requireConfirmation flow) completes it.", sideEffect: true },
       { id: "bookings-reschedule-confirm", label: "Confirm reschedule", method: "POST", path: "/v2/bookings/{uid}/instance", body: JSON.stringify({ action: "ACCEPT" }, null, 2), note: "Completes a pending reschedule on the booking instance.", sideEffect: true },
       { id: "bookings-instance", label: "Get booking instances", method: "GET", path: "/v2/bookings/{uid}/instance", note: "Video/conferencing instances attached to a booking." },
     ],
@@ -74,19 +74,19 @@ const CATALOG: CatalogGroup[] = [
     name: "Event types",
     blurb: "The bookable types behind every booking — the bridge into playground createBooking calls.",
     endpoints: [
-      { id: "eventtypes-list", label: "List event types", method: "GET", path: "/v2/eventTypes" },
-      { id: "eventtypes-get", label: "Get event type", method: "GET", path: "/v2/eventTypes/{id}" },
-      { id: "eventtypes-create", label: "Create event type", method: "POST", path: "/v2/eventTypes", body: JSON.stringify({ title: "Console debug event", slug: "console-debug-event", schedulingType: "ROUND_ROBIN", length: 15, slotInterval: 15 }, null, 2), note: "Creates a real event type on the platform account.", sideEffect: true },
-      { id: "eventtypes-update", label: "Update event type", method: "PATCH", path: "/v2/eventTypes/{id}", body: JSON.stringify({ metadata: { consoleTest: "true" } }, null, 2), note: "Partial update; metadata is the safest field to poke.", sideEffect: true },
+      { id: "eventtypes-list", label: "List event types", method: "GET", path: "/v2/event-types", note: "Requires cal-api-version 2026-06-12 — prefilled when you pick this." },
+      { id: "eventtypes-get", label: "Get event type", method: "GET", path: "/v2/event-types/{id}" },
+      { id: "eventtypes-create", label: "Create event type", method: "POST", path: "/v2/event-types", body: JSON.stringify({ title: "Console debug event", slug: "console-debug-event", schedulingType: "ROUND_ROBIN", length: 15, slotInterval: 15 }, null, 2), note: "Creates a real event type on the platform account.", sideEffect: true },
+      { id: "eventtypes-update", label: "Update event type", method: "PATCH", path: "/v2/event-types/{id}", body: JSON.stringify({ metadata: { consoleTest: "true" } }, null, 2), note: "Partial update; metadata is the safest field to poke.", sideEffect: true },
     ],
   },
   {
     name: "Availability",
     blurb: "Pure reads — the right way to debug slot logic before anything books.",
     endpoints: [
-      { id: "availability-get", label: "User availability", method: "GET", path: "/v2/availability/slot", query: "dateFrom=2026-10-26T00:00:00.000Z&dateTo=2026-10-30T00:00:00.000Z&timeZone=UTC&eventTypeId=1", note: "Takes userIds or eventTypeId + dateFrom/dateTo (+ teamId for round-robin/batching)." },
+      { id: "availability-get", label: "User availability", method: "GET", path: "/v2/availability/slot", query: "dateFrom=2026-10-26T00:00:00.000Z&dateTo=2026-10-30T00:00:00.000Z&timeZone=UTC&eventTypeId=7618341", note: "Takes userIds or eventTypeId + dateFrom/dateTo (+ teamId for round-robin/batching)." },
       { id: "availability-grouped", label: "Grouped availability", method: "GET", path: "/v2/availability/slot/grouped-availability", query: "dateFrom=2026-10-26T00:00:00.000Z&dateTo=2026-10-30T00:00:00.000Z&t1=UTC", note: "Common availability across multiple users/event types." },
-      { id: "timeslots", label: "Get available time slots", method: "POST", path: "/v2/availability/timeslots", body: JSON.stringify({ slotConfig: { start: FUTURE_START, end: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19) + "Z", eventTypeId: 1, timeZone: "UTC" } }, null, 2), note: "Body-shaped slot query; returns the concrete bookable slots." },
+      { id: "timeslots", label: "Get available time slots", method: "POST", path: "/v2/availability/timeslots", body: JSON.stringify({ slotConfig: { start: FUTURE_START, end: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().slice(0, 19) + "Z", eventTypeId: 7618341, timeZone: "UTC" } }, null, 2), note: "Body-shaped slot query; returns the concrete bookable slots." },
     ],
   },
   {
@@ -184,9 +184,11 @@ export function CalComConsoleClient() {
     setPath(ep.path)
     setQuery(ep.query ?? "")
     setBody(ep.body ?? (ep.method === "GET" ? "" : "{}"))
-    // Create-booking is documented against the dated v2 version; keep the
-    // configured default for everything else.
+    // Create-booking is documented against the dated v2 version; event-types
+    // only resolve under the 2026-06-12 header. Keep the configured default
+    // for everything else.
     if (ep.id === "bookings-create") setApiVersion("2024-08-13")
+    if (ep.id.startsWith("eventtypes-")) setApiVersion("2026-06-12")
   }
 
   function resolvePlaceholders(): { resolvedPath: string; missing: string[] } {

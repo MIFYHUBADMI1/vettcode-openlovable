@@ -19,7 +19,6 @@ import {
   toTranscriptionResult,
   toOpenRouterVisionRequest,
   toVisionResult,
-  resolveMultimodalModel,
 } from "./multimodal"
 import {
   OPENROUTER_IMAGES_PATH,
@@ -77,10 +76,10 @@ class OpenRouterAdapter implements RuntimeProviderAdapter {
     // speech, transcriptions) and multimodal chat (vision). Each branch
     // validates caller input first (normalized 422-class on violation).
     if (capability === "ai.image" && operation === "generateImage") {
-      const projectConfig = await getCachedProjectRuntimeConfig(request.auth.projectId)
-      const body = toOpenRouterImageRequest(request.request.input, configToModelPolicy(projectConfig).defaultModel)
+      // Image resolves its own default — the project chat model cannot output images.
+      const body = toOpenRouterImageRequest(request.request.input)
       const { payload } = await executeOpenRouterJsonPost(OPENROUTER_IMAGES_PATH, body)
-      return toImageResult(payload as Parameters<typeof toImageResult>[0], request)
+      return toImageResult(payload as Parameters<typeof toImageResult>[0], body.model)
     }
 
     if (capability === "ai.video" && operation === "generateVideo") {
@@ -91,29 +90,38 @@ class OpenRouterAdapter implements RuntimeProviderAdapter {
         const { payload } = await executeOpenRouterJsonPost(`${OPENROUTER_VIDEOS_PATH}/${poll.data.jobId}`, {})
         return toVideoResult(payload as Parameters<typeof toVideoResult>[0])
       }
-      const projectConfig = await getCachedProjectRuntimeConfig(request.auth.projectId)
-      const body = toOpenRouterVideoRequest(request.request.input, configToModelPolicy(projectConfig).defaultModel)
+      const body = toOpenRouterVideoRequest(request.request.input)
       const { payload } = await executeOpenRouterJsonPost(OPENROUTER_VIDEOS_PATH, body)
       return toVideoResult(payload as Parameters<typeof toVideoResult>[0])
     }
 
     if (capability === "ai.speech" && operation === "speak") {
-      const projectConfig = await getCachedProjectRuntimeConfig(request.auth.projectId)
-      const body = toOpenRouterSpeechRequest(request.request.input, configToModelPolicy(projectConfig).defaultModel)
-      const { bytes } = await executeOpenRouterSpeech(body)
-      return toSpeechResult(bytes, body.model)
+      // Speech resolves its own TTS default. Passing the project's CHAT model
+      // into /audio/speech is what produced "Model ... does not exist".
+      const body = toOpenRouterSpeechRequest(request.request.input)
+      const { bytes, contentType, generationId } = await executeOpenRouterSpeech(body)
+      return toSpeechResult(bytes, {
+        model: body.model,
+        contentType,
+        generationId,
+        voice: body.voice,
+        format: body.response_format,
+      })
     }
 
     if (capability === "ai.transcribe" && operation === "transcribe") {
-      const projectConfig = await getCachedProjectRuntimeConfig(request.auth.projectId)
-      const body = toOpenRouterTranscriptionRequest(request.request.input, configToModelPolicy(projectConfig).defaultModel)
+      // The model is pinned server-side — no project default, no caller override.
+      const body = toOpenRouterTranscriptionRequest(request.request.input)
       const { payload } = await executeOpenRouterJsonPost(OPENROUTER_AUDIO_TRANSCRIPTIONS_PATH, body)
       return toTranscriptionResult(payload as Parameters<typeof toTranscriptionResult>[0])
     }
 
     if (capability === "ai.vision" && operation === "visionInput") {
-      const projectConfig = await getCachedProjectRuntimeConfig(request.auth.projectId)
-      const body = toOpenRouterVisionRequest(request.request.input, configToModelPolicy(projectConfig).defaultModel)
+      // The project's defaultModel is a CHAT policy; using it as the vision
+      // fallback made every unmodelled image call resolve to a text-only model
+      // and fail OpenRouter's image-capability routing filter. Vision resolves
+      // caller model → OPENROUTER_VISION_MODEL → image-capable recommended.
+      const body = toOpenRouterVisionRequest(request.request.input)
       const { payload } = await executeOpenRouterJsonPost("/chat/completions", body)
       return toVisionResult(payload as Parameters<typeof toVisionResult>[0])
     }

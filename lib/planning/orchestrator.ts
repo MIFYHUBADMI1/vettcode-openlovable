@@ -44,6 +44,8 @@ import {
   ValidationError,
   CreditInsufficientError,
 } from "@/lib/planning/errors"
+import { recordAIArtifacts } from "@/lib/projects/ai-artifacts"
+import { makeAIArtifact, rawTextFromError, stageFromError } from "@/lib/types/ai-artifacts"
 
 /**
  * Helper to create properly formatted project events
@@ -169,6 +171,15 @@ export class PlanningOrchestrator {
         async () => await this.ideaService.generateUnderstanding(idea),
         projectId
       )
+      await this.capture(projectId, {
+        kind: "understanding",
+        stage: "idea_understanding",
+        label: "Idea understanding",
+        status: "ready",
+        content: understanding,
+        model: understanding.modelUsed,
+        note: "Structured interpretation of your idea, produced before research and planning.",
+      })
 
       // Research stage (optional - continue on failure)
       // Requirement 2.8: Research failure doesn't block pipeline
@@ -196,6 +207,7 @@ export class PlanningOrchestrator {
           modelUsed: "none (research failed)",
         }
       }
+      await this.captureResearch(projectId, research)
 
       const specification = await this.executeStage(
         runId,
@@ -203,6 +215,15 @@ export class PlanningOrchestrator {
         async () => await this.planner.planApplication(understanding, research),
         projectId
       )
+      await this.capture(projectId, {
+        kind: "specification",
+        stage: "planning",
+        label: "Application specification",
+        status: "ready",
+        content: specification,
+        rawText: this.planner.getLastRawText(),
+        note: "The planner's response, parsed into the plan sections. Raw shows the exact model text.",
+      })
 
       const critique = await this.executeStage(
         runId,
@@ -210,6 +231,16 @@ export class PlanningOrchestrator {
         async () => await this.critic.critique(specification),
         projectId
       )
+      await this.capture(projectId, {
+        kind: "critique",
+        stage: "critique",
+        label: "Independent critique",
+        status: "ready",
+        content: critique,
+        note: critique.passesValidation
+          ? "The critic found no blocking issues."
+          : "The critic flagged issues that the repair step then addressed.",
+      })
 
       // Repair if needed
       let repairedSpec = specification
@@ -220,10 +251,28 @@ export class PlanningOrchestrator {
           async () => await this.repairService.repair(specification, critique),
           projectId
         )
+        await this.capture(projectId, {
+          kind: "repair",
+          stage: "repair",
+          label: "Repaired specification",
+          status: "ready",
+          content: repairedSpec,
+          note: "Applied fixes for the critique findings.",
+        })
       }
 
       // Semantic validation
       const validationResult = this.validator.validate(repairedSpec)
+      await this.capture(projectId, {
+        kind: "validation",
+        stage: "validation",
+        label: "Semantic validation",
+        status: validationResult.valid ? "ready" : "fallback",
+        content: { valid: validationResult.valid, errors: validationResult.errors },
+        note: validationResult.valid
+          ? "No consistency errors found."
+          : "Consistency errors were found in the generated plan.",
+      })
       if (!validationResult.valid) {
         logger.error("[PlanningOrchestrator] Semantic validation failed", "Validation errors found", {
           projectId,
@@ -250,11 +299,32 @@ export class PlanningOrchestrator {
       }
 
       const finalSpec = sanitizationResult.specification
+      await this.capture(projectId, {
+        kind: "sanitization",
+        stage: "sanitization",
+        label: "Stack sanitization",
+        status: sanitizationResult.sanitized ? "fallback" : "ready",
+        content: {
+          sanitized: sanitizationResult.sanitized,
+          replacements: sanitizationResult.replacements,
+        },
+        note: sanitizationResult.sanitized
+          ? `${sanitizationResult.replacements.length} unsupported technology reference${sanitizationResult.replacements.length === 1 ? "" : "s"} were replaced with Totalum equivalents.`
+          : "No unsupported technologies were found.",
+      })
 
       // Classify complexity
       // Requirement 10.7: Integrate complexity classifier after sanitization
       const complexity = classifyComplexity(finalSpec)
       finalSpec.complexity = complexity
+      await this.capture(projectId, {
+        kind: "final_spec",
+        stage: "final",
+        label: "Final plan (stored)",
+        status: "ready",
+        content: finalSpec,
+        note: "This exact plan is what the plan sections and the build receive.",
+      })
 
       logger.info("[PlanningOrchestrator] Complexity classified", "Complexity determined", {
         projectId,
@@ -297,6 +367,7 @@ export class PlanningOrchestrator {
         runId,
         error: error instanceof Error ? error.message : String(error),
       })
+      await this.captureFailure(projectId, error)
 
       // Refund credits on failure
       // Requirement 11.4: Refund credits on fatal errors
@@ -389,6 +460,14 @@ export class PlanningOrchestrator {
 
       // Create Planning_Run record
       runId = await this.tracker.startRun(projectId, userId, "website")
+      await this.capture(projectId, {
+        kind: "understanding",
+        stage: "understanding",
+        label: "Website understanding",
+        status: "ready",
+        content: understanding,
+        note: "The structured understanding of the source website that this plan was built from.",
+      })
 
       // Execute pipeline stages (skip idea understanding)
       // Requirement 8.1: Website mode skips to research
@@ -416,6 +495,7 @@ export class PlanningOrchestrator {
           modelUsed: "none (research failed)",
         }
       }
+      await this.captureResearch(projectId, research)
 
       const specification = await this.executeStage(
         runId,
@@ -423,6 +503,15 @@ export class PlanningOrchestrator {
         async () => await this.planner.planApplication(understanding, research),
         projectId
       )
+      await this.capture(projectId, {
+        kind: "specification",
+        stage: "planning",
+        label: "Application specification",
+        status: "ready",
+        content: specification,
+        rawText: this.planner.getLastRawText(),
+        note: "The planner's response, parsed into the plan sections. Raw shows the exact model text.",
+      })
 
       // Critique stage - non-blocking
       let critique
@@ -433,10 +522,21 @@ export class PlanningOrchestrator {
           async () => await this.critic.critique(specification),
           projectId
         )
+        await this.capture(projectId, {
+          kind: "critique",
+          stage: "critique",
+          label: "Independent critique",
+          status: "ready",
+          content: critique,
+          note: critique.passesValidation
+            ? "The critic found no blocking issues."
+            : "The critic flagged issues that the repair step then addressed.",
+        })
       } catch (error) {
         logger.warn("[PlanningOrchestrator] Critique stage failed, continuing with minimal critique", "Critique failed — using pass-through critique", {
           error: error instanceof Error ? error.message : String(error),
         })
+        await this.captureFailure(projectId, error)
         // Create minimal passing critique so pipeline can continue
         critique = {
           criticalIssues: [],
@@ -448,6 +548,14 @@ export class PlanningOrchestrator {
           createdAt: Date.now(),
           modelUsed: "none (critique failed)",
         }
+        await this.capture(projectId, {
+          kind: "critique",
+          stage: "critique",
+          label: "Independent critique",
+          status: "failed",
+          content: critique,
+          note: "The quality review did not complete, so the plan continued without it.",
+        })
       }
 
       let repairedSpec = specification
@@ -459,6 +567,14 @@ export class PlanningOrchestrator {
             async () => await this.repairService.repair(specification, critique),
             projectId
           )
+          await this.capture(projectId, {
+            kind: "repair",
+            stage: "repair",
+            label: "Repaired specification",
+            status: "ready",
+            content: repairedSpec,
+            note: "Applied fixes for the critique findings.",
+          })
         } catch (error) {
           logger.warn("[PlanningOrchestrator] Repair stage failed, using original specification", "Repair failed — using un-repaired spec", {
             error: error instanceof Error ? error.message : String(error),
@@ -469,6 +585,16 @@ export class PlanningOrchestrator {
       }
 
       const validationResult = this.validator.validate(repairedSpec)
+      await this.capture(projectId, {
+        kind: "validation",
+        stage: "validation",
+        label: "Semantic validation",
+        status: validationResult.valid ? "ready" : "fallback",
+        content: { valid: validationResult.valid, errors: validationResult.errors },
+        note: validationResult.valid
+          ? "No consistency errors found."
+          : "Consistency errors were found; the plan continued because it is still usable.",
+      })
       if (!validationResult.valid) {
         logger.warn("[PlanningOrchestrator] Semantic validation found issues, continuing anyway", "Validation warnings found", {
           projectId,
@@ -481,9 +607,30 @@ export class PlanningOrchestrator {
 
       const sanitizationResult = this.sanitizer.sanitize(repairedSpec)
       const finalSpec = sanitizationResult.specification
+      await this.capture(projectId, {
+        kind: "sanitization",
+        stage: "sanitization",
+        label: "Stack sanitization",
+        status: sanitizationResult.sanitized ? "fallback" : "ready",
+        content: {
+          sanitized: sanitizationResult.sanitized,
+          replacements: sanitizationResult.replacements,
+        },
+        note: sanitizationResult.sanitized
+          ? `${sanitizationResult.replacements.length} unsupported technology reference${sanitizationResult.replacements.length === 1 ? "" : "s"} were replaced with Totalum equivalents.`
+          : "No unsupported technologies were found.",
+      })
 
       const complexity = classifyComplexity(finalSpec)
       finalSpec.complexity = complexity
+      await this.capture(projectId, {
+        kind: "final_spec",
+        stage: "final",
+        label: "Final plan (stored)",
+        status: "ready",
+        content: finalSpec,
+        note: "This exact plan is what the plan sections and the build receive.",
+      })
 
       await store.updateProject(projectId, {
         specification: finalSpec,
@@ -518,6 +665,7 @@ export class PlanningOrchestrator {
         runId,
         error: error instanceof Error ? error.message : String(error),
       })
+      await this.captureFailure(projectId, error)
 
       if (reservationId) {
         try {
@@ -547,6 +695,53 @@ export class PlanningOrchestrator {
 
       throw error
     }
+  }
+
+  /** Persist one stage output so Collaborate can show what the AI produced. */
+  private async capture(
+    projectId: string,
+    artifact: Parameters<typeof makeAIArtifact>[0]
+  ): Promise<void> {
+    await recordAIArtifacts(projectId, [makeAIArtifact(artifact)])
+  }
+
+  /** Research never blocks the pipeline — record what happened, including the
+   * raw answer when the model responded but the response did not parse. */
+  private async captureResearch(
+    projectId: string,
+    research: { modelUsed: string; rawText?: string }
+  ): Promise<void> {
+    const rawText = research.rawText
+    const failed = research.modelUsed.startsWith("none")
+    await this.capture(projectId, {
+      kind: "research",
+      stage: "research",
+      label: "Research & gap analysis",
+      status: rawText ? "unparsed" : failed ? "failed" : "ready",
+      content: research,
+      rawText,
+      model: research.modelUsed,
+      note: rawText
+        ? "The research model answered but the response could not be parsed, so the plan continued without these findings. Raw shows its exact answer."
+        : failed
+          ? "Research did not complete. The plan continued without gap analysis."
+          : "Completeness gaps, security concerns, UX gaps, and recommendations found before planning.",
+    })
+  }
+
+  /** Keep the exact model text when a stage fails to parse its response. */
+  private async captureFailure(projectId: string, error: unknown): Promise<void> {
+    const rawText = rawTextFromError(error)
+    if (!rawText) return
+    const stage = stageFromError(error) ?? "planning"
+    await this.capture(projectId, {
+      kind: "raw_failure",
+      stage,
+      label: `Raw ${stage.replace(/_/g, " ")} output (unparsed)`,
+      status: "unparsed",
+      rawText,
+      note: "The model answered, but the response could not be parsed. This is the exact text it returned.",
+    })
   }
 
   /**

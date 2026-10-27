@@ -19,6 +19,9 @@ export default async function EditProjectPage({ params }: { params: Promise<{ pr
     deploying: { text: "Deploying", className: "bg-amber-500/10 text-amber-600 border-amber-500/30" },
     ready: { text: "Ready", className: "bg-green-500/10 text-green-600 border-green-500/30" },
     build_failed: { text: "Build failed", className: "bg-destructive/10 text-destructive border-destructive/30" },
+    analysis_failed: { text: "Understanding failed", className: "bg-destructive/10 text-destructive border-destructive/30" },
+    plan_failed: { text: "Plan failed", className: "bg-destructive/10 text-destructive border-destructive/30" },
+    deployment_failed: { text: "Launch failed", className: "bg-destructive/10 text-destructive border-destructive/30" },
   }
   const sl = stateLabel[project.state]
 

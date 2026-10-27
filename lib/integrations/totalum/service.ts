@@ -68,6 +68,16 @@ export async function getProject(projectId: string): Promise<TotalumProject> {
   return totalumFetch<TotalumProject>("GET", `/projects/${encodeURIComponent(projectId)}`)
 }
 
+export async function isProjectIdAvailable(projectId: string): Promise<boolean> {
+  try {
+    await getProject(projectId)
+    return false
+  } catch (error) {
+    if (error instanceof TotalumError && error.code === "PROJECT_NOT_FOUND") return true
+    throw error
+  }
+}
+
 /** GET /projects/:id/source-code — signed archive URL for latest source. */
 export async function getSourceCode(projectId: string): Promise<SourceCodeResponse> {
   const raw = await totalumFetch<Record<string, unknown>>("GET", `/projects/${encodeURIComponent(projectId)}/source-code`, undefined, 60_000)

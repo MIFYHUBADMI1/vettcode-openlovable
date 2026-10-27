@@ -62,32 +62,52 @@ export interface ListBookingsResultData {
   bookings: BookingItem[]
 }
 
-/** Documented Cal.com v2 bookings list response (subset the contract consumes). */
+/**
+ * Documented Cal.com v2 bookings list response (subset the contract consumes).
+ * Current deploys return `data` as a direct array (with a top-level
+ * `pagination` object); older shapes nest it under `data.bookings` — accept
+ * either, reject only when neither yields an array.
+ */
 export interface CalComListBookingsResponse {
   status?: string
-  data?: {
-    bookings?: Array<{
-      id?: number | string
-      uid?: string
-      title?: string
-      start?: string
-      end?: string
-      status?: string
-      location?: string | { type?: string; address?: string }
-      attendee?: { email?: string; name?: string }
-    }>
-  }
+  data?:
+    | Array<{
+        id?: number | string
+        uid?: string
+        title?: string
+        start?: string
+        end?: string
+        status?: string
+        location?: string | { type?: string; address?: string }
+        attendee?: { email?: string; name?: string }
+      }>
+    | {
+        bookings?: Array<{
+          id?: number | string
+          uid?: string
+          title?: string
+          start?: string
+          end?: string
+          status?: string
+          location?: string | { type?: string; address?: string }
+          attendee?: { email?: string; name?: string }
+        }>
+      }
 }
 
 export function toListBookingsResult(
   response: CalComListBookingsResponse,
 ): ProviderExecutionResponse<ListBookingsResultData> {
-  const bookings = response.data?.bookings
-  if (!Array.isArray(bookings)) {
+  const bookings = Array.isArray(response.data)
+    ? response.data
+    : Array.isArray(response.data?.bookings)
+      ? response.data.bookings
+      : undefined
+  if (!bookings) {
     throw new ProviderExecutionError(
       "provider_error",
       "The scheduling provider returned an invalid response.",
-      "missing data.bookings array",
+      "missing bookings array in list response (data or data.bookings)",
     )
   }
   const items: BookingItem[] = []

@@ -4,8 +4,8 @@ import { ProviderExecutionError } from "@/lib/runtime/router/adapter"
 /**
  * Atai Runtime — shared adapter error primitives (server-only).
  *
- * Phase 10 providers (ElevenLabs, Firecrawl, Resend, Twilio, Firebase,
- * Mapbox) all need the same two primitives OpenRouter carries in its own
+ * Phase 10 providers (ElevenLabs, Firecrawl, Resend, Supabase, Mapbox) all
+ * need the same two primitives OpenRouter carries in its own
  * errors.ts: a not-configured error and network-fault categorization. They
  * live here so each adapter stays small — NOT a second adapter layer; every
  * adapter still owns its own status→category mapping and safe messages.

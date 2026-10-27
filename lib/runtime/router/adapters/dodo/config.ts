@@ -12,14 +12,24 @@ import { boundedTimeoutMs } from "../shared/http"
  * @module lib/runtime/router/adapters/dodo/config
  */
 
-/** Official Dodo Payments API root. */
-export const DODO_API_BASE = "https://api.dodopayments.com"
-export const DODO_API_VERSION = "v1"
+/**
+ * Dodo hosts per environment (verified against the official SDK: the API is
+ * served at the ROOT path — no `/v1` prefix):
+ *   live_mode → https://live.dodopayments.com
+ *   test_mode → https://test.dodopayments.com
+ */
+export const DODO_ENVIRONMENT_BASE_URLS = {
+  live_mode: "https://live.dodopayments.com",
+  test_mode: "https://test.dodopayments.com",
+} as const
 
 export const DEFAULT_DODO_TIMEOUT_MS = 30_000
 
 export function getDodoBaseUrl(): string {
-  return process.env.DODO_PAYMENTS_BASE_URL || `${DODO_API_BASE}/${DODO_API_VERSION}`
+  return (
+    process.env.DODO_PAYMENTS_BASE_URL ||
+    DODO_ENVIRONMENT_BASE_URLS[getDodoEnvironment()]
+  )
 }
 
 /** The server-side Dodo Payments credential (missing → provider config problem). */
@@ -35,6 +45,16 @@ export function isDodoConfigured(): boolean {
 
 export function getDodoTimeoutMs(): number {
   return boundedTimeoutMs(process.env.DODO_PAYMENTS_TIMEOUT_MS, DEFAULT_DODO_TIMEOUT_MS)
+}
+
+/**
+ * Server-configured Dodo product id (`pdt_…`) billed when a checkout item
+ * carries no explicit productId. Dodo checkouts can only bill catalog
+ * products — there is no ad-hoc-price endpoint (live verified 2026-10-26).
+ */
+export function getDodoDefaultCheckoutProductId(): string | undefined {
+  const raw = process.env.DODO_CHECKOUT_DEFAULT_PRODUCT_ID
+  return raw && /^pdt_[A-Za-z0-9]+$/.test(raw) ? raw : undefined
 }
 
 /** Dodo Payments environment: test_mode or live_mode. */

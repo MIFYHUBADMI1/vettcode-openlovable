@@ -17,6 +17,9 @@ const CATEGORY_MESSAGES: Record<ProviderExecutionError["category"], string> = {
   provider_rate_limited: "The voice provider is rate limiting requests. Please retry later.",
   provider_unavailable: "The voice provider is temporarily unavailable.",
   provider_error: "The voice provider returned an error.",
+  provider_not_entitled:
+    "This capability is temporarily unavailable on the platform. Contact the platform administrator.",
+  model_unavailable: "The selected model is not available on this provider.",
   unsupported_operation: "The requested operation is not supported.",
 }
 

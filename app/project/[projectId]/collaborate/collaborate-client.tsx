@@ -9,8 +9,13 @@ import { CofounderWorklog, buildCofounderWorklogSteps } from "@/components/cofou
 import { PricingTierBuilder } from "@/components/collaborate/pricing-tier-builder"
 import { ThemeBuilder } from "@/components/collaborate/theme-builder"
 import { ExpectedVisuals } from "@/components/collaborate/expected-visuals"
+import { AIOutputsPanel } from "@/components/collaborate/ai-outputs"
+import { ProjectIdDialog } from "@/components/project-id-dialog"
 import { postJson, patchJson, deleteJson, jsonFetcher, postNdjson } from "@/lib/client/api"
 import { useVoiceDictation } from "@/lib/client/use-voice-dictation"
+import { useSpeechReadout } from "@/lib/client/use-speech-readout"
+import { plainTextFromMarkdown } from "@/lib/client/speech-text"
+import type { AIArtifact } from "@/lib/types/ai-artifacts"
 import {
   readErrorCode,
   trackPlanApproved,
@@ -32,7 +37,7 @@ import type { ProjectChat, ProjectChatSummary } from "@/lib/types/collab-chat"
 import type { ApplicationSpecification } from "@/lib/types/specification"
 import { buildJourneySteps } from "@/lib/workspace/workspace-view-model"
 import { cn } from "@/lib/utils"
-import { PLAN_SECTIONS, computePlanHealth, sectionStatus, getPlanSection, isPlaceholderValue, applySectionUpdate, clearSectionUpdate, TEXT_PLAN_SECTIONS, calculatePlanQuality, calculateSectionQuality, type PlanSectionId } from "@/lib/analysis/plan-sections"
+import { PLAN_SECTIONS, computePlanHealth, sectionStatus, getPlanSection, isPlaceholderValue, applySectionUpdate, clearSectionUpdate, TEXT_PLAN_SECTIONS, calculatePlanQuality, calculateSectionQuality, type PlanSectionId, type PlanSectionDef } from "@/lib/analysis/plan-sections"
 import type { PlanAnalysis, PlanProposal } from "@/lib/types/plan-analysis"
 import { SECTION_DEPENDENCIES } from "@/lib/types/plan-analysis"
 import {
@@ -69,6 +74,24 @@ import {
   Pencil,
   Trash2,
   Check,
+  Copy,
+  Volume2,
+  VolumeX,
+  Square,
+  RotateCcw,
+  Tag,
+  Target,
+  UserCog,
+  Server,
+  Cable,
+  PenTool,
+  Smartphone,
+  SunMoon,
+  Type,
+  Megaphone,
+  TrendingUp,
+  Layers,
+  FileText,
   type LucideIcon,
 } from "lucide-react"
 
@@ -93,6 +116,20 @@ const SECTION_ICONS: Record<string, LucideIcon> = {
   DollarSign,
   Palette,
   Monitor,
+  Tag,
+  Target,
+  UserCog,
+  Server,
+  Cable,
+  PenTool,
+  Smartphone,
+  SunMoon,
+  Type,
+  Megaphone,
+  Rocket,
+  TrendingUp,
+  Layers,
+  ListChecks: ClipboardList,
 }
 
 function SectionIcon({ name, className }: { name: string; className?: string }) {
@@ -169,6 +206,244 @@ function statusFor(
   return sectionStatus(def, spec)
 }
 
+// ─── Plan-aware affordances (chat ⇆ plan) ───────────────────────────────
+/** The order a brand-new plan should be filled in — the first three define
+ * the product, the rest is where the money is. The builder downstream can
+ * only start from these. */
+const STARTER_SECTION_ORDER: PlanSectionId[] = [
+  "overview",
+  "problem",
+  "solution",
+  "targetUsers",
+  "features",
+  "revenueModel",
+]
+
+/** Phrases that pin a chat answer to a plan section, for the jump chips.
+ * Deliberately specific — generic words like "features" alone would light up
+ * on almost every answer the co-founder writes. */
+const SECTION_MENTION_TERMS: Array<{ id: PlanSectionId; terms: string[] }> = [
+  { id: "revenueModel", terms: ["revenue model", "monetization", "monetisation", "how you make money"] },
+  { id: "pricingTiers", terms: ["pricing tier", "pricing structure", "price points"] },
+  { id: "businessModel", terms: ["business model"] },
+  { id: "features", terms: ["key features", "core features", "feature set"] },
+  { id: "flows", terms: ["user flow"] },
+  { id: "data", terms: ["data model"] },
+  { id: "auth", terms: ["accounts & access", "authentication", "sign-in flow"] },
+  { id: "backend", terms: ["backend & api", "api layer"] },
+  { id: "integrations", terms: ["integration"] },
+  { id: "targetUsers", terms: ["target customers", "target audience", "target users"] },
+  { id: "userRoles", terms: ["user roles", "role-based access"] },
+  { id: "valueProposition", terms: ["value proposition"] },
+  { id: "marketPositioning", terms: ["market positioning"] },
+  { id: "marketingPlan", terms: ["marketing plan", "go-to-market"] },
+  { id: "launchPlan", terms: ["launch plan"] },
+  { id: "growthPlan", terms: ["growth plan", "growth loop"] },
+  { id: "designDirection", terms: ["design direction"] },
+  { id: "brandIdentity", terms: ["brand identity", "visual identity"] },
+  { id: "responsive", terms: ["responsive"] },
+  { id: "seo", terms: ["seo"] },
+  { id: "themePreferences", terms: ["theme & appearance", "color palette"] },
+]
+
+/** Up to three plan sections referenced by an assistant answer, in the order
+ * the answer touches them — for the "Jump to" chips under the reply. */
+function detectSectionMentions(text: string): PlanSectionId[] {
+  if (!text) return []
+  const lowered = text.toLowerCase()
+  const ids: PlanSectionId[] = []
+  for (const { id, terms } of SECTION_MENTION_TERMS) {
+    if (terms.some((term) => lowered.includes(term))) {
+      ids.push(id)
+      if (ids.length >= 3) break
+    }
+  }
+  return ids
+}
+
+function SectionJumpChips({ ids, onOpen }: { ids: PlanSectionId[]; onOpen?: (id: PlanSectionId) => void }) {
+  if (!ids.length || !onOpen) return null
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+      <span className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Jump to</span>
+      {ids.map((id) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => onOpen(id)}
+          className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary/10"
+        >
+          <Compass className="size-3" aria-hidden />
+          {getPlanSection(id)?.label ?? id}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ─── Proposal word diff ──────────────────────────────────────────────────────
+
+interface DiffToken {
+  text: string
+  kind: "same" | "added" | "removed"
+}
+
+/** Diffing whole section values is O(n²) in words — past this, show the plain
+ * views instead of risking multi-second hitches or a huge allocation. */
+const MAX_DIFF_TOKENS = 1200
+
+const wordKey = (token: string): string => token.trim().toLowerCase()
+
+function splitWords(text: string): string[] {
+  return text.match(/\S+\s*/g) ?? []
+}
+
+/** Word-level diff between the current and proposed section value (LCS).
+ * The shared head and tail are trimmed first, so a typical proposal that
+ * rewrites one paragraph diffs tiny. Returns null when either side is too
+ * large to diff cheaply, or when there is no current value to compare. */
+function diffProposal(current: string, proposed: string): DiffToken[] | null {
+  if (!current?.trim() || !proposed?.trim()) return null
+  const a = splitWords(current)
+  const b = splitWords(proposed)
+  let start = 0
+  while (start < a.length && start < b.length && wordKey(a[start]) === wordKey(b[start])) start++
+  let endA = a.length
+  let endB = b.length
+  while (endA > start && endB > start && wordKey(a[endA - 1]) === wordKey(b[endB - 1])) {
+    endA--
+    endB--
+  }
+  const midA = a.slice(start, endA)
+  const midB = b.slice(start, endB)
+  if (midA.length > MAX_DIFF_TOKENS || midB.length > MAX_DIFF_TOKENS) return null
+
+  const width = midB.length + 1
+  // LCS can't exceed the smaller side, which the cap above keeps under 2^16.
+  const lcs = new Uint16Array((midA.length + 1) * width)
+  for (let i = midA.length - 1; i >= 0; i--) {
+    for (let j = midB.length - 1; j >= 0; j--) {
+      lcs[i * width + j] = wordKey(midA[i]) === wordKey(midB[j])
+        ? lcs[(i + 1) * width + j + 1] + 1
+        : Math.max(lcs[(i + 1) * width + j], lcs[i * width + j + 1])
+    }
+  }
+
+  const out: DiffToken[] = []
+  const push = (text: string, kind: DiffToken["kind"]) => {
+    const last = out[out.length - 1]
+    if (last && last.kind === kind) last.text += text
+    else out.push({ text, kind })
+  }
+  for (let k = 0; k < start; k++) push(a[k], "same")
+  let i = 0
+  let j = 0
+  while (i < midA.length && j < midB.length) {
+    if (wordKey(midA[i]) === wordKey(midB[j])) {
+      push(midB[j], "same")
+      i++
+      j++
+    } else if (lcs[(i + 1) * width + j] >= lcs[i * width + j + 1]) {
+      push(midA[i], "removed")
+      i++
+    } else {
+      push(midB[j], "added")
+      j++
+    }
+  }
+  for (; i < midA.length; i++) push(midA[i], "removed")
+  for (; j < midB.length; j++) push(midB[j], "added")
+  for (let k = endA; k < a.length; k++) push(a[k], "same")
+  return out
+}
+
+/** An inline view of a proposal diff: green is text the proposal adds, struck
+ * red is what it removes from the current value. */
+function ProposalDiffView({ diff }: { diff: DiffToken[] }) {
+  return (
+    <div className="collab-scroll mt-1 max-h-[60dvh] overflow-y-auto rounded-lg border border-primary/20 bg-background px-3 py-2 sm:max-h-none">
+      <p className="whitespace-pre-wrap text-sm leading-6 text-foreground">
+        {diff.map((token, index) =>
+          token.kind === "same" ? (
+            <span key={index}>{token.text}</span>
+          ) : token.kind === "added" ? (
+            <span key={index} className="rounded-sm bg-emerald-500/15 px-0.5 text-emerald-700 dark:text-emerald-300">
+              {token.text}
+            </span>
+          ) : (
+            <span
+              key={index}
+              className="rounded-sm bg-red-500/10 px-0.5 text-red-600 line-through decoration-red-500/50 dark:text-red-400"
+            >
+              {token.text}
+            </span>
+          ),
+        )}
+      </p>
+      <p className="mt-2 border-t border-border/60 pt-1.5 text-[10px] text-muted-foreground">
+        Green is new; struck-through red is what the proposal removes. Nothing changes until you accept.
+      </p>
+    </div>
+  )
+}
+
+interface QuickAction {
+  label: string
+  prompt: string
+}
+
+/** Quick actions that adapt to where the plan actually stands: a section in
+ * focus gets its own prompt, flagged analysis gaps become fix-it chips, and
+ * missing sections become drafting prompts — always grounded in what a plan
+ * needs before the builders can start. */
+function buildQuickActions(
+  spec: ApplicationSpecification,
+  analysis: PlanAnalysis | null,
+  activeDef: PlanSectionDef | null,
+): QuickAction[] {
+  const actions: QuickAction[] = []
+  if (activeDef) {
+    actions.push({
+      label: `Improve ${activeDef.label}`,
+      prompt: `Draft a stronger ${activeDef.label} section for my plan, and explain the tradeoffs of your version.`,
+    })
+  }
+  const findings = analysis?.findings ?? []
+  if (findings.length > 0) {
+    actions.push({
+      label: `Fix ${findings.length} flagged gap${findings.length === 1 ? "" : "s"}`,
+      prompt: `Go through the gaps flagged in my plan analysis, most important first, and draft a concrete fix for each — grounded in what is already in my plan.`,
+    })
+  }
+  const missing = computePlanHealth(spec).missing
+  const drafting: PlanSectionId[] = []
+  for (const id of [...STARTER_SECTION_ORDER, ...missing]) {
+    if (!missing.includes(id) || drafting.includes(id)) continue
+    drafting.push(id)
+    if (drafting.length >= 2) break
+  }
+  for (const id of drafting) {
+    const label = getPlanSection(id)?.label ?? id
+    actions.push({
+      label: `Draft the ${label.toLowerCase()}`,
+      prompt: `Draft the ${label} section of my plan from what my idea and my existing sections tell you. If you need anything from me, ask up to three short questions first.`,
+    })
+  }
+  if (missing.length === 0) {
+    actions.push({
+      label: "Is my plan build-ready?",
+      prompt: `Review my complete plan end to end as the team that will build it: what is still ambiguous or missing — anything that would force the builders to guess?`,
+    })
+  }
+  // Top up with the evergreen starters, never duplicating a chip above.
+  for (const qa of QUICK_ACTIONS) {
+    if (actions.length >= 5) break
+    if (actions.some((existing) => existing.prompt === qa.prompt)) continue
+    actions.push(qa)
+  }
+  return actions.slice(0, 5)
+}
+
 // ─── Left panel: MY PLAN ──────────────────────────────────────────────────────
 
 function PlanNav({
@@ -177,6 +452,9 @@ function PlanNav({
   onSelect,
   analysis,
   forMobile,
+  outputsCount = 0,
+  outputsActive = false,
+  onOpenOutputs,
 }: {
   spec: ApplicationSpecification
   activeSection: PlanSectionId | null
@@ -184,8 +462,20 @@ function PlanNav({
   analysis: PlanAnalysis | null
   /** Phone tab: wider gutters and 40px rows so every section is tappable. */
   forMobile?: boolean
+  /** Number of captured AI responses to surface in the outputs entry. */
+  outputsCount?: number
+  outputsActive?: boolean
+  onOpenOutputs?: () => void
 }) {
   const health = useMemo(() => computePlanHealth(spec), [spec])
+  // A nearly empty plan is a wall of missing sections — surface the first
+  // three on the recommended path so there is an obvious place to start.
+  const starters = useMemo(() => {
+    const missingSet = new Set<string>(health.missing)
+    return STARTER_SECTION_ORDER.filter((id) => missingSet.has(id)).slice(0, 3)
+  }, [health])
+  const definedCount = health.sections.filter((s) => s.status !== "missing").length
+  const showStarters = starters.length > 0 && health.percent < 20
   const groups = useMemo(() => {
     const map = new Map<string, typeof PLAN_SECTIONS>()
     for (const def of PLAN_SECTIONS) {
@@ -206,6 +496,33 @@ function PlanNav({
 
   return (
     <div className={cx("flex flex-col gap-5", forMobile ? "p-3" : "p-4")}>
+      {showStarters && (
+        <div className="rounded-xl border border-primary/25 bg-primary/5 p-4">
+          <h3 className="font-mono text-[10px] font-semibold uppercase tracking-widest text-primary">
+            Start here
+          </h3>
+          <p className="mt-1.5 text-sm leading-5 text-foreground">
+            {definedCount === 0
+              ? "The builder can't start from an empty plan — answer these first and every other section becomes easier."
+              : "A good start already — these three unlock the most of the remaining plan."}
+          </p>
+          <div className="mt-3 flex flex-col gap-1.5">
+            {starters.map((id, index) => (
+              <button
+                key={id}
+                onClick={() => onSelect(id)}
+                className="flex min-h-10 items-center gap-2.5 rounded-lg border border-primary/25 bg-background px-3 py-2 text-left text-sm text-foreground transition-colors hover:border-primary/50 hover:bg-accent"
+              >
+                <span className="grid size-5 shrink-0 place-items-center rounded-full bg-primary/15 font-mono text-[10px] font-bold text-primary">
+                  {index + 1}
+                </span>
+                <Compass className="size-3.5 shrink-0 text-primary" aria-hidden />
+                <span className="flex-1 truncate">Define {getPlanSection(id)?.label?.toLowerCase() ?? id}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="rounded-xl border border-border bg-card p-4">
         <div className="flex items-baseline justify-between">
           <h3 className="font-mono text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
@@ -284,6 +601,31 @@ function PlanNav({
           </div>
         ))}
       </nav>
+
+      {onOpenOutputs && (
+        <div className="rounded-xl border border-border bg-card p-3">
+          <button
+            onClick={onOpenOutputs}
+            aria-current={outputsActive ? "true" : undefined}
+            className={cx(
+              "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
+              forMobile && "min-h-11",
+              outputsActive
+                ? "bg-primary/10 font-medium text-foreground ring-1 ring-primary/30"
+                : "text-foreground/80 hover:bg-muted",
+            )}
+          >
+            <FileText className="size-4 shrink-0" aria-hidden />
+            <span className="flex-1 truncate">AI outputs</span>
+            <span className="rounded-full bg-muted px-1.5 py-0.5 font-mono text-[9px] font-semibold text-muted-foreground">
+              {outputsCount}
+            </span>
+          </button>
+          <p className="px-2 pt-1 text-[11px] leading-4 text-muted-foreground">
+            Every response the AI produced — including raw text when parsing failed.
+          </p>
+        </div>
+      )}
     </div>
   )
 }
@@ -553,7 +895,7 @@ function SectionDetail({
 
         {/* Expected Visuals — every segment gets a visuals area, even empty ones */}
         {canEdit && (
-          <div className="rounded-xl border border-border bg-card p-4 sm:p-5">
+          <div className="overflow-hidden rounded-xl border border-border bg-card">
             <ExpectedVisuals
               projectId={projectId}
               sectionId={sectionId}
@@ -631,7 +973,7 @@ function SectionDetail({
 
           {/* Expected Visuals - available for all sections with content */}
           {canEdit && (
-            <div className="mt-4 rounded-xl border border-border bg-card p-5">
+            <div className="mt-4 overflow-hidden rounded-xl border border-border bg-card">
               <ExpectedVisuals
                 projectId={projectId}
                 sectionId={sectionId}
@@ -687,8 +1029,16 @@ function ProposalCard({
 }) {
   const [editing, setEditing] = useState(false)
   const [showRaw, setShowRaw] = useState(false)
+  const [showDiff, setShowDiff] = useState(false)
   const [draft, setDraft] = useState(proposal.proposedValue)
   const def = getPlanSection(proposal.section)
+  // A word-level view of what the proposal would actually change — the
+  // side-by-side clamp hides single-paragraph rewrites behind "…more".
+  const diff = useMemo(
+    () => (proposal.currentValue ? diffProposal(proposal.currentValue, proposal.proposedValue) : null),
+    [proposal],
+  )
+  const diffAvailable = Boolean(diff?.some((token) => token.kind !== "same"))
 
   return (
     <div className="rounded-xl border border-primary/25 bg-primary/5 p-4">
@@ -714,12 +1064,24 @@ function ProposalCard({
         <div className="flex items-center justify-between gap-2">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Suggested</p>
           {!editing && (
-            <button
-              onClick={() => setShowRaw((v) => !v)}
-              className="text-[10px] font-semibold uppercase tracking-widest text-primary/80 transition-colors hover:text-primary"
-            >
-              {showRaw ? "Show formatted" : "Show raw"}
-            </button>
+            <div className="flex items-center gap-2">
+              {!showRaw && diffAvailable && (
+                <button
+                  onClick={() => setShowDiff((v) => !v)}
+                  className="text-[10px] font-semibold uppercase tracking-widest text-primary/80 transition-colors hover:text-primary"
+                >
+                  {showDiff ? "Show formatted" : "Show what changed"}
+                </button>
+              )}
+              {!showDiff && (
+                <button
+                  onClick={() => { setShowRaw((v) => !v); setShowDiff(false) }}
+                  className="text-[10px] font-semibold uppercase tracking-widest text-primary/80 transition-colors hover:text-primary"
+                >
+                  {showRaw ? "Show formatted" : "Show raw"}
+                </button>
+              )}
+            </div>
           )}
         </div>
         {editing ? (
@@ -734,6 +1096,8 @@ function ProposalCard({
           <p className="mt-1 whitespace-pre-wrap rounded-lg border border-primary/20 bg-background px-3 py-2 text-sm leading-6 text-foreground">
             {proposal.proposedValue}
           </p>
+        ) : showDiff && diff ? (
+          <ProposalDiffView diff={diff} />
         ) : (
           <div className="mt-1 rounded-lg border border-primary/20 bg-background px-3 py-2">
             <CofounderMarkdown>{proposal.proposedValue}</CofounderMarkdown>
@@ -811,6 +1175,8 @@ interface ChatMessage {
   proposal?: PlanProposal | null
   /** The co-founder is still writing this answer. */
   streaming?: boolean
+  /** The founder stopped this reply — it ends where they stopped listening. */
+  stopped?: boolean
   /** The provider ran out of output tokens, so this answer stops mid-thought. */
   truncated?: boolean
 }
@@ -834,18 +1200,103 @@ const QUICK_ACTIONS = [
   { label: "What's next?", prompt: "Based on where my plan stands, what's the single best thing to work on next?" },
 ]
 
+/** Under-message tools: hear the reply, carry it off, or ask the same question
+ * again. Retry is labelled with its cost on purpose — it re-sends the founder's
+ * message as a fresh turn and is charged like any other message. */
+function ChatMessageActions({
+  role,
+  text,
+  busy,
+  canRetry,
+  copied,
+  speaking,
+  speechSupported,
+  onCopy,
+  onReadAloud,
+  onRetry,
+}: {
+  role: "user" | "assistant"
+  text: string
+  busy: boolean
+  canRetry: boolean
+  copied: boolean
+  speaking: boolean
+  speechSupported: boolean
+  onCopy: () => void
+  onReadAloud: () => void
+  onRetry: () => void
+}) {
+  const tool =
+    "grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:cursor-not-allowed disabled:opacity-35"
+  const empty = !text.trim()
+  return (
+    <div className={cx("flex flex-wrap items-center gap-0.5", role === "user" ? "justify-end" : "justify-start")}>
+      <button
+        type="button"
+        onClick={onCopy}
+        disabled={empty}
+        aria-label="Copy this message"
+        title={copied ? "Copied" : "Copy"}
+        className={tool}
+      >
+        {copied ? <Check className="size-3.5 text-primary" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}
+      </button>
+      {role === "assistant" ? (
+        <>
+          <button
+            type="button"
+            onClick={onReadAloud}
+            disabled={!speechSupported || busy || empty}
+            aria-label={speaking ? "Stop reading this reply aloud" : "Read this reply aloud"}
+            aria-pressed={speaking}
+            title={
+              !speechSupported
+                ? "Reading aloud isn’t available in this browser"
+                : speaking
+                  ? "Stop reading"
+                  : "Read aloud"
+            }
+            className={cn(tool, speaking && "bg-primary/10 text-primary")}
+          >
+            {speaking ? <VolumeX className="size-3.5" aria-hidden /> : <Volume2 className="size-3.5" aria-hidden />}
+          </button>
+          {canRetry ? (
+            <button
+              type="button"
+              onClick={onRetry}
+              disabled={busy}
+              aria-label="Ask the co-founder again — this uses credits like a new message"
+              title="Ask again (uses credits)"
+              className={cn(tool, "h-8 w-auto gap-1.5 rounded-lg px-2 text-[11px] font-medium")}
+            >
+              <RotateCcw className="size-3.5" aria-hidden />
+              Retry
+            </button>
+          ) : null}
+        </>
+      ) : null}
+    </div>
+  )
+}
+
 function ChatPanel({
   projectId,
   isOwner,
   spec,
   activeSection,
   onSpecChanged,
+  analysis,
+  onOpenSection,
 }: {
   projectId: string
   isOwner: boolean
   spec: ApplicationSpecification
   activeSection: PlanSectionId | null
   onSpecChanged: (spec: ApplicationSpecification) => void
+  /** Plan analysis findings — the quick actions quote what was flagged. */
+  analysis: PlanAnalysis | null
+  /** Tap a plan section mentioned in a reply to open it in the plan panel. */
+  onOpenSection?: (id: PlanSectionId) => void
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState("")
@@ -866,6 +1317,9 @@ function ChatPanel({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const promptMenuRef = useRef<HTMLDetailsElement>(null)
   const dictation = useVoiceDictation({ value: input, setValue: setInput })
+  const readout = useSpeechReadout()
+  const abortRef = useRef<AbortController | null>(null)
+  const [copiedId, setCopiedId] = useState<string | null>(null)
   const [includeSection, setIncludeSection] = useState(true)
   const [lastRun, setLastRun] = useState<{ id: number; message: string; section: PlanSectionId | null } | null>(null)
   const [worklogVisible, setWorklogVisible] = useState(false)
@@ -927,6 +1381,12 @@ function ChatPanel({
     // keep the intrinsic single-row height instead of collapsing to 0px.
     el.style.height = el.scrollHeight ? `${Math.min(el.scrollHeight, 168)}px` : ""
   }, [input])
+
+  // Opening a different conversation shouldn't leave the previous reply
+  // talking over it.
+  useEffect(() => {
+    readout.stop()
+  }, [activeChatId, readout.stop])
 
   const contextSection = includeSection ? activeSection : null
 
@@ -1111,12 +1571,17 @@ function ChatPanel({
       const trimmed = text.trim()
       if (!trimmed || sending || !isOwner || chatsLoading || chatLoading) return
       dictation.stop()
+      // A new question ends the last one — no half-read reply talking over
+      // fresh prose while the founder is trying to read it.
+      readout.stop()
       setInput("")
       setError(null)
       setLastRun({ id: Date.now(), message: trimmed, section: contextSection })
       const localId = `local-${Date.now()}`
       setMessages((prev) => [...prev, { id: localId, role: "user", content: trimmed }])
       setSending(true)
+      const controller = new AbortController()
+      abortRef.current = controller
       // The reply bubble is created by the first words that land, so the staged
       // worklog owns the waiting state and never competes with half an answer.
       let bubbleId: string | null = null
@@ -1154,6 +1619,8 @@ function ChatPanel({
                 rememberActiveChat(chatId)
               }
             },
+            // Stop cancels the founder's turn at the server, not just here.
+            signal: controller.signal,
           },
         )
         if (bubbleId) {
@@ -1180,20 +1647,37 @@ function ChatPanel({
         void refreshChatList()
       } catch (e) {
         const id = bubbleId
-        if (id) setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, streaming: false } : m)))
-        // Never lose a message to a failed request — put it back in the
-        // composer unless the founder already saw an answer (or has started
-        // typing again).
-        if (!id) setInput((cur) => (cur ? cur : trimmed))
         const code = (e as Error & { code?: string }).code
-        if (code === "CHAT_NOT_FOUND") {
-          // The thread was removed elsewhere; the next send starts a new one.
-          setActiveChatId(null)
-          rememberActiveChat(null)
-          void refreshChatList()
+        if (code === "STOPPED") {
+          // The server saw the disconnect and settled the turn: it keeps what
+          // the founder already read and refunds a stop before the first word.
+          if (id) {
+            setMessages((prev) =>
+              prev.map((m) => (m.id === id ? { ...m, streaming: false, stopped: true } : m)),
+            )
+            toast("Stopped.", { description: "What already arrived stays in this conversation." })
+          } else {
+            setInput((cur) => (cur ? cur : trimmed))
+            toast("Stopped before the co-founder answered.", {
+              description: "Nothing arrived, so no credits were kept.",
+            })
+          }
+        } else {
+          if (id) setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, streaming: false } : m)))
+          // Never lose a message to a failed request — put it back in the
+          // composer unless the founder already saw an answer (or has started
+          // typing again).
+          if (!id) setInput((cur) => (cur ? cur : trimmed))
+          if (code === "CHAT_NOT_FOUND") {
+            // The thread was removed elsewhere; the next send starts a new one.
+            setActiveChatId(null)
+            rememberActiveChat(null)
+            void refreshChatList()
+          }
+          setError(e instanceof Error ? e.message : "Something went wrong. Please try again.")
         }
-        setError(e instanceof Error ? e.message : "Something went wrong. Please try again.")
       } finally {
+        abortRef.current = null
         setSending(false)
       }
     },
@@ -1205,6 +1689,7 @@ function ChatPanel({
       projectId,
       contextSection,
       dictation.stop,
+      readout.stop,
       activeChatId,
       rememberActiveChat,
       refreshChatList,
@@ -1216,8 +1701,79 @@ function ChatPanel({
   const handleSend = useCallback(() => {
     const pending = dictation.listening ? dictation.partial.trim() : ""
     const text = [input.trim(), pending].filter(Boolean).join(" ")
-    if (text) void send(text)
-  }, [input, dictation.listening, dictation.partial, send])
+    if (!text) return
+    if (sending) {
+      // Enter used to swallow this keystroke; say so instead of losing it.
+      toast("The co-founder is still answering.", {
+        description: "Press Stop to cut the reply short, then send this again.",
+      })
+      return
+    }
+    void send(text)
+  }, [input, dictation.listening, dictation.partial, send, sending])
+
+  // Stop is the escape hatch on a 30–90s free-tier wait: the fetch is cut here
+  // and the route's stream is cancelled there, so the provider request stops
+  // rather than finishing for a tab that walked away.
+  const stopTurn = useCallback(() => {
+    readout.stop()
+    abortRef.current?.abort()
+  }, [readout.stop])
+
+  const copyMessage = useCallback(async (id: string, text: string) => {
+    const value = plainTextFromMarkdown(text)
+    if (!value) {
+      toast.error("Nothing to copy from that message.")
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopiedId(id)
+      window.setTimeout(() => setCopiedId((cur) => (cur === id ? null : cur)), 1800)
+    } catch {
+      toast.error("Copy failed", { description: "The browser blocked clipboard access." })
+    }
+  }, [])
+
+  // Retry re-sends the founder's own message as a fresh turn — the server
+  // charges it like any other message, and the earlier reply stays in the
+  // thread unless it is an empty placeholder nothing ever answered.
+  const retryReply = useCallback(
+    (assistantId: string) => {
+      if (sending) return
+      const at = messages.findIndex((m) => m.id === assistantId)
+      if (at < 0) return
+      let prompt: string | null = null
+      for (let i = at - 1; i >= 0; i -= 1) {
+        if (messages[i].role === "user") {
+          prompt = messages[i].content
+          break
+        }
+      }
+      if (!prompt) {
+        toast("That reply has no question left to repeat.")
+        return
+      }
+      const bubble = messages[at]
+      if (!bubble.content.trim() && !bubble.proposal) {
+        setMessages((prev) => prev.filter((m) => m.id !== assistantId))
+      }
+      void send(prompt)
+    },
+    [messages, sending, send],
+  )
+
+  const retryLastRun = useCallback(() => {
+    if (sending) return
+    const last = messages[messages.length - 1]
+    if (last?.role === "assistant" && !last.content.trim() && !last.proposal) {
+      setMessages((prev) => prev.filter((m) => m.id !== last.id))
+    }
+    const prompt =
+      lastRun?.message ??
+      [...messages].reverse().find((m) => m.role === "user")?.content
+    if (prompt) void send(prompt)
+  }, [sending, messages, lastRun, send])
 
   const acceptProposal = useCallback(
     async (proposal: PlanProposal, value: string) => {
@@ -1260,19 +1816,11 @@ function ChatPanel({
     [lastRun],
   )
 
-  // Generic starters plus one tailored to the section currently in focus.
+  // Quick actions adapt to where the plan actually stands — focused section,
+  // flagged gaps, missing drafting targets — instead of five static prompts.
   const suggestions = useMemo(
-    () =>
-      activeDef
-        ? [
-            {
-              label: `Improve ${activeDef.label}`,
-              prompt: `Draft a stronger ${activeDef.label} section for my plan, and explain the tradeoffs of your version.`,
-            },
-            ...QUICK_ACTIONS,
-          ]
-        : QUICK_ACTIONS,
-    [activeDef],
+    () => buildQuickActions(spec, analysis, activeDef ?? null),
+    [spec, analysis, activeDef],
   )
 
   // Fill the composer instead of sending, appending to an existing draft so
@@ -1381,10 +1929,11 @@ function ChatPanel({
                   : "I've got your current plan in context. We can work through it together — find what's missing, strengthen weak spots, and lock in improvements before you build."}
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                {QUICK_ACTIONS.map((qa) => (
+                {suggestions.map((qa) => (
                   <button
                     key={qa.label}
                     onClick={() => send(qa.prompt)}
+                    title={qa.prompt}
                     className="rounded-full border border-border bg-background px-3 py-1.5 text-xs text-foreground transition-colors hover:border-primary/40 hover:bg-accent"
                   >
                     {qa.label}
@@ -1412,18 +1961,58 @@ function ChatPanel({
                     )}
                     {m.truncated && (
                       <p className="mt-2 border-t border-border/60 pt-2 text-xs text-muted-foreground">
-                        That answer hit the length limit and stops here — ask me to continue and I&apos;ll finish
-                        the thought.
+                        This answer stops part-way short of the full thought — ask me to continue and
+                        I&apos;ll finish it.
+                      </p>
+                    )}
+                    {m.stopped && (
+                      <p className="mt-2 border-t border-border/60 pt-2 text-xs text-muted-foreground">
+                        You stopped this reply, so it ends part-way through.
                       </p>
                     )}
                   </div>
+                  {!m.streaming && (
+                    <SectionJumpChips ids={detectSectionMentions(m.content)} onOpen={onOpenSection} />
+                  )}
+                  {m.streaming ? null : (
+                    <ChatMessageActions
+                      role="assistant"
+                      text={m.content}
+                      busy={sending}
+                      canRetry
+                      copied={copiedId === m.id}
+                      speaking={readout.speakingId === m.id}
+                      speechSupported={readout.supported}
+                      onCopy={() => void copyMessage(m.id, m.content)}
+                      onReadAloud={() => {
+                        if (!readout.toggle(m.id, m.content)) {
+                          toast("Nothing to read aloud in that reply.")
+                        }
+                      }}
+                      onRetry={() => retryReply(m.id)}
+                    />
+                  )}
                 </div>
               ) : (
-                <div className="max-w-[92%] text-right">
-                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70">
-                    You
-                  </p>
-                  <p className="whitespace-pre-wrap text-sm leading-6 text-foreground/80">{m.content}</p>
+                <div className="flex max-w-[92%] flex-col items-end gap-0.5">
+                  <div className="text-right">
+                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70">
+                      You
+                    </p>
+                    <p className="whitespace-pre-wrap text-sm leading-6 text-foreground/80">{m.content}</p>
+                  </div>
+                  <ChatMessageActions
+                    role="user"
+                    text={m.content}
+                    busy={false}
+                    canRetry={false}
+                    copied={copiedId === m.id}
+                    speaking={false}
+                    speechSupported={readout.supported}
+                    onCopy={() => void copyMessage(m.id, m.content)}
+                    onReadAloud={() => {}}
+                    onRetry={() => {}}
+                  />
                 </div>
               )}
               {m.proposal && (
@@ -1446,7 +2035,16 @@ function ChatPanel({
 
           {error && (
             <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-2 text-xs text-destructive" role="alert">
-              {error}
+              <p>{error}</p>
+              <button
+                type="button"
+                onClick={retryLastRun}
+                disabled={sending}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-destructive/40 bg-background px-2.5 py-1.5 font-medium text-foreground transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <RotateCcw className="size-3.5" aria-hidden />
+                Try again (uses credits)
+              </button>
             </div>
           )}
 
@@ -1619,14 +2217,26 @@ function ChatPanel({
                   {input.length}/8000
                 </span>
               )}
-              <button
-                type="submit"
-                disabled={sending || chatLoading || chatsLoading || (!input.trim() && !dictation.partial.trim())}
-                aria-label={sending ? "Sending message" : "Send message"}
-                className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                {sending ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <ArrowUp className="size-4" aria-hidden />}
-              </button>
+              {sending ? (
+                <button
+                  type="button"
+                  onClick={stopTurn}
+                  aria-label="Stop the co-founder"
+                  title="Stop — cancels this reply"
+                  className="grid size-9 shrink-0 place-items-center rounded-xl border border-border bg-background text-foreground transition-colors hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Square className="size-3.5 fill-current" aria-hidden />
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={chatLoading || chatsLoading || (!input.trim() && !dictation.partial.trim())}
+                  aria-label="Send message"
+                  className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <ArrowUp className="size-4" aria-hidden />
+                </button>
+              )}
             </div>
           </form>
           {dictation.error && (
@@ -1949,25 +2559,30 @@ function PlanStatusChip({ state, spec }: { state: string; spec: ApplicationSpeci
 
 function LaunchButton({
   projectId,
+  projectName,
+  requestedProjectId,
   projectMode,
   state,
   spec,
 }: {
   projectId: string
+  projectName: string
+  requestedProjectId?: string
   projectMode: Project["mode"]
   state: string
   spec: ApplicationSpecification
 }) {
   const router = useRouter()
   const [launching, setLaunching] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
 
   if (state !== "plan_ready") return null
 
-  async function handleLaunch() {
+  async function handleLaunch(selectedProjectId: string) {
     if (launching) return
     setLaunching(true)
     try {
-      await postJson(`/api/projects/${projectId}/launch`)
+      await postJson(`/api/projects/${projectId}/launch`, { requestedProjectId: selectedProjectId })
       trackPlanApproved({
         projectId,
         projectMode,
@@ -1985,28 +2600,37 @@ function LaunchButton({
         surface: "collaborate_launch",
         errorCode: readErrorCode(e),
       })
-      toast.error(e instanceof Error ? e.message : "Failed to start build. Please try again.")
       setLaunching(false)
+      throw e
     }
   }
 
   return (
-    <button
-      onClick={handleLaunch}
-      disabled={launching}
-      title="Credits will be reserved when the build starts."
-      className="inline-flex min-w-0 shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-    >
-      {launching ? (
-        "Starting build…"
-      ) : (
-        <>
-          <Rocket className="size-3.5 shrink-0" aria-hidden />
-          <span className="sm:hidden">Build</span>
-          <span className="hidden sm:inline">Submit &amp; build</span>
-        </>
-      )}
-    </button>
+    <>
+      <ProjectIdDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        projectName={projectName}
+        initialProjectId={requestedProjectId}
+        onConfirm={handleLaunch}
+      />
+      <button
+        onClick={() => setDialogOpen(true)}
+        disabled={launching}
+        title="Credits will be reserved when the build starts."
+        className="inline-flex min-w-0 shrink-0 items-center justify-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {launching ? (
+          "Starting build…"
+        ) : (
+          <>
+            <Rocket className="size-3.5 shrink-0" aria-hidden />
+            <span className="sm:hidden">Build</span>
+            <span className="hidden sm:inline">Submit &amp; build</span>
+          </>
+        )}
+      </button>
+    </>
   )
 }
 
@@ -2532,6 +3156,10 @@ export function CollaborateClient({
   const planReadyTrackedRef = useRef(false)
   const [analysis, setAnalysis] = useState<PlanAnalysis | null>(initialProject.planAnalysis ?? null)
   const [activeSection, setActiveSection] = useState<PlanSectionId | null>(null)
+  // Every AI stage output captured for this project, plus a view flag for the
+  // outputs panel (formatted ⇄ exact raw model text).
+  const [artifacts, setArtifacts] = useState<AIArtifact[]>(initialProject.aiArtifacts ?? [])
+  const [showOutputs, setShowOutputs] = useState(false)
   const [userCredits, setUserCredits] = useState(initialCredits)
   // When true, the chat is shown while a section is selected — the composer
   // shows the "Working on" chip and the AI receives the focus section.
@@ -2610,6 +3238,7 @@ export function CollaborateClient({
         setLiveEvents(next.events ?? [])
         setLiveUpdatedAt(next.updatedAt ?? Date.now())
         setRecovery(next.pipelineRecovery ?? null)
+        setArtifacts(next.aiArtifacts ?? [])
         if (next.specification) {
           setSpec(next.specification)
           stop()
@@ -3072,8 +3701,9 @@ export function CollaborateClient({
     const automaticRetryRan = (recovery?.attempts ?? 0) > 1
 
     return (
-      <div className="flex flex-1 items-center justify-center p-8 text-center sm:p-12">
-        <div className="flex max-w-md flex-col items-center gap-4">
+      <div className="collab-scroll flex min-h-0 flex-1 flex-col overflow-y-auto">
+        <div className="flex flex-1 items-center justify-center p-8 text-center sm:p-12">
+          <div className="flex max-w-md flex-col items-center gap-4">
           <div
             className={cn(
               "flex size-16 items-center justify-center rounded-full",
@@ -3178,13 +3808,22 @@ export function CollaborateClient({
               </p>
             </div>
           )}
+          </div>
         </div>
+        {/* A failed parse must not swallow the answer: show the captured
+            responses (raw text included) right below the retry actions. */}
+        {pipelineFailed && artifacts.length > 0 && (
+          <div className="border-t border-border">
+            <AIOutputsPanel artifacts={artifacts} spec={spec} />
+          </div>
+        )}
       </div>
     )
   }
 
   const health = computePlanHealth(spec)
   const firstMissing = health.missing[0] ?? null
+  const artifactCount = artifacts.length + (artifacts.some((a) => a.kind === "final_spec") ? 0 : 1)
   const runActive = Boolean(autoRun && (autoRun.phase === "working" || !autoDismissed))
 
   return (
@@ -3197,7 +3836,14 @@ export function CollaborateClient({
       {headerSlots.statusSm ? createPortal(<PlanStatusChip state={projectState} spec={spec} />, headerSlots.statusSm) : null}
       {isOwner && !runActive && headerSlots.launch
         ? createPortal(
-          <LaunchButton projectId={projectId} projectMode={initialProject.mode} state={projectState} spec={spec} />,
+          <LaunchButton
+            projectId={projectId}
+            projectName={initialProject.name}
+            requestedProjectId={initialProject.requestedProjectId}
+            projectMode={initialProject.mode}
+            state={projectState}
+            spec={spec}
+          />,
           headerSlots.launch,
         )
         : null}
@@ -3230,10 +3876,18 @@ export function CollaborateClient({
             spec={spec}
             activeSection={activeSection}
             onSelect={(id) => {
+              setShowOutputs(false)
               setActiveSection((cur) => (cur === id ? null : id))
               setChatWithFocus(false)
             }}
             analysis={analysis}
+            outputsCount={artifactCount}
+            outputsActive={showOutputs}
+            onOpenOutputs={() => {
+              setShowOutputs(true)
+              setActiveSection(null)
+              setChatWithFocus(false)
+            }}
           />
         </aside>
 
@@ -3252,6 +3906,14 @@ export function CollaborateClient({
               onDiscardAll={() => setAutoDiscardConfirm(true)}
               undoing={undoingSection}
             />
+          ) : showOutputs ? (
+            <div className="collab-scroll min-h-0 flex-1 overflow-y-auto">
+              <AIOutputsPanel
+                artifacts={artifacts}
+                spec={spec}
+                onClose={() => setShowOutputs(false)}
+              />
+            </div>
           ) : activeSection && !chatWithFocus ? (
             <div className="min-h-0 flex-1 overflow-y-auto collab-scroll">
               <SectionDetail
@@ -3283,6 +3945,12 @@ export function CollaborateClient({
               spec={spec}
               activeSection={chatWithFocus ? activeSection : null}
               onSpecChanged={setSpec}
+              analysis={analysis}
+              onOpenSection={(id) => {
+                setShowOutputs(false)
+                setActiveSection(id)
+                setChatWithFocus(false)
+              }}
             />
           )}
         </main>
@@ -3358,18 +4026,33 @@ export function CollaborateClient({
             <div className="flex flex-1 min-h-0 flex-col">
               {mobileView === "plan" && (
                 <div id="collab-panel-plan" role="tabpanel" aria-labelledby="collab-tab-plan" className="collab-scroll min-h-0 flex-1 overflow-y-auto md:mx-auto md:w-full md:max-w-3xl">
-                  <PlanNav
-                    spec={spec}
-                    activeSection={activeSection}
-                    onSelect={(id) => {
-                      const selecting = activeSection !== id
-                      setActiveSection(selecting ? id : null)
-                      setChatWithFocus(false)
-                      if (selecting) setMobileView("chat")
-                    }}
-                    analysis={analysis}
-                    forMobile
-                  />
+                  {showOutputs ? (
+                    <AIOutputsPanel
+                      artifacts={artifacts}
+                      spec={spec}
+                      onClose={() => setShowOutputs(false)}
+                    />
+                  ) : (
+                    <PlanNav
+                      spec={spec}
+                      activeSection={activeSection}
+                      onSelect={(id) => {
+                        const selecting = activeSection !== id
+                        setActiveSection(selecting ? id : null)
+                        setChatWithFocus(false)
+                        if (selecting) setMobileView("chat")
+                      }}
+                      analysis={analysis}
+                      forMobile
+                      outputsCount={artifactCount}
+                      outputsActive={showOutputs}
+                      onOpenOutputs={() => {
+                        setShowOutputs(true)
+                        setActiveSection(null)
+                        setChatWithFocus(false)
+                      }}
+                    />
+                  )}
                 </div>
               )}
               {mobileView === "chat" && (
@@ -3399,6 +4082,15 @@ export function CollaborateClient({
                         spec={spec}
                         activeSection={chatWithFocus ? activeSection : null}
                         onSpecChanged={setSpec}
+                        analysis={analysis}
+                        onOpenSection={(id) => {
+                          setShowOutputs(false)
+                          setActiveSection(id)
+                          setChatWithFocus(false)
+                          // On phones the selected section renders in the chat
+                          // tab, so jump there to keep the chip's promise.
+                          setMobileView("chat")
+                        }}
                       />
                     )}
                   </div>

@@ -1,11 +1,13 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
   ChevronRight,
   ExternalLink,
   Hammer,
+  MessagesSquare,
   Rocket,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -14,19 +16,45 @@ import { useBuildCosts } from "@/lib/client/build-costs"
 import { PublishMenu } from "@/components/publish-menu"
 import { DeploymentHistory } from "@/components/deployment-history"
 import {
-  JOURNEY,
-  JOURNEY_TEAMS,
+  buildJourneySteps,
   buildWorkspaceView,
-  journeyTeamStatus,
+  planIsReviewable,
   workspaceIsLive,
+  type WorkspaceMutation,
 } from "@/lib/workspace/workspace-view-model"
 import { TEAM_ROLE_META, roleForStage } from "@/lib/workspace/team-roles"
 import type { ProjectState } from "@/lib/types/project"
 import { ensureProtocol, cn } from "@/lib/utils"
 import { ProductPreview, ReferenceSitePreview } from "@/components/workspace/product-preview"
 import { TeamHandoff } from "@/components/workspace/team-handoff"
+import { ProjectIdDialog } from "@/components/project-id-dialog"
+
+const FAILED_STATES: ReadonlySet<ProjectState> = new Set([
+  "analysis_failed",
+  "plan_failed",
+  "build_failed",
+  "deployment_failed",
+])
+
+function formatElapsed(ms: number): string {
+  const seconds = Math.max(0, Math.round(ms / 1000))
+  if (seconds < 60) return `${seconds}s ago`
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m ago`
+  return `${Math.floor(minutes / 60)}h ${minutes % 60}m ago`
+}
+
+const MUTATION_MESSAGE: Record<WorkspaceMutation, string> = {
+  build: "Engineering has started building.",
+  deploy: "Launch started.",
+  retry_analysis: "Understanding is retrying.",
+  retry_plan: "Planning is retrying.",
+  retry_build: "Build retry started.",
+  retry_launch: "Launch retry started.",
+}
 
 export function ProjectWorkspace({ projectId, initialState }: { projectId: string; initialState: ProjectState }) {
+  const router = useRouter()
   const { project: fetched, refresh } = useProject(projectId, { pollWhileBuilding: true })
   const projectState = (fetched?.state ?? initialState) as ProjectState
   const active = workspaceIsLive(projectState)
@@ -35,23 +63,87 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
   const { refresh: refreshSession } = useSession()
   const { buildCost, tierLabel } = useBuildCosts()
   const [busy, setBusy] = useState(false)
+  const [projectIdDialogOpen, setProjectIdDialogOpen] = useState(false)
+  const [pendingBuildMutation, setPendingBuildMutation] = useState<"build" | "retry_build">("build")
 
   const project = fetched
   const state = ((statusData as { state?: ProjectState } | undefined)?.state ?? projectState) as ProjectState
   const view = useMemo(() => (project ? buildWorkspaceView({ ...project, state }) : null), [project, state])
 
-  async function runMutation(kind: "build" | "deploy" | "retry_build" | "retry_launch") {
+  // Clock for "last activity" / stalled detection. Only ticks while a step can
+  // actually be running or needs a restart.
+  const [now, setNow] = useState(() => Date.now())
+  const ticking = workspaceIsLive(state) || FAILED_STATES.has(state)
+  useEffect(() => {
+    if (!ticking) return
+    const timer = setInterval(() => setNow(Date.now()), 10_000)
+    return () => clearInterval(timer)
+  }, [ticking])
+
+  const steps = useMemo(
+    () => (project ? buildJourneySteps({ ...project, state }, now) : []),
+    [project, state, now],
+  )
+
+  // The activity feed promises "taking you to the Collaborate page now" —
+  // honour it: when a plan finishes while the founder is watching, hand them
+  // over. Fire once per project per tab so Back never loops.
+  const planReady = state === "plan_ready" || state === "specification_ready"
+  const planReviewable = project ? planIsReviewable(project) : false
+  const wasWorkingRef = useRef(workspaceIsLive(initialState))
+  const handedOverRef = useRef(false)
+  useEffect(() => {
+    if (!fetched) return
+    if (workspaceIsLive(state)) wasWorkingRef.current = true
+    if (!planReady || handedOverRef.current || !wasWorkingRef.current) return
+    const key = `atai.plan-opened:${projectId}`
+    try {
+      if (sessionStorage.getItem(key)) return
+      sessionStorage.setItem(key, "1")
+    } catch {
+      // Storage blocked (private mode) — the in-page link below still works.
+    }
+    handedOverRef.current = true
+    const timer = setTimeout(() => {
+      toast.success("Your plan is ready — opening Collaborate.")
+      router.push(`/project/${projectId}/collaborate`)
+    }, 1200)
+    return () => clearTimeout(timer)
+  }, [planReady, state, projectId, fetched, router])
+
+  const stalledStep = steps.find((step) => step.stalled && step.action) ?? null
+  const currentStepId =
+    steps.find((step) => step.status === "at_work" || step.status === "getting_ready" || step.status === "needs_attention")?.id ??
+    view?.phase
+
+  async function performMutation(kind: WorkspaceMutation, requestedProjectId?: string) {
     setBusy(true)
     try {
-      const path = kind === "deploy" || kind === "retry_launch" ? "deploy" : "build"
-      await postJson(`/api/projects/${projectId}/${path}`, {})
-      toast.success(path === "deploy" ? "Launch started." : "Engineering has started building.")
+      if ((kind === "build" || kind === "retry_build") && requestedProjectId) {
+        await postJson(`/api/projects/${projectId}/build`, { requestedProjectId })
+      } else if (kind === "build") {
+        await postJson(`/api/projects/${projectId}/build`, {})
+      } else if (kind === "deploy") {
+        await postJson(`/api/projects/${projectId}/deploy`, {})
+      } else {
+        await postJson(`/api/projects/${projectId}/retry`, {})
+      }
+      toast.success(MUTATION_MESSAGE[kind])
       await Promise.all([refresh(), refreshSession(), refreshStatus()])
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Something went wrong")
     } finally {
       setBusy(false)
     }
+  }
+
+  function runMutation(kind: WorkspaceMutation) {
+    if ((kind === "build" || kind === "retry_build") && !project?.totalumProjectId) {
+      setPendingBuildMutation(kind)
+      setProjectIdDialogOpen(true)
+      return
+    }
+    void performMutation(kind).catch((error) => {
+      toast.error(error instanceof Error ? error.message : "Something went wrong")
+    })
   }
 
   if (!project || !view) {
@@ -68,11 +160,16 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
     return true
   }).slice(-4).reverse()
   const next = view.next
-  const currentJourney = JOURNEY.findIndex((j) => j.id === view.phase)
-  const failed = (view.phase === "build" && state === "build_failed") || (view.phase === "launch" && state === "deployment_failed")
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-6 sm:py-8 lg:px-8">
+      <ProjectIdDialog
+        open={projectIdDialogOpen}
+        onOpenChange={setProjectIdDialogOpen}
+        projectName={project.name}
+        initialProjectId={project.requestedProjectId}
+        onConfirm={(requestedProjectId) => performMutation(pendingBuildMutation, requestedProjectId)}
+      />
       <nav className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
         <Link href="/projects" className="hover:text-foreground">All Projects</Link>
         <ChevronRight className="size-3.5" />
@@ -84,44 +181,86 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
         <h2 className="mt-2 text-xl font-semibold tracking-tight text-balance sm:text-2xl">{view.brief.headline}</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{view.brief.support}</p>
         <ol className="mt-6 grid gap-3 sm:grid-cols-5">
-          {JOURNEY.map((step, index) => {
-            const done = index < currentJourney
-            const here = index === currentJourney
-            const status = journeyTeamStatus(step.id, view.phase, state)
-            const statusLabel =
-              status === "completed" ? "completed" :
-              status === "at_work" ? "at work" :
-              status === "needs_attention" ? "needs attention" :
-              status === "getting_ready" ? "getting ready" :
-              "upcoming"
+          {steps.map((step, index) => {
+            const here = step.id === currentStepId
+            const done = step.status === "completed"
             return (
-              <li key={step.id} className={cn("rounded-xl border px-3 py-3", here ? "border-primary/40 bg-background" : "border-border bg-background/60")}>
+              <li key={step.id} className={cn("flex flex-col rounded-xl border px-3 py-3", here ? "border-primary/40 bg-background" : "border-border bg-background/60")}>
                 <p className={cn("text-sm font-medium", here ? "text-foreground" : "text-muted-foreground")}>
                   {done ? "✓ " : `${index + 1}. `}{step.label}
                 </p>
-                <p className="mt-1 text-[11px] leading-4 text-muted-foreground">{JOURNEY_TEAMS[step.id]}</p>
+                <p className="mt-1 text-[11px] leading-4 text-muted-foreground">{step.team}</p>
                 <p className={cn(
                   "mt-2 text-[11px] font-medium",
-                  status === "at_work" && "text-primary",
-                  status === "completed" && "text-emerald-600 dark:text-emerald-400",
-                  status === "needs_attention" && "text-destructive",
-                  (status === "getting_ready" || status === "upcoming") && "text-muted-foreground",
+                  step.status === "at_work" && "text-primary",
+                  step.status === "completed" && "text-emerald-600 dark:text-emerald-400",
+                  step.status === "needs_attention" && "text-destructive",
+                  step.status === "getting_ready" && (step.stalled ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"),
+                  step.status === "upcoming" && "text-muted-foreground",
                 )}>
-                  {status === "at_work" ? (
+                  {step.status === "at_work" ? (
                     <span className="inline-flex items-center gap-1.5">
                       <span className="relative flex size-1.5">
                         <span className="absolute inset-0 motion-safe:animate-ping rounded-full bg-primary/70" />
                         <span className="relative size-1.5 rounded-full bg-primary" />
                       </span>
-                      {statusLabel}
+                      {step.statusLabel}
                     </span>
-                  ) : statusLabel}
+                  ) : step.stalled ? "taking longer than expected" : step.statusLabel}
                 </p>
+                {step.detail ? (
+                  <p className="mt-1.5 line-clamp-2 text-[11px] leading-4 text-muted-foreground" title={step.detail}>
+                    {step.detail}
+                  </p>
+                ) : null}
+                {step.elapsedMs !== null && (step.status === "at_work" || step.status === "getting_ready") ? (
+                  <p className={cn("mt-1 text-[10px]", step.stalled ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground/80")}>
+                    {step.stalled ? "No activity for " : "Last update "}{formatElapsed(step.elapsedMs)}
+                  </p>
+                ) : null}
+                {step.attempts !== null && step.attempts > 1 ? (
+                  <p className="mt-1 text-[10px] text-muted-foreground/80">
+                    Automatic retry {step.attempts - 1} of 1
+                  </p>
+                ) : null}
+                {step.action ? (
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => void runMutation(step.action!.mutation)}
+                    className={cn(
+                      "mt-2 self-start rounded-lg px-2.5 py-1 text-[11px] font-semibold disabled:opacity-50",
+                      step.status === "needs_attention"
+                        ? "bg-destructive text-white hover:bg-destructive/90"
+                        : "border border-border text-foreground hover:border-primary/40 hover:text-primary",
+                    )}
+                  >
+                    {busy ? "Working…" : step.action.label}
+                  </button>
+                ) : null}
               </li>
             )
           })}
         </ol>
       </section>
+
+      {stalledStep?.action ? (
+        <section className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-5">
+          <p className="font-medium text-foreground">{stalledStep.label} is taking longer than expected.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {stalledStep.elapsedMs !== null ? `No new activity for ${formatElapsed(stalledStep.elapsedMs).replace(" ago", "")}. ` : ""}
+            You can restart this step — work that already finished is kept.
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void runMutation(stalledStep.action!.mutation)}
+            className="mt-3 inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+          >
+            {busy ? "Working…" : stalledStep.action.label}
+          </button>
+        </section>
+      ) : null}
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
         <div className="flex min-w-0 flex-col gap-5">
@@ -299,6 +438,31 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
                 Open application preview
               </a>
             ) : null}
+            {planReviewable ? (
+              <Link
+                href={`/project/${projectId}/collaborate`}
+                className={cn(
+                  "mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold",
+                  next.needsYou
+                    ? "border border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10"
+                    : "bg-primary text-primary-foreground hover:bg-primary/90",
+                )}
+              >
+                <MessagesSquare className="size-4" />
+                Open Collaborate
+              </Link>
+            ) : (
+              <Link
+                href={`/project/${projectId}/collaborate`}
+                className={cn(
+                  "mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl border px-4 py-2 text-xs font-medium",
+                  next.needsYou ? "border-primary-foreground/30 text-primary-foreground/80" : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                )}
+              >
+                <MessagesSquare className="size-3.5" />
+                Go to Collaborate
+              </Link>
+            )}
           </section>
 
           <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">

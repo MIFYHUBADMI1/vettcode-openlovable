@@ -98,3 +98,41 @@ export function validateStartInput(mode: StartMode, value: string): string | nul
   }
   return null
 }
+
+/**
+ * Draft a project title from the typed intent (first few meaningful words).
+ * Only a starting point — the composer requires the user to confirm or edit
+ * it before the request can be sent, so no project is ever silently named
+ * from a sentence fragment.
+ */
+export function suggestProjectTitle(mode: StartMode, value: string): string {
+  const text = value.trim()
+  if (!text) return ""
+  if (mode === "github") {
+    const repo = extractGithubRepo(text)
+    if (repo) {
+      const name = repo
+        .replace(/^https:\/\/github\.com\//, "")
+        .split("/")
+        .filter(Boolean)[1]
+      if (name) return name.replace(/[-_]+/g, " ").trim().replace(/\b\w/g, (c) => c.toUpperCase())
+    }
+  }
+  const base = text.replace(/https?:\/\/\S+/gi, " ").replace(/\s+/g, " ").trim()
+  if (!base) return ""
+  const words = base.split(" ").slice(0, 6).join(" ")
+  const titled = words.replace(/\b\w/g, (c) => c.toUpperCase())
+  return titled.length > 60 ? `${titled.slice(0, 57)}…` : titled
+}
+
+export const MIN_PROJECT_TITLE_LENGTH = 3
+export const MAX_PROJECT_TITLE_LENGTH = 80
+
+/** Shared gate: the user-confirmed project title before anything is stored. */
+export function validateProjectTitle(title: string): string | null {
+  const t = title.trim()
+  if (!t) return "Give your project a name first — it becomes your workspace title."
+  if (t.length < MIN_PROJECT_TITLE_LENGTH) return "That name is a bit short — use at least 3 characters."
+  if (t.length > MAX_PROJECT_TITLE_LENGTH) return `Keep the name under ${MAX_PROJECT_TITLE_LENGTH} characters.`
+  return null
+}

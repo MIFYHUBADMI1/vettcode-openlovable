@@ -5,8 +5,16 @@
  *
  * The model catalog below is aligned with OpenRouter's dedicated Image API
  * (GET https://openrouter.ai/api/v1/images/models) — every id in this list is
- * servable through POST /api/v1/images with our OPENROUTER_API_KEY.
+ * servable through POST /api/v1/images with our OPENROUTER_API_KEY. Provider
+ * catalogs change: re-check this list against the live endpoint before adding
+ * or keeping a model. Models that need an input reference
+ * (`input_references.min >= 1`) are excluded — the route sends
+ * text-to-image requests only.
  */
+
+/** Aspect ratios offered by the collaboration UI. */
+export const VISUAL_ASPECT_RATIOS = ["1:1", "16:9", "9:16", "4:3", "3:4"] as const
+export type VisualAspectRatio = (typeof VISUAL_ASPECT_RATIOS)[number]
 
 export interface ImageModel {
   id: string
@@ -17,13 +25,19 @@ export interface ImageModel {
   fixedCreditCost?: number
   description?: string
   capabilities?: string[]
+  /**
+   * Ratios this provider endpoint accepts. Omitted → every entry in
+   * VISUAL_ASPECT_RATIOS. Empty → the model chooses its own image size.
+   * Sending an unsupported ratio makes OpenRouter reject the whole request.
+   */
+  aspectRatios?: readonly VisualAspectRatio[]
 }
 
 export interface VisualMockupRequest {
   projectId: string
   sectionId: string
-  model?: string // defaults to inclusionai/ming-image-0.1-design-layer
-  aspectRatio?: "1:1" | "16:9" | "9:16" | "4:3" | "3:4"
+  model?: string // defaults to DEFAULT_IMAGE_MODEL
+  aspectRatio?: VisualAspectRatio
   style?: string // additional style modifiers
   /**
    * Optional client INTENT id (Phase 3 — Workstream C). Idempotency identity
@@ -70,23 +84,28 @@ export interface SavedVisual {
 }
 
 /** Default model with fixed 100 credit cost */
-export const DEFAULT_IMAGE_MODEL = "inclusionai/ming-image-0.1-design-layer"
+export const DEFAULT_IMAGE_MODEL = "bytedance-seed/seedream-5-0-flash"
 export const DEFAULT_FIXED_CREDITS = 100
+
+/** True when the model accepts the requested ratio (omitted list = all). */
+export function modelSupportsAspectRatio(model: ImageModel, ratio: string): boolean {
+  return !model.aspectRatios || model.aspectRatios.includes(ratio as VisualAspectRatio)
+}
 
 /** Available image generation models */
 export const IMAGE_MODELS: ImageModel[] = [
   // Basic tier — flat 100 credits per image (the default).
   {
-    id: "inclusionai/ming-image-0.1-design-layer",
-    name: "Ming Image Design Layer",
-    provider: "Inclusion AI",
+    id: "bytedance-seed/seedream-5-0-flash",
+    name: "Seedream 5.0 Flash",
+    provider: "ByteDance Seed",
     category: "basic",
     fixedCreditCost: 100,
     description: "Fast, reliable UI/UX design generation",
     capabilities: ["UI Design", "App Mockups", "Web Layouts"],
   },
 
-  // Premium tier — 30 models, dynamic pricing from OpenRouter
+  // Premium tier — 28 models, dynamic pricing from OpenRouter
   // (provider cost + 45% margin, converted at $1 = 4000 credits).
   {
     id: "openai/gpt-image-2.5-sunburst",
@@ -119,6 +138,7 @@ export const IMAGE_MODELS: ImageModel[] = [
     category: "premium",
     description: "Accurate instruction-following image generation",
     capabilities: ["Instruction following", "Editing"],
+    aspectRatios: ["1:1"],
   },
   {
     id: "openai/gpt-5-image",
@@ -127,6 +147,7 @@ export const IMAGE_MODELS: ImageModel[] = [
     category: "premium",
     description: "GPT-5 powered image generation",
     capabilities: ["Reasoning", "Text rendering"],
+    aspectRatios: ["1:1"],
   },
   {
     id: "google/gemini-nano-banana-2.1",
@@ -217,14 +238,6 @@ export const IMAGE_MODELS: ImageModel[] = [
     capabilities: ["Design", "Editing"],
   },
   {
-    id: "recraft/recraft-v4-styles-pro",
-    name: "Recraft V4 Styles Pro",
-    provider: "Recraft",
-    category: "premium",
-    description: "Style-consistent generation across requests",
-    capabilities: ["Style consistency"],
-  },
-  {
     id: "recraft/recraft-v3",
     name: "Recraft V3",
     provider: "Recraft",
@@ -239,14 +252,6 @@ export const IMAGE_MODELS: ImageModel[] = [
     category: "premium",
     description: "Professional-grade image generation",
     capabilities: ["High resolution", "Editing"],
-  },
-  {
-    id: "bytedance-seed/seedream-5-0-flash",
-    name: "Seedream 5.0 Flash",
-    provider: "ByteDance Seed",
-    category: "premium",
-    description: "Faster, lighter Seedream variant",
-    capabilities: ["Fast"],
   },
   {
     id: "bytedance-seed/seedream-4.5",
@@ -311,6 +316,7 @@ export const IMAGE_MODELS: ImageModel[] = [
     category: "premium",
     description: "High-capability creative image generation",
     capabilities: ["Creative", "Design"],
+    aspectRatios: ["1:1", "16:9", "9:16", "4:3"],
   },
   {
     id: "sourceful/riverflow-v2.5-pro",
@@ -327,5 +333,6 @@ export const IMAGE_MODELS: ImageModel[] = [
     category: "premium",
     description: "Agentic image generation and editing from Meta",
     capabilities: ["Editing", "Composition"],
+    aspectRatios: [],
   },
 ]

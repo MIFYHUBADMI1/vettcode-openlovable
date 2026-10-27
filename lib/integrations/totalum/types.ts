@@ -12,7 +12,6 @@ export interface LaunchProjectRequest {
 }
 
 export interface LaunchProjectResponse {
-  // Totalum may suffix the requested id if taken — always trust the returned id.
   projectId: string
   status?: string
 }

@@ -1,8 +1,9 @@
 /**
  * Atai SDK — Notifications capability.
  *
- * Provider-neutral push notifications (`notifications`/`send`). The application
- * never learns which notification provider Atai operates behind the runtime.
+ * Provider-neutral realtime notifications (`notifications`/`send`). The
+ * application never learns which notification provider Atai operates behind
+ * the runtime.
  *
  * @module capabilities/notifications
  */
@@ -12,7 +13,7 @@ import type { AtaiRequestOptions, NotificationSendInput, NotificationSendResult 
 export declare class NotificationsCapability {
     private readonly config;
     constructor(config: ResolvedConfig);
-    /** Send a push notification (`notifications`/`send`). */
+    /** Send a realtime notification (`notifications`/`send`). */
     send(input: NotificationSendInput, options?: AtaiRequestOptions): Promise<NotificationSendResult>;
 }
 //# sourceMappingURL=notifications.d.ts.map

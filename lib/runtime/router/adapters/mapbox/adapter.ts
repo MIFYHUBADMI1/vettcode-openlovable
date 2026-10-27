@@ -18,7 +18,6 @@ import {
   toMapboxTilesRequest,
   toMapboxStyleSchemaRequest,
   toMapboxStaticImageRequest,
-  toMapboxTokensRequest,
   toMapsResult,
   toMapsDiagnosticResult,
   toBinaryMetadataResult,
@@ -32,10 +31,15 @@ import {
  *
  * Serves the provider-neutral `maps` capability through the EXISTING
  * RuntimeProviderAdapter interface: the original geocode/reverseGeocode pair
- * plus the search-box, routing (isochrone/directions/matrix), tiles/style
- * metadata, static-image and token-verification operations used to exercise
- * a Mapbox key end-to-end from the playground. Fixed endpoint set, read-only
- * semantics; no arbitrary Mapbox endpoint forwarding (Phase 10 §16).
+ * plus the Search Box text/place operations, routing (isochrone/directions/
+ * matrix), vector-tile and style metadata, and static images — the endpoint set
+ * needed to exercise a Mapbox key end-to-end from the playground. Fixed
+ * endpoint set, read-only semantics; no arbitrary Mapbox endpoint forwarding
+ * (Phase 10 §16).
+ *
+ * The Mapbox Tokens API is deliberately NOT exposed: it only answers for an
+ * account secret-scope token, and the platform's public token gets a 404 there,
+ * so it could never be a reliable playground check.
  *
  * Diagnostics: geocoding operations keep the normalized `results` contract;
  * the newer operations return provider JSON under `payload` (documented
@@ -58,7 +62,6 @@ const SERVED_OPERATIONS: readonly RuntimeOperation[] = [
   "tilesMetadata",
   "styleSchema",
   "staticImage",
-  "tokens",
 ]
 
 /** Geocoding operations keep the strict normalized-shape contract. */
@@ -86,8 +89,6 @@ function translate(operation: string, input: unknown): TranslatedGeocodeRequest 
       return toMapboxStyleSchemaRequest(input)
     case "staticImage":
       return toMapboxStaticImageRequest(input)
-    case "tokens":
-      return toMapboxTokensRequest(input)
     default:
       return { path: "", query: new URLSearchParams() }
   }
@@ -104,6 +105,7 @@ class MapboxAdapter implements RuntimeProviderAdapter {
     request: ProviderExecutionRequest,
   ): Promise<ProviderExecutionResponse<MapsResultData | MapsDiagnosticResult>> {
     const { operation } = request.request
+    const startedAt = Date.now()
     const debug =
       request.request.metadata?.debug === true || request.request.metadata?.debug === "true"
 
@@ -147,7 +149,7 @@ class MapboxAdapter implements RuntimeProviderAdapter {
       provider: this.provider,
       capability: request.request.capability,
       operation: request.request.operation,
-      latencyMs: Date.now(),
+      latencyMs: Date.now() - startedAt,
       ...("results" in result.data
         ? { resultCount: (result.data as MapsResultData).results.length }
         : {}),

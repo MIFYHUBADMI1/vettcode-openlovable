@@ -322,7 +322,8 @@ export class IdeaUnderstandingService {
 
       throw new UnderstandingError(
         `Model call failed on attempt ${attempt + 1}: ${error instanceof Error ? error.message : String(error)}`,
-        "Unable to generate understanding. Please try again."
+        "Unable to generate understanding. Please try again.",
+        error instanceof UnderstandingError ? error.rawText : undefined
       )
     }
   }
@@ -383,13 +384,15 @@ export class IdeaUnderstandingService {
         const issues = (error as any).issues
         throw new UnderstandingError(
           `Schema validation failed: ${JSON.stringify(issues)}`,
-          "The AI response didn't match the expected format. Please try again."
+          "The AI response didn't match the expected format. Please try again.",
+          text
         )
       }
 
       throw new UnderstandingError(
         `Failed to parse AI response: ${error instanceof Error ? error.message : String(error)}`,
-        "Unable to process the AI response. Please try again."
+        "Unable to process the AI response. Please try again.",
+        text
       )
     }
   }

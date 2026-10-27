@@ -43,8 +43,10 @@ function projectStateLabel(state: Project["state"]): string {
     pending_plan: "Planning",
     analyzing: "Analyzing",
     analysis_complete: "Analysis complete",
+    analysis_failed: "Understanding needs attention",
     specification_ready: "Plan ready",
     plan_ready: "Plan ready",
+    plan_failed: "Plan needs attention",
     awaiting_build_confirmation: "Waiting on you",
     building: "Building",
     build_complete: "Build complete",
@@ -74,7 +76,7 @@ export function TeamProgressPage({ initialProject, activeBuildRuns = [] }: { ini
     setPendingMutation(kind)
     try {
       const path =
-        kind === "retry_build" || kind === "retry_launch"
+        kind === "retry_analysis" || kind === "retry_plan" || kind === "retry_build" || kind === "retry_launch"
           ? `/api/projects/${project.id}/retry`
           : kind === "deploy"
             ? `/api/projects/${project.id}/deploy`
@@ -464,13 +466,17 @@ export function TeamProgressPage({ initialProject, activeBuildRuns = [] }: { ini
                   >
                     {pendingMutation === item.mutation
                       ? "Working…"
-                      : item.mutation === "retry_build"
-                        ? "Retry build"
-                        : item.mutation === "retry_launch"
-                          ? "Retry launch"
-                          : item.mutation === "deploy"
-                            ? "Launch"
-                            : "Start building"}
+                      : item.mutation === "retry_analysis"
+                        ? "Retry understanding"
+                        : item.mutation === "retry_plan"
+                          ? "Retry planning"
+                          : item.mutation === "retry_build"
+                            ? "Retry build"
+                            : item.mutation === "retry_launch"
+                              ? "Retry launch"
+                              : item.mutation === "deploy"
+                                ? "Launch"
+                                : "Start building"}
                   </button>
                 ) : null}
                 {item.action ? (

@@ -1,13 +1,13 @@
 import { store, cryptoId } from "@/lib/store/store"
 import { fail } from "@/lib/api/respond"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
-import { runWebsiteAnalysis, runScratchAnalysis, runDeepCrawlAnalysis } from "@/lib/analysis/pipeline"
-import { runGitHubAnalysis } from "@/lib/analysis/github-pipeline"
+import { startProjectPipeline } from "@/lib/projects/pipeline-recovery"
 import { normalizeUrl } from "@/lib/integrations/firecrawl/service"
 import type { MirrorProject, ProjectPreferences, UserPipelineMode } from "@/lib/types/project"
 
 export type CreateProjectInput = {
   mode?: string
+  name?: string
   url?: string
   idea?: string
   crawlMode?: string
@@ -24,6 +24,9 @@ export type CreateProjectInput = {
 
 const IDEMPOTENCY_WINDOW_MS = 10 * 60 * 1000
 
+// Last-resort naming for callers that arrive without a user-confirmed title
+// (legacy/API paths). The composer funnel always sends an explicit `name`, so
+// a project is never silently named from a sentence fragment on the main path.
 function titleFromIntent(text: string | undefined, fallback: string): string {
   const cleaned = (text ?? "")
     .replace(/https?:\/\/\S+/gi, " ")
@@ -110,7 +113,7 @@ export async function createUserProject(userId: string, body: CreateProjectInput
     if (existing) return { project: existing, reused: true }
 
     const preferences = body.preferences
-    const projectName = preferences?.appName || titleFromIntent(originalIntent, repoLabel)
+    const projectName = body.name?.trim() || preferences?.appName || titleFromIntent(originalIntent, repoLabel)
     const project = newProject(userId, {
       mode,
       name: projectName,
@@ -149,7 +152,7 @@ export async function createUserProject(userId: string, body: CreateProjectInput
       createdAt: Date.now(),
       updatedAt: Date.now(),
     })
-    if (!body.skipAnalysis) void runGitHubAnalysis(project.id)
+    if (!body.skipAnalysis) void startProjectPipeline(project.id)
     return { project, reused: false }
   }
 
@@ -168,7 +171,7 @@ export async function createUserProject(userId: string, body: CreateProjectInput
 
     const preferences = body.preferences
     const host = new URL(sourceUrl).host
-    const projectName = preferences?.appName || titleFromIntent(originalIntent, host)
+    const projectName = body.name?.trim() || preferences?.appName || titleFromIntent(originalIntent, host)
     const project = newProject(userId, {
       mode,
       sourceUrl,
@@ -183,13 +186,7 @@ export async function createUserProject(userId: string, body: CreateProjectInput
       const { saveCreateIdempotency } = await import("@/lib/start/pending-store")
       await saveCreateIdempotency(userId, idempotencyKey, project.id)
     }
-    if (!body.skipAnalysis) {
-      if (crawlMode === "deep") {
-        void runDeepCrawlAnalysis(project.id, pipelineMode)
-      } else {
-        void runWebsiteAnalysis(project.id, pipelineMode)
-      }
-    }
+    if (!body.skipAnalysis) void startProjectPipeline(project.id)
     return { project, reused: false }
   }
 
@@ -201,13 +198,13 @@ export async function createUserProject(userId: string, body: CreateProjectInput
   if (existing) return { project: existing, reused: true }
 
   const preferences = body.preferences
-  const projectName = preferences?.appName || titleFromIntent(idea, "New app")
+  const projectName = body.name?.trim() || preferences?.appName || titleFromIntent(idea, "New app")
   const project = newProject(userId, { mode, idea, name: projectName, preferences, pipelineMode })
   await store.createProject(project)
   if (idempotencyKey) {
     const { saveCreateIdempotency } = await import("@/lib/start/pending-store")
     await saveCreateIdempotency(userId, idempotencyKey, project.id)
   }
-  if (!body.skipAnalysis) void runScratchAnalysis(project.id, pipelineMode)
+  if (!body.skipAnalysis) void startProjectPipeline(project.id)
   return { project, reused: false }
 }

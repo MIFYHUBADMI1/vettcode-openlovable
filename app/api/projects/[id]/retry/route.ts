@@ -1,72 +1,53 @@
 import { requireUser } from "@/lib/auth/session"
-import { store, cryptoId } from "@/lib/store/store"
+import { store } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
-import { startProjectBuild, startProjectDeploy } from "@/lib/projects/project-actions"
+import { retryProjectStep } from "@/lib/projects/pipeline-recovery"
 import { logger } from "@/lib/logging/logger"
-import type { ProjectEvent } from "@/lib/types/project"
-
-function event(stage: string, message: string, level: ProjectEvent["level"] = "info"): ProjectEvent {
-  return { id: cryptoId(), at: Date.now(), level, stage, message }
-}
 
 /**
  * POST /api/projects/[id]/retry
- * Retry a failed build or deployment.
+ * Manual retry for whichever journey step is stuck or failed:
+ * - analysis_failed / created / pending_plan / stalled analyzing → Understand
+ * - plan_failed → Plan (reuses the existing understanding, no re-crawl)
+ * - build_failed → Build
+ * - deployment_failed → Launch
  *
- * Only handles two cases:
- * - build_failed → re-attempt the build (requires spec still present)
- * - deployment_failed → re-attempt deployment (requires totalumProjectId)
- *
- * Other states return 409. This is a thin wrapper around the existing
- * startProjectBuild / startProjectDeploy services — no second job engine.
+ * The actual work lives in retryProjectStep; this route only authenticates and
+ * checks ownership.
  */
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireUser()
-    const userId = user.id
     const { id } = await params
 
     const project = await store.getProject(id)
-    if (!project || project.userId !== userId) {
+    if (!project || project.userId !== user.id) {
       return fail("UNAUTHORIZED_PROJECT_ACCESS", "We couldn't find this project.", 404)
     }
 
-    const state = project.state
-
-    if (state === "build_failed") {
-      // Retry the build. Reuses the existing startProjectBuild service which
-      // enforces its own preconditions (spec present, not already building, etc.).
-      const result = await startProjectBuild(userId, id)
-      if (!result.ok) {
-        // startProjectBuild returns structured errors; surface the user-facing one.
-        return fail(result.code, result.message ?? "The build could not be retried.", result.status)
-      }
-      logger.info("api.projects.retry", "build retry started", { projectId: id, buildRunId: result.buildRunId })
-      return ok({
-        retryType: "build",
-        buildRunId: result.buildRunId,
-        totalumProjectId: result.totalumProjectId,
-        message: "Build retry started.",
+    const result = await retryProjectStep(id)
+    if (!result.ok) {
+      logger.warn("api.projects.retry", "retry rejected", {
+        projectId: id,
+        state: project.state,
+        status: result.status,
+        message: result.message,
       })
+      return fail("RETRY_NOT_STARTED", result.message, result.status)
     }
 
-    if (state === "deployment_failed") {
-      // Retry deployment. Reuses startProjectDeploy which enforces its own
-      // preconditions (totalumProjectId present, not already deploying, etc.).
-      const result = await startProjectDeploy(userId, id)
-      if (!result.ok) {
-        return fail(result.code, result.message ?? "The deployment could not be retried.", result.status)
-      }
-      logger.info("api.projects.retry", "deployment retry started", { projectId: id, deployRunId: result.deployRunId })
-      return ok({
-        retryType: "deploy",
-        deployRunId: result.deployRunId,
-        message: "Deployment retry started.",
-      })
-    }
-
-    // Not a retryable state.
-    return fail("NOT_RETRYABLE", `This project cannot be retried from its current state (${state}).`, 409)
+    logger.info("api.projects.retry", "retry started", {
+      projectId: id,
+      retryType: result.retryType,
+      buildRunId: result.buildRunId,
+      deployRunId: result.deployRunId,
+    })
+    return ok({
+      retryType: result.retryType,
+      buildRunId: result.buildRunId,
+      deployRunId: result.deployRunId,
+      message: result.message,
+    })
   } catch (e) {
     return handleRouteError("api.projects.retry", e)
   }

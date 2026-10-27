@@ -313,6 +313,21 @@ export function BuildLoading({ projectId, state, className, projectName, project
   const isDeploying = state === "deploying"
   const agentStatus = status?.agentStatus
 
+  // Determine current stage based on progress and events
+  const buildStages = [
+    { id: 1, name: "Research & Analysis", team: "Research Team", progress: 0, icon: "🔬", color: "text-blue-500" },
+    { id: 2, name: "Architecture Design", team: "Engineering Team", progress: 15, icon: "🏗️", color: "text-violet-500" },
+    { id: 3, name: "Frontend Development", team: "Product & Design Team", progress: 30, icon: "🎨", color: "text-pink-500" },
+    { id: 4, name: "Backend Engineering", team: "Platform Team", progress: 50, icon: "⚙️", color: "text-amber-500" },
+    { id: 5, name: "Integration & Testing", team: "QA Automation Team", progress: 70, icon: "🧪", color: "text-green-500" },
+    { id: 6, name: "Optimization", team: "Performance Team", progress: 85, icon: "⚡", color: "text-cyan-500" },
+    { id: 7, name: "Final Checks", team: "Launch Team", progress: 95, icon: "✓", color: "text-emerald-500" },
+  ]
+
+  const currentStage = buildStages.reduce((prev, curr) =>
+    displayProgress >= curr.progress ? curr : prev
+  )
+
   return (
     <div className={cn("flex flex-col gap-5", className)}>
       {/* Main card */}
@@ -322,8 +337,34 @@ export function BuildLoading({ projectId, state, className, projectName, project
         </div>
 
         <div className="relative flex flex-col items-center text-center">
-          {/* Spinner */}
-          <div className="mb-5 size-14 animate-spin rounded-full border-4 border-muted border-t-primary" />
+          {/* Animated Stage Icon */}
+          <div className="mb-5 relative">
+            <div className="size-20 flex items-center justify-center rounded-full bg-primary/10 ring-4 ring-primary/20 animate-pulse">
+              <span className="text-4xl animate-bounce" style={{ animationDuration: "2s" }}>
+                {currentStage.icon}
+              </span>
+            </div>
+            {/* Orbiting dots */}
+            <div className="absolute inset-0 animate-spin" style={{ animationDuration: "8s" }}>
+              <span className="absolute top-0 left-1/2 -ml-1 size-2 rounded-full bg-primary" />
+            </div>
+            <div className="absolute inset-0 animate-spin" style={{ animationDuration: "6s", animationDirection: "reverse" }}>
+              <span className="absolute bottom-0 left-1/2 -ml-1 size-2 rounded-full bg-primary/70" />
+            </div>
+          </div>
+
+          {/* Current Stage Info */}
+          <div className="mb-4">
+            <p className={cn("text-xs font-semibold uppercase tracking-wider mb-1", currentStage.color)}>
+              Stage {currentStage.id} of {buildStages.length}
+            </p>
+            <h3 className="text-base font-bold text-foreground mb-0.5">
+              {currentStage.name}
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              {currentStage.team} at work
+            </p>
+          </div>
 
           {/* Status heading with rotating project-specific message */}
           <h2 className={cn(
@@ -382,10 +423,92 @@ export function BuildLoading({ projectId, state, className, projectName, project
             ~{displayProgress}% complete
           </p>
 
+          {/* Stage Progress Indicators */}
+          <div className="mt-5 w-full max-w-md">
+            <div className="flex justify-between items-center gap-1">
+              {buildStages.map((stage, idx) => {
+                const isComplete = displayProgress >= stage.progress
+                const isCurrent = stage.id === currentStage.id
+                return (
+                  <div key={stage.id} className="flex flex-col items-center flex-1">
+                    <div
+                      className={cn(
+                        "size-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-500",
+                        isComplete
+                          ? "bg-primary text-primary-foreground scale-100"
+                          : "bg-muted text-muted-foreground scale-90",
+                        isCurrent && "ring-4 ring-primary/30 animate-pulse"
+                      )}
+                    >
+                      {isComplete ? (stage.id < currentStage.id ? "✓" : stage.icon) : stage.id}
+                    </div>
+                    {idx < buildStages.length - 1 && (
+                      <div className="absolute left-0 right-0 h-0.5 top-4 -z-10 hidden sm:block" style={{ width: `calc(100% / ${buildStages.length})`, marginLeft: `${(idx + 0.5) * (100 / buildStages.length)}%` }}>
+                        <div className={cn("h-full transition-all duration-500", isComplete ? "bg-primary" : "bg-muted")} />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            <div className="mt-2 grid grid-cols-7 gap-1 text-[9px] text-muted-foreground text-center">
+              {buildStages.map((stage) => (
+                <div key={stage.id} className={cn("transition-colors", stage.id === currentStage.id && "text-primary font-semibold")}>
+                  {stage.name.split(" ")[0]}
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Warning */}
           <div className="mt-5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-600 dark:text-amber-400">
             ⚠️ Please don&apos;t close this window or refresh — your build is in progress.
           </div>
+        </div>
+      </div>
+
+      {/* Team Activity Panel - NEW */}
+      <div className="rounded-2xl border border-border bg-card p-5">
+        <p className="mb-3 font-mono text-xs uppercase tracking-widest text-muted-foreground flex items-center gap-2">
+          <span className="relative flex size-2">
+            <span className="absolute inset-0 motion-safe:animate-ping rounded-full bg-primary/70" />
+            <span className="relative size-2 rounded-full bg-primary" />
+          </span>
+          Teams at work
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {buildStages.filter(stage =>
+            displayProgress >= stage.progress && displayProgress < (buildStages[buildStages.indexOf(stage) + 1]?.progress ?? 100)
+          ).concat(
+            buildStages.filter(stage =>
+              displayProgress >= stage.progress - 15 && stage.id !== currentStage.id
+            ).slice(0, 1)
+          ).map((stage) => (
+            <div
+              key={stage.id}
+              className={cn(
+                "flex items-center gap-2.5 rounded-lg p-3 transition-all",
+                stage.id === currentStage.id
+                  ? "bg-primary/10 border border-primary/30"
+                  : "bg-muted/40"
+              )}
+            >
+              <span className={cn("text-2xl", stage.id === currentStage.id && "animate-pulse")}>
+                {stage.icon}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-foreground truncate">
+                  {stage.team}
+                </p>
+                <p className="text-[10px] text-muted-foreground">
+                  {stage.id === currentStage.id ? "Working now" : "Recently active"}
+                </p>
+              </div>
+              {stage.id === currentStage.id && (
+                <div className="size-2 rounded-full bg-primary animate-pulse" />
+              )}
+            </div>
+          ))}
         </div>
       </div>
 

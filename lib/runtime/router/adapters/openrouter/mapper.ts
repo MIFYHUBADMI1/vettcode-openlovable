@@ -98,6 +98,29 @@ function defaultModel(): string {
   return process.env.OPENROUTER_DEFAULT_MODEL || RECOMMENDED_DEFAULT_MODEL
 }
 
+/**
+ * Vision default when the caller and the project config both omit a model.
+ * Deliberately NOT RECOMMENDED_DEFAULT_MODEL: that one is text-only, and
+ * OpenRouter rejects an image part against it with "No endpoints found that
+ * support image input". Verified live against the provider's model catalogue.
+ */
+export const RECOMMENDED_VISION_MODEL = "nvidia/nemotron-3.5-super-vl:free"
+
+/**
+ * Reasoning-capable models can return the answer in `reasoning` while
+ * `content` stays null — most often when max_tokens truncates generation
+ * before the visible answer starts. Taking the reasoning block beats failing
+ * the call outright; `finishReason` still tells the caller it was cut short.
+ */
+export function assistantText(
+  message: { content?: string | null; reasoning?: string | null } | undefined,
+): string | null {
+  const content = typeof message?.content === "string" ? message.content : ""
+  if (content.trim().length > 0) return content
+  const reasoning = typeof message?.reasoning === "string" ? message.reasoning : ""
+  return reasoning.trim().length > 0 ? reasoning : null
+}
+
 
 /** Shared model resolution: caller selection → project policy → platform default. */
 function resolveModelOrThrow(model: string | undefined, operation: string, policy?: ChatModelPolicy | null): string {
@@ -254,14 +277,17 @@ export function toChatResult(
   request: ProviderExecutionRequest,
 ): ProviderExecutionResponse<ChatResultData> {
   const choice = response.choices[0]
-  const content = choice?.message?.content
+  const content = assistantText(choice?.message)
 
-  if (typeof content !== "string") {
-    // Empty choices / missing message / null content — a failed generation.
+  if (content === null) {
+    // Empty choices / missing message / no text anywhere — a failed generation.
+    const finishReason = String(choice?.finish_reason ?? "unknown")
     throw new ProviderExecutionError(
       "provider_error",
       "The AI provider returned an error.",
-      `completion produced no content (finish_reason: ${String(choice?.finish_reason ?? "unknown")})`,
+      `completion produced no content (finish_reason: ${finishReason}${
+        finishReason === "length" ? " — raise max_tokens, generation stopped mid-answer" : ""
+      })`,
     )
   }
 

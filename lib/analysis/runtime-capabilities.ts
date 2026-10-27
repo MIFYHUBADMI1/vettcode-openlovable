@@ -64,24 +64,10 @@ export const RUNTIME_CAPABILITY_SUMMARIES: readonly RuntimeCapabilitySummary[] =
     examples: ["welcome emails", "receipts", "password resets", "digests"],
   },
   {
-    capability: "sms",
-    sdk: "atai.sms",
-    operations: ["send"],
-    description: "SMS messaging to phone numbers.",
-    examples: ["verification codes", "order updates", "reminders"],
-  },
-  {
-    capability: "whatsapp",
-    sdk: "atai.whatsapp",
-    operations: ["send"],
-    description: "WhatsApp messaging.",
-    examples: ["order updates", "support conversations", "promotions"],
-  },
-  {
     capability: "notifications",
     sdk: "atai.notifications",
     operations: ["send"],
-    description: "Push notifications to a user's device.",
+    description: "Realtime notifications — broadcast live updates to subscribed app clients.",
     examples: ["new-order alerts", "activity nudges", "announcements"],
   },
   {
@@ -141,7 +127,7 @@ When the founder describes a feature that needs one of these capabilities, groun
 
 HOW TO CALL ATAI (never invent alternatives):
 - Package: @atai-group/sdk — import { Atai } from "@atai-group/sdk"
-- Client: new Atai({ apiKey: process.env.ATAI_API_KEY }) — Atai provisions ATAI_API_KEY. Never ask for OpenAI, Stripe, Twilio, Resend, or other provider keys.
+- Client: new Atai({ apiKey: process.env.ATAI_API_KEY }) — Atai provisions ATAI_API_KEY. Never ask for provider keys such as OpenAI, Stripe, or Resend.
 - Default origin https://atai.ink, path /api/runtime/v1 (the SDK sets this). Do not hardcode api.openai.com, stripe.com, or any other provider URL.
 - Auth header: Authorization: Bearer atai_<environment>_<secret>
 - Call capabilities only from server-side code. Full contract: https://atai.ink/sdk

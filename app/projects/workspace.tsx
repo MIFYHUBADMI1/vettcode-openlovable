@@ -104,6 +104,8 @@ const BUSINESS_TABS: {
     icon: AlertTriangle,
     matches: (p) =>
       p.state === "plan_ready" || // Plan ready for review
+      p.state === "analysis_failed" ||
+      p.state === "plan_failed" ||
       p.state === "build_failed" ||
       p.state === "deployment_failed",
   },

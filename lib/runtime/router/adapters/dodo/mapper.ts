@@ -19,15 +19,25 @@ export const MAX_ITEM_NAME_LENGTH = 255
 
 // ── createCheckout (payments/createCheckout) ────────────────────────────────
 
+/**
+ * Dodo checkouts bill CATALOG PRODUCTS (`product_cart[].product_id`, live
+ * verified 2026-10-26): there is no ad-hoc price field — `price`/`name` sent
+ * alongside are recorded for the caller but the charged amount always comes
+ * from the Dodo product. Non-catalog items therefore require
+ * DODO_CHECKOUT_DEFAULT_PRODUCT_ID server-side.
+ */
 export const CreateCheckoutInputSchema = z
   .object({
     /** Line items for the checkout. */
     items: z
       .array(
         z.object({
-          name: z.string().min(1).max(MAX_ITEM_NAME_LENGTH),
-          quantity: z.number().int().min(1).max(1000),
-          price: z.number().positive().max(1_000_000),
+          /** Dodo product id (`pdt_…`) to charge; falls back to the server default. */
+          productId: z.string().min(1).max(100).optional(),
+          name: z.string().min(1).max(MAX_ITEM_NAME_LENGTH).optional(),
+          quantity: z.number().int().min(1).max(1000).default(1),
+          /** Informational — Dodo bills the product's own price. */
+          price: z.number().positive().max(1_000_000).optional(),
         }),
       )
       .min(1)
@@ -50,29 +60,47 @@ export type CreateCheckoutInput = z.infer<typeof CreateCheckoutInputSchema>
 
 export interface TranslatedCheckoutRequest {
   body: {
-    items: Array<{ name: string; quantity: number; price: number }>
-    success_url?: string
-    cancel_url?: string
+    product_cart: Array<{ product_id: string; quantity: number }>
+    return_url?: string
     customer_email?: string
-    currency?: string
+    billing_currency?: string
     metadata?: Record<string, string | number | boolean>
   }
   idempotencyKey?: string
 }
 
-export function toDodoCheckoutRequest(input: unknown): TranslatedCheckoutRequest {
+export function toDodoCheckoutRequest(
+  input: unknown,
+  defaultProductId?: string,
+): TranslatedCheckoutRequest {
   const parsed = CreateCheckoutInputSchema.safeParse(input)
   if (!parsed.success) {
     throw invalid(`checkout input validation failed: ${firstIssue(parsed)}`)
   }
+  const productCart = parsed.data.items.map((item) => {
+    const productId = item.productId ?? defaultProductId
+    if (!productId) {
+      throw new ProviderExecutionError(
+        "unsupported_operation",
+        "The request body is invalid for this capability.",
+        "items[].productId is required unless DODO_CHECKOUT_DEFAULT_PRODUCT_ID is configured",
+      )
+    }
+    return { product_id: productId, quantity: item.quantity }
+  })
+  const callerMeta = parsed.data.metadata ?? {}
+  const names = parsed.data.items.map((i) => i.name).filter((n): n is string => Boolean(n))
+  const notes: Record<string, string | number | boolean> = {}
+  if (names.length > 0) notes._ataiItemNames = names.join(", ")
   return {
     body: {
-      items: parsed.data.items,
-      ...(parsed.data.successUrl !== undefined ? { success_url: parsed.data.successUrl } : {}),
-      ...(parsed.data.cancelUrl !== undefined ? { cancel_url: parsed.data.cancelUrl } : {}),
+      product_cart: productCart,
+      ...(parsed.data.successUrl !== undefined ? { return_url: parsed.data.successUrl } : {}),
       ...(parsed.data.customerEmail !== undefined ? { customer_email: parsed.data.customerEmail } : {}),
-      ...(parsed.data.currency !== undefined ? { currency: parsed.data.currency } : {}),
-      ...(parsed.data.metadata !== undefined ? { metadata: parsed.data.metadata } : {}),
+      ...(parsed.data.currency !== undefined ? { billing_currency: parsed.data.currency } : {}),
+      ...("metadata" in parsed.data || names.length > 0
+        ? { metadata: { ...callerMeta, ...notes } }
+        : {}),
     },
     idempotencyKey: parsed.data.idempotencyKey,
   }
@@ -80,6 +108,8 @@ export function toDodoCheckoutRequest(input: unknown): TranslatedCheckoutRequest
 
 /** Documented Dodo checkout response (subset the contract consumes). */
 export interface DodoCheckoutResponse {
+  /** Live Dodo returns `session_id` (cks_…) — there is no `checkout_id`. */
+  session_id?: string
   checkout_id?: string
   checkout_url?: string
   status?: string
@@ -98,18 +128,19 @@ export interface CreateCheckoutResultData {
 export function toCheckoutResult(response: DodoCheckoutResponse): ProviderExecutionResponse<CreateCheckoutResultData> {
   assertDodoOk(response)
 
-  if (!response.checkout_id || !response.checkout_url) {
+  const checkoutId = response.session_id ?? response.checkout_id
+  if (!checkoutId || !response.checkout_url) {
     throw new ProviderExecutionError(
       "provider_error",
       "The payment provider returned an invalid response.",
-      "missing checkout_id or checkout_url",
+      "missing session_id or checkout_url",
     )
   }
 
   return {
     provider: "dodo",
     data: {
-      checkoutId: response.checkout_id,
+      checkoutId,
       checkoutUrl: response.checkout_url,
       status: response.status ?? "pending",
     },

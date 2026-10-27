@@ -1,6 +1,6 @@
 import type { ApplicationSpecification } from "@/lib/types/specification"
 import { PLAN_SECTIONS, sectionStatus, computePlanHealth, isPlaceholderValue, clampPlanSectionValue, type PlanSectionDef } from "@/lib/analysis/plan-sections"
-import { PlanAnalysisSchema, type PlanAnalysis, type PlanProposal } from "@/lib/types/plan-analysis"
+import { PlanAnalysisSchema, type PlanAnalysis, type PlanFinding, type PlanProposal } from "@/lib/types/plan-analysis"
 import { SECTION_DEPENDENCIES } from "@/lib/types/plan-analysis"
 import type { ConversationMessage, ProjectPreferences } from "@/lib/types/project"
 // Import the standalone ID helper directly — NOT from store.ts, which would
@@ -81,6 +81,29 @@ export function buildSectionFocusBlock(sectionId: string, spec: ApplicationSpeci
     .filter(Boolean)
     .join("\n")
 }
+/** Clamps a finding's free text so many flags never blow up the prompt. */
+function clampFindingText(value: string, max = 260): string {
+  const trimmed = value.trim()
+  return trimmed.length <= max ? trimmed : `${trimmed.slice(0, max).trimEnd()}…`
+}
+
+/** Renders the analysis flags the co-founder must address when proposing
+ * plan updates — quoting these keeps proposals grounded in real findings. */
+function flaggedFindingsBlock(flagged: PlanFinding[]): string {
+  const lines = flagged.map((f) =>
+    [
+      `- ${PLAN_SECTIONS.find((d) => d.id === f.section)?.label ?? f.section} · ${f.severity}: ${clampFindingText(f.title)}`,
+      `  Current state: ${clampFindingText(f.currentState)}`,
+      `  Why it matters: ${clampFindingText(f.why)}`,
+      `  Recommended fix: ${clampFindingText(f.recommendation)}`,
+    ].join("\n"),
+  )
+  return [
+    "ANALYSIS FLAGS (real findings from the founder's plan analysis — when you propose a plan",
+    "update, say which flag it resolves in the proposal's reason and make the proposed value fix it):",
+    ...lines,
+  ].join("\n")
+}
 
 function preferencesBlock(prefs?: ProjectPreferences): string {
   if (!prefs) return ""
@@ -97,6 +120,9 @@ export interface CollaborateContextInput {
   preferences?: ProjectPreferences
   /** Accepted proposals become decisions the AI must respect. */
   decisions: string[]
+  /** Gaps and weaknesses the founder's plan analysis already flagged — the
+   * proposal prompt quotes these so updates stay grounded in real findings. */
+  findings?: PlanFinding[]
   conversation: ConversationMessage[]
   /** Section the founder is currently focused on, if any. */
   activeSection?: string | null
@@ -107,7 +133,7 @@ export interface CollaborateContextInput {
 }
 
 export function buildCollaborateContext(input: CollaborateContextInput): string {
-  const { spec, preferences, decisions, conversation, activeSection, historyLimit = 12, founderVision, sourceUrl } = input
+  const { spec, preferences, decisions, findings, conversation, activeSection, historyLimit = 12, founderVision, sourceUrl } = input
   const health = computePlanHealth(spec)
   const missing = health.sections.filter((x) => x.status !== "complete").map((x) => x.label)
 
@@ -136,6 +162,13 @@ export function buildCollaborateContext(input: CollaborateContextInput): string 
     blocks.push(`INCOMPLETE AREAS (work on these proactively): ${missing.join(", ")}`)
   }
 
+  // The analysis findings are already-paid observations about this exact plan,
+  // so proposals must trace back to them instead of inventing new critiques.
+  const flagged = (findings ?? []).filter((f) => f.severity !== "strength")
+  if (flagged.length) {
+    blocks.push(flaggedFindingsBlock(flagged))
+  }
+
   // Runtime awareness: the co-founder plans integrations in Atai's own
   // capability vocabulary (what the generated app will actually call).
   blocks.push(RUNTIME_AWARENESS_BLOCK)
@@ -160,6 +193,17 @@ export function buildCollaborateContext(input: CollaborateContextInput): string 
     if (def) {
       blocks.push(
         `CURRENT TASK: The founder selected "${def.label}" (${def.id}) for this message. Stay on this section. Do not switch to Target Customers or any other section unless they clearly ask. If you propose a plan update, use section "${def.id}".`,
+      )
+    }
+    const focusedFlags = flagged.filter((f) => f.section === activeSection)
+    if (focusedFlags.length) {
+      blocks.push(
+        [
+          "FLAGS ON THIS SECTION (your proposal must resolve at least one of these — name its title in the proposal reason):",
+          ...focusedFlags.map(
+            (f) => `- ${f.severity}: ${clampFindingText(f.title)} — Fix: ${clampFindingText(f.recommendation)}`,
+          ),
+        ].join("\n"),
       )
     }
   }

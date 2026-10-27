@@ -53,6 +53,10 @@ function event(stage: string, message: string, level: ProjectEvent["level"] = "i
  *   {done, proposal, truncated, decisions}      — the turn is finished and stored
  *   {error: { code, message }}                  — nothing usable arrived (refunded)
  *
+ * Closing that stream early is the founder's Stop button: the provider request
+ * is cancelled with it. Whatever already arrived stays in the transcript and is
+ * paid for; a stop before the first word costs nothing.
+ *
  * Threads are project-scoped (see lib/collab-chat/store.ts): each thread's own
  * messages form the model's collaboration memory, so past conversations stay
  * separate while accepted plan decisions remain shared across all of them.
@@ -133,6 +137,9 @@ export async function POST(
       preferences: project.preferences,
       // Accepted proposals are recorded as planUpdateNotes on the project.
       decisions: project.planUpdateNotes ?? [],
+      // Flagged gaps/weaknesses from the last plan analysis — proposal
+      // prompts must trace back to these instead of inventing critiques.
+      findings: project.planAnalysis?.findings ?? [],
       conversation: activeChat.messages ?? [],
       activeSection,
       founderVision: project.idea,
@@ -280,6 +287,11 @@ function ndjsonFrame(value: unknown): Uint8Array {
  * be reported inside the stream. Nothing arrived means the founder's credits
  * go back; anything at all arriving means they keep them — the reply is real
  * work even when the provider cut it short.
+ *
+ * A founder pressing Stop tears the HTTP response down. Next aborts the pipe,
+ * which cancels this stream, and `cancel()` forwards that to the provider
+ * request — so stopping mid-wait costs the model nothing it wasn't asked for
+ * and costs the founder nothing they didn't read.
  */
 async function streamChatTurn(ctx: ChatTurnContext): Promise<Response> {
   const dropEmptyChat = async () => {
@@ -287,9 +299,21 @@ async function streamChatTurn(ctx: ChatTurnContext): Promise<Response> {
     await deleteProjectChat(ctx.chatId, ctx.projectId, ctx.userId).catch(() => {})
   }
 
+  const turn = new AbortController()
+  let founderLeft = false
+
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const send = (value: unknown) => controller.enqueue(ndjsonFrame(value))
+      let frameLost = false
+      const send = (value: unknown) => {
+        if (frameLost || founderLeft) return
+        try {
+          controller.enqueue(ndjsonFrame(value))
+        } catch {
+          // The response is gone; keep working, just stop talking.
+          frameLost = true
+        }
+      }
       const filter = createPlanUpdateFilter()
       let visible = ""
 
@@ -300,6 +324,7 @@ async function streamChatTurn(ctx: ChatTurnContext): Promise<Response> {
           system: COFOUNDER_CHAT_SYSTEM,
           prompt: ctx.context,
           maxOutputTokens: 4096,
+          abortSignal: turn.signal,
           onDelta: (chunk) => {
             const safe = filter.push(chunk)
             if (!safe) return
@@ -313,7 +338,8 @@ async function streamChatTurn(ctx: ChatTurnContext): Promise<Response> {
 
         // A stream that never started is exactly the case the raw single-shot
         // reader was built for: the provider answered, the transport didn't.
-        if (streamed.failed) {
+        // Someone who stopped the turn asked for no second attempt.
+        if (streamed.failed && !founderLeft) {
           const salvaged = await requestRawCompletion({
             system: COFOUNDER_CHAT_SYSTEM,
             prompt: ctx.context,
@@ -331,6 +357,21 @@ async function streamChatTurn(ctx: ChatTurnContext): Promise<Response> {
               send({ delta: safe })
             }
           }
+        }
+
+        if (founderLeft) {
+          // Whatever they read is what they get kept on record for; a stop
+          // before the first word is free.
+          if (rawReply.trim()) {
+            await finalizeChatTurn(ctx, rawReply, true).catch(() => {})
+          } else {
+            await dropEmptyChat()
+            await refundCollaboration(ctx.userId, ctx.projectId, "chat")
+            logger.info("api.projects.plan-chat", "founder stopped the turn before any reply arrived", {
+              projectId: ctx.projectId,
+            })
+          }
+          return
         }
 
         if (!rawReply.trim()) {
@@ -355,8 +396,16 @@ async function streamChatTurn(ctx: ChatTurnContext): Promise<Response> {
         }
         send({ error: { code: "UNKNOWN", message: "The co-founder's reply stopped mid-sentence. Please try again." } })
       } finally {
-        controller.close()
+        try {
+          controller.close()
+        } catch {
+          // Already closed by the cancel path.
+        }
       }
+    },
+    cancel() {
+      founderLeft = true
+      turn.abort()
     },
   })
 

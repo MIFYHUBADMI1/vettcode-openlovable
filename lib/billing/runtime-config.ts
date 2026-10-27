@@ -176,6 +176,8 @@ const RuntimePricingSchema = z.object({
   aiSpeechRequest: z.number().int().min(0).max(1_000_000),
   /** ai.video / generateVideo — flat credits per submit/poll request. */
   aiVideoRequest: z.number().int().min(0).max(1_000_000),
+  /** ai.transcribe / transcribe — flat credits per transcription request. */
+  aiTranscribeRequest: z.number().int().min(0).max(1_000_000),
 })
 export type RuntimePricing = z.infer<typeof RuntimePricingSchema>
 
@@ -188,9 +190,10 @@ export const DEFAULT_RUNTIME_PRICING: RuntimePricing = {
   aiEmbedPer1k: 1,
   webRequest: 5,
   paymentsRequest: 2,
-  aiImageRequest: 20,
+  aiImageRequest: 600,
   aiSpeechRequest: 10,
   aiVideoRequest: 50,
+  aiTranscribeRequest: 10,
 }
 
 // ─── Runtime pricing RULES (Phase 9.5) ───────────────────────────────────────

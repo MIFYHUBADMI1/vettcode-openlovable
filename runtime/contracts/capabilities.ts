@@ -51,8 +51,6 @@ export const CAPABILITY_IDS = [
   "payments",
   "auth",
   "email",
-  "sms",
-  "whatsapp",
   "notifications",
   // Location & time
   "maps",

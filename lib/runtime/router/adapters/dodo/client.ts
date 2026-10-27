@@ -16,13 +16,33 @@ import { providerFetch } from "../shared/http"
  * @module lib/runtime/router/adapters/dodo/client
  */
 
+/**
+ * One bounded retry for Dodo connection setup failures. A TCP/TLS connect
+ * timeout means the POST never reached Dodo, so no checkout was created and
+ * no double side effect is possible (§45 stays intact for every fault after
+ * the socket is established). Observed on flaky links: ~1-in-4 connects to
+ * test.dodopayments.com time out at undici's 10s default while the next
+ * attempt succeeds in ~1.5s.
+ */
+function isConnectSetupFailure(e: unknown): boolean {
+  return e instanceof ProviderExecutionError && e.networkCauseCode === "UND_ERR_CONNECT_TIMEOUT"
+}
+
+async function providerFetchWithConnectRetry(opts: Parameters<typeof providerFetch>[0]) {
+  try {
+    return await providerFetch(opts)
+  } catch (e) {
+    if (!isConnectSetupFailure(e)) throw e
+    return providerFetch(opts)
+  }
+}
+
 export async function executeCreateCheckout(params: {
   body: {
-    items: Array<{ name: string; quantity: number; price: number }>
-    success_url?: string
-    cancel_url?: string
+    product_cart: Array<{ product_id: string; quantity: number }>
+    return_url?: string
     customer_email?: string
-    currency?: string
+    billing_currency?: string
     metadata?: Record<string, string | number | boolean>
   }
   idempotencyKey?: string
@@ -40,7 +60,7 @@ export async function executeCreateCheckout(params: {
   }
 
   try {
-    const res = await providerFetch({
+    const res = await providerFetchWithConnectRetry({
       url,
       method: "POST",
       headers,
@@ -59,8 +79,8 @@ export async function executeCreateCheckout(params: {
       throw failureForStatus(res.status, res.text)
     }
 
-    // Parse checkout response
-    let parsed: { checkout_id?: string; checkout_url?: string; status?: string; errors?: unknown }
+    // Parse checkout response (live Dodo returns `session_id`, no status).
+    let parsed: { session_id?: string; checkout_id?: string; checkout_url?: string; status?: string; errors?: unknown }
     try {
       parsed = JSON.parse(res.text)
     } catch {
@@ -71,16 +91,17 @@ export async function executeCreateCheckout(params: {
       )
     }
 
-    if (!parsed.checkout_id || !parsed.checkout_url) {
+    const checkoutId = parsed.session_id ?? parsed.checkout_id
+    if (!checkoutId || !parsed.checkout_url) {
       throw new ProviderExecutionError(
         "provider_error",
         "The payment provider returned an invalid response.",
-        "missing checkout_id or checkout_url",
+        "missing session_id or checkout_url",
       )
     }
 
     return {
-      checkoutId: parsed.checkout_id,
+      checkoutId,
       checkoutUrl: parsed.checkout_url,
       status: parsed.status ?? "pending",
       latencyMs: Date.now() - startedAt,
@@ -123,7 +144,7 @@ export async function executeCreateSubscription(params: {
     "idempotency-key": params.idempotencyKey ?? crypto.randomUUID(),
   }
   try {
-    const res = await providerFetch({
+    const res = await providerFetchWithConnectRetry({
       url,
       method: "POST",
       headers,
@@ -193,7 +214,7 @@ async function executeGet(
   const qs = search.toString()
   const url = `${getDodoBaseUrl()}${path}${qs ? `?${qs}` : ""}`
   try {
-    const res = await providerFetch({
+    const res = await providerFetchWithConnectRetry({
       url,
       method: "GET",
       headers: dodoHeaders(),

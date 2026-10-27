@@ -6,8 +6,8 @@
  * charged can never drift apart.
  *
  * Pricing model (spec):
- * - Default model (`inclusionai/ming-image-0.1-design-layer`): a flat
- *   100 credits per generated image, regardless of provider cost.
+ * - Default model (`DEFAULT_IMAGE_MODEL`): a flat 100 credits per generated
+ *   image, regardless of provider cost.
  * - Premium models WITH a provider cost reported by OpenRouter:
  *   cost × 1.45 (45% profit margin) is converted to credits at
  *   $1 = 4000 credits.

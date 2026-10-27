@@ -4,6 +4,7 @@ import {
   listAdminRuntimePricingRules,
   createAdminRuntimePricingRule,
   parseCreateRuleInput,
+  buildPricingMatrix,
 } from "@/lib/runtime/admin/pricing-service"
 import { listCapabilities } from "@/lib/runtime/router/capability-registry"
 import { listProviders } from "@/lib/runtime/router/provider-registry"
@@ -19,13 +20,17 @@ export async function GET() {
   try {
     await requireAdmin()
 
-    const [rules] = await Promise.all([listAdminRuntimePricingRules()])
+    const [rules, matrix] = await Promise.all([listAdminRuntimePricingRules(), buildPricingMatrix()])
 
     return ok({
       rules,
       // Vocabularies for the admin form (server-authoritative).
       capabilities: listCapabilities().map((c) => ({ id: c.id, operations: [...c.operations] })),
       providers: listProviders(),
+      // Every capability×operation with its provider AUTO-RESOLVED and the
+      // price the runtime would charge right now — this is what lets the UI
+      // preset provider/capability/operation instead of asking for them.
+      matrix,
       pricingVersion: RUNTIME_PRICING_VERSION,
       // Resolution documentation for the admin UI (Phase 9.5 §8/§35).
       resolution: "active rule (provider+capability+operation) → legacy flat pricing → deny (unconfigured)",

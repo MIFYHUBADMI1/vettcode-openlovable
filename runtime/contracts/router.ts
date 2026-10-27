@@ -26,8 +26,8 @@ import { z } from "zod"
  * the router never hard-codes them.
  *
  * Phase 10 additions: synthesize (ai.speak), scrape (web.scrape), and the
- * shared "send" action for the side-effect comms capabilities (email, sms,
- * whatsapp, notifications) plus geocode/reverseGeocode (maps).
+ * shared "send" action for the side-effect comms capabilities (email,
+ * notifications) plus geocode/reverseGeocode (maps).
  *
  * Phase 10 second wave: calendar scheduling (listBookings/createBooking),
  * vector storage (upsert/search/delete), the generated app's runtime
@@ -64,7 +64,6 @@ export const RUNTIME_OPERATIONS = [
   "tilesMetadata",
   "styleSchema",
   "staticImage",
-  "tokens",
   // Phase 10 second wave
   "listBookings",
   "createBooking",
@@ -115,8 +114,6 @@ export const CAPABILITY_OPERATIONS: Record<string, readonly RuntimeOperation[] |
   "search.web": ["web"],
   "web.scrape": ["scrape"],
   "email": ["send"],
-  "sms": ["send"],
-  "whatsapp": ["send"],
   "notifications": ["send"],
   "maps": [
     "geocode",
@@ -129,7 +126,6 @@ export const CAPABILITY_OPERATIONS: Record<string, readonly RuntimeOperation[] |
     "tilesMetadata",
     "styleSchema",
     "staticImage",
-    "tokens",
   ],
   // Phase 10 second wave
   "calendar": ["listBookings", "createBooking"],
@@ -161,6 +157,15 @@ export const RuntimeRequestSchema = z
     input: z.unknown().optional(),
     /** Optional caller metadata (never treated as identity/authorization). */
     metadata: z.record(z.string(), z.unknown()).optional(),
+    /**
+     * Optional engine pin — restricts execution to ONE registered provider id
+     * (e.g. "openrouter") instead of the default ordered fallback chain. Omit
+     * or send "auto" for normal behaviour. This is a ROUTING preference, never
+     * identity/authorization: capability scope still applies, and an engine
+     * that serves no candidate resolves to a clear 501 — not a silent fallback.
+     * Pins are logged for observability.
+     */
+    engine: z.string().min(1).max(100).optional(),
     /** Identity injection attempts are rejected explicitly. */
     userId: z.never().optional(),
     projectId: z.never().optional(),
@@ -240,7 +245,7 @@ export interface NormalizedProviderUsage {
   /**
    * Provider-specific usage metadata (Phase 10, §55): safe numeric/string
    * scalars reported by the provider — e.g. characters billed (voice),
-   * credits used (scrape/search), message segments (sms). Merged into the
+   * credits used (scrape/search), messages sent (email). Merged into the
    * runtime_usage record's usage object. NEVER request/response content,
    * never credentials.
    */
@@ -269,4 +274,17 @@ export type ProviderFailureCategory =
   | "provider_timeout"
   | "provider_error"
   | "provider_rate_limited"
+  /**
+   * The PLATFORM's own provider account cannot serve the request (e.g. HTTP
+   * 402 — the provider key has no purchased credits). Distinct from
+   * `provider_error` because retrying or fixing the caller's input never
+   * helps: an administrator must top up or repoint the credential.
+   */
+  | "provider_not_entitled"
+  /**
+   * The named model does not exist on the provider (or is not routable).
+   * A caller/config selection problem, never an outage — map it to
+   * runtime_model_unavailable with an actionable message.
+   */
+  | "model_unavailable"
   | "unsupported_operation"

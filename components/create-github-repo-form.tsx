@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { postJson, useProjects } from "@/lib/client/api"
 import type { Project, ProjectPreferences } from "@/lib/types/project"
@@ -20,7 +20,12 @@ import {
   trackWorkspaceCreateFailed,
 } from "@/lib/analytics/start-funnel"
 import { recordOnboardingActivation } from "@/lib/onboarding/activate"
-import { extractGithubRepo } from "@/lib/start/detect-input"
+import {
+  extractGithubRepo,
+  MAX_PROJECT_TITLE_LENGTH,
+  suggestProjectTitle,
+  validateProjectTitle,
+} from "@/lib/start/detect-input"
 import { GitHubIcon } from "@/components/github-icon"
 
 /** Parse a GitHub repo URL or "owner/repo" shorthand into owner + name */
@@ -50,6 +55,8 @@ export function CreateGitHubRepoForm({ hasGitHub }: { hasGitHub: boolean }) {
   const { refresh } = useProjects()
 
   const [repoInput, setRepoInput] = useState("")
+  const [title, setTitle] = useState("")
+  const titleTouchedRef = useRef(false)
   const [branch, setBranch] = useState("")
   const [subMode, setSubMode] = useState<"clone" | "extend">("clone")
   const [userRequest, setUserRequest] = useState("")
@@ -70,6 +77,10 @@ export function CreateGitHubRepoForm({ hasGitHub }: { hasGitHub: boolean }) {
     takePendingStart()
     setCapturedIntent(pending.prompt)
     setRepoInput(extractGithubRepo(pending.prompt) ?? pending.prompt)
+    if (pending.title?.trim()) {
+      setTitle(pending.title.trim())
+      titleTouchedRef.current = true
+    }
     if (pending.prompt.replace(/https?:\/\/\S+/gi, " ").trim().split(/\s+/).filter(Boolean).length >= 4) {
       setSubMode("extend")
       setUserRequest(pending.prompt)
@@ -78,7 +89,18 @@ export function CreateGitHubRepoForm({ hasGitHub }: { hasGitHub: boolean }) {
 
   const parsed = parseRepoInput(repoInput)
   const isValid = parsed !== null
-  const canSubmit = isValid && (subMode === "clone" || (subMode === "extend" && userRequest.trim().length > 0))
+  const suggestedTitle = suggestProjectTitle("github", repoInput)
+
+  // Until the user edits it, mirror a repo-derived name so the field is a
+  // confirmed input, not a silent server-side guess.
+  useEffect(() => {
+    if (titleTouchedRef.current) return
+    setTitle((current) => (current === suggestedTitle ? current : suggestedTitle))
+  }, [suggestedTitle])
+
+  const titleError = validateProjectTitle(title)
+  const canSubmit =
+    isValid && !titleError && (subMode === "clone" || (subMode === "extend" && userRequest.trim().length > 0))
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -90,6 +112,7 @@ export function CreateGitHubRepoForm({ hasGitHub }: { hasGitHub: boolean }) {
     try {
       const { project, reused } = await postJson<{ project: Project; reused?: boolean }>("/api/projects", {
         mode: "github",
+        name: title.trim(),
         githubRepoOwner: parsed!.owner,
         githubRepoName: parsed!.name,
         githubBranch: branch.trim() || parsed!.branch || "main",
@@ -203,6 +226,47 @@ export function CreateGitHubRepoForm({ hasGitHub }: { hasGitHub: boolean }) {
             ✓ {parsed.owner}/{parsed.name}
           </p>
         )}
+      </div>
+
+      {/* Project name — required, user-confirmed */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <Label htmlFor="project-name" className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+            Project name <span className="text-destructive">*</span>
+          </Label>
+          {suggestedTitle && title.trim() !== suggestedTitle ? (
+            <button
+              type="button"
+              onClick={() => {
+                titleTouchedRef.current = false
+                setTitle(suggestedTitle)
+                setError(null)
+              }}
+              className="font-mono text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground"
+            >
+              Use “{suggestedTitle}”
+            </button>
+          ) : null}
+        </div>
+        <Input
+          id="project-name"
+          autoComplete="off"
+          placeholder="Name your workspace — this becomes your project title"
+          value={title}
+          maxLength={MAX_PROJECT_TITLE_LENGTH}
+          onChange={(e) => {
+            titleTouchedRef.current = true
+            setTitle(e.target.value)
+            setError(null)
+          }}
+          className="text-sm"
+          aria-required="true"
+          aria-invalid={title.length > 0 && Boolean(titleError)}
+          disabled={busy}
+        />
+        <p className="text-xs text-muted-foreground">
+          {title.length > 0 && titleError ? titleError : "Required — Atai won’t name the project for you."}
+        </p>
       </div>
 
       {/* Branch — optional */}

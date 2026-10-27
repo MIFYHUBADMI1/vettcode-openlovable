@@ -6,15 +6,15 @@ const BLANK = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcS
 const PROMPT = "A clean modern SaaS dashboard UI mockup"
 
 const modelIds = [
-  "inclusionai/ming-image-0.1-design-layer",
+  "bytedance-seed/seedream-5-0-flash",
   "openai/gpt-image-2.5-sunburst", "openai/gpt-image-2.5-flare", "openai/gpt-image-2",
   "openai/gpt-image-1", "openai/gpt-5-image",
   "google/gemini-nano-banana-2.1", "google/gemini-3.1-flash-image", "google/gemini-3-pro-image",
   "google/gemini-2.5-flash-image", "google/gemini-3.1-flash-lite-image",
   "black-forest-labs/flux-3-image", "black-forest-labs/flux.2-pro", "black-forest-labs/flux.2-max",
   "black-forest-labs/flux.2-flex",
-  "recraft/recraft-v4.1-pro", "recraft/recraft-v4.1", "recraft/recraft-v4-styles-pro", "recraft/recraft-v3",
-  "bytedance-seed/seedream-5-0-pro", "bytedance-seed/seedream-5-0-flash", "bytedance-seed/seedream-4.5",
+  "recraft/recraft-v4.1-pro", "recraft/recraft-v4.1", "recraft/recraft-v3",
+  "bytedance-seed/seedream-5-0-pro", "bytedance-seed/seedream-4.5",
   "x-ai/grok-imagine-image-2.0", "x-ai/grok-imagine-image-quality",
   "microsoft/mai-image-2.6", "microsoft/mai-image-2.6-flash",
   "qwen/qwen-image-3-pro", "qwen/qwen-image-3",

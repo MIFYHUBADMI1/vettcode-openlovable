@@ -8,6 +8,8 @@ export type AuthView = "login" | "signup" | "forgot" | "forgot-sent" | "verify"
 
 export type PendingStart = {
   prompt: string
+  /** User-confirmed project title; required before a project is created. */
+  title?: string
   href: string
   source?: string
   signalType?: "url" | "idea"

@@ -113,17 +113,35 @@ export async function patchJson<T>(url: string, payload?: unknown): Promise<T> {
 /** POST a JSON body and read the reply as newline-delimited JSON, handing each
  * prose frame to `onDelta` while the server is still writing. Resolves with the
  * terminal `{ done: true, … }` frame; throws like `unwrap` on an error frame or
- * a non-OK response, so callers keep one failure path. */
+ * a non-OK response, so callers keep one failure path.
+ *
+ * `signal` lets the caller stop the turn mid-reply: the fetch is cut and the
+ * rejection carries `code: "STOPPED"` so the UI can tell a founder's Stop press
+ * apart from a provider failure. */
 export async function postNdjson<T>(
   url: string,
   payload: unknown,
-  handlers: { onDelta: (text: string) => void; onMeta?: (frame: Record<string, unknown>) => void },
+  handlers: {
+    onDelta: (text: string) => void
+    onMeta?: (frame: Record<string, unknown>) => void
+    signal?: AbortSignal
+  },
 ): Promise<T> {
+  const stopped = () => {
+    if (!handlers.signal?.aborted) return null
+    const err = new Error("Stopped.") as Error & { code?: string }
+    err.code = "STOPPED"
+    return err
+  }
+
   const res = await fetch(url, {
     method: "POST",
     credentials: "include",
     headers: { "content-type": "application/json", accept: "application/x-ndjson" },
     body: JSON.stringify(payload),
+    signal: handlers.signal,
+  }).catch((e: unknown) => {
+    throw stopped() ?? e
   })
 
   if (!res.ok || !res.body) {
@@ -134,28 +152,41 @@ export async function postNdjson<T>(
   const reader = res.body.getReader()
   const decoder = new TextDecoder()
   let buffer = ""
-  for (;;) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buffer += decoder.decode(value, { stream: true })
-    let newlineAt = buffer.indexOf("\n")
-    while (newlineAt !== -1) {
-      const line = buffer.slice(0, newlineAt).trim()
-      buffer = buffer.slice(newlineAt + 1)
-      if (!line) continue
-      const frame = JSON.parse(line) as Record<string, unknown>
-      if (typeof frame.delta === "string") handlers.onDelta(frame.delta)
-      else if (frame.error) {
-        const error = frame.error as { code?: string; message?: string }
-        const err = new Error(error.message ?? "Request failed.") as Error & { code?: string }
-        err.code = error.code
-        throw err
-      } else if (frame.done) return frame as unknown as T
-      else handlers.onMeta?.(frame)
-      newlineAt = buffer.indexOf("\n")
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      let newlineAt = buffer.indexOf("\n")
+      while (newlineAt !== -1) {
+        const line = buffer.slice(0, newlineAt).trim()
+        buffer = buffer.slice(newlineAt + 1)
+        if (!line) continue
+        const frame = JSON.parse(line) as Record<string, unknown>
+        if (typeof frame.delta === "string") handlers.onDelta(frame.delta)
+        else if (frame.error) {
+          const error = frame.error as { code?: string; message?: string }
+          const err = new Error(error.message ?? "Request failed.") as Error & { code?: string }
+          err.code = error.code
+          throw err
+        } else if (frame.done) return frame as unknown as T
+        else handlers.onMeta?.(frame)
+        newlineAt = buffer.indexOf("\n")
+      }
     }
+  } catch (e) {
+    // Founder pressed Stop: the server sees the disconnect and settles the
+    // credits there, so this is a clean exit, not a failure to report.
+    const wasStopped = stopped()
+    if (wasStopped) {
+      void reader.cancel().catch(() => {})
+      throw wasStopped
+    }
+    throw e
   }
   // Truncated stream (proxy cut, tab closed): never pretend it succeeded.
+  const wasStopped = stopped()
+  if (wasStopped) throw wasStopped
   throw new Error("The co-founder's reply ended before it finished. Please try again.")
 }
 

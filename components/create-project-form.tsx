@@ -20,7 +20,11 @@ import {
   trackWorkspaceCreateFailed,
 } from "@/lib/analytics/start-funnel"
 import { recordOnboardingActivation } from "@/lib/onboarding/activate"
-import { extractWebsiteUrl } from "@/lib/start/detect-input"
+import {
+  extractWebsiteUrl,
+  MAX_PROJECT_TITLE_LENGTH,
+  validateProjectTitle,
+} from "@/lib/start/detect-input"
 
 function normalizeUrl(raw: string): string | null {
   const trimmed = raw.trim()
@@ -40,6 +44,7 @@ export function CreateProjectForm() {
   const { refresh: refreshProjects } = useProjects()
   const { refresh: refreshSession } = useSession()
   const [url, setUrl] = useState("")
+  const [title, setTitle] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPrefs, setShowPrefs] = useState(false)
@@ -59,12 +64,14 @@ export function CreateProjectForm() {
     takePendingStart()
     setCapturedIntent(pending.prompt)
     setUrl(extractWebsiteUrl(pending.prompt) ?? pending.prompt)
+    if (pending.title?.trim()) setTitle(pending.title.trim())
   }, [])
 
   const urlRef = useRef<HTMLInputElement>(null)
 
   const normalized = normalizeUrl(url)
   const valid = normalized !== null
+  const titleError = validateProjectTitle(title)
   const host = normalized ? new URL(normalized).hostname.replace(/^www\./, "") : null
 
   const PRESETS = [
@@ -81,6 +88,7 @@ export function CreateProjectForm() {
     const createStartedAt = Date.now()
     try {
       const { project, reused } = await postJson<{ project: Project; reused?: boolean }>("/api/projects", {
+        name: title.trim(),
         url: normalized,
         idea: capturedIntent ?? undefined,
         crawlMode: crawlMode ?? undefined,
@@ -114,6 +122,10 @@ export function CreateProjectForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!valid || submitting) return
+    if (titleError) {
+      setError(titleError)
+      return
+    }
     if (capturedIntent) {
       void doSubmit(undefined, "relevant")
       return
@@ -137,6 +149,30 @@ export function CreateProjectForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <div className="flex flex-col gap-2">
+        <Label htmlFor="project-name" className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
+          Project name <span className="text-destructive">*</span>
+        </Label>
+        <Input
+          id="project-name"
+          autoComplete="off"
+          placeholder="Name your workspace — this becomes your project title"
+          value={title}
+          maxLength={MAX_PROJECT_TITLE_LENGTH}
+          onChange={(e) => {
+            setTitle(e.target.value)
+            if (error) setError(null)
+          }}
+          className="h-11 text-sm"
+          aria-required="true"
+          aria-invalid={title.length > 0 && Boolean(titleError)}
+          disabled={submitting}
+        />
+        <p className="text-xs text-muted-foreground">
+          {title.length > 0 && titleError ? titleError : "Required — Atai won’t name the project for you."}
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-2">
         <Label htmlFor="source-url" className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
           Reference website
         </Label>
@@ -158,7 +194,7 @@ export function CreateProjectForm() {
             )}
             aria-invalid={url.length > 0 && !valid}
           />
-          <Button type="submit" disabled={!valid || submitting} className="h-11 shrink-0 px-6">
+          <Button type="submit" disabled={!valid || Boolean(titleError) || submitting} className="h-11 shrink-0 px-6">
             {submitting ? (
               <>
                 <Loader2 className="mr-1.5 size-3.5 animate-spin" />

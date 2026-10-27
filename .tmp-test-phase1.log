@@ -1,0 +1,1073 @@
+
+> atai@5.0.0 test C:\Users\USER\desktop\mirrorsiteai
+> vitest run
+
+[33m(!) Your Vite config uses features that are unsupported by `configLoader: 'native'`, which is planned to become the default in a future major version of Vite:
+  - ESM syntax in a file loaded as CommonJS (vitest.config.ts:1:1). Use a `.mjs` extension or set `"type": "module"` in the closest package.json
+Set `VITE_CONFIG_NATIVE_IGNORE_WARNING=true` to suppress this warning.[39m
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.1 [39m[90mC:/Users/USER/Desktop/mirrorsiteai[39m
+
+ [31m❯[39m lib/auth/__tests__/session.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [32m✓[39m lib/runtime/router/adapters/openrouter/adapter.test.ts [2m([22m[2m32 tests[22m[2m)[22m[33m 1616[2mms[22m[39m
+   [32m✓[39m executeChatCompletion [2m(8)[22m
+     [33m[2m✓[22m[39m sends the documented endpoint, Bearer provider auth, and attribution headers[33m 741[2mms[22m[39m
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mhealthy records produce no false discrepancies[2m > [22m[2ma fully accounted payment/refund/subscription set is clean
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:56.406Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":0,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mhealthy records produce no false discrepancies[2m > [22m[2man active subscription whose credits were fully consumed is NOT a mismatch
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:56.611Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":0,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mpayment ↔ grant relationships[2m > [22m[2mdetects a confirmed payment with no credit grant
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:56.629Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mpayment ↔ grant relationships[2m > [22m[2mdefers a payment that is still inside the attribution grace window
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:56.672Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":0,"deferredRecent":1,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mpayment ↔ grant relationships[2m > [22m[2mdetects a purchase-shaped grant with no payment behind it
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:56.681Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mpayment ↔ grant relationships[2m > [22m[2mdetects a payment with no attribution and treats it as a business decision, not a fix
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:56.691Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mpayment ↔ grant relationships[2m > [22m[2mdetects duplicate payment rows (legacy, pre-unique-index)
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:56.709Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mpayment ↔ grant relationships[2m > [22m[2mdetects two ledger entries sharing one idempotency key
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:56.717Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mrefund ↔ reversal relationships[2m > [22m[2mdetects a confirmed refund with no required reversal
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:56.745Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mrefund ↔ reversal relationships[2m > [22m[2mdoes NOT require a reversal when the original granted no credits
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:56.789Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":0,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mrefund ↔ reversal relationships[2m > [22m[2mdetects a refund row whose original payment is missing
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:56.837Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mrefund ↔ reversal relationships[2m > [22m[2mdetects a credit reversal with no confirmed refund, without inventing one
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:56.854Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mrefund ↔ reversal relationships[2m > [22m[2mflags two refund rows for the same Dodo refund id
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:56.996Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":3,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mrefund ↔ reversal relationships[2m > [22m[2mflags refund rows that total more than the original payment
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.010Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mrefund ↔ reversal relationships[2m > [22m[2man unlinked historical refund is an INCOMPLETE record, not a confirmed error
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.014Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mrefund ↔ reversal relationships[2m > [22m[2ma cross-currency refund is reported as unevaluable, never converted
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.021Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mledger shape, subscriptions and balances[2m > [22m[2mdetects a reversal written with the wrong direction
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.025Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":2,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mledger shape, subscriptions and balances[2m > [22m[2mdetects a non-positive or fractional reversal amount
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.031Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":2,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mledger shape, subscriptions and balances[2m > [22m[2mdetects a billing period with no expected grant
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.041Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mledger shape, subscriptions and balances[2m > [22m[2mdetects an active subscription whose account is gone
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.045Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mledger shape, subscriptions and balances[2m > [22m[2mdetects a balance split that no longer adds up
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.051Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mwebhook queue findings[2m > [22m[2mreports unresolved, failed and manual-review events separately
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.056Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":3,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mwebhook queue findings[2m > [22m[2mnever surfaces webhook payloads in findings
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.061Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mwebhook queue findings[2m > [22m[2ma fresh 'received' event is in flight, not a finding; a stale one needs recovery
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.076Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":0,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mwebhook queue findings[2m > [22m[2ma fresh 'received' event is in flight, not a finding; a stale one needs recovery
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.077Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mwebhook queue findings[2m > [22m[2man event whose type is not safely re-processable is never called retryable
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.083Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mbounded, paginated, read-only[2m > [22m[2mreads at most windowSize records per source
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.094Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":10,"findings":10,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mbounded, paginated, read-only[2m > [22m[2mwalks pages with the returned cursor and never repeats a record
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.105Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":10,"findings":10,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mbounded, paginated, read-only[2m > [22m[2mwalks pages with the returned cursor and never repeats a record
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.111Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":10,"size":10,"findings":10,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mbounded, paginated, read-only[2m > [22m[2mwalks pages with the returned cursor and never repeats a record
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.114Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":20,"size":10,"findings":5,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mbounded, paginated, read-only[2m > [22m[2mclamps an oversized window instead of scanning the collection
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.117Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":1000,"findings":3,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mbounded, paginated, read-only[2m > [22m[2man invalid cursor degrades to the first page rather than throwing
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.122Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":5,"findings":3,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mbounded, paginated, read-only[2m > [22m[2mfilters by type and severity without extra scans
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.124Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mbounded, paginated, read-only[2m > [22m[2mscopes the scan to one account when asked
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.126Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":1,"deferredRecent":0,"readOnly":true}
+
+[90mstdout[2m | lib/finances/reconciliation.test.ts[2m > [22m[2mbounded, paginated, read-only[2m > [22m[2mis read-only by construction (the fakes have no writes)
+[22m[39m[Atai] {"ts":"2026-10-25T04:22:57.129Z","level":"info","stage":"finance.reconciliation","message":"reconciliation page computed","offset":0,"size":250,"findings":3,"deferredRecent":0,"readOnly":true}
+
+ [32m✓[39m lib/finances/reconciliation.test.ts [2m([22m[2m32 tests[22m[2m)[22m[33m 927[2mms[22m[39m
+   [32m✓[39m healthy records produce no false discrepancies [2m(2)[22m
+     [33m[2m✓[22m[39m a fully accounted payment/refund/subscription set is clean[33m 338[2mms[22m[39m
+[90mstdout[2m | lib/cofounder/tools/seo.test.ts
+[22m[39m[AI Model] Using: openrouter/auto
+
+[90mstderr[2m | lib/cofounder/tools/seo.test.ts[2m > [22m[2mrun_seo_audit executeApproved[2m > [22m[2mrefunds credits when the audit fails
+[22m[39m[Atai] {"ts":"2026-10-25T04:23:07.009Z","level":"warn","stage":"cofounder.tool.seo","message":"crawl boom"}
+
+ [31m❯[39m lib/cofounder/tools/seo.test.ts [2m([22m[2m9 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 329[2mms[22m[39m
+   [32m✓[39m run_seo_audit prepare [2m(6)[22m
+     [32m✓[39m is a CONFIRM tool with no immediate execute[32m 26[2mms[22m[39m
+     [32m✓[39m creates a priced pending action WITHOUT crawling or charging[32m 109[2mms[22m[39m
+     [32m✓[39m refuses when the flag is off (fatal, no pending action)[32m 3[2mms[22m[39m
+     [32m✓[39m refuses an undeployed project without leaking existence of others[32m 13[2mms[22m[39m
+     [32m✓[39m refuses insufficient credits at prepare time[32m 5[2mms[22m[39m
+     [32m✓[39m refuses another tenant's project uniformly[32m 14[2mms[22m[39m
+   [31m❯[39m run_seo_audit executeApproved [2m(3)[22m
+     [32m✓[39m charges, audits the project's OWN recorded URL, and returns market navigation[32m 12[2mms[22m[39m
+[31m     [31m×[31m refunds credits when the audit fails[39m[32m 114[2mms[22m[39m
+     [32m✓[39m does not charge or audit for a non-owned project[32m 9[2mms[22m[39m
+[90mstdout[2m | lib/cofounder/tools/tasks.test.ts
+[22m[39m[AI Model] Using: openrouter/auto
+
+[90mstderr[2m | lib/cofounder/tools/tasks.test.ts[2m > [22m[2mpropose_growth_task prepare[2m > [22m[2mrejects a too-short title (schema validation) without a pending action
+[22m[39m[Atai] {"ts":"2026-10-25T04:23:15.649Z","level":"warn","stage":"cofounder.tool.tasks","message":"[\n  {\n    \"origin\": \"string\",\n    \"code\": \"too_small\",\n    \"minimum\": 3,\n    \"inclusive\": true,\n    \"path\": [\n      \"title\"\n    ],\n    \"message\": \"Too small: expected string to have >=3 characters\"\n  }\n]"}
+
+ [32m✓[39m lib/cofounder/tools/tasks.test.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 386[2mms[22m[39m
+ [32m✓[39m lib/runtime/metering/metering.test.ts [2m([22m[2m54 tests[22m[2m)[22m[33m 866[2mms[22m[39m
+ [32m✓[39m packages/atai-sdk/tests/security.test.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 477[2mms[22m[39m
+ [32m✓[39m lib/runtime/auth/auth.test.ts [2m([22m[2m21 tests[22m[2m)[22m[33m 420[2mms[22m[39m
+ [32m✓[39m app/api/runtime/v1/route.test.ts [2m([22m[2m29 tests[22m[2m)[22m[33m 4201[2mms[22m[39m
+   [32m✓[39m POST /api/runtime/v1 — full HTTP path [2m(8)[22m
+     [33m[2m✓[22m[39m missing Authorization → 401 runtime_authentication_error[33m 869[2mms[22m[39m
+   [32m✓[39m POST /api/runtime/v1 — OpenRouter adapter (Phase 6) [2m(18)[22m
+     [33m[2m✓[22m[39m INTEGRATION: full path → OpenRouter (mocked) → normalized Atai response[33m 861[2mms[22m[39m
+ [32m✓[39m packages/atai-sdk/tests/http-ai.test.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 585[2mms[22m[39m
+ [32m✓[39m lib/runtime/provisioning/e2e.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 1976[2mms[22m[39m
+   [32m✓[39m Phase 8 END-TO-END: provisioning → SDK → runtime API → adapter (§70/§110) [2m(3)[22m
+     [33m[2m✓[22m[39m a generated app authenticates with its provisioned credential through the real runtime path[33m 1650[2mms[22m[39m
+ [32m✓[39m lib/runtime/control/export.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 141[2mms[22m[39m
+ [32m✓[39m packages/atai-sdk/tests/transport-failures.test.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 504[2mms[22m[39m
+[90mstdout[2m | lib/marketing/studio/service.test.ts
+[22m[39m[AI Model] Using: openrouter/auto
+
+ [32m✓[39m packages/atai-sdk/tests/errors.test.ts [2m([22m[2m21 tests[22m[2m)[22m[33m 523[2mms[22m[39m
+[90mstdout[2m | lib/marketing/studio/service.test.ts[2m > [22m[2mgenerateMarketingDraft[2m > [22m[2mpersists a v1 draft labeled as AI-generated marketing content
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:04.889Z","level":"info","stage":"marketing.studio","message":"draft generated","projectId":"proj_1","contentId":"content_testid","template":"landing_hero"}
+
+ [32m✓[39m lib/runtime/router/router.test.ts [2m([22m[2m29 tests[22m[2m)[22m[33m 2202[2mms[22m[39m
+   [32m✓[39m RuntimeRequestSchema [2m(1)[22m
+     [33m[2m✓[22m[39m is exported from the shared contract barrel (SDK-safe import path)[33m 1533[2mms[22m[39m
+[90mstdout[2m | lib/marketing/studio/service.test.ts[2m > [22m[2mreviseContentItem[2m > [22m[2mappends an immutable next version chained to the original (free, still a draft)
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:05.671Z","level":"info","stage":"marketing.studio","message":"draft revised","projectId":"proj_1","contentId":"content_testid","version":2}
+
+ [32m✓[39m lib/marketing/studio/service.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 1248[2mms[22m[39m
+   [32m✓[39m generateMarketingDraft [2m(3)[22m
+     [33m[2m✓[22m[39m persists a v1 draft labeled as AI-generated marketing content[33m 495[2mms[22m[39m
+     [33m[2m✓[22m[39m refuses a non-owner WITHOUT generating or persisting[33m 359[2mms[22m[39m
+ [32m✓[39m packages/atai-sdk/tests/config.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 245[2mms[22m[39m
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mClosed State - Normal Operation[2m > [22m[2mshould increment failure count on error
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.845Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mClosed State - Normal Operation[2m > [22m[2mshould reset failure count on success
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.860Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mClosed State - Normal Operation[2m > [22m[2mshould reset failure count on success
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.860Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Open State[2m > [22m[2mshould open circuit after reaching failure threshold
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.892Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Open State[2m > [22m[2mshould open circuit after reaching failure threshold
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.892Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Open State[2m > [22m[2mshould open circuit after reaching failure threshold
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.892Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-25T04:24:11.892Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Open State[2m > [22m[2mshould set next attempt time when opening
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.905Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Open State[2m > [22m[2mshould set next attempt time when opening
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.905Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Open State[2m > [22m[2mshould set next attempt time when opening
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.905Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-25T04:24:11.905Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mOpen State - Rejecting Requests[2m > [22m[2mshould reject requests immediately when open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.926Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mOpen State - Rejecting Requests[2m > [22m[2mshould reject requests immediately when open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.926Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mOpen State - Rejecting Requests[2m > [22m[2mshould reject requests immediately when open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.926Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-25T04:24:11.926Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mOpen State - Rejecting Requests[2m > [22m[2mshould not execute function when circuit is open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.945Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mOpen State - Rejecting Requests[2m > [22m[2mshould not execute function when circuit is open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.945Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mOpen State - Rejecting Requests[2m > [22m[2mshould not execute function when circuit is open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.945Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-25T04:24:11.945Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mOpen State - Rejecting Requests[2m > [22m[2mshould include service name in error message
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.955Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mOpen State - Rejecting Requests[2m > [22m[2mshould include service name in error message
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.955Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mOpen State - Rejecting Requests[2m > [22m[2mshould include service name in error message
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.955Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-25T04:24:11.955Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould transition to half-open after timeout
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.986Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould transition to half-open after timeout
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.986Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould transition to half-open after timeout
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:10.986Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-25T04:24:11.986Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould transition to half-open after timeout
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.987Z","level":"info","stage":"circuit_breaker","message":"Circuit half-open for test-service, testing recovery"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould transition to half-open after timeout
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.987Z","level":"info","stage":"circuit_breaker","message":"Success in half-open state for test-service","service":"test-service","successCount":1,"successThreshold":2}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould reset success count when entering half-open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.015Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould reset success count when entering half-open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.015Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould reset success count when entering half-open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.015Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-25T04:24:12.015Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould reset success count when entering half-open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.016Z","level":"info","stage":"circuit_breaker","message":"Circuit half-open for test-service, testing recovery"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould reset success count when entering half-open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.016Z","level":"info","stage":"circuit_breaker","message":"Success in half-open state for test-service","service":"test-service","successCount":1,"successThreshold":2}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould not transition to half-open before timeout
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.056Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould not transition to half-open before timeout
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.056Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mTransition to Half-Open State[2m > [22m[2mshould not transition to half-open before timeout
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.056Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-25T04:24:12.056Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould close circuit after success threshold in half-open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.084Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould close circuit after success threshold in half-open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.084Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould close circuit after success threshold in half-open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.084Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-25T04:24:12.084Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould close circuit after success threshold in half-open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.085Z","level":"info","stage":"circuit_breaker","message":"Circuit half-open for test-service, testing recovery"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould close circuit after success threshold in half-open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.085Z","level":"info","stage":"circuit_breaker","message":"Success in half-open state for test-service","service":"test-service","successCount":1,"successThreshold":2}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould close circuit after success threshold in half-open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.085Z","level":"info","stage":"circuit_breaker","message":"Circuit closed for test-service, service recovered","service":"test-service","successThreshold":2}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould reopen circuit on failure in half-open state
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.124Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould reopen circuit on failure in half-open state
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.124Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould reopen circuit on failure in half-open state
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.124Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-25T04:24:12.124Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould reopen circuit on failure in half-open state
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.125Z","level":"info","stage":"circuit_breaker","message":"Circuit half-open for test-service, testing recovery"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould reopen circuit on failure in half-open state
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.125Z","level":"info","stage":"circuit_breaker","message":"Success in half-open state for test-service","service":"test-service","successCount":1,"successThreshold":2}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould reopen circuit on failure in half-open state
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.125Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened from half-open for test-service, service still unhealthy","service":"test-service","nextAttempt":"2026-10-25T04:24:13.125Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould set new timeout when reopening from half-open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.136Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould set new timeout when reopening from half-open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.136Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould set new timeout when reopening from half-open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.136Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-25T04:24:12.136Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould set new timeout when reopening from half-open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.137Z","level":"info","stage":"circuit_breaker","message":"Circuit half-open for test-service, testing recovery"}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould set new timeout when reopening from half-open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.137Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened from half-open for test-service, service still unhealthy","service":"test-service","nextAttempt":"2026-10-25T04:24:13.137Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould increment success count with each success
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.148Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould increment success count with each success
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.148Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould increment success count with each success
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.148Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-25T04:24:12.148Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould increment success count with each success
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.149Z","level":"info","stage":"circuit_breaker","message":"Circuit half-open for test-service, testing recovery"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould increment success count with each success
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.149Z","level":"info","stage":"circuit_breaker","message":"Success in half-open state for test-service","service":"test-service","successCount":1,"successThreshold":2}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mHalf-Open State - Testing Recovery[2m > [22m[2mshould increment success count with each success
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.149Z","level":"info","stage":"circuit_breaker","message":"Circuit closed for test-service, service recovered","service":"test-service","successThreshold":2}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mState Getters[2m > [22m[2mshould return current failure count
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.155Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mState Getters[2m > [22m[2mshould return current success count
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.158Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mState Getters[2m > [22m[2mshould return current success count
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.158Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mState Getters[2m > [22m[2mshould return current success count
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.158Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-25T04:24:12.158Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mState Getters[2m > [22m[2mshould return current success count
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.159Z","level":"info","stage":"circuit_breaker","message":"Circuit half-open for test-service, testing recovery"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mState Getters[2m > [22m[2mshould return current success count
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.159Z","level":"info","stage":"circuit_breaker","message":"Success in half-open state for test-service","service":"test-service","successCount":1,"successThreshold":2}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mState Getters[2m > [22m[2mshould return next attempt timestamp
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.167Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mState Getters[2m > [22m[2mshould return next attempt timestamp
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.167Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mState Getters[2m > [22m[2mshould return next attempt timestamp
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.167Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-25T04:24:12.167Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould reset to closed state
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.186Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould reset to closed state
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.186Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould reset to closed state
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.186Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-25T04:24:12.186Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould reset to closed state
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.186Z","level":"info","stage":"circuit_breaker","message":"Circuit breaker reset for test-service","service":"test-service"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould reset all counters
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.190Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould reset all counters
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.190Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould reset all counters
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.190Z","level":"info","stage":"circuit_breaker","message":"Circuit breaker reset for test-service","service":"test-service"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould allow requests after reset
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.201Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould allow requests after reset
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.201Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould allow requests after reset
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.201Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-25T04:24:12.201Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mReset Functionality[2m > [22m[2mshould allow requests after reset
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.201Z","level":"info","stage":"circuit_breaker","message":"Circuit breaker reset for test-service","service":"test-service"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mPre-configured Instances[2m > [22m[2mshould have independent states for each instance
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.221Z","level":"info","stage":"circuit_breaker","message":"Circuit breaker reset for firecrawl","service":"firecrawl"}
+[Atai] {"ts":"2026-10-25T04:24:11.221Z","level":"info","stage":"circuit_breaker","message":"Circuit breaker reset for openrouter","service":"openrouter"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mPre-configured Instances[2m > [22m[2mshould have independent states for each instance
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.221Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for firecrawl","service":"firecrawl","failureCount":1,"threshold":5}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mPre-configured Instances[2m > [22m[2mshould have independent states for each instance
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.221Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for firecrawl","service":"firecrawl","failureCount":2,"threshold":5}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mPre-configured Instances[2m > [22m[2mshould have independent states for each instance
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.221Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for firecrawl","service":"firecrawl","failureCount":3,"threshold":5}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mPre-configured Instances[2m > [22m[2mshould have independent states for each instance
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.221Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for firecrawl","service":"firecrawl","failureCount":4,"threshold":5}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mPre-configured Instances[2m > [22m[2mshould have independent states for each instance
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.221Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for firecrawl","service":"firecrawl","failures":5,"threshold":5,"nextAttempt":"2026-10-25T04:25:11.221Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mError Propagation[2m > [22m[2mshould propagate original error when circuit is closed
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.228Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mError Propagation[2m > [22m[2mshould throw CircuitBreakerOpenError when circuit is open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.236Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mError Propagation[2m > [22m[2mshould throw CircuitBreakerOpenError when circuit is open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.236Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":2,"threshold":3}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mError Propagation[2m > [22m[2mshould throw CircuitBreakerOpenError when circuit is open
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.236Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for test-service","service":"test-service","failures":3,"threshold":3,"nextAttempt":"2026-10-25T04:24:12.236Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mEdge Cases[2m > [22m[2mshould handle synchronous errors
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.239Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mEdge Cases[2m > [22m[2mshould handle async rejections
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.245Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for test-service","service":"test-service","failureCount":1,"threshold":3}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mEdge Cases[2m > [22m[2mshould handle zero timeout
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.293Z","level":"info","stage":"circuit_breaker","message":"Failure recorded for zero-timeout","service":"zero-timeout","failureCount":1,"threshold":2}
+
+[90mstderr[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mEdge Cases[2m > [22m[2mshould handle zero timeout
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.293Z","level":"warn","stage":"circuit_breaker","message":"Circuit opened for zero-timeout","service":"zero-timeout","failures":2,"threshold":2,"nextAttempt":"2026-10-25T04:24:11.293Z"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mEdge Cases[2m > [22m[2mshould handle zero timeout
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.294Z","level":"info","stage":"circuit_breaker","message":"Circuit half-open for zero-timeout, testing recovery"}
+
+[90mstdout[2m | lib/planning/utils/circuit-breaker.test.ts[2m > [22m[2mCircuitBreaker[2m > [22m[2mEdge Cases[2m > [22m[2mshould handle zero timeout
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:11.294Z","level":"info","stage":"circuit_breaker","message":"Circuit closed for zero-timeout, service recovered","service":"zero-timeout","successThreshold":1}
+
+ [32m✓[39m lib/planning/utils/circuit-breaker.test.ts [2m([22m[2m34 tests[22m[2m)[22m[33m 504[2mms[22m[39m
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace PostgreSQL references with Totalum SDK database
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.765Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace PostgreSQL references with Totalum SDK database
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.778Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace postgres (lowercase) references
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.818Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace postgres (lowercase) references
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.818Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"postgres","replacement":"Totalum SDK database","pattern":"postgres","field":"additionalInstructions"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace MongoDB references with Totalum SDK database
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.821Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace MongoDB references with Totalum SDK database
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.822Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"MongoDB","replacement":"Totalum SDK database","pattern":"MongoDB","field":"integrations[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace MySQL references with Totalum SDK database
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.824Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace MySQL references with Totalum SDK database
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.824Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"MySQL","replacement":"Totalum SDK database","pattern":"MySQL","field":"designDirection"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace SQLite references with Totalum SDK database
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.854Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mdatabase replacements[2m > [22m[2mshould replace SQLite references with Totalum SDK database
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.854Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"SQLite","replacement":"Totalum SDK database","pattern":"SQLite","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace Prisma references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.859Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace Prisma references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.859Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"Prisma ORM","replacement":"Totalum SDK","pattern":"Prisma ORM","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace Mongoose references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.866Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace Mongoose references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.866Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":2,"details":[{"original":"MongoDB","replacement":"Totalum SDK database","pattern":"MongoDB","field":"integrations[0]"},{"original":"Mongoose","replacement":"Totalum SDK","pattern":"Mongoose","field":"integrations[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace Sequelize references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.871Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace Sequelize references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.871Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"Sequelize","replacement":"Totalum SDK","pattern":"Sequelize","field":"additionalInstructions"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace TypeORM references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.874Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace TypeORM references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.875Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"TypeORM","replacement":"Totalum SDK","pattern":"TypeORM","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace Drizzle references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.877Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mORM replacements[2m > [22m[2mshould replace Drizzle references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.878Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"Drizzle ORM","replacement":"Totalum SDK","pattern":"Drizzle ORM","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mbackend framework replacements[2m > [22m[2mshould replace Express references with Next.js API routes
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.880Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mbackend framework replacements[2m > [22m[2mshould replace Express references with Next.js API routes
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.880Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"Express","replacement":"Next.js API routes","pattern":"Express","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mbackend framework replacements[2m > [22m[2mshould replace Fastify references with Next.js API routes
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.882Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mbackend framework replacements[2m > [22m[2mshould replace Fastify references with Next.js API routes
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.882Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"Fastify","replacement":"Next.js API routes","pattern":"Fastify","field":"integrations[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mbackend framework replacements[2m > [22m[2mshould replace NestJS references with Next.js API routes
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.884Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mbackend framework replacements[2m > [22m[2mshould replace NestJS references with Next.js API routes
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.884Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"NestJS","replacement":"Next.js API routes","pattern":"NestJS","field":"additionalInstructions"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mBaaS replacements[2m > [22m[2mshould replace Firebase references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.886Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mBaaS replacements[2m > [22m[2mshould replace Firebase references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.887Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"Firebase","replacement":"Totalum SDK","pattern":"Firebase","field":"integrations[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mBaaS replacements[2m > [22m[2mshould replace Supabase references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.906Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mBaaS replacements[2m > [22m[2mshould replace Supabase references with Totalum SDK
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.906Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"Supabase","replacement":"Totalum SDK","pattern":"Supabase","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan backendRequirements array
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.918Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan backendRequirements array
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.918Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":2,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[0]"},{"original":"Express","replacement":"Next.js API routes","pattern":"Express","field":"backendRequirements[1]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan integrations array
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.921Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan integrations array
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.921Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":2,"details":[{"original":"MongoDB","replacement":"Totalum SDK database","pattern":"MongoDB","field":"integrations[0]"},{"original":"Prisma","replacement":"Totalum SDK","pattern":"Prisma","field":"integrations[1]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan designDirection string
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.927Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan designDirection string
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.927Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"designDirection"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan additionalInstructions string
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.930Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan additionalInstructions string
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.930Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"Express","replacement":"Next.js API routes","pattern":"Express","field":"additionalInstructions"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan suggestedFeatures descriptions
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.934Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan suggestedFeatures descriptions
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.935Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":2,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"suggestedFeatures[0].description"},{"original":"Prisma","replacement":"Totalum SDK","pattern":"Prisma","field":"suggestedFeatures[0].description"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan dataEntities descriptions
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.937Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan dataEntities descriptions
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.937Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"MongoDB","replacement":"Totalum SDK database","pattern":"MongoDB","field":"dataEntities[0].description"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan coreFlows descriptions
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.939Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan coreFlows descriptions
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.940Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":2,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"coreFlows[0].description"},{"original":"Prisma","replacement":"Totalum SDK","pattern":"Prisma","field":"coreFlows[0].description"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan authenticationRequirements
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.941Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mfield scanning[2m > [22m[2mshould scan authenticationRequirements
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.942Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"Firebase","replacement":"Totalum SDK","pattern":"Firebase","field":"authenticationRequirements"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mviolation tracking[2m > [22m[2mshould track violations with field paths
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.949Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mviolation tracking[2m > [22m[2mshould track violations with field paths
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.950Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mviolation tracking[2m > [22m[2mshould track multiple violations in the same field
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.959Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mviolation tracking[2m > [22m[2mshould track multiple violations in the same field
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.960Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":2,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"additionalInstructions"},{"original":"Prisma","replacement":"Totalum SDK","pattern":"Prisma","field":"additionalInstructions"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mviolation tracking[2m > [22m[2mshould track violations across multiple fields
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.964Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2mviolation tracking[2m > [22m[2mshould track violations across multiple fields
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.964Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":3,"details":[{"original":"Express","replacement":"Next.js API routes","pattern":"Express","field":"additionalInstructions"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[0]"},{"original":"MongoDB","replacement":"Totalum SDK database","pattern":"MongoDB","field":"integrations[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2msanitized flag[2m > [22m[2mshould set sanitized flag when violations are found
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.979Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2msanitized flag[2m > [22m[2mshould set sanitized flag when violations are found
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.979Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2msanitized flag[2m > [22m[2mshould not set sanitized flag when no violations are found
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.982Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+[Atai] {"ts":"2026-10-25T04:24:12.983Z","level":"info","stage":"[Sanitizer] No sanitization needed - specification is compliant","message":"Specification is compliant","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould handle empty specification
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.986Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+[Atai] {"ts":"2026-10-25T04:24:12.986Z","level":"info","stage":"[Sanitizer] No sanitization needed - specification is compliant","message":"Specification is compliant","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould handle undefined optional fields
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.989Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+[Atai] {"ts":"2026-10-25T04:24:12.989Z","level":"info","stage":"[Sanitizer] No sanitization needed - specification is compliant","message":"Specification is compliant","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould filter empty strings from arrays after sanitization
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.992Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould filter empty strings from arrays after sanitization
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:12.992Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[1]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould handle case-insensitive matches
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:13.000Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould handle case-insensitive matches
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:13.000Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":3,"details":[{"original":"POSTGRESQL","replacement":"Totalum SDK database","pattern":"POSTGRESQL","field":"backendRequirements[0]"},{"original":"postgresql","replacement":"Totalum SDK database","pattern":"postgresql","field":"backendRequirements[1]"},{"original":"PostGreSQL","replacement":"Totalum SDK database","pattern":"PostGreSQL","field":"backendRequirements[2]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould handle multiple violations in single text
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:13.002Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould handle multiple violations in single text
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:13.002Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":3,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"additionalInstructions"},{"original":"Prisma","replacement":"Totalum SDK","pattern":"Prisma","field":"additionalInstructions"},{"original":"Express","replacement":"Next.js API routes","pattern":"Express","field":"additionalInstructions"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould preserve other content while replacing violations
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:13.015Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2msanitize[2m > [22m[2medge cases[2m > [22m[2mshould preserve other content while replacing violations
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:13.015Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2mscanForViolations[2m > [22m[2mshould scan without modifying the specification
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:13.017Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2mscanForViolations[2m > [22m[2mshould scan without modifying the specification
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:13.018Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":1,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[0]"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2mscanForViolations[2m > [22m[2mshould find all violations across all fields
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:13.025Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2mscanForViolations[2m > [22m[2mshould find all violations across all fields
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:13.025Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":4,"details":[{"original":"Express","replacement":"Next.js API routes","pattern":"Express","field":"additionalInstructions"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[0]"},{"original":"MongoDB","replacement":"Totalum SDK database","pattern":"MongoDB","field":"integrations[0]"},{"original":"Prisma ORM","replacement":"Totalum SDK","pattern":"Prisma ORM","field":"suggestedFeatures[0].description"}]}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2mscanForViolations[2m > [22m[2mshould return empty array when no violations found
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:13.045Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+[Atai] {"ts":"2026-10-25T04:24:13.045Z","level":"info","stage":"[Sanitizer] No sanitization needed - specification is compliant","message":"Specification is compliant","title":"Test App"}
+
+[90mstdout[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2mperformance[2m > [22m[2mshould sanitize large specifications quickly
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:13.048Z","level":"info","stage":"[Sanitizer] Starting sanitization","message":"Sanitizing specification","title":"Test App"}
+
+[90mstderr[2m | lib/planning/utils/sanitizer.test.ts[2m > [22m[2mSanitizer[2m > [22m[2mperformance[2m > [22m[2mshould sanitize large specifications quickly
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:13.050Z","level":"warn","stage":"[Sanitizer] Specification sanitized - unsupported technologies replaced","message":"Technologies replaced","title":"Test App","replacements":300,"details":[{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[0]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[1]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[2]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[3]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[4]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[5]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[6]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[7]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[8]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[9]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[10]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[11]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[12]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[13]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[14]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[15]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[16]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[17]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[18]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[19]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[20]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[21]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[22]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[23]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[24]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[25]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[26]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[27]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[28]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[29]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[30]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[31]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[32]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[33]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[34]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[35]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[36]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[37]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[38]"},{"original":"PostgreSQL","replacement":"Totalum SDK database","pattern":"PostgreSQL","field":"backendRequirements[39]"}]}
+
+ [32m✓[39m lib/planning/utils/sanitizer.test.ts [2m([22m[2m38 tests[22m[2m)[22m[33m 329[2mms[22m[39m
+[90mstdout[2m | lib/marketing/seo/recommendations.test.ts
+[22m[39m[AI Model] Using: openrouter/auto
+
+ [32m✓[39m lib/marketing/seo/recommendations.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 522[2mms[22m[39m
+ [32m✓[39m lib/runtime/router/adapters/openrouter/multimodal.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 222[2mms[22m[39m
+[90mstdout[2m | lib/marketing/studio/refine.test.ts
+[22m[39m[AI Model] Using: openrouter/auto
+
+ [32m✓[39m lib/marketing/studio/refine.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 73[2mms[22m[39m
+ [32m✓[39m packages/atai-sdk/tests/consumer-import.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 421[2mms[22m[39m
+ [32m✓[39m lib/types/idea-understanding.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 201[2mms[22m[39m
+ [32m✓[39m lib/types/research-findings.test.ts [2m([22m[2m28 tests[22m[2m)[22m[33m 375[2mms[22m[39m
+ [32m✓[39m lib/planning/stages/idea-understanding.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 151[2mms[22m[39m
+ [32m✓[39m lib/planning/utils/retry.test.ts [2m([22m[2m52 tests[22m[2m)[22m[32m 282[2mms[22m[39m
+ [32m✓[39m app/api/billing/webhook-refunds.test.ts [2m([22m[2m16 tests[22m[2m)[22m[33m 927[2mms[22m[39m
+ [32m✓[39m lib/types/planning-run.test.ts [2m([22m[2m31 tests[22m[2m)[22m[33m 373[2mms[22m[39m
+[90mstdout[2m | lib/cofounder/tools/growth.test.ts
+[22m[39m[AI Model] Using: openrouter/auto
+
+ [32m✓[39m lib/cofounder/tools/growth.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 1005[2mms[22m[39m
+   [32m✓[39m get_growth_overview tool [2m(7)[22m
+     [33m[2m✓[22m[39m is registered as a READ tool that never requires confirmation[33m 369[2mms[22m[39m
+[90mstdout[2m | lib/marketing/campaigns/service.test.ts[2m > [22m[2mcreateCampaign[2m > [22m[2mpersists a draft plan with real null budget/dates and a created history row
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:44.654Z","level":"info","stage":"marketing.campaigns","message":"campaign created","projectId":"proj_1","campaignId":"campaign_testid","origin":"user_created"}
+
+[90mstdout[2m | lib/marketing/campaigns/service.test.ts[2m > [22m[2mcreateCampaign[2m > [22m[2mcoerces a bad budget and a bad start date, keeps finite ones
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:44.679Z","level":"info","stage":"marketing.campaigns","message":"campaign created","projectId":"proj_1","campaignId":"campaign_testid","origin":"user_created"}
+
+[90mstdout[2m | lib/marketing/campaigns/service.test.ts[2m > [22m[2mcreateCampaign[2m > [22m[2mcoerces a bad budget and a bad start date, keeps finite ones
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:44.687Z","level":"info","stage":"marketing.campaigns","message":"campaign created","projectId":"proj_1","campaignId":"campaign_testid","origin":"user_created"}
+
+[90mstdout[2m | lib/marketing/campaigns/service.test.ts[2m > [22m[2mupdateCampaignStatus[2m > [22m[2mmoves draft → active and appends a status history row
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:44.706Z","level":"info","stage":"marketing.campaigns","message":"campaign status changed","projectId":"proj_1","campaignId":"campaign_1","from":"draft","to":"active"}
+
+[90mstdout[2m | lib/marketing/campaigns/service.test.ts[2m > [22m[2mupdateCampaignStatus[2m > [22m[2msets pausedAt on the pause edge and clears it on resume
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:44.709Z","level":"info","stage":"marketing.campaigns","message":"campaign status changed","projectId":"proj_1","campaignId":"campaign_1","from":"active","to":"paused"}
+
+[90mstdout[2m | lib/marketing/campaigns/service.test.ts[2m > [22m[2mupdateCampaignStatus[2m > [22m[2msets pausedAt on the pause edge and clears it on resume
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:44.719Z","level":"info","stage":"marketing.campaigns","message":"campaign status changed","projectId":"proj_1","campaignId":"campaign_1","from":"paused","to":"active"}
+
+[90mstdout[2m | lib/marketing/campaigns/service.test.ts[2m > [22m[2mupdateCampaignStatus[2m > [22m[2msets cancelledAt on the cancel edge
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:44.721Z","level":"info","stage":"marketing.campaigns","message":"campaign status changed","projectId":"proj_1","campaignId":"campaign_1","from":"active","to":"cancelled"}
+
+[90mstdout[2m | lib/marketing/campaigns/service.test.ts[2m > [22m[2mupdateCampaignFields[2m > [22m[2mapplies only the changed fields and logs one updated row per field
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:44.784Z","level":"info","stage":"marketing.campaigns","message":"campaign fields updated","projectId":"proj_1","campaignId":"campaign_1","fields":"name,plannedBudgetCents"}
+
+ [32m✓[39m lib/marketing/campaigns/service.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 203[2mms[22m[39m
+[90mstdout[2m | lib/cofounder/tools/campaigns.test.ts
+[22m[39m[AI Model] Using: openrouter/auto
+
+[90mstderr[2m | app/api/runtime/v1/concurrency.route.test.ts[2m > [22m[2mPOST /api/runtime/v1 process concurrency cap[2m > [22m[2mreturns 429 when the process is already at capacity
+[22m[39m[atai] ensureRuntimeIndexes: failed AppError: MONGODB_URI is not configured.
+    at getMongoUri (C:/Users/USER/Desktop/mirrorsiteai/lib/env.ts:20:11)
+    at connect (C:/Users/USER/Desktop/mirrorsiteai/lib/db/mongodb.ts:41:15)
+    at getMongoClient (C:/Users/USER/Desktop/mirrorsiteai/lib/db/mongodb.ts:68:49)
+    at getDb (C:/Users/USER/Desktop/mirrorsiteai/lib/db/mongodb.ts:81:24)
+    at getRuntimeDb (C:/Users/USER/Desktop/mirrorsiteai/lib/db/runtime-collections.ts:37:48)
+    at runEnsureRuntimeIndexes (C:/Users/USER/Desktop/mirrorsiteai/lib/db/runtime-collections.ts:79:20)
+    at ensureRuntimeIndexes (C:/Users/USER/Desktop/mirrorsiteai/lib/db/runtime-collections.ts:68:54)
+    at getProjectRuntimeConfig (C:/Users/USER/Desktop/mirrorsiteai/lib/runtime/control/config-store.ts:63:9)
+    at getCachedProjectRuntimeConfig (C:/Users/USER/Desktop/mirrorsiteai/lib/runtime/control/config-store.ts:76:25)
+    at enforceProjectRuntimeLimits (C:/Users/USER/Desktop/mirrorsiteai/lib/runtime/control/enforce-limits.ts:26:24) {
+  code: [32m'DATABASE_UNAVAILABLE'[39m,
+  status: [33m503[39m
+}
+
+[90mstderr[2m | lib/cofounder/tools/campaigns.test.ts[2m > [22m[2mpropose_campaign prepare[2m > [22m[2mrejects a too-short name (schema validation) without a pending action
+[22m[39m[Atai] {"ts":"2026-10-25T04:24:50.867Z","level":"warn","stage":"cofounder.tool.campaigns","message":"[\n  {\n    \"origin\": \"string\",\n    \"code\": \"too_small\",\n    \"minimum\": 3,\n    \"inclusive\": true,\n    \"path\": [\n      \"name\"\n    ],\n    \"message\": \"Too small: expected string to have >=3 characters\"\n  }\n]"}
+
+ [32m✓[39m app/api/runtime/v1/concurrency.route.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 927[2mms[22m[39m
+   [32m✓[39m POST /api/runtime/v1 process concurrency cap [2m(1)[22m
+     [33m[2m✓[22m[39m returns 429 when the process is already at capacity[33m 831[2mms[22m[39m
+ [32m✓[39m lib/runtime/provisioning/service.test.ts [2m([22m[2m27 tests[22m[2m)[22m[33m 410[2mms[22m[39m
+ [32m✓[39m lib/cofounder/tools/campaigns.test.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 1011[2mms[22m[39m
+ [32m✓[39m lib/planning/tracking/planning-run.tracker.test.ts [2m([22m[2m20 tests[22m[2m)[22m[33m 483[2mms[22m[39m
+[90mstdout[2m | lib/marketing/tasks/service.test.ts[2m > [22m[2mcreateGrowthTask[2m > [22m[2mpersists an open task with real null due/completed and a created history row
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:02.020Z","level":"info","stage":"marketing.tasks","message":"task created","projectId":"proj_1","taskId":"task_testid","origin":"user_created"}
+
+[90mstdout[2m | lib/marketing/tasks/service.test.ts[2m > [22m[2mcreateGrowthTask[2m > [22m[2mkeeps a finite numeric due date and coerces a bad one to null
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:02.151Z","level":"info","stage":"marketing.tasks","message":"task created","projectId":"proj_1","taskId":"task_testid","origin":"next_step_seed"}
+
+[90mstdout[2m | lib/marketing/tasks/service.test.ts[2m > [22m[2mcreateGrowthTask[2m > [22m[2mkeeps a finite numeric due date and coerces a bad one to null
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:02.155Z","level":"info","stage":"marketing.tasks","message":"task created","projectId":"proj_1","taskId":"task_testid","origin":"user_created"}
+
+[90mstdout[2m | lib/marketing/tasks/service.test.ts[2m > [22m[2mupdateTaskStatus[2m > [22m[2msets completedAt on the done edge and appends a status history row
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:02.384Z","level":"info","stage":"marketing.tasks","message":"task status changed","projectId":"proj_1","taskId":"task_1","from":"open","to":"done"}
+
+[90mstdout[2m | lib/marketing/tasks/service.test.ts[2m > [22m[2mupdateTaskFields[2m > [22m[2mapplies only the changed fields and logs one updated row per field
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:02.566Z","level":"info","stage":"marketing.tasks","message":"task fields updated","projectId":"proj_1","taskId":"task_1","fields":"title,priority"}
+
+ [32m✓[39m lib/marketing/tasks/service.test.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 818[2mms[22m[39m
+ [32m✓[39m lib/runtime/keys.test.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 534[2mms[22m[39m
+[90mstdout[2m | lib/marketing/studio/brand.test.ts[2m > [22m[2msaveBrandProfile[2m > [22m[2mclears fields the founder emptied instead of keeping stale values
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:04.474Z","level":"info","stage":"marketing.studio.brand","message":"brand profile saved","projectId":"p1"}
+
+[90mstdout[2m | lib/marketing/studio/brand.test.ts[2m > [22m[2msaveBrandProfile[2m > [22m[2mscopes the upsert to the project and never trusts a client owner id
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:04.485Z","level":"info","stage":"marketing.studio.brand","message":"brand profile saved","projectId":"p1"}
+
+ [32m✓[39m lib/marketing/studio/brand.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 56[2mms[22m[39m
+ [32m✓[39m lib/workspace/progress-view-model.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 158[2mms[22m[39m
+ [32m✓[39m lib/analysis/plan-sections.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 138[2mms[22m[39m
+ [32m✓[39m lib/types/schema-utils.test.ts [2m([22m[2m34 tests[22m[2m)[22m[33m 308[2mms[22m[39m
+[90mstderr[2m | lib/planning/models/registry.test.ts[2m > [22m[2mModelRegistry[2m > [22m[2mEdge Cases[2m > [22m[2mshould not crash on invalid stage
+[22m[39m[ModelRegistry] Unknown stage: invalid_stage, using default config
+
+ [32m✓[39m lib/planning/models/registry.test.ts [2m([22m[2m23 tests[22m[2m)[22m[33m 336[2mms[22m[39m
+[90mstdout[2m | lib/marketing/studio/library.test.ts[2m > [22m[2mduplicateContentItem[2m > [22m[2minserts a new v1 draft and leaves the source untouched
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:13.866Z","level":"info","stage":"marketing.studio.library","message":"content duplicated","projectId":"p1","id":"content_cid"}
+
+[90mstdout[2m | lib/marketing/studio/library.test.ts[2m > [22m[2mdeleteContentItem[2m > [22m[2mis project-scoped and reports whether anything was removed
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:13.982Z","level":"info","stage":"marketing.studio.library","message":"content deleted","projectId":"p1","id":"content_1"}
+
+ [32m✓[39m lib/marketing/studio/library.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 261[2mms[22m[39m
+ [32m✓[39m packages/atai-sdk/tests/health.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 728[2mms[22m[39m
+   [32m✓[39m Atai configuration [2m(5)[22m
+     [33m[2m✓[22m[39m 3. custom base URL (with trailing slash and path) is normalized[33m 629[2mms[22m[39m
+ [32m✓[39m lib/planning/schemas/core-types.test.ts [2m([22m[2m29 tests[22m[2m)[22m[33m 776[2mms[22m[39m
+ [32m✓[39m lib/planning/utils/idea-understanding-parser.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 612[2mms[22m[39m
+ [32m✓[39m lib/analysis/cofounder-brief.test.ts [2m([22m[2m20 tests[22m[2m)[22m[33m 362[2mms[22m[39m
+ [32m✓[39m app/api/runtime/v1/health/route.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 359[2mms[22m[39m
+ [32m✓[39m lib/runtime/router/adapters/dodo/payments.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 165[2mms[22m[39m
+ [32m✓[39m app/api/projects/[id]/runtime/usage/export/route.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 260[2mms[22m[39m
+ [32m✓[39m lib/runtime/keys/rotation.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 186[2mms[22m[39m
+[90mstdout[2m | lib/cofounder/tools/studio.test.ts
+[22m[39m[AI Model] Using: openrouter/auto
+
+ [32m✓[39m lib/runtime/key-crypto.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 195[2mms[22m[39m
+[90mstderr[2m | lib/analysis/collaborate-credits.test.ts[2m > [22m[2mcollaboration credit charging[2m > [22m[2mchargeChatCredits calls consumeCredits with a derived stable key and projectId
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:47.905Z","level":"warn","stage":"billing.runtime-config","message":"MONGODB_URI is not configured."}
+
+[90mstdout[2m | lib/analysis/collaborate-credits.test.ts[2m > [22m[2mcollaboration credit charging[2m > [22m[2mchargeChatCredits calls consumeCredits with a derived stable key and projectId
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:47.916Z","level":"info","stage":"credits.collaborate","message":"charged","userId":"user_x","projectId":"proj_x","amount":2,"reason":"AI co-founder chat message"}
+
+[90mstdout[2m | lib/analysis/collaborate-credits.test.ts[2m > [22m[2mcollaboration credit charging[2m > [22m[2mchargeAnalysisCredits calls consumeCredits with a derived stable key and projectId
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:47.969Z","level":"info","stage":"credits.collaborate","message":"charged","userId":"user_x","projectId":"proj_x","amount":10,"reason":"AI plan analysis"}
+
+[90mstdout[2m | lib/analysis/collaborate-credits.test.ts[2m > [22m[2mcollaboration credit charging[2m > [22m[2mchargeAutoCompleteCredits calls consumeCredits with a derived stable key and projectId
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:48.001Z","level":"info","stage":"credits.collaborate","message":"charged","userId":"user_x","projectId":"proj_x","amount":8,"reason":"AI co-founder auto-complete section"}
+
+[90mstdout[2m | lib/analysis/collaborate-credits.test.ts[2m > [22m[2mcollaboration credit charging[2m > [22m[2mretry of the same request reuses the key — no duplicate debit
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:48.103Z","level":"info","stage":"credits.collaborate","message":"charged","userId":"user_r","projectId":"proj_r","amount":2,"reason":"AI co-founder chat message"}
+
+[90mstdout[2m | lib/analysis/collaborate-credits.test.ts[2m > [22m[2mcollaboration credit charging[2m > [22m[2mretry of the same request reuses the key — no duplicate debit
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:48.136Z","level":"info","stage":"credits.collaborate","message":"charged","userId":"user_r","projectId":"proj_r","amount":2,"reason":"AI co-founder chat message"}
+
+[90mstdout[2m | lib/analysis/collaborate-credits.test.ts[2m > [22m[2mcollaboration credit charging[2m > [22m[2mdistinct operations remain independently chargeable
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:48.140Z","level":"info","stage":"credits.collaborate","message":"charged","userId":"user_a","projectId":"proj_a","amount":2,"reason":"AI co-founder chat message"}
+[Atai] {"ts":"2026-10-25T04:25:48.140Z","level":"info","stage":"credits.collaborate","message":"charged","userId":"user_a","projectId":"proj_a","amount":10,"reason":"AI plan analysis"}
+[Atai] {"ts":"2026-10-25T04:25:48.145Z","level":"info","stage":"credits.collaborate","message":"charged","userId":"user_a","projectId":"proj_a","amount":8,"reason":"AI co-founder auto-complete section"}
+
+[90mstdout[2m | lib/analysis/collaborate-credits.test.ts[2m > [22m[2mcollaboration credit charging[2m > [22m[2mrefundCollaboration is also stable: a retry cannot double-refund
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:48.195Z","level":"info","stage":"credits.collaborate","message":"refunded after AI failure","userId":"user_1","projectId":"proj_1","kind":"chat","amount":2}
+
+[90mstdout[2m | lib/analysis/collaborate-credits.test.ts[2m > [22m[2mcollaboration credit charging[2m > [22m[2mrefundCollaboration is also stable: a retry cannot double-refund
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:48.197Z","level":"info","stage":"credits.collaborate","message":"refunded after AI failure","userId":"user_1","projectId":"proj_1","kind":"chat","amount":2}
+
+[90mstdout[2m | lib/analysis/collaborate-credits.test.ts[2m > [22m[2mcollaboration credit charging[2m > [22m[2mrefundCollaboration carries projectId and preserves the refund metadata
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:48.205Z","level":"info","stage":"credits.collaborate","message":"refunded after AI failure","userId":"user_2","projectId":"proj_2","kind":"auto-complete","amount":8}
+
+[90mstdout[2m | lib/analysis/collaborate-credits.test.ts[2m > [22m[2mcollaboration credit charging[2m > [22m[2mzero-cost configuration is a no-op (free feature skips the ledger)
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:48.253Z","level":"info","stage":"credits.collaborate","message":"charged","userId":"user_free","projectId":"proj_free","amount":2,"reason":"AI co-founder chat message"}
+
+ [32m✓[39m lib/analysis/collaborate-credits.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 498[2mms[22m[39m
+[90mstderr[2m | lib/cofounder/tools/studio.test.ts[2m > [22m[2mgenerate_marketing_copy prepare[2m > [22m[2mrejects an unknown template (schema validation) without a pending action
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:48.421Z","level":"warn","stage":"cofounder.tool.studio","message":"[\n  {\n    \"code\": \"invalid_value\",\n    \"values\": [\n      \"landing_hero\",\n      \"feature_blurb\",\n      \"email_welcome\",\n      \"ad_headline\"\n    ],\n    \"path\": [\n      \"template\"\n    ],\n    \"message\": \"Invalid option: expected one of \\\"landing_hero\\\"|\\\"feature_blurb\\\"|\\\"email_welcome\\\"|\\\"ad_headline\\\"\"\n  }\n]"}
+
+[90mstderr[2m | lib/cofounder/tools/studio.test.ts[2m > [22m[2mgenerate_marketing_copy executeApproved[2m > [22m[2mrefunds credits when generation fails
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:48.537Z","level":"warn","stage":"cofounder.tool.studio","message":"model boom"}
+
+ [32m✓[39m lib/cofounder/tools/studio.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 1599[2mms[22m[39m
+   [32m✓[39m generate_marketing_copy prepare [2m(7)[22m
+     [33m[2m✓[22m[39m is a CONFIRM tool with no immediate execute[33m 558[2mms[22m[39m
+     [33m[2m✓[22m[39m creates a priced pending action WITHOUT generating or charging[33m 424[2mms[22m[39m
+ [32m✓[39m lib/finances/revenue-accounting.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 218[2mms[22m[39m
+[90mstdout[2m | lib/marketing/seo/service.test.ts[2m > [22m[2mrunSeoAudit failure handling[2m > [22m[2mpersists a failed audit with a safe error and a pending refund, then rethrows
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:54.733Z","level":"info","stage":"marketing.seo","message":"failed audit persisted","projectId":"p1","auditId":"seo_testid"}
+
+[90mstdout[2m | lib/marketing/seo/service.test.ts[2m > [22m[2mrunSeoAudit failure handling[2m > [22m[2mmarks a free failed audit as not charged
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:55.105Z","level":"info","stage":"marketing.seo","message":"failed audit persisted","projectId":"p1","auditId":"seo_testid"}
+
+[90mstderr[2m | lib/marketing/seo/service.test.ts[2m > [22m[2mrunSeoAudit failure handling[2m > [22m[2mkeeps the completed audit when AI recommendations fail
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:55.300Z","level":"warn","stage":"marketing.seo","message":"AI generation isn't available right now. Please try again shortly."}
+
+[90mstdout[2m | lib/marketing/seo/service.test.ts[2m > [22m[2mrunSeoAudit failure handling[2m > [22m[2mkeeps the completed audit when AI recommendations fail
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:55.302Z","level":"info","stage":"marketing.seo","message":"audit completed","projectId":"p1","auditId":"seo_testid","pages":1,"pass":5,"fail":1,"notObserved":6,"score":89,"recommendations":0,"recommendationsStatus":"unavailable","fromCache":false}
+
+[90mstdout[2m | lib/marketing/seo/service.test.ts[2m > [22m[2mrunSeoAudit failure handling[2m > [22m[2mpersists grounded recommendations when generation succeeds
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:55.445Z","level":"info","stage":"marketing.seo","message":"audit completed","projectId":"p1","auditId":"seo_testid","pages":1,"pass":5,"fail":1,"notObserved":6,"score":89,"recommendations":1,"recommendationsStatus":"generated","fromCache":false}
+
+[90mstdout[2m | lib/marketing/seo/service.test.ts[2m > [22m[2mrunSeoAudit failure handling[2m > [22m[2mskips the model entirely when no check failed
+[22m[39m[Atai] {"ts":"2026-10-25T04:25:55.519Z","level":"info","stage":"marketing.seo","message":"audit completed","projectId":"p1","auditId":"seo_testid","pages":1,"pass":6,"fail":0,"notObserved":6,"score":100,"recommendations":0,"recommendationsStatus":"no_findings","fromCache":true}
+
+ [32m✓[39m lib/marketing/seo/service.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 1311[2mms[22m[39m
+   [32m✓[39m runSeoAudit failure handling [2m(7)[22m
+     [33m[2m✓[22m[39m persists a failed audit with a safe error and a pending refund, then rethrows[33m 588[2mms[22m[39m
+ [32m✓[39m lib/runtime/router/adapters/cloudflare/embedding.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 1161[2mms[22m[39m
+   [32m✓[39m embeddings — Cloudflare Workers AI translation [2m(7)[22m
+     [33m[2m✓[22m[39m accepts a single string and wraps it as one text[33m 527[2mms[22m[39m
+ [32m✓[39m lib/types/critique-report.test.ts [2m([22m[2m25 tests[22m[2m)[22m[33m 1809[2mms[22m[39m
+   [32m✓[39m CritiqueReport Schema [2m(25)[22m
+     [32m✓[39m IssueTypeSchema [2m(2)[22m
+       [33m[2m✓[22m[39m should accept all valid issue types[33m 690[2mms[22m[39m
+ [32m✓[39m lib/marketing/studio/market-content.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 100[2mms[22m[39m
+ [32m✓[39m lib/runtime/usage.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 1716[2mms[22m[39m
+   [32m✓[39m runtime usage service [2m(6)[22m
+     [33m[2m✓[22m[39m persists a valid usage event with all attribution fields[33m 515[2mms[22m[39m
+[90mstdout[2m | lib/marketing/studio/generator.test.ts
+[22m[39m[AI Model] Using: openrouter/auto
+
+ [32m✓[39m lib/planning/errors.test.ts [2m([22m[2m36 tests[22m[2m)[22m[33m 1678[2mms[22m[39m
+ [32m✓[39m lib/marketing/studio/generator.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 662[2mms[22m[39m
+ [32m✓[39m lib/marketing/seo/auditor.test.ts [2m([22m[2m17 tests[22m[2m)[22m[33m 381[2mms[22m[39m
+ [32m✓[39m proxy.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 277[2mms[22m[39m
+ [32m✓[39m lib/runtime/control/breakdown.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 1249[2mms[22m[39m
+   [32m✓[39m estimatePeriodUsage [2m(4)[22m
+     [33m[2m✓[22m[39m returns insufficientData (no fabricated numbers) for sparse usage[33m 372[2mms[22m[39m
+     [33m[2m✓[22m[39m returns insufficientData when observation spans less than 24h even with many requests[33m 324[2mms[22m[39m
+[90mstdout[2m | lib/marketing/feature-flags.test.ts[2m > [22m[2mgrowth overview flag[2m > [22m[2mhonors the kill switch for everyone
+[22m[39m[Atai] {"ts":"2026-10-25T04:26:58.667Z","level":"info","stage":"marketing.flags","message":"Growth overview disabled by kill switch","userId":"user_a"}
+[Atai] {"ts":"2026-10-25T04:26:58.922Z","level":"info","stage":"marketing.flags","message":"Growth overview disabled by kill switch","userId":"user_b"}
+
+[90mstdout[2m | lib/marketing/feature-flags.test.ts[2m > [22m[2mgrowth overview flag[2m > [22m[2msplits cohorts deterministically at a partial rollout
+[22m[39m[Atai] {"ts":"2026-10-25T04:26:58.932Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-25T04:26:58.932Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-25T04:26:58.933Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-25T04:26:58.933Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-25T04:26:58.934Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-25T04:26:58.934Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-25T04:26:58.934Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-25T04:26:58.935Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-25T04:26:58.935Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-25T04:26:58.936Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+[Atai] {"ts":"2026-10-25T04:26:58.936Z","level":"info","stage":"marketing.flags","message":"Growth overview enabled via rollout cohort","userId":"user_x","bucket":33,"percent":50}
+
+ [32m✓[39m lib/marketing/feature-flags.test.ts [2m([22m[2m25 tests[22m[2m)[22m[33m 1772[2mms[22m[39m
+ [32m✓[39m lib/runtime/router/adapters/availability.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 419[2mms[22m[39m
+ [32m✓[39m lib/runtime/keys/multi-key.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 407[2mms[22m[39m
+ [32m✓[39m lib/marketing/studio/market-service.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 1770[2mms[22m[39m
+   [32m✓[39m generateMarketContent [2m(5)[22m
+     [33m[2m✓[22m[39m fails closed on someone else's project[33m 1123[2mms[22m[39m
+ [32m✓[39m app/api/billing/webhook-integrity.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 1370[2mms[22m[39m
+   [32m✓[39m unknown amounts are never fabricated (§7.2) [2m(2)[22m
+     [33m[2m✓[22m[39m preserves provider amounts when present on payment.failed[33m 488[2mms[22m[39m
+ [32m✓[39m lib/finances/project-economics.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 299[2mms[22m[39m
+[90mstdout[2m | lib/marketing/seo/credits.test.ts[2m > [22m[2mrefundSeoAuditCredits[2m > [22m[2mrefunds the exact amount that was charged
+[22m[39m[Atai] {"ts":"2026-10-25T04:27:49.023Z","level":"info","stage":"credits.seo","message":"refunded after failure","userId":"u1","projectId":"p1","amount":15}
+
+[90mstderr[2m | lib/marketing/seo/credits.test.ts[2m > [22m[2mrefundSeoAuditCredits[2m > [22m[2mreports failed instead of throwing when the ledger rejects the reversal
+[22m[39m[Atai] {"ts":"2026-10-25T04:27:49.041Z","level":"warn","stage":"credits.seo","message":"ledger down","userId":"u1","projectId":"p1"}
+
+[90mstdout[2m | lib/marketing/seo/credits.test.ts[2m > [22m[2mchargeSeoAuditCredits attribution[2m > [22m[2mwrites first-class projectId alongside the legacy reference pair
+[22m[39m[Atai] {"ts":"2026-10-25T04:27:49.045Z","level":"info","stage":"credits.seo","message":"charged","userId":"u1","projectId":"p1","amount":15}
+
+[90mstderr[2m | lib/marketing/growth-overview.test.ts[2m > [22m[2mmetric availability states[2m > [22m[2mmarks failed reads as unavailable with a null value — never 0
+[22m[39m[Atai] {"ts":"2026-10-25T04:27:49.090Z","level":"warn","stage":"marketing.growthOverview","message":"runtime usage read failed","projectId":"proj_1","error":"mongo down"}
+[Atai] {"ts":"2026-10-25T04:27:49.097Z","level":"warn","stage":"marketing.growthOverview","message":"credit ledger read failed","projectId":"proj_1","error":"boom"}
+
+[90mstderr[2m | lib/marketing/growth-overview.test.ts[2m > [22m[2mmetric availability states[2m > [22m[2mmarks failed reads as unavailable with a null value — never 0
+[22m[39m[Atai] {"ts":"2026-10-25T04:27:49.098Z","level":"warn","stage":"marketing.growthOverview","message":"referral read failed","userId":"user_1","error":"boom"}
+
+[90mstderr[2m | lib/marketing/growth-overview.test.ts[2m > [22m[2mmetric availability states[2m > [22m[2mnever fabricates visitors, completed payments, revenue, conversion, or project referrals
+[22m[39m[Atai] {"ts":"2026-10-25T04:27:49.103Z","level":"warn","stage":"marketing.growthOverview","message":"credit ledger read failed","projectId":"proj_1","error":"boom"}
+
+[90mstderr[2m | lib/marketing/growth-overview.test.ts[2m > [22m[2mmetric availability states[2m > [22m[2mcarries explicit caveats so checkout calls are never payments and requests are never visitors
+[22m[39m[Atai] {"ts":"2026-10-25T04:27:49.107Z","level":"warn","stage":"marketing.growthOverview","message":"credit ledger read failed","projectId":"proj_1","error":"boom"}
+
+[90mstderr[2m | lib/marketing/growth-overview.test.ts[2m > [22m[2mmetric availability states[2m > [22m[2mqueries the ledger with the owner from the session, never a client id
+[22m[39m[Atai] {"ts":"2026-10-25T04:27:49.110Z","level":"warn","stage":"marketing.growthOverview","message":"credit ledger read failed","projectId":"proj_1","error":"boom"}
+
+ [32m✓[39m lib/marketing/seo/credits.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 455[2mms[22m[39m
+   [32m✓[39m chargeSeoAuditCredits attribution [2m(1)[22m
+     [33m[2m✓[22m[39m writes first-class projectId alongside the legacy reference pair[33m 408[2mms[22m[39m
+ [32m✓[39m lib/marketing/growth-overview.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 2619[2mms[22m[39m
+   [32m✓[39m metric availability states [2m(6)[22m
+     [33m[2m✓[22m[39m returns available for non-zero real measurements[33m 417[2mms[22m[39m
+     [33m[2m✓[22m[39m queries the ledger with the owner from the session, never a client id[33m 996[2mms[22m[39m
+   [32m✓[39m what Atai knows [2m(2)[22m
+     [33m[2m✓[22m[39m reports no plan when the project has no specification[33m 747[2mms[22m[39m
+ [32m✓[39m lib/finances/platform-finances.test.ts [2m([22m[2m22 tests[22m[2m)[22m[33m 487[2mms[22m[39m
+ [32m✓[39m lib/runtime/provisioning/store.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 43[2mms[22m[39m
+ [32m✓[39m lib/runtime/auth/authorize.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 127[2mms[22m[39m
+ [32m✓[39m lib/finances/project-finances.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 51[2mms[22m[39m
+ [32m✓[39m app/api/admin/runtime/pricing/route.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 66[2mms[22m[39m
+ [32m✓[39m lib/finances/provider-cost-currency.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 119[2mms[22m[39m
+[90mstdout[2m | lib/cofounder/tool-registry.test.ts
+[22m[39m[AI Model] Using: openrouter/auto
+
+ [32m✓[39m lib/finances/cost-status.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 200[2mms[22m[39m
+ [32m✓[39m lib/cofounder/tool-registry.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 544[2mms[22m[39m
+ [32m✓[39m lib/navigation/routes.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 227[2mms[22m[39m
+ [32m✓[39m app/api/billing/legacy-gateway.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 47[2mms[22m[39m
+ [32m✓[39m lib/logging/logger.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m lib/dashboard/view-model.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+ [32m✓[39m lib/runtime/router/adapters/openrouter/completion.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 406[2mms[22m[39m
+ [32m✓[39m lib/billing/credit-valuation.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 167[2mms[22m[39m
+ [32m✓[39m lib/runtime/control/config-store.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 228[2mms[22m[39m
+ [32m✓[39m lib/marketing/campaigns/utm.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 36[2mms[22m[39m
+ [32m✓[39m lib/runtime/concurrency.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 194[2mms[22m[39m
+ [32m✓[39m lib/onboarding/state.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+ [32m✓[39m lib/db/mongodb-pool.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 56[2mms[22m[39m
+ [32m✓[39m lib/runtime/router/adapters/shared/ssrf.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 295[2mms[22m[39m
+ [32m✓[39m lib/marketing/seo/score.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 358[2mms[22m[39m
+ [32m✓[39m lib/runtime/control/usage-public.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 349[2mms[22m[39m
+ [32m✓[39m lib/runtime/metering/resolver.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 408[2mms[22m[39m
+ [32m✓[39m lib/runtime/control/model-policy.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m lib/resources/resources-credits.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 43[2mms[22m[39m
+ [32m✓[39m lib/marketing/studio/credits.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 150[2mms[22m[39m
+ [32m✓[39m lib/projects/continue-start.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 95[2mms[22m[39m
+ [32m✓[39m lib/runtime/control/enforce-limits.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 50[2mms[22m[39m
+ [32m✓[39m lib/resources/index.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 37[2mms[22m[39m
+ [32m✓[39m lib/billing/visual-pricing.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m lib/billing/consume-plan.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m lib/analysis/prompt-builder.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 450[2mms[22m[39m
+   [32m✓[39m buildInitialBuildPrompt — plan carried verbatim [2m(2)[22m
+     [33m[2m✓[22m[39m carries the founder's plan sections into the prompt without rewording them[33m 421[2mms[22m[39m
+ [31m❯[39m lib/intelligence/overview.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [32m✓[39m lib/workspace/build-handoff.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m lib/billing/topup-service.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m lib/workspace/workspace-view-model.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 304[2mms[22m[39m
+ [32m✓[39m lib/onboarding/profile.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 41[2mms[22m[39m
+ [32m✓[39m lib/start/detect-input.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 40[2mms[22m[39m
+ [32m✓[39m lib/workspace/team-roles.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m lib/db/collections-topups-retention.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 221[2mms[22m[39m
+ [32m✓[39m lib/analysis/runtime-capabilities.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 395[2mms[22m[39m
+ [32m✓[39m lib/media/project-thumbnail.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 30[2mms[22m[39m
+ [32m✓[39m lib/auth/rate-limit-memory.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 25[2mms[22m[39m
+ [32m✓[39m lib/feature-requests/config.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 26[2mms[22m[39m
+ [32m✓[39m lib/api/upstream-error.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+ [32m✓[39m lib/start/browser-speech.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 27[2mms[22m[39m
+ [32m✓[39m lib/workspace/now.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m lib/billing/checkout-return.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 18[2mms[22m[39m
+ [32m✓[39m lib/auth/client-intent.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 203[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m lib/intelligence/overview.test.ts[2m [ lib/intelligence/overview.test.ts ][22m
+[31m[1mError[22m: Cannot find package 'server-only' imported from C:/Users/USER/Desktop/mirrorsiteai/lib/intelligence/overview.ts[39m
+[36m [2m❯[22m lib/intelligence/overview.ts:[2m1:1[22m[39m
+    [90m  1|[39m import "server-only"
+    [90m   |[39m [31m^[39m
+    [90m  2|[39m
+    [90m  3|[39m /**
+[90m [2m❯[22m lib/intelligence/overview.test.ts:[2m9:1[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m lib/auth/__tests__/session.test.ts[2m [ lib/auth/__tests__/session.test.ts ][22m
+[31m[1mError[22m: Cannot find package 'server-only' imported from C:/Users/USER/Desktop/mirrorsiteai/lib/billing/credit-service.ts[39m
+[36m [2m❯[22m lib/billing/credit-service.ts:[2m21:1[22m[39m
+    [90m 19|[39m  */
+    [90m 20|[39m
+    [90m 21|[39m import "server-only"
+    [90m   |[39m [31m^[39m
+    [90m 22|[39m import { ObjectId, type ClientSession } from "mongodb"
+    [90m 23|[39m import { usersCol, creditLedgerCol } from "@/lib/db/collections"
+[90m [2m❯[22m lib/store/mongo-store.ts:[2m9:1[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯[22m[39m
+
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m lib/cofounder/tools/seo.test.ts[2m > [22mrun_seo_audit executeApproved[2m > [22mrefunds credits when the audit fails
+[31m[1mAssertionError[22m: expected "vi.fn()" to be called with arguments: [ 'user_1', 'proj_1' ][90m
+
+Received:
+
+[1m  1st vi.fn() call:
+
+[22m[2m  [[22m
+[2m    "user_1",[22m
+[2m    "proj_1",[22m
+[31m+   15,[90m
+[31m+   undefined,[90m
+[2m  ][22m
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[36m [2m❯[22m lib/cofounder/tools/seo.test.ts:[2m148:26[22m[39m
+    [90m146|[39m     const out = await runSeoAuditTool.executeApproved!({ projectId: "p…
+    [90m147|[39m     expect(out.success).toBe(false)
+    [90m148|[39m     expect(mocks.refund).toHaveBeenCalledWith("user_1", "proj_1")
+    [90m   |[39m                          [31m^[39m
+    [90m149|[39m   })
+    [90m150|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m3 failed[39m[22m[2m | [22m[1m[32m119 passed[39m[22m[90m (122)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m1496 passed[39m[22m[90m (1497)[39m
+[2m   Start at [22m 07:22:30
+[2m   Duration [22m 460.42s[2m (import 64%, transform 23%, tests 8%, worker 5%)[22m
+
+[2m     Import [22m [33m435 modules were evaluated 951 times[39m[2m · 479.12s total, 64% of tracked time[22m
+[2m            [22m [2m~39.63s faster with [22m[33misolate: false[39m[2m — shared modules are evaluated once per worker instead of once per file[22m
+[2m            [22m [2mlearn more: https://vitest.dev/guide/improving-performance#test-isolation[22m
+
+ ELIFECYCLE  Test failed. See above for more details.
+TEST_EXIT=1

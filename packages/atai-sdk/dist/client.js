@@ -20,7 +20,6 @@ import { VoiceCapability } from "./capabilities/voice.js";
 import { SearchCapability } from "./capabilities/search.js";
 import { WebCapability } from "./capabilities/web.js";
 import { EmailCapability } from "./capabilities/email.js";
-import { SmsCapability, WhatsappCapability } from "./capabilities/messaging.js";
 import { NotificationsCapability } from "./capabilities/notifications.js";
 import { MapsCapability } from "./capabilities/maps.js";
 import { CalendarCapability } from "./capabilities/calendar.js";
@@ -39,10 +38,6 @@ export class Atai {
     web;
     /** Atai email capability (`email` operations). */
     email;
-    /** Atai SMS capability (`sms` operations). */
-    sms;
-    /** Atai WhatsApp capability (`whatsapp` operations). */
-    whatsapp;
     /** Atai notifications capability (`notifications` operations). */
     notifications;
     /** Atai maps capability (`maps` operations). */
@@ -66,8 +61,6 @@ export class Atai {
         this.search = new SearchCapability(resolved);
         this.web = new WebCapability(resolved);
         this.email = new EmailCapability(resolved);
-        this.sms = new SmsCapability(resolved);
-        this.whatsapp = new WhatsappCapability(resolved);
         this.notifications = new NotificationsCapability(resolved);
         this.maps = new MapsCapability(resolved);
         this.calendar = new CalendarCapability(resolved);

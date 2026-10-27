@@ -116,18 +116,29 @@ export async function providerFetch(opts: ProviderFetchOptions): Promise<Provide
   } catch (e) {
     if (isAlreadyNormalized(e)) throw e
     const category = categoryForNetworkError(e)
+    // Node wraps every fetch network fault as TypeError("fetch failed") with
+    // the real reason on e.cause (ENOTFOUND/ECONNREFUSED/…) — log both, or the
+    // line reads as "TypeError" with nothing to act on. Never the URL or headers.
+    const cause = e instanceof Error && "cause" in e && e.cause instanceof Error ? e.cause : undefined
+    const causeCode = (cause as (Error & { code?: string }) | undefined)?.code ?? cause?.name
     logger.info("runtime.adapter.http", "provider request failed at network level", {
       ...(opts.requestId ? { requestId: opts.requestId } : {}),
       latencyMs: Date.now() - startedAt,
       category,
       errorName: e instanceof Error ? e.name : "unknown",
+      errorMessage: e instanceof Error ? e.message.slice(0, 200) : "unknown",
+      causeCode,
     })
-    throw new ProviderExecutionError(
+    const normalized = new ProviderExecutionError(
       category,
       category === "provider_timeout"
         ? "The provider timed out."
         : "The provider is temporarily unavailable.",
     )
+    // Carry the network cause (server-side only) so adapters can tell
+    // never-delivered requests (safe retry) from post-connect faults.
+    if (causeCode) normalized.networkCauseCode = causeCode
+    throw normalized
   } finally {
     clearTimeout(timer)
   }

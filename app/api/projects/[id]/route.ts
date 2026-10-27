@@ -5,6 +5,7 @@ import { logger } from "@/lib/logging/logger"
 import { ProjectUnderstandingSchema } from "@/lib/types/understanding"
 import { ApplicationSpecificationSchema } from "@/lib/types/specification"
 import { singleFlight } from "@/lib/cache/single-flight"
+import { recoverStalledPipeline } from "@/lib/projects/pipeline-recovery"
 import {
   getPlanSection,
   validatePlanSectionValue,
@@ -44,6 +45,23 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       const project = await store.getProject(id)
       if (!project || project.userId !== user.id)
         return fail("UNAUTHORIZED_PROJECT_ACCESS", "We couldn't find this project.", 404)
+
+      // Self-heal a run that died without reporting (server restart, killed
+      // process). The check is cheap and only acts on genuinely stalled work.
+      if (!project.specification) {
+        const recovered = await recoverStalledPipeline(project).catch((e) => {
+          logger.error("api.projects.get", "stall recovery failed", {
+            projectId: id,
+            message: (e as Error).message,
+          })
+          return false
+        })
+        if (recovered) {
+          const refreshed = await store.getProject(id)
+          if (refreshed) return ok({ project: refreshed })
+        }
+      }
+
       return ok({ project })
     })
   } catch (e) {
@@ -51,9 +69,19 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   }
 }
 
+/** Validation exits answer to the founder with a safe, generic message, which
+ * makes a reported 422 impossible to diagnose after the fact. Log the exact
+ * rejected path and reason instead — the message stays vague, the cause does
+ * not. */
+function logRejected(field: string, issues: readonly { path: readonly unknown[]; message: string }[]) {
+  logger.warn("api.projects.update", `${field} rejected by schema`, {
+    issues: issues.slice(0, 5).map((i) => `${i.path.map(String).join(".") || field}: ${i.message}`),
+  })
+}
+
 /** Saves user-reviewed project context or specification with ownership checks. */
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  try {
+    try {
     const user = await requireUser()
     const { id } = await params
     const project = await store.getProject(id)
@@ -86,12 +114,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const patch: Record<string, unknown> = {}
     if (body.understanding !== undefined) {
       const parsed = ProjectUnderstandingSchema.safeParse(body.understanding)
-      if (!parsed.success) return fail("VALIDATION", "The project context is invalid.", 422)
+      if (!parsed.success) {
+        logRejected("understanding", parsed.error.issues)
+        return fail("VALIDATION", "The project context is invalid.", 422)
+      }
       patch.understanding = parsed.data
     }
     if (body.specification !== undefined) {
       const parsed = ApplicationSpecificationSchema.safeParse(body.specification)
-      if (!parsed.success) return fail("VALIDATION", "The application plan is invalid.", 422)
+      if (!parsed.success) {
+        logRejected("specification", parsed.error.issues)
+        return fail("VALIDATION", "The application plan is invalid.", 422)
+      }
       patch.specification = parsed.data
     }
 
@@ -101,9 +135,21 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (body.sectionUpdate !== undefined) {
       const su = body.sectionUpdate
       const section = typeof su?.section === "string" ? su.section : ""
-      if (!getPlanSection(section)) return fail("VALIDATION", "Unknown plan section.", 422)
+      if (!getPlanSection(section)) {
+        logger.warn("api.projects.update", "section update rejected: unknown section", { projectId: id, section })
+        return fail("VALIDATION", "Unknown plan section.", 422)
+      }
       const validated = validatePlanSectionValue(section, su?.value)
-      if (!validated.ok) return fail("VALIDATION", validated.error, 422)
+      if (!validated.ok) {
+        logger.warn("api.projects.update", "section update rejected", {
+          projectId: id,
+          section,
+          reason: validated.error,
+          valueType: typeof su?.value,
+          length: typeof su?.value === "string" ? su.value.trim().length : undefined,
+        })
+        return fail("VALIDATION", validated.error, 422)
+      }
 
       if (su.acceptedProposal) {
         acceptedProposal =
@@ -122,12 +168,26 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         mode: acceptedProposal ? "proposal" : "manual",
       })
       const reparsed = ApplicationSpecificationSchema.safeParse(nextSpec)
-      if (!reparsed.success) return fail("VALIDATION", "The proposed value is invalid for this section.", 422)
+      if (!reparsed.success) {
+        logRejected("specification", reparsed.error.issues)
+        logger.warn("api.projects.update", "section update rejected: result failed schema re-parse", {
+          projectId: id,
+          section,
+          mode: acceptedProposal ? "proposal" : "manual",
+        })
+        return fail("VALIDATION", "The proposed value is invalid for this section.", 422)
+      }
       patch.specification = reparsed.data
       patch.specSanitized = false
     }
 
-    if (!Object.keys(patch).length) return fail("VALIDATION", "No editable project data was provided.", 422)
+    if (!Object.keys(patch).length) {
+      logger.warn("api.projects.update", "nothing to edit", {
+        projectId: id,
+        keys: Object.keys(body ?? {}),
+      })
+      return fail("VALIDATION", "No editable project data was provided.", 422)
+    }
 
     // ── Derived bookkeeping when the plan changed ──
     if (patch.specification) {

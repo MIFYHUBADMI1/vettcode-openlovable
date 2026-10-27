@@ -97,6 +97,17 @@ export async function executeDeleteVectors(params: {
 // ─── Workers AI embeddings (ai.embed/embed + ai.text/embed alias) ──────
 
 /**
+ * Workers AI model ids are slash-separated path segments ("@cf/baai/bge-base-en-v1.5").
+ * Encoding the whole id collapses its slashes into %2F and Cloudflare's router
+ * answers error 7000 "No route for that URI" — encode one segment at a time.
+ */
+export function embeddingsRunUrl(model: string): string {
+  const account = encodeURIComponent(getCloudflareAccountId())
+  const path = model.split("/").map(encodeURIComponent).join("/")
+  return `${getCloudflareBaseUrl()}/accounts/${account}/ai/run/${path}`
+}
+
+/**
  * Run ONE Workers AI embedding model on a batch of texts. Model id is a
  * trusted server configuration value (URL path segment) — never caller
  * input. The /ai/run endpoint is the only additional surface reachable
@@ -108,8 +119,7 @@ export async function executeRunEmbedding(params: {
   requestId?: string
 }): Promise<CloudflareEmbedRunResponse> {
   const startedAt = Date.now()
-  const account = encodeURIComponent(getCloudflareAccountId())
-  const url = `${getCloudflareBaseUrl()}/accounts/${account}/ai/run/${encodeURIComponent(params.model)}`
+  const url = embeddingsRunUrl(params.model)
 
   const res = await providerFetch({
     url,

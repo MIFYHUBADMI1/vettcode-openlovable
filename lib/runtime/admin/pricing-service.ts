@@ -3,10 +3,13 @@ import { z } from "zod"
 import {
   getRuntimePricingRules,
   updateRuntimePricingRules,
+  RUNTIME_PRICING_MODES,
+  type RuntimePricingMode,
   type RuntimePricingRule,
 } from "@/lib/billing/runtime-config"
-import { listProviders } from "@/lib/runtime/router/provider-registry"
-import { getCapability } from "@/lib/runtime/router/capability-registry"
+import { listProviders, resolveProviderAdapter } from "@/lib/runtime/router/provider-registry"
+import { getCapability, listCapabilities } from "@/lib/runtime/router/capability-registry"
+import { resolveRuntimePrice } from "@/lib/runtime/metering/resolver"
 import { logger } from "@/lib/logging/logger"
 import { logAuditAction } from "@/lib/infrastructure/audit"
 
@@ -310,4 +313,327 @@ export async function deactivateAdminRuntimePricingRule(params: {
     ruleId: params.ruleId,
     input: { active: false },
   })
+}
+
+// ─── Bulk configuration (matrix view + one-write apply) ──────────────────────
+
+/** One capability+operation cell: what the admin needs to price it in one go. */
+export interface PricingMatrixEntry {
+  capability: string
+  operation: string
+  /**
+   * The provider the LIVE registry resolves for this pair — the admin never
+   * picks a provider by hand, this is the auto-preset. Null when unwired.
+   */
+  provider: string | null
+  /** Is a production adapter registered for this pair? */
+  wired: boolean
+  /** Mode the form preselects (from the current effective price). */
+  suggestedMode: RuntimePricingMode
+  /** What the resolver would charge for this operation RIGHT NOW. */
+  effective: {
+    source: "rule" | "legacy" | "unconfigured" | "non_billable"
+    mode?: RuntimePricingMode
+    credits?: number
+    inputPer1k?: number
+    outputPer1k?: number
+    ruleId?: string
+  }
+  /** The admin rule covering this triple (active OR deactivated). */
+  rule: {
+    id: string
+    active: boolean
+    mode: RuntimePricingMode
+    credits?: number
+    inputPer1k?: number
+    outputPer1k?: number
+  } | null
+}
+
+/**
+ * Full pricing matrix: every registered capability × operation, with the
+ * provider auto-resolved and the currently-effective price read from the SAME
+ * resolution path the runtime uses (resolveRuntimePrice) — so the admin UI can
+ * never drift from what billing actually does, and gaps ("would be denied")
+ * are visible instead of guessed at.
+ */
+export async function buildPricingMatrix(): Promise<PricingMatrixEntry[]> {
+  const rules = await getRuntimePricingRules()
+  const out: PricingMatrixEntry[] = []
+
+  for (const cap of listCapabilities()) {
+    for (const operation of cap.operations) {
+      const provider = resolveProviderAdapter(cap.id, operation)?.provider ?? null
+      const covering = rules.filter(
+        (r) => r.capability === cap.id && r.operation === operation && (provider === null || r.provider === provider),
+      )
+      const activeRule = covering.find((r) => r.active) ?? null
+
+      let effective: PricingMatrixEntry["effective"] = { source: "unconfigured" }
+      try {
+        const decision = await resolveRuntimePrice({
+          provider: provider ?? "unwired",
+          capability: cap.id,
+          operation,
+        })
+        effective = decision.chargeable
+          ? {
+              source: decision.source === "rule" ? "rule" : "legacy",
+              mode: decision.snapshot.mode ?? "fixed_per_request",
+              ...(decision.fixedCredits !== undefined ? { credits: decision.fixedCredits } : {}),
+              ...(decision.inputPer1k !== undefined ? { inputPer1k: decision.inputPer1k } : {}),
+              ...(decision.outputPer1k !== undefined ? { outputPer1k: decision.outputPer1k } : {}),
+              ...(decision.pricingRuleId !== undefined ? { ruleId: decision.pricingRuleId } : {}),
+            }
+          : { source: "non_billable" }
+      } catch {
+        // RuntimePricingUnconfiguredError — the honest answer is "no price yet".
+        effective = { source: "unconfigured" }
+      }
+
+      const ruleSummary = activeRule
+        ? {
+            id: activeRule.id,
+            active: activeRule.active,
+            mode: activeRule.mode,
+            ...(activeRule.credits !== undefined ? { credits: activeRule.credits } : {}),
+            ...(activeRule.inputPer1k !== undefined ? { inputPer1k: activeRule.inputPer1k } : {}),
+            ...(activeRule.outputPer1k !== undefined ? { outputPer1k: activeRule.outputPer1k } : {}),
+          }
+        : covering[0]
+          ? {
+              id: covering[0].id,
+              active: covering[0].active,
+              mode: covering[0].mode,
+              ...(covering[0].credits !== undefined ? { credits: covering[0].credits } : {}),
+              ...(covering[0].inputPer1k !== undefined ? { inputPer1k: covering[0].inputPer1k } : {}),
+              ...(covering[0].outputPer1k !== undefined ? { outputPer1k: covering[0].outputPer1k } : {}),
+            }
+          : null
+
+      out.push({
+        capability: cap.id,
+        operation,
+        provider,
+        wired: provider !== null,
+        suggestedMode: effective.mode ?? "fixed_per_request",
+        effective,
+        rule: ruleSummary,
+      })
+    }
+  }
+  return out
+}
+
+/** Upper bound on one bulk request; keeps a stray payload from thrashing config. */
+export const MAX_BULK_PRICING_RULES = 200
+
+/** Hard cap on stored rules (mirrors the app_settings schema in runtime-config). */
+const MAX_STORED_PRICING_RULES = 500
+
+const BulkRuleSpecSchema = z
+  .object({
+    provider: z.string().min(1).max(64),
+    capability: z.string().min(1).max(100),
+    operation: z.string().min(1).max(100),
+    mode: z.enum(RUNTIME_PRICING_MODES),
+    credits: z.number().int().min(0).max(1_000_000).optional(),
+    inputPer1k: z.number().int().min(0).max(1_000_000).optional(),
+    outputPer1k: z.number().int().min(0).max(1_000_000).optional(),
+    active: z.boolean().optional(),
+  })
+  .strict()
+
+const BulkInputSchema = z
+  .object({ rules: z.array(BulkRuleSpecSchema).min(1).max(MAX_BULK_PRICING_RULES) })
+  .strict()
+
+export type BulkPricingSpec = z.infer<typeof BulkRuleSpecSchema>
+
+export function parseBulkRuleInput(body: unknown):
+  | { ok: true; data: { rules: BulkPricingSpec[] } }
+  | { ok: false; error: string } {
+  const parsed = BulkInputSchema.safeParse(body)
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid bulk pricing payload." }
+  }
+  return { ok: true, data: parsed.data }
+}
+
+/** Per-row outcome reported back to the admin UI. */
+export interface BulkPricingRowResult {
+  capability: string
+  operation: string
+  provider: string
+  outcome: "created" | "updated" | "unchanged" | "rejected"
+  error?: string
+}
+
+export interface BulkPricingResult {
+  created: number
+  updated: number
+  unchanged: number
+  rejected: number
+  rows: BulkPricingRowResult[]
+}
+
+/** Rates identical? Used to skip no-op writes (keeps updatedAt + audit clean). */
+function sameRates(a: RuntimePricingRule, b: BulkPricingSpec): boolean {
+  if (a.mode !== b.mode) return false
+  if (b.mode === "fixed_per_request") return (a.credits ?? 0) === (b.credits ?? 0)
+  return (a.inputPer1k ?? 0) === (b.inputPer1k ?? 0) && (a.outputPer1k ?? 0) === (b.outputPer1k ?? 0)
+}
+
+/**
+ * Apply many pricing rules in ONE configuration write.
+ *
+ * Upsert semantics: an active rule for provider+capability+operation has its
+ * RATES updated (mode and identity stay immutable — same rule as the single
+ * PATCH path, §11/§41); a deactivated rule is edited but never silently
+ * re-enabled; anything else creates a new rule. Every spec is validated
+ * against the live registries first, so a bad row is rejected individually
+ * instead of aborting (or half-applying) the batch.
+ *
+ * One read + one atomic array replacement means N rules cost one write and
+ * cannot interleave with a concurrent writer the way N sequential POSTs
+ * would (each of which re-reads then replaces the whole document).
+ */
+export async function bulkUpsertAdminRuntimePricingRules(params: {
+  adminId: string
+  specs: readonly BulkPricingSpec[]
+}): Promise<BulkPricingResult> {
+  const rules = await getRuntimePricingRules()
+  const next: RuntimePricingRule[] = rules.map((r) => ({ ...r }))
+  const rows: BulkPricingRowResult[] = []
+  const touched: { before: RuntimePricingRule | null; after: RuntimePricingRule }[] = []
+  const seenTriples = new Set<string>()
+
+  for (const spec of params.specs) {
+    const triple = `${spec.provider}/${spec.capability}/${spec.operation}`
+    const label = { capability: spec.capability, operation: spec.operation, provider: spec.provider }
+
+    if (seenTriples.has(triple)) {
+      rows.push({ ...label, outcome: "rejected", error: "Duplicate row in this request." })
+      continue
+    }
+    seenTriples.add(triple)
+
+    const rateError = validateModeRates(spec)
+    if (rateError) {
+      rows.push({ ...label, outcome: "rejected", error: rateError })
+      continue
+    }
+    const registryError = validateAgainstRegistries(spec)
+    if (registryError) {
+      rows.push({ ...label, outcome: "rejected", error: registryError })
+      continue
+    }
+
+    const index = next.findIndex(
+      (r) => r.provider === spec.provider && r.capability === spec.capability && r.operation === spec.operation,
+    )
+
+    if (index === -1) {
+      if (next.length >= MAX_STORED_PRICING_RULES) {
+        rows.push({ ...label, outcome: "rejected", error: `Rule cap (${MAX_STORED_PRICING_RULES}) reached.` })
+        continue
+      }
+      const now = Date.now()
+      const created: RuntimePricingRule = {
+        id: newRuleId(),
+        provider: spec.provider,
+        capability: spec.capability,
+        operation: spec.operation,
+        mode: spec.mode,
+        ...(spec.mode === "fixed_per_request"
+          ? { credits: spec.credits ?? 0 }
+          : { inputPer1k: spec.inputPer1k ?? 0, outputPer1k: spec.outputPer1k ?? 0 }),
+        active: spec.active ?? true,
+        createdBy: params.adminId,
+        createdAt: now,
+        updatedAt: now,
+      }
+      next.push(created)
+      touched.push({ before: null, after: created })
+      rows.push({ ...label, outcome: "created" })
+      continue
+    }
+
+    const existing = next[index]
+    if (existing.active && spec.mode !== existing.mode) {
+      rows.push({
+        ...label,
+        outcome: "rejected",
+        error: `Mode is immutable on an active rule (${existing.mode}). Deactivate it first, then set the new mode.`,
+      })
+      continue
+    }
+    const noChange =
+      sameRates(existing, spec) && (spec.active === undefined || spec.active === existing.active)
+    if (noChange) {
+      rows.push({ ...label, outcome: "unchanged" })
+      continue
+    }
+
+    const updated: RuntimePricingRule = {
+      ...existing,
+      mode: spec.mode,
+      ...(spec.mode === "fixed_per_request"
+        ? { credits: spec.credits ?? 0, inputPer1k: undefined, outputPer1k: undefined }
+        : { inputPer1k: spec.inputPer1k ?? 0, outputPer1k: spec.outputPer1k ?? 0, credits: undefined }),
+      ...(spec.active !== undefined ? { active: spec.active } : {}),
+      updatedAt: Date.now(),
+    }
+    // Strip the undefined rate keys so the persisted doc carries only the
+    // fields its mode actually uses.
+    for (const key of ["credits", "inputPer1k", "outputPer1k"] as const) {
+      if (updated[key] === undefined) delete updated[key]
+    }
+    next[index] = updated
+    touched.push({ before: existing, after: updated })
+    rows.push({ ...label, outcome: "updated" })
+  }
+
+  const counts = {
+    created: rows.filter((r) => r.outcome === "created").length,
+    updated: rows.filter((r) => r.outcome === "updated").length,
+    unchanged: rows.filter((r) => r.outcome === "unchanged").length,
+    rejected: rows.filter((r) => r.outcome === "rejected").length,
+  }
+
+  if (touched.length > 0) {
+    await updateRuntimePricingRules(next)
+    for (const change of touched) {
+      auditPricingChange({
+        adminId: params.adminId,
+        action: change.before === null ? "runtime_pricing_rule_created" : "runtime_pricing_rule_updated",
+        rule: change.after,
+        ...(change.before === null
+          ? {}
+          : {
+              changes: {
+                bulk: true,
+                ...("credits" in change.after || "credits" in change.before
+                  ? { credits: { from: change.before.credits, to: change.after.credits } }
+                  : {}),
+                ...("inputPer1k" in change.after || "inputPer1k" in change.before
+                  ? { inputPer1k: { from: change.before.inputPer1k, to: change.after.inputPer1k } }
+                  : {}),
+                ...("outputPer1k" in change.after || "outputPer1k" in change.before
+                  ? { outputPer1k: { from: change.before.outputPer1k, to: change.after.outputPer1k } }
+                  : {}),
+              },
+            }),
+      })
+    }
+    logger.info("runtime.admin.pricing", "bulk runtime pricing applied", {
+      adminId: params.adminId,
+      created: counts.created,
+      updated: counts.updated,
+      unchanged: counts.unchanged,
+      rejected: counts.rejected,
+    })
+  }
+
+  return { ...counts, rows }
 }

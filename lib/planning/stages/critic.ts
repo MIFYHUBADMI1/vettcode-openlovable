@@ -305,7 +305,8 @@ export class IndependentCritic {
       throw new ValidationError(
         `Model call failed on attempt ${attempt + 1}: ${error instanceof Error ? error.message : String(error)}`,
         "Unable to critique specification. Please try again.",
-        []
+        [],
+        error instanceof ValidationError ? error.rawText : undefined
       )
     }
   }
@@ -405,14 +406,16 @@ Return a complete critique report in JSON format.`
         throw new ValidationError(
           `Schema validation failed: ${JSON.stringify(issues)}`,
           "The AI response didn't match the expected format. Please try again.",
-          []
+          [],
+          text
         )
       }
 
       throw new ValidationError(
         `Failed to parse AI response: ${error instanceof Error ? error.message : String(error)}`,
         "Unable to process the AI response. Please try again.",
-        []
+        [],
+        text
       )
     }
   }

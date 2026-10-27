@@ -29,7 +29,7 @@ import { AppHeader } from "@/components/app-header"
 
 export const metadata: Metadata = {
   title: "Developers - Build with Atai Infrastructure | Unified API",
-  description: "Access the same infrastructure that powers Atai's business-building platform. One unified API for AI, payments, maps, messaging, and 40+ services used to build real businesses.",
+  description: "Access the same infrastructure that powers Atai's business-building platform. One unified API for AI, payments, maps, email, and 40+ services used to build real businesses.",
   keywords: ["Atai API", "business infrastructure", "unified API", "developer platform", "Atai SDK", "startup infrastructure"],
   openGraph: {
     title: "Build with Atai's Infrastructure",
@@ -79,9 +79,8 @@ const CAPABILITIES = [
     icon: MessageSquare,
     category: "Messaging & Communication",
     items: [
-      "SMS messaging",
       "Email delivery",
-      "Push notifications",
+      "Realtime notifications",
       "In-app messaging",
       "Chat infrastructure",
       "Real-time presence",
@@ -165,32 +164,33 @@ const route = await atai.maps.directions({
   mode: "driving"
 })`,
 
-  payments: `// Create a checkout session
+  payments: `// Create a checkout session (Dodo bills catalog products by id)
 const checkout = await atai.payments.createCheckout({
   items: [
-    { name: "Pro Plan", amount: 2900, quantity: 1 }
+    { productId: "pdt_0NmxWCnTidDQjIl0YqkqV", quantity: 1 }
   ],
-  successUrl: "https://yourapp.com/success",
-  cancelUrl: "https://yourapp.com/cancel"
+  successUrl: "https://yourapp.com/success"
 })
 
 // Handle subscription
 const subscription = await atai.payments.createSubscription({
-  plan: "pro-monthly",
-  customer: customerId
+  productId: "pdtxxxxxxxxxxxx",
+  customer: { email: "customer@example.com", name: "Ada" },
+  billing: { country: "US" }
 })`,
 
-  messaging: `// Send SMS
-await atai.messaging.sendSMS({
-  to: "+1234567890",
-  message: "Your verification code is: 123456"
-})
-
-// Send email
-await atai.messaging.sendEmail({
-  to: "user@example.com",
+  email: `// Send transactional email
+await atai.email.send({
+  to: ["user@example.com"],
   subject: "Welcome to our app!",
   html: "<h1>Welcome!</h1><p>Thanks for signing up.</p>"
+})
+
+// Send a realtime notification
+await atai.notifications.send({
+  channel: "updates",
+  title: "Welcome!",
+  body: "Thanks for signing up."
 })`,
 }
 
@@ -450,10 +450,10 @@ export default function DevelopersPage() {
             <div className="rounded-xl border border-border bg-card p-6">
               <h3 className="flex items-center gap-2 font-semibold text-foreground mb-4">
                 <MessageSquare className="size-5 text-primary" />
-                Messaging & Email
+                Email &amp; Notifications
               </h3>
               <pre className="rounded-lg bg-zinc-950 p-4 text-xs text-zinc-300 overflow-x-auto">
-                {CODE_EXAMPLES.messaging}
+                {CODE_EXAMPLES.email}
               </pre>
             </div>
           </div>

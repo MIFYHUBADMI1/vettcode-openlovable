@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth/session"
 import { store } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { autoLaunchBuild } from "@/lib/analysis/pipeline"
+import { prepareRequestedProjectId } from "@/lib/projects/project-actions"
 
 /**
  * POST /api/projects/[id]/launch
@@ -14,12 +15,13 @@ import { autoLaunchBuild } from "@/lib/analysis/pipeline"
  * AC 9, 10, 12 (Requirement 2).
  */
 export async function POST(
-  _req: Request,
+  req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const user = await requireUser()
     const { id } = await params
+    const body = (await req.json().catch(() => ({}))) as { requestedProjectId?: string }
 
     const project = await store.getProject(id)
     if (!project || project.userId !== user.id) {
@@ -37,6 +39,11 @@ export async function POST(
 
     if (!project.specification) {
       return fail("VALIDATION", "This project has no application plan yet.", 409)
+    }
+
+    const preparedProjectId = await prepareRequestedProjectId(project, body.requestedProjectId)
+    if (!preparedProjectId.ok) {
+      return fail(preparedProjectId.code, preparedProjectId.message, preparedProjectId.status)
     }
 
     // Transition to awaiting_build_confirmation while autoLaunchBuild runs.

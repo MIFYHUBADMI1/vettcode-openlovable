@@ -18,10 +18,21 @@ import { VISUAL_ESTIMATED_CREDITS } from "@/lib/billing/visual-pricing"
 import {
   IMAGE_MODELS,
   DEFAULT_IMAGE_MODEL,
+  VISUAL_ASPECT_RATIOS,
+  modelSupportsAspectRatio,
   type SavedVisual,
+  type VisualAspectRatio,
   type VisualMockupResponse,
   type ImageModel,
 } from "@/lib/types/visual-mockup"
+
+const ASPECT_OPTIONS: Array<{ value: VisualAspectRatio; label: string }> = [
+  { value: "1:1", label: "Square" },
+  { value: "16:9", label: "Wide" },
+  { value: "9:16", label: "Tall" },
+  { value: "4:3", label: "Classic" },
+  { value: "3:4", label: "Portrait" },
+]
 
 interface ExpectedVisualsProps {
   projectId: string
@@ -48,13 +59,17 @@ export function ExpectedVisuals({
   onCreditsUpdated,
 }: ExpectedVisualsProps) {
   const [selectedModel, setSelectedModel] = useState(DEFAULT_IMAGE_MODEL)
-  const [aspectRatio, setAspectRatio] = useState<"1:1" | "16:9" | "9:16" | "4:3" | "3:4">("16:9")
+  const [aspectRatio, setAspectRatio] = useState<VisualAspectRatio>("16:9")
   const [style, setStyle] = useState("")
   const [generating, setGenerating] = useState(false)
   const [generatedImage, setGeneratedImage] = useState<VisualMockupResponse | null>(null)
   const [showModelSelector, setShowModelSelector] = useState(false)
   const [showSavedVisuals, setShowSavedVisuals] = useState(false)
   const [expandedModel, setExpandedModel] = useState<string | null>(null)
+  // The generator is a tool, not content — it stays folded away until asked for
+  // so the section panel reads as the plan first and the image rig second.
+  const [open, setOpen] = useState(false)
+  const bodyId = `expected-visuals-${sectionId}`
 
   // Previously generated visuals for this section — kept for future reference.
   const [savedVisuals, setSavedVisuals] = useState<SavedVisual[]>([])
@@ -92,6 +107,16 @@ export function ExpectedVisuals({
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
   }, [viewer])
+
+  function selectModel(modelId: string) {
+    const info = IMAGE_MODELS.find((m) => m.id === modelId)
+    setSelectedModel(modelId)
+    setShowModelSelector(false)
+    if (info && !modelSupportsAspectRatio(info, aspectRatio)) {
+      const next = VISUAL_ASPECT_RATIOS.find((ratio) => modelSupportsAspectRatio(info, ratio))
+      if (next) setAspectRatio(next)
+    }
+  }
 
   async function handleGenerate() {
     if (userCredits < estimatedCredits) {
@@ -148,29 +173,34 @@ export function ExpectedVisuals({
   const basicModels = IMAGE_MODELS.filter((m) => m.category === "basic")
 
   return (
-    <div className="space-y-4">
-      {/* Header with toggle */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Eye className="size-5 text-primary" />
-          <h3 className="text-base font-semibold text-foreground">Expected Visuals</h3>
-        </div>
-        <div className="flex items-center gap-2">
+    <div>
+      {/* Header doubles as the disclosure toggle */}
+      <button
+        type="button"
+        onClick={() => setOpen((cur) => !cur)}
+        aria-expanded={open}
+        aria-controls={bodyId}
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/40 sm:px-5"
+      >
+        <span className="flex min-w-0 items-center gap-2">
+          <Eye className="size-5 shrink-0 text-primary" aria-hidden />
+          <span className="truncate text-base font-semibold text-foreground">Expected Visuals</span>
           {savedVisuals.length > 0 && (
-            <button
-              onClick={() => setShowSavedVisuals(!showSavedVisuals)}
-              className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground hover:border-primary/30 hover:text-primary transition-colors"
-            >
-              {showSavedVisuals ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+            <span className="shrink-0 rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
               {savedVisuals.length} saved
-            </button>
+            </span>
           )}
-          <div className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+        </span>
+        <span className="flex shrink-0 items-center gap-2">
+          <span className="hidden rounded-full bg-primary/10 px-2.5 py-1 text-[11px] font-medium text-primary sm:inline">
             {userCredits.toLocaleString()} credits
-          </div>
-        </div>
-      </div>
+          </span>
+          <ChevronDown className={`size-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} aria-hidden />
+        </span>
+      </button>
 
+      {open && (
+      <div id={bodyId} className="space-y-4 border-t border-border p-4 sm:p-5">
       <p className="text-sm text-muted-foreground">
         Generate AI-powered visual previews for the {sectionLabel} section to see how it might look
       </p>
@@ -265,10 +295,7 @@ export function ExpectedVisuals({
                 key={model.id}
                 model={model}
                 isSelected={selectedModel === model.id}
-                onSelect={() => {
-                  setSelectedModel(model.id)
-                  setShowModelSelector(false)
-                }}
+                onSelect={() => selectModel(model.id)}
                 expanded={expandedModel === model.id}
                 onToggleExpand={() => setExpandedModel(expandedModel === model.id ? null : model.id)}
               />
@@ -285,10 +312,7 @@ export function ExpectedVisuals({
                 key={model.id}
                 model={model}
                 isSelected={selectedModel === model.id}
-                onSelect={() => {
-                  setSelectedModel(model.id)
-                  setShowModelSelector(false)
-                }}
+                onSelect={() => selectModel(model.id)}
                 expanded={expandedModel === model.id}
                 onToggleExpand={() => setExpandedModel(expandedModel === model.id ? null : model.id)}
               />
@@ -301,29 +325,34 @@ export function ExpectedVisuals({
       <div>
         <label className="text-xs font-medium text-foreground block mb-2">Aspect Ratio</label>
         <div className="grid grid-cols-5 gap-2">
-          {[
-            { value: "1:1" as const, label: "Square" },
-            { value: "16:9" as const, label: "Wide" },
-            { value: "9:16" as const, label: "Tall" },
-            { value: "4:3" as const, label: "Classic" },
-            { value: "3:4" as const, label: "Portrait" },
-          ].map((option) => (
-            <button
-              key={option.value}
-              onClick={() => setAspectRatio(option.value)}
-              className={`rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
-                aspectRatio === option.value
-                  ? "border-primary bg-primary/5 text-foreground ring-2 ring-primary/20"
-                  : "border-border bg-card text-muted-foreground hover:border-primary/50"
-              }`}
-            >
-              <div className="text-center">
-                <div className="font-mono">{option.value}</div>
-                <div className="mt-0.5 text-[10px]">{option.label}</div>
-              </div>
-            </button>
-          ))}
+          {ASPECT_OPTIONS.map((option) => {
+            const supported =
+              !selectedModelInfo || modelSupportsAspectRatio(selectedModelInfo, option.value)
+            return (
+              <button
+                key={option.value}
+                onClick={() => setAspectRatio(option.value)}
+                disabled={!supported}
+                title={supported ? undefined : "Not supported by this model"}
+                className={`rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
+                  aspectRatio === option.value && supported
+                    ? "border-primary bg-primary/5 text-foreground ring-2 ring-primary/20"
+                    : "border-border bg-card text-muted-foreground hover:border-primary/50"
+                } ${supported ? "" : "cursor-not-allowed opacity-40 hover:border-border"}`}
+              >
+                <div className="text-center">
+                  <div className="font-mono">{option.value}</div>
+                  <div className="mt-0.5 text-[10px]">{option.label}</div>
+                </div>
+              </button>
+            )
+          })}
         </div>
+        {selectedModelInfo?.aspectRatios?.length === 0 && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            This model chooses its own image size.
+          </p>
+        )}
       </div>
 
       {/* Style Modifier (Optional) */}
@@ -430,6 +459,8 @@ export function ExpectedVisuals({
             </p>
           )}
         </div>
+      )}
+      </div>
       )}
 
       {/* Full-size viewer for saved visuals */}

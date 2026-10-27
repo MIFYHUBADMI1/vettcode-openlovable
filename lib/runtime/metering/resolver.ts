@@ -38,7 +38,9 @@ import {
 export interface RuntimeBillingDecision {
   /** Is this operation chargeable at all? (`test` capability is not.) */
   chargeable: boolean
-  /** Why the decision has this shape (audit/logging). */
+  /**
+   * Why the decision has this shape (audit/logging).
+   */
   source: "rule" | "legacy" | "unconfigured" | "non_billable"
   /** The matching active rule, when one decided the price. */
   pricingRuleId?: string
@@ -189,9 +191,9 @@ export async function resolveRuntimePrice(params: {
   }
 
   // Multimodal AI: flat per-request pricing (provider billing for these
-  // endpoints is per generation, not token-based). Kept as legacy fallbacks so
-  // image/voice/video work on deployments with no admin rules; admin rules
-  // still take per-operation precedence above.
+  // endpoints is per generation or per request, not token-based). Kept as
+  // legacy fallbacks so image/voice/video/transcription work on deployments
+  // with no admin rules; admin rules still take per-operation precedence above.
   if (params.capability === "ai.image") {
     return {
       chargeable: true,
@@ -228,6 +230,19 @@ export async function resolveRuntimePrice(params: {
         pricingSource: "legacy",
         mode: "fixed_per_request",
         credits: legacy.aiVideoRequest,
+      },
+    }
+  }
+  if (params.capability === "ai.transcribe") {
+    return {
+      chargeable: true,
+      source: "legacy",
+      fixedCredits: legacy.aiTranscribeRequest,
+      snapshot: {
+        pricingVersion: RUNTIME_PRICING_VERSION,
+        pricingSource: "legacy",
+        mode: "fixed_per_request",
+        credits: legacy.aiTranscribeRequest,
       },
     }
   }

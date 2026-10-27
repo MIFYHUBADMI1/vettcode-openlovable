@@ -34,13 +34,27 @@ function redact(fields: Fields): Fields {
   return redactUnknown(fields, 0) as Fields
 }
 
+/** The envelope's own keys. A caller field named `message` used to overwrite the
+ * logged description — `logger.error(stage, "unexpected error", { message })`
+ * printed only the raw error text, erasing which branch logged it. Clash keys
+ * are namespaced instead so both survive. */
+const ENVELOPE_KEYS = new Set(["ts", "level", "stage", "message"])
+
+function namespaced(fields: Fields): Fields {
+  const out: Fields = {}
+  for (const [k, v] of Object.entries(fields)) {
+    out[ENVELOPE_KEYS.has(k) ? `field_${k}` : k] = v
+  }
+  return out
+}
+
 function emit(level: "info" | "warn" | "error", stage: string, message: string, fields?: Fields) {
   const payload = {
     ts: new Date().toISOString(),
     level,
     stage,
     message,
-    ...(fields ? redact(fields) : {}),
+    ...(fields ? redact(namespaced(fields)) : {}),
   }
   const line = `[Atai] ${JSON.stringify(payload)}`
   if (level === "error") console.error(line)

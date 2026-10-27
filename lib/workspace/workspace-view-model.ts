@@ -1,4 +1,4 @@
-import type { Project, ProjectMode, ProjectState } from "@/lib/types/project"
+import type { Project, ProjectEvent, ProjectMode, ProjectState } from "@/lib/types/project"
 
 export type JourneyPhase = "understand" | "plan" | "build" | "validate" | "launch"
 export type TeamRole = "cofounder" | "product" | "engineering" | "launch"
@@ -7,10 +7,20 @@ export type NextActionKind =
   | "start_build"
   | "open_preview"
   | "launch"
+  | "retry_analysis"
+  | "retry_plan"
   | "retry_build"
   | "retry_launch"
   | "wait"
   | "grow"
+
+export type WorkspaceMutation =
+  | "build"
+  | "deploy"
+  | "retry_analysis"
+  | "retry_plan"
+  | "retry_build"
+  | "retry_launch"
 
 export const JOURNEY: Array<{ id: JourneyPhase; label: string; sub: string }> = [
   { id: "understand", label: "Understand", sub: "Market · Idea · Research" },
@@ -30,6 +40,16 @@ export const JOURNEY_TEAMS: Record<JourneyPhase, string> = {
 
 export type JourneyTeamStatus = "completed" | "at_work" | "needs_attention" | "getting_ready" | "upcoming"
 
+/** Which journey step a failure belongs to. Failure states are step-specific
+ * so the workspace never blames the build for a failed understanding pass. */
+export function failedJourneyStep(state: ProjectState): JourneyPhase | null {
+  if (state === "analysis_failed") return "understand"
+  if (state === "plan_failed") return "plan"
+  if (state === "build_failed") return "build"
+  if (state === "deployment_failed") return "launch"
+  return null
+}
+
 export function journeyTeamStatus(
   phase: JourneyPhase,
   current: JourneyPhase,
@@ -38,15 +58,21 @@ export function journeyTeamStatus(
   const order: JourneyPhase[] = ["understand", "plan", "build", "validate", "launch"]
   const index = order.indexOf(phase)
   const here = order.indexOf(current)
+  if (failedJourneyStep(state) === phase) return "needs_attention"
   if (index < here) return "completed"
   if (index > here) return "upcoming"
-  if (state === "build_failed" || state === "deployment_failed") return "needs_attention"
   if (workspaceIsLive(state)) return "at_work"
   if (state === "created" || state === "pending_plan") return "getting_ready"
   return "completed"
 }
 
-const LIVE: ReadonlySet<ProjectState> = new Set(["analyzing", "building", "deploying"])
+const LIVE: ReadonlySet<ProjectState> = new Set([
+  "analyzing",
+  // Understanding is stored, but the same run is still drafting the plan.
+  "analysis_complete",
+  "building",
+  "deploying",
+])
 
 export function workspaceIsLive(state: ProjectState): boolean {
   return LIVE.has(state)
@@ -58,12 +84,14 @@ export function journeyPhase(state: ProjectState): JourneyPhase {
   const DEFAULT: JourneyPhase = "understand"
   switch (state) {
     case "created":
-    case "pending_plan":
     case "analyzing":
-    case "analysis_complete":
+    case "analysis_failed":
       return "understand"
+    case "analysis_complete":
+    case "pending_plan":
     case "specification_ready":
     case "plan_ready":
+    case "plan_failed":
     case "awaiting_build_confirmation":
       return "plan"
     case "building":
@@ -81,6 +109,8 @@ export function journeyPhase(state: ProjectState): JourneyPhase {
 }
 
 export function teamRoleForState(state: ProjectState): TeamRole {
+  if (state === "analysis_failed") return "cofounder"
+  if (state === "plan_failed") return "product"
   if (state === "building" || state === "build_failed" || state === "build_complete") return "engineering"
   if (state === "deploying" || state === "deployment_failed" || state === "deployed") return "launch"
   if (state === "ready") return "product"
@@ -100,7 +130,7 @@ export interface WorkspaceNextStep {
   body: string
   actionLabel: string | null
   href: string | null
-  mutation: "build" | "deploy" | "retry_build" | "retry_launch" | null
+  mutation: WorkspaceMutation | null
   needsYou: boolean
 }
 
@@ -140,11 +170,17 @@ export function workspaceBrief(state: ProjectState, mode?: ProjectMode, name?: s
 
   switch (state) {
     case "created":
-    case "pending_plan":
       return {
         role: "cofounder",
         headline: `We're getting ${product} ready to shape.`,
         support: "Your co-founder is preparing to understand what you want to build.",
+        live,
+      }
+    case "pending_plan":
+      return {
+        role: "product",
+        headline: `Your team is drafting the plan for ${product}.`,
+        support: "What we learned is being turned into a product and technical plan.",
         live,
       }
     case "analyzing":
@@ -161,9 +197,23 @@ export function workspaceBrief(state: ProjectState, mode?: ProjectMode, name?: s
       }
     case "analysis_complete":
       return {
-        role: "cofounder",
+        role: "product",
         headline: "The first look is done.",
-        support: "Next, your co-founder and product team will turn this into a plan you can review.",
+        support: "Your co-founder and product team are drafting the plan from what we learned — it will be ready for you to review shortly.",
+        live,
+      }
+    case "analysis_failed":
+      return {
+        role: "cofounder",
+        headline: "Understanding needs attention.",
+        support: "The research pass stopped before it finished. Your team can retry it from where it left off.",
+        live,
+      }
+    case "plan_failed":
+      return {
+        role: "product",
+        headline: "The plan needs attention.",
+        support: "Planning stopped before the plan was complete. Retry it when you're ready — what we already learned is kept.",
         live,
       }
     case "specification_ready":
@@ -280,6 +330,7 @@ export function workspaceNextStep(state: ProjectState, projectId: string, hasPre
       }
     case "building":
     case "analyzing":
+    case "pending_plan":
     case "deploying":
       return {
         kind: "wait",
@@ -300,6 +351,28 @@ export function workspaceNextStep(state: ProjectState, projectId: string, hasPre
         actionLabel: "Retry build",
         href: null,
         mutation: "retry_build",
+        needsYou: true,
+      }
+    case "analysis_failed":
+      return {
+        kind: "retry_analysis",
+        kicker: "Needs you",
+        title: "Understanding stopped.",
+        body: "The research pass could not finish. Retry it here — nothing else has started yet.",
+        actionLabel: "Retry understanding",
+        href: null,
+        mutation: "retry_analysis",
+        needsYou: true,
+      }
+    case "plan_failed":
+      return {
+        kind: "retry_plan",
+        kicker: "Needs you",
+        title: "The plan stopped.",
+        body: "Planning could not finish. Retry it and we'll reuse what was already understood.",
+        actionLabel: "Retry planning",
+        href: null,
+        mutation: "retry_plan",
         needsYou: true,
       }
     case "deployment_failed":
@@ -372,6 +445,181 @@ export function workspaceNextStep(state: ProjectState, projectId: string, hasPre
         needsYou: false,
       }
   }
+}
+
+/** How long each automated step normally takes. Used only to flag a step as
+ * unusually slow (never to cancel work) — the founder then gets a restart. */
+export const STEP_EXPECTED_MS: Record<JourneyPhase, number> = {
+  understand: 8 * 60_000,
+  plan: 12 * 60_000,
+  build: 35 * 60_000,
+  validate: 0,
+  launch: 15 * 60_000,
+}
+
+const STAGE_PHASE: Record<JourneyPhase, RegExp> = {
+  understand: /analy|understand|research|crawl/i,
+  plan: /specify|plan/i,
+  build: /build|agent|code/i,
+  validate: /validate|test|preview/i,
+  launch: /deploy|launch|hosting/i,
+}
+
+const STEP_ACTION: Record<
+  JourneyPhase,
+  { mutation: Extract<WorkspaceMutation, "retry_analysis" | "retry_plan" | "retry_build" | "retry_launch">; label: string } | null
+> = {
+  understand: { mutation: "retry_analysis", label: "Retry understanding" },
+  plan: { mutation: "retry_plan", label: "Retry planning" },
+  build: { mutation: "retry_build", label: "Retry build" },
+  validate: null,
+  launch: { mutation: "retry_launch", label: "Retry launch" },
+}
+
+export interface JourneyStepAction {
+  label: string
+  mutation: Extract<WorkspaceMutation, "retry_analysis" | "retry_plan" | "retry_build" | "retry_launch">
+  /** True when the step was still running and the founder is forcing a restart. */
+  restart: boolean
+}
+
+export interface JourneyStepView {
+  id: JourneyPhase
+  label: string
+  sub: string
+  team: string
+  status: JourneyTeamStatus
+  statusLabel: string
+  /** Latest founder-facing activity for this step, if any. */
+  detail: string | null
+  detailAt: number | null
+  /** Time since the last activity — only set for the step that is running. */
+  elapsedMs: number | null
+  expectedMs: number
+  /** Running past its expected window with no new activity. */
+  stalled: boolean
+  /** Automatic attempts made by the server for this step's current run. */
+  attempts: number | null
+  action: JourneyStepAction | null
+}
+
+const STEP_STATUS_LABEL: Record<JourneyTeamStatus, string> = {
+  completed: "completed",
+  at_work: "at work",
+  needs_attention: "needs attention",
+  getting_ready: "getting ready",
+  upcoming: "upcoming",
+}
+
+/** Quiet time after which a running Understand/Plan step can be restarted.
+ * Matches the server's stall window (lib/projects/pipeline-recovery.ts) so the
+ * button is only offered when the restart can actually claim the step. */
+const STEP_RESTART_MS: Partial<Record<JourneyPhase, number>> = {
+  understand: 20 * 60_000,
+  plan: 20 * 60_000,
+}
+
+function phaseForStage(stage: string): JourneyPhase | null {
+  for (const phase of Object.keys(STAGE_PHASE) as JourneyPhase[]) {
+    if (STAGE_PHASE[phase].test(stage)) return phase
+  }
+  return null
+}
+
+/** True once a finished plan exists that the founder can review in Collaborate,
+ * regardless of whether the state record still lags behind the pipelines. */
+export function planIsReviewable(project: Pick<Project, "state" | "specification">): boolean {
+  if (project.state === "plan_failed" || project.state === "analysis_failed") return false
+  return (
+    Boolean(project.specification) ||
+    project.state === "specification_ready" ||
+    project.state === "plan_ready" ||
+    project.state === "awaiting_build_confirmation"
+  )
+}
+
+function concise(message: string): string {
+  const cleaned = message.replace(/\s+/g, " ").trim()
+  return cleaned.length > 160 ? `${cleaned.slice(0, 157)}…` : cleaned
+}
+
+/** Per-step view for the workspace: what each of the five steps is doing,
+ * how long it has been quiet, and the one recovery action that applies. */
+export function buildJourneySteps(
+  project: Pick<Project, "state" | "events" | "updatedAt" | "error" | "pipelineRecovery" | "specification"> & {
+    mode?: ProjectMode
+  },
+  now = Date.now(),
+): JourneyStepView[] {
+  const state = project.state
+  // An idea-only project starts in Plan: there is no crawl/analysis, so the
+  // work happening during `analyzing` is the plan itself.
+  const current: JourneyPhase =
+    project.mode === "scratch" && state === "analyzing" ? "plan" : journeyPhase(state)
+  const failedStep = failedJourneyStep(state)
+  // The plan artifact is the ground truth that planning finished — pipelines
+  // can sit on a stale "analyzing"/failure state after a fallback retry while
+  // the specification is already stored and plan events say it succeeded.
+  const planArtifactReady = state !== "plan_failed" && planIsReviewable(project)
+  const events = project.events ?? []
+  const latestOverall = events.reduce((max, e) => (e.at > max ? e.at : max), 0)
+
+  return JOURNEY.map((step) => {
+    let status = journeyTeamStatus(step.id, current, state)
+    if (step.id === "plan" && (status === "at_work" || status === "getting_ready") && planArtifactReady) {
+      status = "completed"
+    }
+    const phaseEvents = events.filter((e) => phaseForStage(e.stage) === step.id)
+    const latestPhaseEvent = phaseEvents.reduce<ProjectEvent | null>(
+      (latest, e) => (!latest || e.at > latest.at ? e : latest),
+      null,
+    )
+    const isCurrent = step.id === current
+    const detailAt = latestPhaseEvent?.at ?? (isCurrent ? latestOverall || project.updatedAt || null : null)
+    const elapsedMs = isCurrent && detailAt ? Math.max(0, now - detailAt) : null
+    const expectedMs =
+      state === "created"
+        ? 90_000
+        : state === "pending_plan"
+          ? 2 * 60_000
+          : STEP_EXPECTED_MS[step.id]
+    const running = status === "at_work" || status === "getting_ready"
+    const stalled = Boolean(running && expectedMs > 0 && elapsedMs !== null && elapsedMs > expectedMs)
+    const restartWindow =
+      state === "created" ? expectedMs : STEP_RESTART_MS[step.id] ?? Number.POSITIVE_INFINITY
+    const base = STEP_ACTION[step.id]
+    const action: JourneyStepAction | null = base
+      ? failedStep === step.id
+        ? { ...base, restart: false }
+        : stalled && (elapsedMs ?? 0) >= restartWindow
+          ? { ...base, label: "Restart this step", restart: true }
+          : null
+      : null
+
+    return {
+      id: step.id,
+      label: step.label,
+      sub: step.sub,
+      team: JOURNEY_TEAMS[step.id],
+      status,
+      statusLabel: STEP_STATUS_LABEL[status],
+      detail:
+        failedStep === step.id && project.error
+          ? concise(project.error)
+          : latestPhaseEvent
+            ? concise(latestPhaseEvent.message)
+            : null,
+      detailAt,
+      elapsedMs,
+      expectedMs,
+      stalled,
+      attempts:
+        isCurrent && project.pipelineRecovery?.phase === step.id
+          ? project.pipelineRecovery.attempts
+          : null,
+      action,
+    }
+  })
 }
 
 export function workspaceCapabilities(project: Pick<

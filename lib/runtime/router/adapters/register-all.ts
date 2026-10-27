@@ -3,8 +3,7 @@ import { registerOpenRouterAdapter } from "./openrouter"
 import { registerElevenLabsAdapter } from "./elevenlabs"
 import { registerFirecrawlAdapter } from "./firecrawl"
 import { registerResendAdapter } from "./resend"
-import { registerTwilioAdapter } from "./twilio"
-import { registerFirebaseAdapter } from "./firebase"
+import { registerSupabaseAdapter } from "./supabase"
 import { registerMapboxAdapter } from "./mapbox"
 import { registerCalComAdapter } from "./calcom"
 import { registerCloudflareAdapter } from "./cloudflare"
@@ -35,8 +34,7 @@ export function registerAllRuntimeAdapters(): void {
   registerElevenLabsAdapter()
   registerFirecrawlAdapter()
   registerResendAdapter()
-  registerTwilioAdapter()
-  registerFirebaseAdapter()
+  registerSupabaseAdapter()
   registerMapboxAdapter()
   registerCalComAdapter()
   registerCloudflareAdapter()

@@ -10,6 +10,8 @@ export type ComposerAttachment = {
 
 export type ComposerPrefs = {
   prompt: string
+  /** User-confirmed project name; required before the request can be sent. */
+  title: string
   mode: StartMode
   agents: string[]
   tool: string | null
@@ -19,6 +21,7 @@ export type ComposerPrefs = {
 
 export const DEFAULT_COMPOSER_PREFS: ComposerPrefs = {
   prompt: "",
+  title: "",
   mode: "idea",
   agents: ["atai"],
   tool: null,
@@ -35,6 +38,8 @@ export function loadComposerPrefs(): ComposerPrefs {
     return {
       ...DEFAULT_COMPOSER_PREFS,
       ...parsed,
+      prompt: typeof parsed.prompt === "string" ? parsed.prompt : "",
+      title: typeof parsed.title === "string" ? parsed.title : "",
       agents: Array.isArray(parsed.agents) && parsed.agents.length > 0 ? parsed.agents : ["atai"],
       files: Array.isArray(parsed.files) ? parsed.files : [],
     }

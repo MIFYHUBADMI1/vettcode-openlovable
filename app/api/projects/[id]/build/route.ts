@@ -6,6 +6,8 @@ import { getBuildCost } from "@/lib/billing/build-auth"
 import { reserveCredits, releaseReservation, getAvailableCredits } from "@/lib/billing/credit-service"
 import { classifyComplexity } from "@/lib/credits/credits"
 import { launchProject, isTotalumConfigured } from "@/lib/integrations/totalum/service"
+import { TotalumError } from "@/lib/integrations/totalum/errors"
+import { prepareRequestedProjectId } from "@/lib/projects/project-actions"
 import { initializeProjectInfrastructure } from "@/lib/infrastructure/service"
 import { getInfrastructurePlan } from "@/lib/infrastructure/plans"
 import { buildInitialBuildPrompt } from "@/lib/analysis/prompt-builder"
@@ -47,7 +49,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 
     // Allow the client to submit edited spec + additional instructions.
-    const body = (await req.json().catch(() => ({}))) as { specification?: unknown }
+    const body = (await req.json().catch(() => ({}))) as { specification?: unknown; requestedProjectId?: string }
     if (body.specification) {
       const parsed = ApplicationSpecificationSchema.safeParse(body.specification)
       if (!parsed.success) return fail("VALIDATION", "The application plan is invalid.", 422)
@@ -63,6 +65,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         503,
       )
     }
+
+    const preparedProjectId = await prepareRequestedProjectId(project, body.requestedProjectId)
+    if (!preparedProjectId.ok) {
+      return fail(preparedProjectId.code, preparedProjectId.message, preparedProjectId.status)
+    }
+    const requestedProjectId = preparedProjectId.requestedProjectId
 
     // 1. Determine tier and reserve credits.
     const tier = project.specification.complexity ?? classifyComplexity(project.specification)
@@ -111,21 +119,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       const defaultPlan = getInfrastructurePlan(project.infrastructure?.planId ?? "testing")
       const infraCap = defaultPlan?.totalumInfrastructureCredits ?? 5
 
-      // Create a memorable project name: mirror-{projectName}-{shortId}
-      // e.g., mirror-myapp-a1b2c3 or mirror-example-com-x9y8z7
-      const sanitizedName = project.name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphens
-        .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
-        .slice(0, 20) // Limit to 20 chars for the name part
-      const shortId = id.replace(/-/g, '').slice(0, 6) // 6 char unique suffix
-      const totalumProjectName = `mirror-${sanitizedName}-${shortId}` // e.g., mirror-myapp-a1b2c3
-
       const launch = await launchProject({
-        projectId: totalumProjectName,
+        projectId: requestedProjectId,
         prompt: run.prompt,
         maxInfrastructureCreditsPerMonth: infraCap,
       })
+      if (launch.projectId !== requestedProjectId) {
+        throw new TotalumError("PROJECT_ID_UNAVAILABLE")
+      }
       await store.updateBuildRun(run.id, { status: "running", totalumProjectId: launch.projectId })
       await store.updateProject(id, {
         state: "building",

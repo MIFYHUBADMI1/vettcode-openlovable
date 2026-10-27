@@ -19,7 +19,6 @@ import { VoiceCapability } from "./capabilities/voice.js";
 import { SearchCapability } from "./capabilities/search.js";
 import { WebCapability } from "./capabilities/web.js";
 import { EmailCapability } from "./capabilities/email.js";
-import { SmsCapability, WhatsappCapability } from "./capabilities/messaging.js";
 import { NotificationsCapability } from "./capabilities/notifications.js";
 import { MapsCapability } from "./capabilities/maps.js";
 import { CalendarCapability } from "./capabilities/calendar.js";
@@ -39,10 +38,6 @@ export declare class Atai {
     readonly web: WebCapability;
     /** Atai email capability (`email` operations). */
     readonly email: EmailCapability;
-    /** Atai SMS capability (`sms` operations). */
-    readonly sms: SmsCapability;
-    /** Atai WhatsApp capability (`whatsapp` operations). */
-    readonly whatsapp: WhatsappCapability;
     /** Atai notifications capability (`notifications` operations). */
     readonly notifications: NotificationsCapability;
     /** Atai maps capability (`maps` operations). */

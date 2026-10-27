@@ -18,7 +18,7 @@
   - Mark task complete when tests are written, run, and failure is documented
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [~] 2. Write preservation property tests (BEFORE implementing fix)
+- [ ] 2. Write preservation property tests (BEFORE implementing fix)
   - **Property 2: Preservation** - HTTPS Origin Retains Secure Flag
   - **IMPORTANT**: Follow observation-first methodology
   - Observe: on UNFIXED code with `NEXT_PUBLIC_APP_URL=https://mirrorsite.atai.ink`, `setSessionCookie` sets `secure: true` — this is the baseline to preserve
@@ -33,7 +33,7 @@
 
 - [ ] 3. Fix — make session cookie `Secure` flag conditional on origin
 
-  - [~] 3.1 Add `isSecureOrigin` helper and update `setSessionCookie`
+  - [ ] 3.1 Add `isSecureOrigin` helper and update `setSessionCookie`
     - Open `lib/auth/session.ts`
     - Add the following helper directly below the existing `sessionCookieDomain` function:
       ```ts
@@ -48,7 +48,7 @@
     - _Preservation: `Secure: true` MUST continue on HTTPS origins; `sessionCookieDomain` domain scoping, `httpOnly`, `sameSite`, `path`, `maxAge`, session lookup/TTL/revocation all unchanged_
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 3.1, 3.2, 3.3_
 
-  - [~] 3.2 Verify bug condition exploration test now passes
+  - [ ] 3.2 Verify bug condition exploration test now passes
     - **Property 1: Expected Behavior** - HTTP Origin Cookie Secure Flag
     - **IMPORTANT**: Re-run the SAME tests from task 1 — do NOT write new tests
     - The tests from task 1 encode the expected behavior (HTTP origin → `secure: false`)
@@ -56,14 +56,14 @@
     - **EXPECTED OUTCOME**: Tests PASS (confirms the bug is fixed — browser will now store the session cookie on HTTP origins)
     - _Requirements: 2.1, 2.2, 2.3_
 
-  - [~] 3.3 Verify preservation tests still pass
+  - [ ] 3.3 Verify preservation tests still pass
     - **Property 2: Preservation** - HTTPS Origin Retains Secure Flag
     - **IMPORTANT**: Re-run the SAME tests from task 2 — do NOT write new tests
     - Run preservation property tests from task 2 against the fixed code
     - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions — production HTTPS behavior is unchanged)
     - Confirm `secure: true` for all HTTPS origins, domain scoping intact, all other cookie options identical
 
-- [~] 4. Checkpoint — Ensure all tests pass
+- [ ] 4. Checkpoint — Ensure all tests pass
   - Run the full test suite for `lib/auth/session.ts`
   - Ensure Property 1 (bug condition) and Property 2 (preservation) both pass
   - Verify no TypeScript errors are introduced (`tsc --noEmit`)

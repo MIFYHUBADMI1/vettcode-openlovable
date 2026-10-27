@@ -187,9 +187,17 @@ Return ONLY a JSON object (no markdown, no explanation):
  */
 export class PrimaryPlanner {
   private modelRegistry: ModelRegistry
+  /** Exact text of the most recent successful model response. The orchestrator
+   * stores it with the specification so the plan can be verified against what
+   * the model actually returned. */
+  private lastRawText?: string
 
   constructor(modelRegistry?: ModelRegistry) {
     this.modelRegistry = modelRegistry || new ModelRegistry()
+  }
+
+  getLastRawText(): string | undefined {
+    return this.lastRawText
   }
 
   /**
@@ -325,6 +333,8 @@ export class PrimaryPlanner {
         tokensUsed: usage?.totalTokens || 0,
       })
 
+      this.lastRawText = text
+
       // Parse and validate the response
       const specification = this.parseAIResponse(text)
 
@@ -338,7 +348,8 @@ export class PrimaryPlanner {
 
       throw new PlanningError(
         `Model call failed on attempt ${attempt + 1}: ${error instanceof Error ? error.message : String(error)}`,
-        "Unable to generate specification. Please try again."
+        "Unable to generate specification. Please try again.",
+        error instanceof PlanningError ? error.rawText : this.lastRawText
       )
     }
   }
@@ -560,13 +571,15 @@ Return ONLY the JSON specification object.`
         const issues = (error as any).issues
         throw new PlanningError(
           `Schema validation failed: ${JSON.stringify(issues)}`,
-          "The AI response didn't match the expected format. Please try again."
+          "The AI response didn't match the expected format. Please try again.",
+          text
         )
       }
 
       throw new PlanningError(
         `Failed to parse AI response: ${error instanceof Error ? error.message : String(error)}`,
-        "Unable to process the AI response. Please try again."
+        "Unable to process the AI response. Please try again.",
+        text
       )
     }
   }

@@ -135,7 +135,7 @@ export function trackStartMethodSelected(method: StartMethod, surface: string): 
 export function trackStartValidationFailed(
   method: StartMethod,
   surface: string,
-  reason: "empty" | "invalid_input",
+  reason: "empty" | "invalid_input" | "missing_title",
 ): void {
   const flow = readFlow()
   emit("start_validation_failed", { flow_id: flow?.id, method, surface, reason })

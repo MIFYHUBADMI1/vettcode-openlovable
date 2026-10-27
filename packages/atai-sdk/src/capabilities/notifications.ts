@@ -1,8 +1,9 @@
 /**
  * Atai SDK — Notifications capability.
  *
- * Provider-neutral push notifications (`notifications`/`send`). The application
- * never learns which notification provider Atai operates behind the runtime.
+ * Provider-neutral realtime notifications (`notifications`/`send`). The
+ * application never learns which notification provider Atai operates behind
+ * the runtime.
  *
  * @module capabilities/notifications
  */
@@ -15,10 +16,13 @@ import type { AtaiRequestOptions, NotificationSendInput, NotificationSendResult 
 /** Client-side validation (developer experience only; the server is authoritative). */
 function validateNotificationInput(input: NotificationSendInput): void {
   if (input === null || typeof input !== "object") {
-    throw new AtaiError("atai_invalid_request", "Notification input must be an object with `token`, `title`, and `body` fields.")
+    throw new AtaiError("atai_invalid_request", "Notification input must be an object with `channel`, `title`, and `body` fields.")
   }
-  if (typeof input.token !== "string" || input.token.length === 0) {
-    throw new AtaiError("atai_invalid_request", "Notification requires a device `token`.")
+  if (typeof input.channel !== "string" || input.channel.length === 0) {
+    throw new AtaiError("atai_invalid_request", "Notification requires a non-empty `channel`.")
+  }
+  if (input.event !== undefined && (typeof input.event !== "string" || input.event.length === 0)) {
+    throw new AtaiError("atai_invalid_request", "Notification `event` must be a non-empty string when provided.")
   }
   if (typeof input.title !== "string" || input.title.length === 0) {
     throw new AtaiError("atai_invalid_request", "Notification requires a non-empty `title`.")
@@ -32,7 +36,7 @@ function validateNotificationInput(input: NotificationSendInput): void {
 export class NotificationsCapability {
   constructor(private readonly config: ResolvedConfig) {}
 
-  /** Send a push notification (`notifications`/`send`). */
+  /** Send a realtime notification (`notifications`/`send`). */
   async send(input: NotificationSendInput, options?: AtaiRequestOptions): Promise<NotificationSendResult> {
     validateNotificationInput(input)
 
@@ -40,9 +44,12 @@ export class NotificationsCapability {
       capability: "notifications",
       operation: "send",
       input: {
-        token: input.token,
+        channel: input.channel,
+        ...(input.event !== undefined ? { event: input.event } : {}),
         title: input.title,
         body: input.body,
+        ...(input.data !== undefined ? { data: input.data } : {}),
+        ...(input.private !== undefined ? { private: input.private } : {}),
       },
     }
 
@@ -59,7 +66,14 @@ export class NotificationsCapability {
 
 /** Narrow runtime check on the returned payload (server responses are never trusted blindly). */
 function assertNotificationResult(payload: unknown): NotificationSendResult {
-  if (typeof payload !== "object" || payload === null || typeof (payload as Record<string, unknown>).messageId !== "string") {
+  const p = payload as Record<string, unknown> | null
+  const valid =
+    typeof p === "object" &&
+    p !== null &&
+    typeof p.channel === "string" &&
+    typeof p.event === "string" &&
+    typeof p.accepted === "boolean"
+  if (!valid) {
     throw new AtaiError("atai_invalid_response", "The Atai Runtime API returned an unexpected response shape.")
   }
   return payload as unknown as NotificationSendResult

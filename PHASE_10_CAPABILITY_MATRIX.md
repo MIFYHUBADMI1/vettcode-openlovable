@@ -10,8 +10,6 @@
 | search.web | web | search.web |
 | web.scrape | scrape | web.scrape |
 | email | send | email |
-| sms | send | sms |
-| whatsapp | send | whatsapp |
 | notifications | send | notifications |
 | maps | geocode, reverseGeocode | maps |
 | calendar | listBookings, createBooking | calendar |
@@ -29,9 +27,7 @@
 | Firecrawl | search.web | web | search.web | Yes (credits/pages) | No | Implemented |
 | Firecrawl | web.scrape | scrape | web.scrape | Yes (credits/pages) | No | Implemented |
 | Resend | email | send | email | Yes (messages) | Yes | Implemented |
-| Twilio | sms | send | sms | Yes (segments) | Yes | Implemented |
-| Twilio | whatsapp | send | whatsapp | Yes (messages) | Yes | Implemented |
-| Firebase | notifications | send | notifications | No | Yes | Implemented |
+| Supabase | notifications | send | notifications | No | Yes | Implemented |
 | Mapbox | maps | geocode | maps | Yes (requests) | No | Implemented |
 | Mapbox | maps | reverseGeocode | maps | Yes (requests) | No | Implemented |
 | Cal.com | calendar | listBookings | calendar | No | No | Implemented |
@@ -51,13 +47,12 @@
 2. elevenlabs (new)
 3. firecrawl (new)
 4. resend (new)
-5. twilio (new)
-6. firebase (new)
-7. mapbox (new)
-8. calcom (new)
-9. cloudflare (new)
-10. totalum (new)
-11. dodo (new)
+5. supabase (new)
+6. mapbox (new)
+7. calcom (new)
+8. cloudflare (new)
+9. totalum (new)
+10. dodo (new)
 
 ## Environment Variables Required
 
@@ -67,8 +62,7 @@
 | ElevenLabs | ELEVENLABS_API_KEY |
 | Firecrawl | FIRECRAWL_API_KEY |
 | Resend | RESEND_API_KEY, RESEND_FROM_EMAIL (platform sender — required for email.send) |
-| Twilio | TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER (SMS sender), TWILIO_WHATSAPP_FROM_NUMBER (WhatsApp sender) |
-| Firebase | FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL |
+| Supabase | SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY |
 | Mapbox | MAPBOX_ACCESS_TOKEN |
 | Cal.com | CALCOM_API_KEY |
 | Cloudflare | CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_VECTORIZE_INDEX |

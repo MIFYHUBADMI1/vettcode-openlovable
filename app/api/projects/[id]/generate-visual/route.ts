@@ -16,6 +16,9 @@ import { scopedIntentKey } from "@/lib/billing/operation-identity"
 import {
   DEFAULT_IMAGE_MODEL,
   IMAGE_MODELS,
+  VISUAL_ASPECT_RATIOS,
+  modelSupportsAspectRatio,
+  type VisualAspectRatio,
   type VisualMockupRequest,
   type VisualMockupResponse,
 } from "@/lib/types/visual-mockup"
@@ -23,6 +26,17 @@ import { getPlanSection } from "@/lib/analysis/plan-sections"
 
 /** Generous ceiling — flagship image models can take minutes to render. */
 const GENERATION_TIMEOUT_MS = 120_000
+
+/** Provider refusal carrying its HTTP status so the route can explain it. */
+class ImageProviderError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message)
+    this.name = "ImageProviderError"
+  }
+}
 
 export async function GET(
   req: NextRequest,
@@ -72,7 +86,16 @@ export async function POST(
     const { id: projectId } = await params
 
     const body: VisualMockupRequest = await req.json()
-    const { sectionId, model = DEFAULT_IMAGE_MODEL, aspectRatio = "16:9", style } = body
+    const { sectionId, model = DEFAULT_IMAGE_MODEL, style } = body
+
+    const requestedAspectRatio = body.aspectRatio
+    if (
+      requestedAspectRatio !== undefined &&
+      !(VISUAL_ASPECT_RATIOS as readonly string[]).includes(requestedAspectRatio)
+    ) {
+      return fail("VALIDATION", "Unsupported aspect ratio.", 422)
+    }
+    const aspectRatio: VisualAspectRatio = requestedAspectRatio ?? "16:9"
 
     // Optional client intent id → stable ledger identity for THIS generation
     // (validated + scoped to this user/project; never authorization). Absent →
@@ -102,6 +125,12 @@ export async function POST(
     if (!modelInfo) {
       return fail("VALIDATION", "Unknown image model.", 422)
     }
+
+    // Only forward a ratio the endpoint accepts — OpenRouter rejects the whole
+    // request (400) when given an unsupported aspect_ratio.
+    const aspectRatioApplied = modelSupportsAspectRatio(modelInfo, aspectRatio)
+      ? aspectRatio
+      : undefined
 
     if (!isOpenRouterConfigured()) {
       return fail(
@@ -139,13 +168,34 @@ export async function POST(
       result = await generateImageViaOpenRouter({
         model,
         prompt,
-        aspectRatio,
+        aspectRatio: aspectRatioApplied,
         projectId,
         sectionLabel: sectionDef.label,
       })
     } catch (error) {
       // Generation failed → nothing was produced, so nothing is charged.
       console.error("[generate-visual] Provider error:", error)
+      if (error instanceof ImageProviderError && error.status === 404) {
+        return fail(
+          "MODEL_UNAVAILABLE",
+          "That image model is no longer available. Pick a different model and try again — you were not charged.",
+          502,
+        )
+      }
+      if (error instanceof ImageProviderError && error.status === 402) {
+        return fail(
+          "PROVIDER_UNAVAILABLE",
+          "Image generation is temporarily unavailable — you were not charged. Please try again later.",
+          503,
+        )
+      }
+      if (error instanceof ImageProviderError && error.status === 400) {
+        return fail(
+          "AI_UNAVAILABLE",
+          "The image model rejected this request. Try another model or aspect ratio — you were not charged.",
+          502,
+        )
+      }
       return fail(
         "AI_UNAVAILABLE",
         "The image couldn't be generated — you were not charged. Please try again.",
@@ -178,7 +228,7 @@ export async function POST(
         model,
         providerCost: result.cost ?? null,
         finalCost: finalCost ?? null,
-        aspectRatio,
+        aspectRatio: aspectRatioApplied ?? "auto",
       },
     })
     if (!charged.success) {
@@ -221,7 +271,7 @@ export async function POST(
           providerCost: result.cost ?? null,
           finalCost: finalCost ?? null,
           prompt: prompt.slice(0, 1000),
-          aspectRatio,
+          aspectRatio: aspectRatioApplied ?? "auto",
         },
       })
     } catch (saveError) {
@@ -255,7 +305,7 @@ function buildVisualPrompt(params: {
 async function generateImageViaOpenRouter(params: {
   model: string
   prompt: string
-  aspectRatio: string
+  aspectRatio?: string
   projectId: string
   sectionLabel: string
 }): Promise<{ imageUrl: string; cost?: number }> {
@@ -272,7 +322,7 @@ async function generateImageViaOpenRouter(params: {
       model,
       prompt,
       n: 1,
-      aspect_ratio: aspectRatio,
+      ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
     }),
     signal: AbortSignal.timeout(GENERATION_TIMEOUT_MS),
   })
@@ -280,7 +330,10 @@ async function generateImageViaOpenRouter(params: {
   if (!response.ok) {
     const errorBody = await response.text().catch(() => "")
     console.error("[generate-visual] OpenRouter error:", response.status, errorBody.slice(0, 500))
-    throw new Error(`OpenRouter image generation failed with status ${response.status}`)
+    throw new ImageProviderError(
+      response.status,
+      `OpenRouter image generation failed with status ${response.status}`,
+    )
   }
 
   const data = await response.json()

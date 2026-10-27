@@ -18,7 +18,7 @@ import {
 import type { AppError } from "@/lib/errors"
 import type { ProviderCostInfo } from "@/lib/runtime/metering"
 import { hasCapability, hasOperation, requiredScopeFor } from "./capability-registry"
-import { resolveProviderAdapter } from "./provider-registry"
+import { resolveProviderAdapters } from "./provider-registry"
 import {
   ProviderExecutionError,
   providerFailureToRuntimeError,
@@ -35,8 +35,8 @@ import {
  *   2. capability check      (registry-driven)
  *   3. operation check       (registry-provided)
  *   4. scope authorization   (Phase 4 primitive — reused, not duplicated)
- *   5. adapter resolution    (provider registry, deterministic)
- * 6. execute (normalized adapter contract)
+ *   5. adapter resolution    (provider registry, deterministic, ordered)
+ * 6. execute (normalized adapter contract, ordered provider fallback)
  *   7. normalize response    (Atai shape — never a provider wire format)
  *
  * UNTRUSTED → TRUSTED boundary: untrusted request data never merges into the
@@ -166,9 +166,13 @@ export async function routeRuntimeRequest(
   // per the Phase 2 contract, so the cast is a safe narrowing, not a bypass.)
   requireRuntimeScope(authContext, requiredScopeFor(req.capability) as CapabilityScope)
 
-  // 5. Provider resolution — deterministic, registry-driven.
-  const adapter = resolveProviderAdapter(req.capability, req.operation)
-  if (!adapter) {
+  // 5. Provider resolution — deterministic, registry-driven, ORDERED: every
+  //    adapter that serves the capability+operation, in registration order.
+  //    The first entry is primary; later entries are automatic fallbacks.
+  //    The router still contains no provider names — ordering is pure
+  //    registration order.
+  const allCandidates = resolveProviderAdapters(req.capability, req.operation)
+  if (allCandidates.length === 0) {
     logger.info("runtime.router", "routing rejected: no provider adapter registered", logBase)
     throw new RoutingError(
       "capability_unavailable",
@@ -178,152 +182,217 @@ export async function routeRuntimeRequest(
     )
   }
 
-  // 5b. Metering preflight (Phase 9 §17, 9.5 §15/§19/§37): resolve pricing
-  //     centrally (deny unconfigured operations BEFORE provider spend), then
-  //     either pre-charge a fixed price or reject a spent balance. The `test`
-  //     capability is the Phase 5 router self-test and is never billed.
-  let prepaid
-  if (req.capability !== "test") {
-    const gate = await preflightMeteredRequest({
-      auth: { ...authContext, requestId: corrId },
-      provider: adapter.provider,
-      capability: req.capability,
-      operation: req.operation,
-      // Untrusted input used ONLY for the conservative usage-based
-      // insufficient-credit estimate (Phase 9.5 audit fix) — never for
-      // pricing decisions or identity.
-      input: req.input,
+  // 5a. Optional engine pin (RuntimeRequest.engine): restrict the ordered
+  //     candidate list to ONE registered provider so a caller can exercise a
+  //     specific engine instead of the automatic fallback chain. This is a
+  //     ROUTING preference only — the trusted auth context and the capability
+  //     scope check above are unchanged, and a pin can only select among
+  //     providers already resolved for this capability+operation. "auto"/absent
+  //     keeps the full chain; an engine that matches nothing is a clear 501
+  //     (never a silent fallback, so a tester knows the pin did not resolve).
+  const pinnedEngine =
+    typeof req.engine === "string" && req.engine.trim() !== "" && req.engine.trim() !== "auto"
+      ? req.engine.trim()
+      : ""
+  const candidates = pinnedEngine
+    ? allCandidates.filter((adapter) => adapter.provider === pinnedEngine)
+    : allCandidates
+  if (candidates.length === 0) {
+    logger.info("runtime.router", "routing rejected: pinned engine does not serve this operation", {
+      ...logBase,
+      engine: pinnedEngine,
     })
-    if (gate.denial) throw gate.denial
-    prepaid = gate.prepaid
+    throw new RoutingError(
+      "capability_unavailable",
+      501,
+      "This capability is not available yet.",
+      corrId,
+    )
+  }
+  if (pinnedEngine) {
+    logger.info("runtime.router", "engine pinned by caller", { ...logBase, engine: pinnedEngine })
   }
 
-  // 6. Execute inside the provider failure boundary. Raw provider errors are
-  //    wrapped server-side and never serialized to clients.
-  const startedAt = Date.now()
-  try {
-    const result = await adapter.execute({
-      auth: {
-        apiKeyId: authContext.apiKeyId,
-        userId: authContext.userId,
-        projectId: authContext.projectId,
-        environment: authContext.environment,
-        scopes: authContext.scopes,
-      },
-      requestId: corrId,
-      request: req,
-    })
+  for (const [attempt, adapter] of candidates.entries()) {
+    const isLastCandidate = attempt === candidates.length - 1
+    const attemptStartedAt = Date.now()
 
-    const latencyMs = Date.now() - startedAt
-
-    // 7. Runtime metering (Phase 9 §14, 9.5 §23): normalize usage → finalize
-    //    the charge (skipped when preflight pre-paid a fixed price) →
-    //    runtime_usage record with the pricing snapshot + provider cost.
-    //    This is the ONE central billing path — adapters report usage only.
-    let meterError: AppError | undefined
-    let creditsCharged = 0
-    try {
-      const metered = await meterRuntimeResult({
+    // 5b. Metering preflight PER CANDIDATE (Phase 9 §17, 9.5 §15/§19/§37):
+    //     resolve pricing centrally (deny unconfigured operations BEFORE
+    //     provider spend), then either pre-charge a fixed price or reject a
+    //     spent balance. Fallback candidates carry their own pricing. The
+    //     `test` capability is the Phase 5 router self-test, never billed.
+    let prepaid
+    if (req.capability !== "test") {
+      const gate = await preflightMeteredRequest({
         auth: { ...authContext, requestId: corrId },
         provider: adapter.provider,
         capability: req.capability,
         operation: req.operation,
-        ...(typeof result.data === "object" && result.data !== null && "model" in (result.data as Record<string, unknown>)
-          ? { model: String((result.data as Record<string, unknown>).model) }
-          : {}),
-        usage: result.usage,
-        providerCost: extractProviderCostInfo(result.usage),
-        latencyMs,
-        startedAt,
-        ...(prepaid ? { prepaid } : {}),
+        // Untrusted input used ONLY for the conservative usage-based
+        // insufficient-credit estimate (Phase 9.5 audit fix) — never for
+        // pricing decisions or identity.
+        input: req.input,
       })
-      creditsCharged = metered.creditsCharged
-    } catch (e) {
-      // Billing failures FAIL CLOSED (Phase 9 §128/§129): a provider success
-      // with an unknown financial state is never reported as a free success.
-      // The provider already ran; the normalized response is NOT returned.
-      if (isRuntimeAppError(e)) {
-        meterError = e
-      } else {
-        meterError = runtimeError("runtime_billing_unavailable")
+      if (gate.denial) throw gate.denial
+      prepaid = gate.prepaid
+    }
+
+    // 6. Execute inside the provider failure boundary. Raw provider errors are
+    //    wrapped server-side and never serialized to clients.
+    try {
+      const result = await adapter.execute({
+        auth: {
+          apiKeyId: authContext.apiKeyId,
+          userId: authContext.userId,
+          projectId: authContext.projectId,
+          environment: authContext.environment,
+          scopes: authContext.scopes,
+        },
+        requestId: corrId,
+        request: req,
+      })
+
+      const latencyMs = Date.now() - attemptStartedAt
+
+      // 7. Runtime metering (Phase 9 §14, 9.5 §23): normalize usage → finalize
+      //    the charge (skipped when preflight pre-paid a fixed price) →
+      //    runtime_usage record with the pricing snapshot + provider cost.
+      //    This is the ONE central billing path — adapters report usage only.
+      let meterError: AppError | undefined
+      let creditsCharged = 0
+      try {
+        const metered = await meterRuntimeResult({
+          auth: { ...authContext, requestId: corrId },
+          provider: adapter.provider,
+          capability: req.capability,
+          operation: req.operation,
+          ...(typeof result.data === "object" && result.data !== null && "model" in (result.data as Record<string, unknown>)
+            ? { model: String((result.data as Record<string, unknown>).model) }
+            : {}),
+          usage: result.usage,
+          providerCost: extractProviderCostInfo(result.usage),
+          latencyMs,
+          startedAt: attemptStartedAt,
+          ...(prepaid ? { prepaid } : {}),
+        })
+        creditsCharged = metered.creditsCharged
+      } catch (e) {
+        // Billing failures FAIL CLOSED (Phase 9 §128/§129): a provider success
+        // with an unknown financial state is never reported as a free success.
+        // The provider already ran; the normalized response is NOT returned.
+        if (isRuntimeAppError(e)) {
+          meterError = e
+        } else {
+          meterError = runtimeError("runtime_billing_unavailable")
+        }
+        logger.error("runtime.router", "runtime billing failed — failing closed", {
+          ...logBase,
+          provider: adapter.provider,
+          latencyMs,
+          message: e instanceof Error ? e.message : String(e),
+        })
       }
-      logger.error("runtime.router", "runtime billing failed — failing closed", {
+
+      if (meterError) throw meterError
+
+      // 8. Normalized Atai response — never the provider's wire format.
+      logger.info("runtime.router", "runtime request routed", {
         ...logBase,
         provider: adapter.provider,
         latencyMs,
-        message: e instanceof Error ? e.message : String(e),
+        status: "succeeded",
+        creditsCharged,
+        ...(attempt > 0 ? { fallbackAttempt: attempt + 1 } : {}),
       })
-    }
 
-    if (meterError) throw meterError
+      return {
+        requestId: corrId,
+        capability: req.capability,
+        operation: req.operation,
+        data: result.data,
+      }
+    } catch (e) {
+      const latencyMs = Date.now() - attemptStartedAt
 
-    // 8. Normalized Atai response — never the provider's wire format.
-    logger.info("runtime.router", "runtime request routed", {
-      ...logBase,
-      provider: adapter.provider,
-      latencyMs,
-      status: "succeeded",
-      creditsCharged,
-    })
+      // Provider failed → audit with creditsCharged = 0 (Phase 9 §16/§43),
+      // then propagate the NORMALIZED provider error (never raw internals).
+      // Billing denials (402/503 from metering) are rethrown untouched — they
+      // are not provider failures.
+      if (e instanceof ProviderExecutionError) {
+        await recordFailedRuntimeUsage({
+          auth: { ...authContext, requestId: corrId },
+          provider: adapter.provider,
+          capability: req.capability,
+          operation: req.operation,
+          errorCategory: e.category,
+          latencyMs,
+          startedAt: attemptStartedAt,
+          ...(prepaid ? { prepaid } : {}),
+        })
 
-    return {
-      requestId: corrId,
-      capability: req.capability,
-      operation: req.operation,
-      data: result.data,
-    }
-  } catch (e) {
-    const latencyMs = Date.now() - startedAt
+        // Fallback: a provider-side fault falls through to the next candidate.
+        // An input-shaped rejection (unsupported_operation) never improves by
+        // re-running it on another provider, and a candidate that already
+        // rethrew (last one) keeps its normalized error.
+        if (!isLastCandidate && e.category !== "unsupported_operation") {
+          logger.warn("runtime.router", "provider execution failed — falling back to the next provider", {
+            ...logBase,
+            provider: adapter.provider,
+            latencyMs,
+            category: e.category,
+            detail: e.detail, // server-side only — logger redaction applies
+          })
+          continue
+        }
 
-    // Provider failed → audit with creditsCharged = 0 (Phase 9 §16/§43),
-    // then propagate the NORMALIZED provider error (never raw internals).
-    // Billing denials (402/503 from metering) are rethrown untouched — they
-    // are not provider failures.
-    if (e instanceof ProviderExecutionError) {
+        // A platform-side credential/balance fault is an OPERATIONS problem the
+        // caller cannot fix, so it logs above the transient-failure level.
+        const logProviderFailure = e.category === "provider_not_entitled" ? logger.error : logger.warn
+        logProviderFailure("runtime.router", "provider execution failed", {
+          ...logBase,
+          provider: adapter.provider,
+          latencyMs,
+          status: "failed",
+          category: e.category,
+          detail: e.detail, // server-side only — logger redaction applies
+        })
+        throw providerFailureToRuntimeError(e)
+      }
+
+      if (isRuntimeAppError(e)) throw e
+
+      // Unknown adapter failure — treat as provider error; the detail stays
+      // server-side. Never rethrow raw provider exceptions, never fall back
+      // (an adapter-side bug retrying elsewhere could double side effects).
       await recordFailedRuntimeUsage({
         auth: { ...authContext, requestId: corrId },
         provider: adapter.provider,
         capability: req.capability,
         operation: req.operation,
-        errorCategory: e.category,
+        errorCategory: "provider_error",
         latencyMs,
-        startedAt,
+        startedAt: attemptStartedAt,
         ...(prepaid ? { prepaid } : {}),
       })
-      logger.warn("runtime.router", "provider execution failed", {
+      logger.error("runtime.router", "provider threw unexpected error", {
         ...logBase,
         provider: adapter.provider,
         latencyMs,
         status: "failed",
-        category: e.category,
-        detail: e.detail, // server-side only — logger redaction applies
+        message: e instanceof Error ? e.message : String(e),
       })
-      throw providerFailureToRuntimeError(e)
+      throw runtimeError("runtime_provider_error")
     }
-
-    if (isRuntimeAppError(e)) throw e
-
-    // Unknown adapter failure — treat as provider error; the detail stays
-    // server-side. Never rethrow raw provider exceptions.
-    await recordFailedRuntimeUsage({
-      auth: { ...authContext, requestId: corrId },
-      provider: adapter.provider,
-      capability: req.capability,
-      operation: req.operation,
-      errorCategory: "provider_error",
-      latencyMs,
-      startedAt,
-      ...(prepaid ? { prepaid } : {}),
-    })
-    logger.error("runtime.router", "provider threw unexpected error", {
-      ...logBase,
-      provider: adapter.provider,
-      latencyMs,
-      status: "failed",
-      message: e instanceof Error ? e.message : String(e),
-    })
-    throw runtimeError("runtime_provider_error")
   }
+
+  // Unreachable: every loop iteration returns or throws.
+  throw new RoutingError(
+    "capability_unavailable",
+    501,
+    "This capability is not available yet.",
+    corrId,
+  )
 }
 
 /**

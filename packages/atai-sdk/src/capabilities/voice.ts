@@ -3,8 +3,9 @@
  *
  * The provider-neutral surface for Atai's voice capability. The application
  * thinks in Atai operations (`atai.voice.synthesize(...)`), never in
- * providers. Audio arrives base64-encoded inside the runtime JSON envelope —
- * the SDK never receives provider credentials or wire formats.
+ * providers. Audio arrives base64-encoded inside the runtime JSON envelope;
+ * `toDataUrl(result)` turns it into a playable/downloadable URL — the SDK
+ * never receives provider credentials or wire formats.
  *
  * @module capabilities/voice
  */
@@ -56,6 +57,15 @@ export class VoiceCapability {
     })
 
     return assertSynthesizeResult(envelope.data.data)
+  }
+
+  /**
+   * Convert a synthesis result into a playable/downloadable data URL
+   * (`data:audio/…;base64,…`). Works in browsers (`<audio src>`, download
+   * links) and Node (for further processing).
+   */
+  toDataUrl(result: VoiceSynthesizeResult): string {
+    return `data:${result.mimeType};base64,${result.audioBase64}`
   }
 }
 

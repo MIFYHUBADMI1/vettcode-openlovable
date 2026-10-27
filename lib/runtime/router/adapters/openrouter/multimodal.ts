@@ -1,12 +1,11 @@
 import "server-only"
 import { z } from "zod"
 import type {
-  ProviderExecutionRequest,
   ProviderExecutionResponse,
   NormalizedProviderUsage,
 } from "@/runtime/contracts/router"
 import { ProviderExecutionError } from "@/lib/runtime/router/adapter"
-import { RECOMMENDED_DEFAULT_MODEL } from "./mapper"
+import { assistantText, RECOMMENDED_VISION_MODEL } from "./mapper"
 
 /**
  * Atai Runtime — OpenRouter multimodal mappers (server-only).
@@ -32,12 +31,46 @@ import { RECOMMENDED_DEFAULT_MODEL } from "./mapper"
 /** Model id shape shared with the chat mapper (same allowlist pattern). */
 const ModelId = z.string().min(1).max(200).regex(/^[\w.\/:-]+$/, "Invalid model identifier")
 
-/** Resolve the model for a multimodal call (same resolution order as chat). */
-export function resolveMultimodalModel(
-  requested: string | undefined,
-  projectDefault: string | undefined,
-): string {
-  return requested || projectDefault || process.env.OPENROUTER_DEFAULT_MODEL || RECOMMENDED_DEFAULT_MODEL
+/**
+ * Image resolves its own default. The project `defaultModel` is a CHAT model
+ * policy — reusing it here made unmodelled image calls resolve to a model
+ * with no image output, which OpenRouter rejects.
+ */
+export const RECOMMENDED_IMAGE_MODEL = "google/gemini-2.5-flash-image"
+export function resolveImageModel(requested: string | undefined): string {
+  return requested || process.env.OPENROUTER_IMAGE_MODEL || RECOMMENDED_IMAGE_MODEL
+}
+
+/** Video resolves its own default for the same reason as image. */
+export const RECOMMENDED_VIDEO_MODEL = "google/veo-3.1-fast"
+export function resolveVideoModel(requested: string | undefined): string {
+  return requested || process.env.OPENROUTER_VIDEO_MODEL || RECOMMENDED_VIDEO_MODEL
+}
+
+/**
+ * Vision resolves its own default: falling back to the text-only chat model
+ * makes every unmodelled image call a provider routing rejection.
+ */
+export function resolveVisionModel(requested: string | undefined, projectDefault: string | undefined): string {
+  return requested || projectDefault || process.env.OPENROUTER_VISION_MODEL || RECOMMENDED_VISION_MODEL
+}
+
+/**
+ * Default TTS route. Verified live against OpenRouter on 2026-10-26: returns
+ * MP3 for voice "en_paul_neutral" on Atai's free-tier provider account.
+ * Gemini TTS models are deliberately NOT the default — that route answers
+ * 402 on accounts that have never purchased credits.
+ */
+export const RECOMMENDED_SPEECH_MODEL = "mistralai/voxtral-mini-tts-2603"
+/** Voice required by {@link RECOMMENDED_SPEECH_MODEL} (other TTS models use their own ids). */
+export const RECOMMENDED_SPEECH_VOICE = "en_paul_neutral"
+
+/**
+ * Speech resolves its own default — never the project's chat model. Passing a
+ * text model here is what produced "Model ... does not exist" on /audio/speech.
+ */
+export function resolveSpeechModel(requested: string | undefined): string {
+  return requested || process.env.OPENROUTER_SPEECH_MODEL || RECOMMENDED_SPEECH_MODEL
 }
 
 function invalid(detail: string): never {
@@ -119,18 +152,15 @@ export interface OpenRouterImageResponse {
   usage?: unknown
 }
 
-export function toOpenRouterImageRequest(input: unknown, projectDefault?: string): OpenRouterImageRequest {
+export function toOpenRouterImageRequest(input: unknown): OpenRouterImageRequest {
   const parsed = ImageInputSchema.safeParse(input)
   if (!parsed.success) {
     invalid(`image input validation failed: ${parsed.error.issues[0]?.path.join(".") ?? "unknown"} ${parsed.error.issues[0]?.message ?? ""}`.trim())
   }
-  return { model: resolveMultimodalModel(parsed.data.model, projectDefault), ...stripModel(parsed.data) }
+  return { model: resolveImageModel(parsed.data.model), ...stripModel(parsed.data) }
 }
 
-export function toImageResult(
-  response: OpenRouterImageResponse,
-  request: ProviderExecutionRequest,
-): ProviderExecutionResponse {
+export function toImageResult(response: OpenRouterImageResponse, model: string): ProviderExecutionResponse {
   const images = (response.data ?? [])
     .filter((d) => typeof d?.b64_json === "string" && (d as { b64_json: string }).b64_json.length > 0)
     .map((d) => ({
@@ -148,8 +178,8 @@ export function toImageResult(
     provider: "openrouter",
     data: {
       images,
-      model: "see request",
-      capability: request.request.capability,
+      model,
+      count: images.length,
     },
     usage: normalizeMultimodalUsage(response.usage),
   }
@@ -184,12 +214,12 @@ export interface OpenRouterVideoJobResponse {
   [key: string]: unknown
 }
 
-export function toOpenRouterVideoRequest(input: unknown, projectDefault?: string): OpenRouterVideoSubmit {
+export function toOpenRouterVideoRequest(input: unknown): OpenRouterVideoSubmit {
   const parsed = VideoInputSchema.safeParse(input)
   if (!parsed.success) {
     invalid(`video input validation failed: ${parsed.error.issues[0]?.path.join(".") ?? "unknown"} ${parsed.error.issues[0]?.message ?? ""}`.trim())
   }
-  return { model: resolveMultimodalModel(parsed.data.model, projectDefault), ...stripModel(parsed.data) }
+  return { model: resolveVideoModel(parsed.data.model), ...stripModel(parsed.data) }
 }
 
 /**
@@ -235,24 +265,79 @@ export interface OpenRouterSpeechRequest {
   speed?: number
 }
 
-export function toOpenRouterSpeechRequest(input: unknown, projectDefault?: string): OpenRouterSpeechRequest {
+export function toOpenRouterSpeechRequest(input: unknown): OpenRouterSpeechRequest {
   const parsed = SpeechInputSchema.safeParse(input)
   if (!parsed.success) {
     invalid(`speech input validation failed: ${parsed.error.issues[0]?.path.join(".") ?? "unknown"} ${parsed.error.issues[0]?.message ?? ""}`.trim())
   }
-  return { model: resolveMultimodalModel(parsed.data.model, projectDefault), ...stripModel(parsed.data) }
+  const model = resolveSpeechModel(parsed.data.model)
+  const { model: _model, ...rest } = parsed.data
+
+  // Voice and async audio format are required by several TTS routes. Only
+  // inject them for OUR defaults — a caller-supplied model owns its own
+  // voice ids and output formats, and silently overriding those would be
+  // dishonest about what ran.
+  const usingPlatformDefault = parsed.data.model === undefined && process.env.OPENROUTER_SPEECH_MODEL === undefined
+  return {
+    model,
+    ...rest,
+    ...(usingPlatformDefault && rest.voice === undefined ? { voice: RECOMMENDED_SPEECH_VOICE } : {}),
+    ...(usingPlatformDefault && rest.response_format === undefined ? { response_format: "mp3" } : {}),
+  }
 }
 
-/** Speech returns raw audio bytes — normalized as base64 with its MIME type. */
-export function toSpeechResult(bytes: ArrayBuffer, model: string): ProviderExecutionResponse {
+/** Everything the speech branch knows about the bytes it received. */
+export interface SpeechResultMeta {
+  model: string
+  /** Actual response Content-Type (e.g. audio/mpeg, audio/pcm;rate=24000). */
+  contentType?: string
+  generationId?: string
+  voice?: string
+  format?: string
+}
+
+/**
+ * Speech returns raw audio bytes. The response carries everything a client
+ * needs to play, download, or audit the clip — never a provider wire format.
+ * The MIME type is the provider's ACTUAL Content-Type, so PCM responses can
+ * be wrapped for playback instead of being mislabelled as MP3.
+ */
+export function toSpeechResult(bytes: ArrayBuffer, meta: SpeechResultMeta): ProviderExecutionResponse {
   return {
     provider: "openrouter",
-    data: { audioBase64: arrayBufferToBase64(bytes), mimeType: "audio/mpeg" },
+    data: {
+      audioBase64: arrayBufferToBase64(bytes),
+      mimeType: meta.contentType?.startsWith("audio/") ? meta.contentType : "audio/mpeg",
+      model: meta.model,
+      bytes: bytes.byteLength,
+      ...(meta.voice !== undefined ? { voice: meta.voice } : {}),
+      ...(meta.format !== undefined ? { format: meta.format } : {}),
+      ...(meta.generationId !== undefined ? { generationId: meta.generationId } : {}),
+    },
     usage: undefined,
   }
 }
 
 // ─── ai.transcribe / transcribe — POST {base}/audio/transcriptions ──────────
+
+/**
+ * The ONLY transcription model. ai.transcribe is deliberately pinned to
+ * openai/whisper-large-v3-turbo — callers cannot change it. Rejecting a
+ * different requested model is deliberate: silently swapping it would be
+ * dishonest about what actually ran.
+ */
+export const TRANSCRIPTION_MODEL_ID = "openai/whisper-large-v3-turbo"
+
+export function resolveTranscriptionModel(requested: string | undefined): string {
+  if (requested !== undefined && requested !== TRANSCRIPTION_MODEL_ID) {
+    throw new ProviderExecutionError(
+      "unsupported_operation",
+      `ai.transcribe supports only the ${TRANSCRIPTION_MODEL_ID} model — it cannot be changed.`,
+      `requested transcription model: ${requested}`,
+    )
+  }
+  return TRANSCRIPTION_MODEL_ID
+}
 
 export const TranscribeInputSchema = z
   .object({
@@ -282,12 +367,14 @@ export interface OpenRouterTranscriptionResponse {
   usage?: unknown
 }
 
-export function toOpenRouterTranscriptionRequest(input: unknown, projectDefault?: string): OpenRouterTranscriptionRequest {
+export function toOpenRouterTranscriptionRequest(input: unknown): OpenRouterTranscriptionRequest {
   const parsed = TranscribeInputSchema.safeParse(input)
   if (!parsed.success) {
     invalid(`transcription input validation failed: ${parsed.error.issues[0]?.path.join(".") ?? "unknown"} ${parsed.error.issues[0]?.message ?? ""}`.trim())
   }
-  return { model: resolveMultimodalModel(parsed.data.model, projectDefault), ...stripModel(parsed.data) }
+  // The model is pinned server-side (TRANSCRIPTION_MODEL_ID) — the project
+  // default and any caller-supplied model are intentionally ignored/rejected.
+  return { model: resolveTranscriptionModel(parsed.data.model), ...stripModel(parsed.data) }
 }
 
 export function toTranscriptionResult(response: OpenRouterTranscriptionResponse): ProviderExecutionResponse {
@@ -352,7 +439,7 @@ export function toOpenRouterVisionRequest(input: unknown, projectDefault?: strin
     invalid(`vision input validation failed: ${parsed.error.issues[0]?.path.join(".") ?? "unknown"} ${parsed.error.issues[0]?.message ?? ""}`.trim())
   }
   return {
-    model: resolveMultimodalModel(parsed.data.model, projectDefault),
+    model: resolveVisionModel(parsed.data.model, projectDefault),
     messages: parsed.data.messages,
     ...(parsed.data.max_tokens !== undefined ? { max_tokens: parsed.data.max_tokens } : {}),
     ...(parsed.data.temperature !== undefined ? { temperature: parsed.data.temperature } : {}),
@@ -363,18 +450,24 @@ export function toOpenRouterVisionRequest(input: unknown, projectDefault?: strin
 export interface OpenRouterVisionResponse {
   id?: unknown
   model?: unknown
-  choices?: Array<{ finish_reason?: unknown; message?: { content?: unknown } }>
+  choices?: Array<{
+    finish_reason?: unknown
+    message?: { role?: string; content?: string | null; reasoning?: string | null }
+  }>
   usage?: unknown
 }
 
 export function toVisionResult(response: OpenRouterVisionResponse): ProviderExecutionResponse {
   const choice = response.choices?.[0]
-  const content = choice?.message?.content
-  if (typeof content !== "string" || content.length === 0) {
+  const finishReason = typeof choice?.finish_reason === "string" ? choice.finish_reason : null
+  const content = assistantText(choice?.message)
+  if (content === null) {
     throw new ProviderExecutionError(
       "provider_error",
       "The AI provider returned an error.",
-      "vision call produced no content",
+      `vision call produced no content (finish_reason: ${finishReason ?? "unknown"}${
+        finishReason === "length" ? " — raise max_tokens, generation stopped mid-answer" : ""
+      })`,
     )
   }
   return {
@@ -382,6 +475,7 @@ export function toVisionResult(response: OpenRouterVisionResponse): ProviderExec
     data: {
       content,
       ...(typeof response.model === "string" ? { model: response.model } : {}),
+      ...(finishReason ? { finishReason } : {}),
     },
     usage: normalizeMultimodalUsage(response.usage),
   }

@@ -24,6 +24,11 @@ import type {
 } from "@/lib/types/db"
 import { deriveBrandVoice } from "./generator"
 import {
+  RECOMMENDED_SPEECH_MODEL,
+  RECOMMENDED_SPEECH_VOICE,
+  RECOMMENDED_VIDEO_MODEL,
+} from "@/lib/runtime/router/adapters/openrouter/multimodal"
+import {
   buildMarketMessages,
   buildVisualPrompt,
   clean,
@@ -310,6 +315,9 @@ export async function generateMarketContent(input: GenerateMarketInput): Promise
           })
     body = script
     model = defaultMediaModel("speech")
+    // Voice ids are model-specific: only assume one when we know the model.
+    const speechVoice =
+      process.env.MARKET_SPEECH_VOICE || (model === RECOMMENDED_SPEECH_MODEL ? RECOMMENDED_SPEECH_VOICE : undefined)
     const result = await callRuntime(
       identity,
       {
@@ -318,7 +326,7 @@ export async function generateMarketContent(input: GenerateMarketInput): Promise
         input: {
           model,
           input: script,
-          voice: process.env.MARKET_SPEECH_VOICE || "alloy",
+          ...(speechVoice ? { voice: speechVoice } : {}),
           response_format: "mp3",
           ...(input.voiceStyle ? { instructions: `Speak in a ${input.voiceStyle} tone.` } : {}),
         },
@@ -590,9 +598,9 @@ function defaultMediaModel(kind: "image" | "speech" | "video"): string {
     return process.env.MARKET_IMAGE_MODEL || process.env.OPENROUTER_IMAGE_MODEL || "google/gemini-2.5-flash-image"
   }
   if (kind === "speech") {
-    return process.env.MARKET_SPEECH_MODEL || process.env.OPENROUTER_SPEECH_MODEL || "openai/gpt-4o-mini-tts-2025-12-15"
+    return process.env.MARKET_SPEECH_MODEL || process.env.OPENROUTER_SPEECH_MODEL || RECOMMENDED_SPEECH_MODEL
   }
-  return process.env.MARKET_VIDEO_MODEL || process.env.OPENROUTER_VIDEO_MODEL || "google/veo-3"
+  return process.env.MARKET_VIDEO_MODEL || process.env.OPENROUTER_VIDEO_MODEL || RECOMMENDED_VIDEO_MODEL
 }
 
 function readText(response: RuntimeResponse): { content: string; model?: string } | null {
@@ -623,7 +631,10 @@ function readAudio(response: RuntimeResponse): { dataUrl: string; mimeType: stri
   const data = response.data as { audioBase64?: unknown; mimeType?: unknown } | null
   if (!data || typeof data.audioBase64 !== "string" || !data.audioBase64) return null
   const mimeType = typeof data.mimeType === "string" && data.mimeType ? data.mimeType : "audio/mpeg"
-  return { dataUrl: `data:${mimeType};base64,${data.audioBase64}`, mimeType }
+  // A data URI takes `type/subtype` only — strip PCM parameters like
+  // `;rate=24000;channels=1` or the URI is malformed.
+  const baseMime = mimeType.split(";")[0] || "audio/mpeg"
+  return { dataUrl: `data:${baseMime};base64,${data.audioBase64}`, mimeType }
 }
 
 function readVideoJob(response: RuntimeResponse): { jobId?: string; status: string; output?: unknown } {

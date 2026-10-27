@@ -326,6 +326,7 @@ async function runEnsureIndexes(): Promise<void> {
     rateLimits.createIndex({ key: 1 }, { unique: true }),
     rateLimits.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }),
     projects.createIndex({ id: 1 }, { unique: true, sparse: true, name: "projects_id_unique" }),
+    projects.createIndex({ requestedProjectId: 1 }, { unique: true, sparse: true, name: "projects_requested_project_id_unique" }),
     projects.createIndex({ userId: 1, updatedAt: -1 }),
     buildRuns.createIndex({ id: 1 }, { unique: true, sparse: true, name: "build_runs_id_unique" }),
     buildRuns.createIndex({ mirrorProjectId: 1, startedAt: -1 }),

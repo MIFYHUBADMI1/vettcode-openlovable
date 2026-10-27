@@ -11,10 +11,11 @@ import type { TranslatedGeocodeRequest } from "./mapper"
  * Bounded, read-oriented calls against the FIXED endpoint set built by the
  * mapper — never arbitrary Mapbox API forwarding (§16/§53): every path here
  * originates in mapper code, the access token is appended server-side, and
- * redirects are never followed (shared fetch). Supports JSON GETs, the
- * Matrix POST-form variant, and binary tile/static-map GETs. When `debug`
- * is requested the raw (capped) provider body is returned to the adapter —
- * a deliberate diagnostic surface for the playground, gated per request.
+ * redirects are never followed (shared fetch). All calls are GETs; JSON
+ * responses and binary tile/static-map responses are both supported. When
+ * `debug` is requested the raw (capped) provider body is returned to the
+ * adapter — a deliberate diagnostic surface for the playground, gated per
+ * request.
  *
  * @module lib/runtime/router/adapters/mapbox/client
  */
@@ -38,15 +39,12 @@ export async function executeMapboxRequest(
   request.query.set("access_token", getMapboxAccessToken())
 
   const url = `${getMapboxBaseUrl()}${request.path}?${request.query.toString()}`
-  const isPost = request.postForm === true
   const res = await providerFetch({
     url,
-    method: isPost ? "POST" : "GET",
+    method: "GET",
     headers: {
       accept: request.binary ? "*/*" : "application/json",
-      ...(isPost ? { "content-type": "application/x-www-form-urlencoded" } : {}),
     },
-    ...(isPost ? { body: "" } : {}),
     ...(request.binary ? { binary: true } : {}),
     timeoutMs: getMapboxTimeoutMs(),
     requestId: params.requestId,

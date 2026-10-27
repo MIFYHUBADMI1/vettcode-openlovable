@@ -6,6 +6,8 @@ import { logger } from "@/lib/logging/logger"
 import {
   aiTimeoutUserMessage,
   isAbortTimeoutError,
+  isProviderUnreachableError,
+  providerUnreachableUserMessage,
   isDatabaseConnectivityError,
   isTlsClockError,
   tlsClockUserMessage,
@@ -63,9 +65,12 @@ export function handleRouteError(stage: string, error: unknown, headers?: Header
     // Map Totalum error codes to safe HTTP status codes — never leak raw provider statuses
     const statusMap: Partial<Record<string, number>> = {
       PROVIDER_NOT_CONFIGURED: 503,
+      PROVIDER_UNREACHABLE: 503,
+      TLS_CLOCK: 503,
       RATE_LIMIT_EXCEEDED: 429,
       INSUFFICIENT_CREDITS: 402,
       PROJECT_NOT_FOUND: 404,
+      PROJECT_ID_UNAVAILABLE: 409,
       UNAUTHORIZED_PROJECT_ACCESS: 403,
       SERVER_NOT_READY: 503,
       AGENT_RUNNING: 409,
@@ -94,6 +99,12 @@ export function handleRouteError(stage: string, error: unknown, headers?: Header
   if (isDatabaseConnectivityError(error)) {
     logger.error(stage, "database operation failed", { message: error instanceof Error ? error.message : String(error) })
     return fail("DATABASE_UNAVAILABLE", undefined, 503)
+  }
+  // Checked last of the three: a refused Mongo socket and a rejected certificate
+  // both surface as generic transport failures, and each has its own diagnosis.
+  if (isProviderUnreachableError(error)) {
+    logger.error(stage, "ai provider unreachable", { message: error instanceof Error ? error.message : String(error) })
+    return fail("AI_UNAVAILABLE", providerUnreachableUserMessage(), 503, headers)
   }
   logger.error(stage, "unhandled route error", { message: error instanceof Error ? error.message : String(error) })
   return fail("UNKNOWN", "Something went wrong. Please try again.", 500, headers)

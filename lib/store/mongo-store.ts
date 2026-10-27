@@ -3,7 +3,7 @@ import { cryptoId } from "@/lib/store/id"
 import { usersCol, projectsCol, buildRunsCol } from "@/lib/db/collections"
 import { apiKeysCol } from "@/lib/db/runtime-collections"
 import { logger } from "@/lib/logging/logger"
-import type { MirrorProject, BuildRun, CreditTransaction, ProjectEvent, ConversationMessage, DeploymentHistoryEntry } from "@/lib/types/project"
+import type { MirrorProject, BuildRun, CreditTransaction, ProjectEvent, ConversationMessage, DeploymentHistoryEntry, ProjectState } from "@/lib/types/project"
 import type { RuntimeEnvironment } from "@/runtime/contracts/capabilities"
 import type { RuntimeProvisioningRecord } from "@/lib/runtime/provisioning/types"
 import {
@@ -205,14 +205,44 @@ export class MongoStore implements DataStore {
   async updateProject(id: string, patch: Partial<MirrorProject>): Promise<MirrorProject | null> {
     const col = await projectsCol()
     const updatedAt = Date.now()
-    const result = await col.findOneAndUpdate(
-      { id },
-      { $set: { ...patch, updatedAt } },
-      { returnDocument: "after" },
-    )
+    // `undefined` patch values REMOVE the field, so a recovered project does
+    // not keep a stale `error` or recovery marker from an earlier failure.
+    const set: Record<string, unknown> = { updatedAt }
+    const unset: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === undefined) unset[key] = ""
+      else set[key] = value
+    }
+    const update: Record<string, unknown> = { $set: set }
+    if (Object.keys(unset).length > 0) update.$unset = unset
+    const result = await col.findOneAndUpdate({ id }, update, { returnDocument: "after" })
     const updated = result ? stripMongoId(result) : null
     this.cacheSet(`proj:${id}`, updated, Date.now())
     return updated
+  }
+
+  async isRequestedProjectIdAvailable(requestedProjectId: string, excludeProjectId?: string): Promise<boolean> {
+    const col = await projectsCol()
+    const filter: Record<string, unknown> = { requestedProjectId }
+    if (excludeProjectId) filter.id = { $ne: excludeProjectId }
+    return (await col.countDocuments(filter, { limit: 1 })) === 0
+  }
+
+  async claimRequestedProjectId(id: string, requestedProjectId: string): Promise<MirrorProject | null> {
+    const col = await projectsCol()
+    try {
+      const result = await col.findOneAndUpdate(
+        { id, totalumProjectId: { $exists: false } },
+        { $set: { requestedProjectId, updatedAt: Date.now() } },
+        { returnDocument: "after" },
+      )
+      const updated = result ? stripMongoId(result) : null
+      if (updated) this.cacheSet(`proj:${id}`, updated, Date.now())
+      return updated
+    } catch (error) {
+      if (error && typeof error === "object" && "code" in error && error.code === 11000) return null
+      throw error
+    }
   }
 
   async claimBuildSlot(id: string, patch: Partial<MirrorProject>): Promise<MirrorProject | null> {
@@ -230,6 +260,32 @@ export class MongoStore implements DataStore {
     )
     const claimed = result ? stripMongoId(result) : null
     this.cacheSet(`proj:${id}`, claimed, Date.now())
+    return claimed
+  }
+
+  async claimPipelineSlot(
+    id: string,
+    fromStates: ProjectState[],
+    expectUpdatedAt?: number,
+  ): Promise<MirrorProject | null> {
+    if (!fromStates.length) return null
+    const col = await projectsCol()
+    const updatedAt = Date.now()
+    // One atomic transition: the state filter and the $set happen together, so
+    // two pollers (or a poller and a manual retry) can never both start a
+    // pipeline for the same project. `expectUpdatedAt` pins the claim to the
+    // exact record the caller judged stale, which is the only way to tell two
+    // concurrent runs apart while the state is still `analyzing`.
+    const filter: Record<string, unknown> = { id, state: { $in: fromStates } }
+    if (expectUpdatedAt !== undefined) filter.updatedAt = expectUpdatedAt
+    const result = await col.findOneAndUpdate(
+      filter,
+      { $set: { state: "analyzing", updatedAt }, $unset: { error: "" } },
+      { returnDocument: "after" },
+    )
+    const claimed = result ? stripMongoId(result) : null
+    if (claimed) this.cacheSet(`proj:${id}`, claimed, Date.now())
+    else this.cache.delete(`proj:${id}`)
     return claimed
   }
 

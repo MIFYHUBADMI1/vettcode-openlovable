@@ -198,8 +198,8 @@ const NUMERIC_PROVIDER_TYPES: string[] = ["double", "int", "long", "decimal"]
 /**
  * Phase 2 currency honesty: `providerCostUsd` sums ONLY provider-reported
  * amounts explicitly denominated in USD. A numeric cost in another currency
- * (e.g. Twilio `price_unit`) is COUNTED, never mixed into a "$" total and
- * never silently converted (no approved FX source exists). Non-numeric costs
+ * (e.g. a provider's `price_unit`) is COUNTED, never mixed into a "$" total
+ * and never silently converted (no approved FX source exists). Non-numeric costs
  * stay "unavailable" — never 0.
  */
 const USD_COST_COND = {

@@ -10,23 +10,32 @@ import { isRuntimeIntegrationsGrounded } from "@/lib/analysis/runtime-capabiliti
  * deterministic — derived from field population — so the UI never fabricates
  * a score. "Needs work" is only ever added by AI findings, never guessed.
  *
- * Marketing, Launch and Growth are intentionally NOT plan sections: their
- * data still lives on the spec (marketingPlan/launchPlan/growthPlan) for
- * later use elsewhere, but they are drafted after the build, not by the
- * Collaborate workspace, and the AI doesn't need them to generate the app.
+ * Marketing, Launch and Growth are plan sections: the generator drafts them on
+ * the spec and the founder can refine them here. Every non-metadata field the
+ * AI writes to `ApplicationSpecification` has a section — nothing the AI
+ * produced is hidden from the Collaborate workspace.
  */
 
 export type PlanSectionId =
   | BusinessPlanField
   | "overview"
+  | "applicationType"
+  | "purpose"
   | "targetUsers"
+  | "userRoles"
   | "features"
   | "flows"
   | "data"
   | "auth"
+  | "backend"
+  | "integrations"
+  | "designDirection"
+  | "responsive"
+  | "additionalInstructions"
   | "seo"
   | "brandIdentity"
   | "themePreferences"
+  | "pricingTiersDetail"
 
 export type PlanSectionStatus = "missing" | "complete" | "needs_work"
 
@@ -47,12 +56,28 @@ const s = (v: string | undefined | null): string => (v ?? "").trim()
 
 export const PLAN_SECTIONS: PlanSectionDef[] = [
   {
+    id: "applicationType",
+    label: "Application Type",
+    icon: "Tag",
+    group: "Foundation",
+    emptyHint: "Let's name the kind of application this is.",
+    read: (spec) => s(spec.applicationType),
+  },
+  {
     id: "overview",
     label: "Overview",
     icon: "Lightbulb",
     group: "Foundation",
     emptyHint: "Let's describe what this product is and who it's for.",
     read: (spec) => s(spec.description) || s(spec.purpose),
+  },
+  {
+    id: "purpose",
+    label: "Purpose",
+    icon: "Target",
+    group: "Foundation",
+    emptyHint: "Let's state what this application exists to do.",
+    read: (spec) => s(spec.purpose),
   },
   {
     id: "problem",
@@ -87,6 +112,14 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
     read: (spec) => spec.targetUsers.filter(Boolean).join(", "),
   },
   {
+    id: "userRoles",
+    label: "User Roles",
+    icon: "UserCog",
+    group: "Market",
+    emptyHint: "Let's define the roles people can have and what each can do.",
+    read: (spec) => spec.userRoles.filter(Boolean).join(", "),
+  },
+  {
     id: "valueProposition",
     label: "Value Proposition",
     icon: "Star",
@@ -101,6 +134,30 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
     group: "Market",
     emptyHint: "Let's position this product against the alternatives.",
     read: (spec) => s(spec.marketPositioning),
+  },
+  {
+    id: "marketingPlan",
+    label: "Marketing Plan",
+    icon: "Megaphone",
+    group: "Market",
+    emptyHint: "Let's plan how customers will find this business.",
+    read: (spec) => s(spec.marketingPlan),
+  },
+  {
+    id: "launchPlan",
+    label: "Launch Plan",
+    icon: "Rocket",
+    group: "Market",
+    emptyHint: "Let's plan the concrete first-launch steps.",
+    read: (spec) => s(spec.launchPlan),
+  },
+  {
+    id: "growthPlan",
+    label: "Growth Plan",
+    icon: "TrendingUp",
+    group: "Market",
+    emptyHint: "Let's plan how the business grows after launch.",
+    read: (spec) => s(spec.growthPlan),
   },
   {
     id: "features",
@@ -139,6 +196,38 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
     read: (spec) => s(spec.authenticationRequirements),
   },
   {
+    id: "backend",
+    label: "Backend & API",
+    icon: "Server",
+    group: "Product",
+    emptyHint: "Let's list the server-side capabilities this app needs.",
+    read: (spec) => spec.backendRequirements.filter(Boolean).join("\n"),
+  },
+  {
+    id: "integrations",
+    label: "Integrations",
+    icon: "Cable",
+    group: "Product",
+    emptyHint: "Let's list the external services this app connects to.",
+    read: (spec) => spec.integrations.filter(Boolean).join("\n"),
+  },
+  {
+    id: "designDirection",
+    label: "Design Direction",
+    icon: "PenTool",
+    group: "Product",
+    emptyHint: "Let's describe how the app should look and feel.",
+    read: (spec) => s(spec.designDirection),
+  },
+  {
+    id: "responsive",
+    label: "Responsive & Devices",
+    icon: "Smartphone",
+    group: "Product",
+    emptyHint: "Let's define how layouts adapt across phones, tablets, and desktop.",
+    read: (spec) => s(spec.responsiveRequirements),
+  },
+  {
     id: "seo",
     label: "SEO & Search",
     icon: "Search",
@@ -172,11 +261,19 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
   },
   {
     id: "pricingTiers",
-    label: "Pricing & Tiers",
+    label: "Pricing Structure",
     icon: "DollarSign",
     group: "Business",
     emptyHint: "Let's define your pricing structure — tiers, features per tier, billing cycles, and payment strategy.",
     read: (spec) => s(spec.pricingStructure),
+  },
+  {
+    id: "pricingTiersDetail",
+    label: "Pricing Tiers",
+    icon: "Layers",
+    group: "Business",
+    emptyHint: "Let's set out the plans, prices, limits, and upgrade paths.",
+    read: (spec) => s(spec.pricingTiers),
   },
   {
     id: "brandIdentity",
@@ -187,12 +284,36 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
     read: (spec) => s(spec.brandIdentity),
   },
   {
+    id: "appearance",
+    label: "Visual System",
+    icon: "SunMoon",
+    group: "Product",
+    emptyHint: "Let's define the theme, color tokens, density, and light/dark strategy for the build.",
+    read: (spec) => s(spec.appearance),
+  },
+  {
+    id: "typography",
+    label: "Typography",
+    icon: "Type",
+    group: "Product",
+    emptyHint: "Let's pin the heading, body, and mono fonts the generated app must use.",
+    read: (spec) => s(spec.typography),
+  },
+  {
     id: "themePreferences",
     label: "Theme & Appearance",
     icon: "Monitor",
     group: "Product",
     emptyHint: "Let's choose your app's color theme, typography, dark mode strategy, and UI style.",
     read: (spec) => s(spec.themePreferences),
+  },
+  {
+    id: "additionalInstructions",
+    label: "Build Instructions",
+    icon: "ListChecks",
+    group: "Product",
+    emptyHint: "Let's add any special instructions the builder must follow.",
+    read: (spec) => s(spec.additionalInstructions),
   },
 ]
 
@@ -294,6 +415,8 @@ export const GENERATOR_MANAGED_SECTIONS: ReadonlySet<string> = new Set(["feature
  * spec — clearable to empty via the businessFields branch of
  * clearSectionUpdate. Includes SEO (a founder-owned text section). */
 export const TEXT_PLAN_SECTIONS: ReadonlySet<string> = new Set([
+  "applicationType",
+  "purpose",
   "vision",
   "problem",
   "solution",
@@ -306,6 +429,11 @@ export const TEXT_PLAN_SECTIONS: ReadonlySet<string> = new Set([
   "marketingPlan",
   "launchPlan",
   "growthPlan",
+  "designDirection",
+  "responsive",
+  "appearance",
+  "typography",
+  "additionalInstructions",
 ])
 
 /** Reset a section to its empty ("not defined") state immutably — used by the
@@ -316,6 +444,9 @@ export function clearSectionUpdate(
   sectionId: PlanSectionId,
 ): ApplicationSpecification {
   if (sectionId === "targetUsers") return { ...spec, targetUsers: [] }
+  if (sectionId === "userRoles") return { ...spec, userRoles: [] }
+  if (sectionId === "backend") return { ...spec, backendRequirements: [] }
+  if (sectionId === "integrations") return { ...spec, integrations: [] }
   if (sectionId === "features" || sectionId === "flows" || sectionId === "data") return spec
   // Map plan-section ids to their spec text fields. "seo" (the SEO & Search
   // section) stores in seoPlan; every other text section shares its id.
@@ -330,19 +461,30 @@ export function clearSectionUpdate(
     "marketPositioning",
     "brandIdentity",
     "themePreferences",
+    "appearance",
+    "typography",
+    "designDirection",
     "marketingPlan",
     "launchPlan",
     "growthPlan",
+    "additionalInstructions",
   ])
   if (sectionId === "seo") return { ...spec, seoPlan: "" }
   // Pricing & Tiers reads pricingStructure — the field the build consumes.
   if (sectionId === "pricingTiers") return { ...spec, pricingStructure: "" }
+  if (sectionId === "pricingTiersDetail") return { ...spec, pricingTiers: "" }
   if (businessFields.has(sectionId)) {
     return { ...spec, [sectionId]: "" }
   }
   switch (sectionId) {
     case "overview":
       return { ...spec, description: "" }
+    case "applicationType":
+      return { ...spec, applicationType: "" }
+    case "purpose":
+      return { ...spec, purpose: "" }
+    case "responsive":
+      return { ...spec, responsiveRequirements: "" }
     case "auth":
       return { ...spec, authenticationRequirements: "" }
     default:
@@ -369,6 +511,16 @@ function splitListValue(value: string): string[] {
     parts.push(part)
   }
   return parts
+}
+
+/** One requirement per line (the way backend/integration lists are displayed),
+ * falling back to a comma list when the founder typed everything on one line. */
+function splitListLines(value: string): string[] {
+  const lines = value
+    .split(/\r?\n/)
+    .map((line) => line.replace(/^[-*]\s*/, "").trim())
+    .filter(Boolean)
+  return lines.length > 1 ? lines : splitListValue(value)
 }
 
 function uniqueFeatureKey(label: string, used: Set<string>): string {
@@ -444,15 +596,20 @@ export function applySectionUpdate(
     "marketPositioning",
     "brandIdentity",
     "themePreferences",
+    "appearance",
+    "typography",
+    "designDirection",
     "launchPlan",
     "marketingPlan",
     "growthPlan",
+    "additionalInstructions",
   ])
   // The SEO & Search section stores under seoPlan — the plan content itself
   // is kept verbatim and becomes mandatory build instructions.
   if (sectionId === "seo") return { ...spec, seoPlan: value }
   // Pricing & Tiers reads pricingStructure — the field the build consumes.
   if (sectionId === "pricingTiers") return { ...spec, pricingStructure: value }
+  if (sectionId === "pricingTiersDetail") return { ...spec, pricingTiers: value }
   if (businessFields.has(sectionId)) {
     return { ...spec, [sectionId]: value }
   }
@@ -460,6 +617,18 @@ export function applySectionUpdate(
   switch (sectionId) {
     case "overview":
       return { ...spec, description: value }
+    case "applicationType":
+      return { ...spec, applicationType: value }
+    case "purpose":
+      return { ...spec, purpose: value }
+    case "responsive":
+      return { ...spec, responsiveRequirements: value }
+    case "userRoles":
+      return { ...spec, userRoles: splitListValue(value) }
+    case "backend":
+      return { ...spec, backendRequirements: splitListLines(value) }
+    case "integrations":
+      return { ...spec, integrations: splitListLines(value) }
     case "targetUsers":
       return { ...spec, targetUsers: value.split(",").map((v) => v.trim()).filter(Boolean) }
     case "features": {

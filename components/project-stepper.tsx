@@ -22,13 +22,15 @@ const PHASES: Phase[] = [
     id: "understanding",
     label: "Understanding it",
     blurb: "Reading pages, structure, and content.",
-    states: ["analyzing", "analysis_complete"],
+    states: ["analyzing"],
+    failState: "analysis_failed",
   },
   {
     id: "plan",
     label: "Plan ready",
     blurb: "A build plan is drafted for your review.",
-    states: ["specification_ready", "plan_ready", "awaiting_build_confirmation"],
+    states: ["analysis_complete", "pending_plan", "specification_ready", "plan_ready", "awaiting_build_confirmation"],
+    failState: "plan_failed",
   },
   {
     id: "building",
@@ -46,7 +48,13 @@ const PHASES: Phase[] = [
   },
 ]
 
-const ACTIVE_STATES: ReadonlySet<ProjectState> = new Set(["analyzing", "building", "deploying"])
+const ACTIVE_STATES: ReadonlySet<ProjectState> = new Set([
+  "analyzing",
+  "analysis_complete",
+  "pending_plan",
+  "building",
+  "deploying",
+])
 
 function phaseIndexForState(state: ProjectState): number {
   const direct = PHASES.findIndex((phase) => phase.states.includes(state))

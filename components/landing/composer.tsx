@@ -35,6 +35,9 @@ import { savePendingStart } from "@/lib/auth/client-intent"
 import {
   detectIntentChips,
   detectStartMode,
+  MAX_PROJECT_TITLE_LENGTH,
+  suggestProjectTitle,
+  validateProjectTitle,
   type StartMode,
   validateStartInput,
   promptForStart,
@@ -67,6 +70,16 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 
 const MODES: {
   id: StartMode
@@ -202,9 +215,11 @@ export function LandingComposer({
   const { session } = useSession()
   const { openAuth } = useAuthModal()
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const nameConfirmedRef = useRef(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const recognitionRef = useRef<BrowserSpeechRecognition | null>(null)
   const promptRef = useRef("")
+  const titleTouchedRef = useRef(false)
   const listeningRef = useRef(false)
   const voiceBaseRef = useRef("")
   const fromDictationRef = useRef(false)
@@ -214,6 +229,7 @@ export function LandingComposer({
   const levelCloseRef = useRef<(() => void) | null>(null)
 
   const [prompt, setPrompt] = useState("")
+  const [title, setTitle] = useState("")
   const [mode, setMode] = useState<StartMode>(lockedMode ?? "idea")
   const [agents, setAgents] = useState<string[]>(["atai"])
   const [tool, setTool] = useState<string | null>(null)
@@ -224,6 +240,8 @@ export function LandingComposer({
   const [submitting, setSubmitting] = useState(false)
   const [listening, setListening] = useState(false)
   const [hydrated, setHydrated] = useState(false)
+  const [nameDialogOpen, setNameDialogOpen] = useState(false)
+  const [nameAttempted, setNameAttempted] = useState(false)
   const [dictationPartial, setDictationPartial] = useState("")
   const [speechLevel, setSpeechLevel] = useState(0)
 
@@ -231,6 +249,8 @@ export function LandingComposer({
   const hasPrompt = prompt.length > 0
   const detected = detectStartMode(prompt)
   const chips = useMemo(() => detectIntentChips(prompt, mode), [prompt, mode])
+  const suggestedTitle = useMemo(() => suggestProjectTitle(mode, prompt), [mode, prompt])
+  const nameError = title.trim().length > 0 ? validateProjectTitle(title) : null
   const canSend = prompt.trim().length > 0 && !submitting
   const autoLabel = AUTO_MODES.find((item) => item.id === auto)?.name ?? "Auto"
   const advancedCount = (agents.length > 1 ? 1 : 0) + (tool ? 1 : 0) + (auto !== "auto" ? 1 : 0)
@@ -238,6 +258,10 @@ export function LandingComposer({
   useEffect(() => {
     const prefs = loadComposerPrefs()
     setPrompt(prefs.prompt)
+    if (prefs.title.trim()) {
+      setTitle(prefs.title)
+      titleTouchedRef.current = true
+    }
     setMode(lockedMode ?? prefs.mode)
     setAgents(prefs.agents)
     setTool(prefs.tool)
@@ -248,8 +272,16 @@ export function LandingComposer({
 
   useEffect(() => {
     if (!hydrated) return
-    saveComposerPrefs({ prompt, mode, agents, tool, auto, files })
-  }, [hydrated, prompt, mode, agents, tool, auto, files])
+    saveComposerPrefs({ prompt, title, mode, agents, tool, auto, files })
+  }, [hydrated, prompt, title, mode, agents, tool, auto, files])
+
+  // Keep the name field a confirmed, prefilled input rather than a silent
+  // derivation: until the user edits it, mirror the suggestion for the current
+  // intent/mode. Once touched, the field is theirs.
+  useEffect(() => {
+    if (titleTouchedRef.current) return
+    setTitle((current) => (current === suggestedTitle ? current : suggestedTitle))
+  }, [suggestedTitle])
 
   useEffect(() => {
     promptRef.current = prompt
@@ -321,7 +353,7 @@ export function LandingComposer({
 
   function requireAccount() {
     if (session) return true
-    saveComposerPrefs({ prompt, mode, agents, tool, auto, files })
+    saveComposerPrefs({ prompt, title, mode, agents, tool, auto, files })
     openAuth("signup", { next: "/new/idea" })
     return false
   }
@@ -546,6 +578,43 @@ export function LandingComposer({
     }
   }
 
+  function startPending(nextMode: StartMode, savedTitle: string) {
+    const saved = promptForStart(nextMode, prompt)
+    const continueHref = "/start"
+    savePendingStart({
+      prompt: saved,
+      title: savedTitle,
+      href: continueHref,
+      source: nextMode === "github" ? "landing_github" : nextMode === "website" ? "landing_mirror" : nextMode === "url" ? "landing_url" : "landing_idea",
+      signalType: nextMode === "idea" ? "idea" : "url",
+      mode: nextMode,
+      pipelineMode: "heavy",
+    })
+    saveComposerPrefs({ prompt, title: savedTitle, mode: nextMode, agents, tool, auto, files })
+    trackStartSubmitted({ method: nextMode, surface, authenticated: Boolean(session) })
+    setSubmitting(true)
+    if (!session) {
+      // Both are dialogs — close the name popup before the sign-in modal opens.
+      setNameDialogOpen(false)
+      openAuth("signup", { next: continueHref, prompt: saved })
+      setSubmitting(false)
+      return
+    }
+    router.push(continueHref)
+  }
+
+  function confirmBusinessName() {
+    const message = validateProjectTitle(title)
+    if (message) {
+      setNameAttempted(true)
+      trackStartValidationFailed(mode, surface, "missing_title")
+      return
+    }
+    nameConfirmedRef.current = true
+    setNameDialogOpen(false)
+    startPending(mode, title.trim())
+  }
+
   function submit() {
     const message = validateStartInput(mode, prompt)
     if (message) {
@@ -553,25 +622,14 @@ export function LandingComposer({
       trackStartValidationFailed(mode, surface, prompt.trim() ? "invalid_input" : "empty")
       return
     }
-    const saved = promptForStart(mode, prompt)
-    const continueHref = "/start"
-    savePendingStart({
-      prompt: saved,
-      href: continueHref,
-      source: mode === "github" ? "landing_github" : mode === "website" ? "landing_mirror" : mode === "url" ? "landing_url" : "landing_idea",
-      signalType: mode === "idea" ? "idea" : "url",
-      mode,
-      pipelineMode: "heavy",
-    })
-    saveComposerPrefs({ prompt, mode, agents, tool, auto, files })
-    trackStartSubmitted({ method: mode, surface, authenticated: Boolean(session) })
-    setSubmitting(true)
-    if (!session) {
-      openAuth("signup", { next: continueHref, prompt: saved })
-      setSubmitting(false)
+    // The business-name dialog runs before anything else — including the
+    // sign-in modal — so the two never collide.
+    if (!nameConfirmedRef.current) {
+      setError(null)
+      setNameDialogOpen(true)
       return
     }
-    router.push(continueHref)
+    startPending(mode, title.trim())
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -976,6 +1034,84 @@ export function LandingComposer({
           </button>
         </div>
       ) : null}
+
+      <Dialog
+        open={nameDialogOpen}
+        onOpenChange={(open) => {
+          setNameDialogOpen(open)
+          if (!open) {
+            nameConfirmedRef.current = false
+            setNameAttempted(false)
+          }
+        }}
+      >
+        <DialogContent showCloseButton={false} className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Name your business</DialogTitle>
+            <DialogDescription>
+              This becomes your workspace title. You can rename it any time from the workspace.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(event) => {
+              event.preventDefault()
+              confirmBusinessName()
+            }}
+          >
+            <label htmlFor="landing-business-name" className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Business name
+              <span className="ml-1.5 font-normal normal-case tracking-normal text-destructive">*</span>
+            </label>
+            <div className="mt-1.5 flex items-center gap-2">
+              <input
+                id="landing-business-name"
+                type="text"
+                inputMode="text"
+                autoComplete="off"
+                autoFocus
+                maxLength={MAX_PROJECT_TITLE_LENGTH}
+                value={title}
+                onChange={(event) => {
+                  titleTouchedRef.current = true
+                  setTitle(event.target.value)
+                  setNameAttempted(false)
+                }}
+                placeholder={suggestedTitle || "e.g. ClinicFlow"}
+                aria-required="true"
+                aria-invalid={nameError ? true : undefined}
+                className={cn(
+                  "h-11 w-full rounded-xl border bg-card/70 px-3.5 text-sm text-foreground outline-none transition-colors",
+                  "placeholder:text-muted-foreground/60 focus-visible:border-indigo-500/50 focus-visible:ring-2 focus-visible:ring-ring",
+                  nameError ? "border-destructive/50" : "border-border/70",
+                )}
+              />
+              {suggestedTitle && title.trim() !== suggestedTitle ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    titleTouchedRef.current = false
+                    setTitle(suggestedTitle)
+                    setNameAttempted(false)
+                  }}
+                  className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-card/60 px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-indigo-500/30 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Sparkles className="size-3 text-indigo-500" />
+                  Use suggestion
+                </button>
+              ) : null}
+            </div>
+            <p aria-live="polite" className={cn("mt-1 min-h-[1rem] text-[11px] leading-4", nameError ? "text-destructive" : "text-muted-foreground")}>
+              {nameError ?? (nameAttempted ? "Business name is required." : "")}
+            </p>
+            <DialogFooter className="mt-2">
+              <DialogClose render={<Button type="button" variant="ghost" />}>
+                Cancel
+              </DialogClose>
+              <Button type="submit">Continue</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </form>
   )
 }

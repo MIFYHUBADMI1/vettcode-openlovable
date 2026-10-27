@@ -1,6 +1,7 @@
 import type { ProjectUnderstanding } from "./understanding"
 import type { ApplicationSpecification } from "./specification"
 import type { PlanAnalysis } from "./plan-analysis"
+import type { AIArtifact } from "./ai-artifacts"
 import type { RuntimeProvisioningMap } from "@/lib/runtime/provisioning/types"
 
 /** Explicit Atai project lifecycle (spec section 30). State is always
@@ -9,8 +10,10 @@ export type ProjectState =
   | "created"
   | "analyzing"
   | "analysis_complete"
+  | "analysis_failed"
   | "specification_ready"
   | "plan_ready"
+  | "plan_failed"
   | "awaiting_build_confirmation"
   | "building"
   | "build_complete"
@@ -20,6 +23,18 @@ export type ProjectState =
   | "deployed"
   | "deployment_failed"
   | "pending_plan"
+
+/** Bookkeeping for an analysis/planning run — lets the workspace show how many
+ * attempts have happened and detect a run that died without reporting. */
+export interface ProjectPipelineRecovery {
+  phase: "understand" | "plan"
+  /** Attempts of the current run (first try = 1). */
+  attempts: number
+  lastAttemptAt: number
+  lastError?: string
+  /** Stall recoveries triggered for this run — capped server-side. */
+  autoRestarts?: number
+}
 
 export type ProjectMode = "website" | "scratch" | "github"
 
@@ -175,6 +190,7 @@ export interface MirrorProject {
   idea?: string
   understanding?: ProjectUnderstanding
   specification?: ApplicationSpecification
+  requestedProjectId?: string
   totalumProjectId?: string
   developmentUrl?: string
   events: ProjectEvent[]
@@ -210,6 +226,11 @@ export interface MirrorProject {
    * SAFE METADATA ONLY (status/keyId/prefix/timestamps) — never a plaintext
    * secret or key hash; api_keys remains the credential source of truth. */
   runtimeProvisioning?: RuntimeProvisioningMap
+  /** Analysis/planning run bookkeeping (attempts, last activity, stall recovery). */
+  pipelineRecovery?: ProjectPipelineRecovery
+  /** Every AI stage output produced for this project — including raw model
+   * text when an answer could not be parsed. Surfaced on Collaborate. */
+  aiArtifacts?: AIArtifact[]
 }
 
 /** Alias used throughout the frontend; kept distinct from `MirrorProject` so
@@ -233,8 +254,10 @@ export const STATE_LABELS: Record<ProjectState, string> = {
   created: "Created",
   analyzing: "Analyzing website",
   analysis_complete: "Analysis complete",
+  analysis_failed: "Understanding needs attention",
   specification_ready: "Application plan ready",
   plan_ready: "Plan ready — review before building",
+  plan_failed: "Plan needs attention",
   awaiting_build_confirmation: "Awaiting build confirmation",
   building: "Building application",
   build_complete: "Build complete",

@@ -50,12 +50,18 @@ export class PipelineError extends Error {
    * @param stage - Pipeline stage where the error occurred
    * @param retryable - Whether this error can be retried
    * @param userMessage - User-friendly error message
+   * @param rawText - Exact model output, when the failure came from parsing it
    */
   constructor(
     message: string,
     public readonly stage: PipelineStage,
     public readonly retryable: boolean,
-    public readonly userMessage: string
+    public readonly userMessage: string,
+    /**
+     * Raw model text that failed to parse. Kept so the Collaborate workspace
+     * can show the AI's actual answer instead of discarding it.
+     */
+    public readonly rawText?: string
   ) {
     super(message)
     this.name = 'PipelineError'
@@ -80,8 +86,8 @@ export class UnderstandingError extends PipelineError {
    * @param message - Technical error message for logging
    * @param userMessage - User-friendly explanation of what went wrong
    */
-  constructor(message: string, userMessage: string) {
-    super(message, 'understanding', true, userMessage)
+  constructor(message: string, userMessage: string, rawText?: string) {
+    super(message, 'understanding', true, userMessage, rawText)
     this.name = 'UnderstandingError'
   }
 }
@@ -93,12 +99,13 @@ export class UnderstandingError extends PipelineError {
  * the pipeline can continue without research findings.
  */
 export class ResearchError extends PipelineError {
-  constructor(message: string, userMessage?: string) {
+  constructor(message: string, userMessage?: string, rawText?: string) {
     super(
       message,
       'research',
       true,
-      userMessage ?? 'Research analysis encountered an issue but will continue'
+      userMessage ?? 'Research analysis encountered an issue but will continue',
+      rawText
     )
     this.name = 'ResearchError'
   }
@@ -111,12 +118,13 @@ export class ResearchError extends PipelineError {
  * ApplicationSpecification. This error is retryable.
  */
 export class PlanningError extends PipelineError {
-  constructor(message: string, userMessage?: string) {
+  constructor(message: string, userMessage?: string, rawText?: string) {
     super(
       message,
       'planning',
       true,
-      userMessage ?? 'Specification generation failed. Please try again.'
+      userMessage ?? 'Specification generation failed. Please try again.',
+      rawText
     )
     this.name = 'PlanningError'
   }
@@ -133,13 +141,14 @@ export class ValidationError extends PipelineError {
   constructor(
     message: string,
     userMessageOrErrors: string | ValidationErrorDetail[],
-    public readonly errors: ValidationErrorDetail[] = []
+    public readonly errors: ValidationErrorDetail[] = [],
+    rawText?: string
   ) {
     const userMessage = typeof userMessageOrErrors === 'string' && userMessageOrErrors.length > 0
       ? userMessageOrErrors
       : 'Generated specification has validation errors'
     const errorList = typeof userMessageOrErrors === 'string' ? errors : userMessageOrErrors
-    super(message, 'validation', false, userMessage)
+    super(message, 'validation', false, userMessage, rawText)
     this.errors = errorList
     this.name = 'ValidationError'
   }

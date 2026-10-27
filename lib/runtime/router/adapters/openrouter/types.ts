@@ -62,6 +62,13 @@ export interface OpenRouterNonStreamingChoice {
   message: {
     role: string
     content: string | null
+    /**
+     * Reasoning models put their chain-of-thought here. When generation is
+     * truncated the visible `content` is null while this field carries the
+     * only text produced — verified live against the provider.
+     */
+    reasoning?: string | null
+    refusal?: string | null
   }
 }
 

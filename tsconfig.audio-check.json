@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "types": ["node"]
+  },
+  "include": [
+    "next-env.d.ts",
+    "components/developers/playground-client.tsx",
+    "components/developers/playground-response-view.tsx",
+    "components/developers/playground-maps-view.tsx",
+    "components/developers/playground-catalog.ts",
+    "components/sdk-docs-content.tsx",
+    "lib/runtime/router/adapters/openrouter/adapter.ts",
+    "lib/runtime/router/adapters/openrouter/client.ts",
+    "lib/runtime/router/adapters/openrouter/errors.ts",
+    "lib/runtime/router/adapters/openrouter/multimodal.ts",
+    "lib/marketing/studio/market-service.ts"
+  ],
+  "exclude": ["node_modules", "**/*.test.ts", "**/*.test.tsx"]
+}

@@ -5,6 +5,8 @@ import { ApplicationSpecificationSchema, DEFAULT_FEATURES, type ApplicationSpeci
 import type { ProjectUnderstanding } from "@/lib/types/understanding"
 import { MODEL } from "./model"
 import { PlanningOrchestrator } from "@/lib/planning/orchestrator"
+import { recordAIArtifacts } from "@/lib/projects/ai-artifacts"
+import { makeAIArtifact } from "@/lib/types/ai-artifacts"
 import { createHash } from "crypto"
 
 /**
@@ -211,9 +213,12 @@ function ensureFeatureCatalog(spec: ApplicationSpecification): ApplicationSpecif
   return { ...spec, suggestedFeatures: merged }
 }
 
-async function generateSpecFromPrompt(label: string, prompt: string): Promise<ApplicationSpecification> {
+async function generateSpecFromPrompt(label: string, prompt: string, projectId?: string): Promise<ApplicationSpecification> {
   const MAX_RETRIES = 2
   let lastError: unknown
+  // Keep the exact model text across attempts so a failure (and the eventual
+  // plan) can be shown on Collaborate instead of being discarded.
+  let lastRawText: string | undefined
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -223,6 +228,7 @@ async function generateSpecFromPrompt(label: string, prompt: string): Promise<Ap
         prompt: attempt === 0 ? prompt : `${prompt}\n\nIMPORTANT: Your previous response was not valid JSON. Output ONLY a raw JSON object. No markdown, no explanation, just { ... }`,
         maxOutputTokens: 8192,
       })
+      lastRawText = text
 
       const jsonStr = extractJson(text)
       console.log(`[v0] analysis.specification: parsed response (${label})`, {
@@ -245,6 +251,21 @@ async function generateSpecFromPrompt(label: string, prompt: string): Promise<Ap
       const { spec: sanitizedSpec, sanitized } = sanitizeSpecification(parsed.data)
       const result = ensureFeatureCatalog(sanitizedSpec)
         ; (result as Record<string, unknown>)._sanitized = sanitized
+      if (projectId) {
+        await recordAIArtifacts(projectId, [
+          makeAIArtifact({
+            kind: "specification",
+            stage: "legacy_planning",
+            label: "Application specification",
+            status: sanitized ? "fallback" : "ready",
+            content: result,
+            rawText: lastRawText,
+            note: sanitized
+              ? "Single-stage planner. Unsupported technologies were swapped for Totalum equivalents — raw shows the exact model text."
+              : "Single-stage planner. Raw shows the exact model text this plan was parsed from.",
+          }),
+        ])
+      }
       return result
     } catch (e) {
       console.log(`[v0] analysis.specification: attempt failed (${label})`, {
@@ -259,7 +280,9 @@ async function generateSpecFromPrompt(label: string, prompt: string): Promise<Ap
     message: (lastError as Error).message,
   })
   logger.error("analysis.specification", `generation failed after retries (${label})`, { message: (lastError as Error).message })
-  throw lastError
+  const failure = lastError instanceof Error ? lastError : new Error(String(lastError))
+  ;(failure as Error & { rawText?: string }).rawText = lastRawText
+  throw failure
 }
 
 export async function generateSpecificationFromUnderstanding(
@@ -356,6 +379,7 @@ export async function generateSpecificationFromUnderstanding(
   return generateSpecFromPrompt(
     "from understanding",
     `<website_understanding>\n${context}\n</website_understanding>\n\nProduce the ApplicationSpecification for the working application this website should become. Return ONLY the raw JSON object.`,
+    projectId,
   )
 }
 
@@ -432,5 +456,6 @@ export async function generateSpecificationFromIdea(
   return generateSpecFromPrompt(
     "from idea",
     `<user_idea>\n${idea}\n</user_idea>\n\nProduce the ApplicationSpecification for this application idea. Return ONLY the raw JSON object.`,
+    projectId,
   )
 }

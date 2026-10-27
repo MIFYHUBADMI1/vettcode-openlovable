@@ -4,6 +4,7 @@
 export type TotalumErrorCode =
   | "MISSING_PROJECT_ID"
   | "PROJECT_NOT_FOUND"
+  | "PROJECT_ID_UNAVAILABLE"
   | "INSUFFICIENT_CREDITS"
   | "MAX_PROJECTS_REACHED"
   | "RATE_LIMIT_EXCEEDED"
@@ -14,11 +15,14 @@ export type TotalumErrorCode =
   | "NO_PROCESS_RUNNING"
   | "PROVIDER_NOT_CONFIGURED"
   | "UNAUTHORIZED_PROJECT_ACCESS"
+  | "PROVIDER_UNREACHABLE"
+  | "TLS_CLOCK"
   | "UNKNOWN"
 
 const FRIENDLY: Record<TotalumErrorCode, string> = {
   MISSING_PROJECT_ID: "Something went wrong starting this build. Please try again.",
   PROJECT_NOT_FOUND: "We couldn't find this project. It may have been removed.",
+  PROJECT_ID_UNAVAILABLE: "That app address is already in use. Choose another project ID.",
   INSUFFICIENT_CREDITS: "You don't have enough credits for this build. Please top up and try again.",
   UNAUTHORIZED_PROJECT_ACCESS: "You don't have permission to perform this action on this project.",
   MAX_PROJECTS_REACHED: "You've reached your project limit. Please remove a project or upgrade.",
@@ -30,6 +34,10 @@ const FRIENDLY: Record<TotalumErrorCode, string> = {
   NO_PROCESS_RUNNING: "There's no active build to stop.",
   PROVIDER_NOT_CONFIGURED:
     "The application builder isn't connected yet. Add your Totalum API key to enable building.",
+  PROVIDER_UNREACHABLE:
+    "The application builder couldn't be reached — the connection failed before your plan was sent. Nothing was built and nothing was charged, so it is safe to try again.",
+  TLS_CLOCK:
+    "Atai couldn't reach the application builder because this computer's clock looks wrong (the builder's security certificate isn't valid yet). Turn on automatic date and time in Windows, then try again.",
   UNKNOWN: "Something went wrong. Please try again.",
 }
 
@@ -56,6 +64,7 @@ export function mapTotalumError(status: number, body: string): TotalumError {
   const known: TotalumErrorCode[] = [
     "MISSING_PROJECT_ID",
     "PROJECT_NOT_FOUND",
+    "PROJECT_ID_UNAVAILABLE",
     "INSUFFICIENT_CREDITS",
     "MAX_PROJECTS_REACHED",
     "RATE_LIMIT_EXCEEDED",
@@ -71,5 +80,8 @@ export function mapTotalumError(status: number, body: string): TotalumError {
   if (status === 404) return new TotalumError("PROJECT_NOT_FOUND", body, status)
   if (status === 403) return new TotalumError("UNAUTHORIZED_PROJECT_ACCESS", body, status)
   if (status === 402) return new TotalumError("INSUFFICIENT_CREDITS", body, status)
+  // A 5xx is the provider failing, not the founder's request — it must not be
+  // reported as a client error, or the UI blames the plan that was never read.
+  if (status >= 500) return new TotalumError("PROVIDER_UNREACHABLE", body, status)
   return new TotalumError("UNKNOWN", body, status)
 }

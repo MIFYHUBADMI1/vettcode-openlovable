@@ -5,6 +5,7 @@ import { extractGithubRepo, extractWebsiteUrl } from "@/lib/start/detect-input"
 
 export function buildCreatePayload(pending: PendingStart) {
   const prompt = pending.prompt.trim()
+  const name = pending.title?.trim() || undefined
   const mode = pending.mode ?? "idea"
   const pipelineMode = pending.pipelineMode === "legacy" ? "legacy" : "heavy"
 
@@ -15,13 +16,13 @@ export function buildCreatePayload(pending: PendingStart) {
     const hasInstruction = words.length >= 4
     return {
       mode: "github" as const,
+      name,
       githubRepoOwner: match?.[1],
       githubRepoName: match?.[2],
       githubSubMode: hasInstruction ? ("extend" as const) : ("clone" as const),
       userRequest: hasInstruction ? prompt : undefined,
       idea: prompt,
       pipelineMode,
-      skipAnalysis: true,
       idempotencyKey: pending.idempotencyKey,
     }
   }
@@ -29,19 +30,19 @@ export function buildCreatePayload(pending: PendingStart) {
   if (mode === "website" || mode === "url") {
     return {
       mode: "website" as const,
+      name,
       url: extractWebsiteUrl(prompt) ?? prompt,
       idea: prompt,
       pipelineMode,
-      skipAnalysis: true,
       idempotencyKey: pending.idempotencyKey,
     }
   }
 
   return {
     mode: "scratch" as const,
+    name,
     idea: prompt,
     pipelineMode,
-    skipAnalysis: true,
     idempotencyKey: pending.idempotencyKey,
   }
 }

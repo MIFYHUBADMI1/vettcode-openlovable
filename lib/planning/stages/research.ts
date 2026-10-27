@@ -275,7 +275,7 @@ export class ResearchAgent {
    */
   async analyzeForGaps(
     understanding: IdeaUnderstanding | ProjectUnderstanding
-  ): Promise<ResearchFindings> {
+  ): Promise<ResearchFindings & { rawText?: string }> {
     const analyzedType = this.isIdeaUnderstanding(understanding) ? "idea" : "website"
 
     logger.info("[ResearchAgent] Starting gap analysis", "Analyzing requirements for gaps", {
@@ -313,7 +313,9 @@ export class ResearchAgent {
 
       // Requirement 2.8: Continue pipeline with empty findings on research failure
       logger.warn("[ResearchAgent] Returning empty findings", "Pipeline continues with empty findings", { analyzedType })
-      return this.getEmptyFindings(analyzedType)
+      const empty = this.getEmptyFindings(analyzedType)
+      const rawText = error instanceof ResearchError ? error.rawText : undefined
+      return rawText ? { ...empty, rawText } : empty
     }
   }
 
@@ -396,7 +398,8 @@ export class ResearchAgent {
 
       throw new ResearchError(
         `Model call failed on attempt ${attempt + 1}: ${error instanceof Error ? error.message : String(error)}`,
-        "Unable to perform gap analysis. Please try again."
+        "Unable to perform gap analysis. Please try again.",
+        error instanceof ResearchError ? error.rawText : undefined
       )
     }
   }
@@ -563,13 +566,15 @@ Analyze this website understanding and identify ALL gaps that need to be address
         const issues = (error as any).issues
         throw new ResearchError(
           `Schema validation failed: ${JSON.stringify(issues)}`,
-          "The AI response didn't match the expected format. Please try again."
+          "The AI response didn't match the expected format. Please try again.",
+          text
         )
       }
 
       throw new ResearchError(
         `Failed to parse AI response: ${error instanceof Error ? error.message : String(error)}`,
-        "Unable to process the AI response. Please try again."
+        "Unable to process the AI response. Please try again.",
+        text
       )
     }
   }

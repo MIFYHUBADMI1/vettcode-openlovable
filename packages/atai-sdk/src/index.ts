@@ -20,7 +20,6 @@ export { VoiceCapability } from "./capabilities/voice.js"
 export { SearchCapability } from "./capabilities/search.js"
 export { WebCapability } from "./capabilities/web.js"
 export { EmailCapability } from "./capabilities/email.js"
-export { SmsCapability, WhatsappCapability } from "./capabilities/messaging.js"
 export { NotificationsCapability } from "./capabilities/notifications.js"
 export { MapsCapability } from "./capabilities/maps.js"
 export { CalendarCapability } from "./capabilities/calendar.js"
@@ -50,8 +49,6 @@ export type {
   WebScrapeResult,
   EmailSendInput,
   EmailSendResult,
-  MessageSendInput,
-  MessageSendResult,
   NotificationSendInput,
   NotificationSendResult,
   MapsGeocodeInput,

@@ -191,31 +191,27 @@ export interface EmailSendResult {
   id: string
 }
 
-// ─── Messaging capabilities (mirrors `sms`/`send`, `whatsapp`/`send`) ──────
-
-export interface MessageSendInput {
-  /** Destination in E.164 form (e.g. "+15551234567"). */
-  to: string
-  body: string
-}
-
-export interface MessageSendResult {
-  messageId: string
-  status: string
-  segments?: number
-}
-
-// ─── Push notification capability (mirrors `notifications`/`send`) ────────
+// ─── Notification capability (mirrors `notifications`/`send`) ─────────────
 
 export interface NotificationSendInput {
-  /** Device token registered with the platform's notification service. */
-  token: string
+  /** Realtime channel/topic the application's clients subscribe to. */
+  channel: string
+  /** Event name clients listen for. Defaults to "notification". */
+  event?: string
   title: string
   body: string
+  /** Optional structured payload delivered alongside title/body. */
+  data?: Record<string, unknown>
+  /** Send on a private channel (subscribers must be authenticated). */
+  private?: boolean
 }
 
 export interface NotificationSendResult {
-  messageId: string
+  /** Fully-qualified topic after project scoping — safe to share with clients. */
+  channel: string
+  event: string
+  /** True when the runtime accepted the broadcast. */
+  accepted: boolean
 }
 
 // ─── Maps capability (mirrors `maps`/`geocode`, `maps`/`reverseGeocode`) ──
@@ -401,10 +397,18 @@ export interface AtaiHealthResult {
 // ─── Payments capability (mirrors `payments`/`createCheckout`) ──
 
 export interface PaymentsCreateCheckoutInput {
+  /**
+   * Checkout line items. Dodo bills catalog products: each item should carry
+   * a `productId` (`pdt_…`) created in your Dodo account — `price`/`name` are
+   * informational and the charged amount comes from the product itself.
+   */
   items: Array<{
-    name: string
-    quantity: number
-    price: number
+    /** Dodo product id to charge. Required unless the platform default is configured. */
+    productId?: string
+    name?: string
+    quantity?: number
+    /** Informational — Dodo bills the product's own price. */
+    price?: number
   }>
   idempotencyKey?: string
   successUrl?: string

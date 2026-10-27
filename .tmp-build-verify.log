@@ -295,3 +295,281 @@ C:\Users\USER\Desktop\mirrorsiteai>node  "C:\Users\USER\Desktop\mirrorsiteai\nod
   Creating an optimized production build ...
 ✓ Compiled successfully in 2.5min
   Running TypeScript ...
+  Finished TypeScript in 87s ...
+  Collecting page data using 3 workers ...
+[AI Model] Using: nvidia/nemotron-3-super-120b-a12b:free
+[AI Model] Using: nvidia/nemotron-3-super-120b-a12b:free
+[AI Model] Using: nvidia/nemotron-3-super-120b-a12b:free
+[AI Model] Using: nvidia/nemotron-3-super-120b-a12b:free
+  Generating static pages using 3 workers (0/167) ...
+  Generating static pages using 3 workers (41/167) 
+  Generating static pages using 3 workers (83/167) 
+  Generating static pages using 3 workers (125/167) 
+✓ Generating static pages using 3 workers (167/167) in 88s
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /about
+├ ○ /account
+├ ○ /admin
+├ ○ /admin/billing
+├ ○ /admin/billing/audit
+├ ○ /admin/billing/configuration
+├ ○ /admin/billing/credit-packs
+├ ○ /admin/billing/plans
+├ ○ /admin/billing/reconciliation
+├ ○ /admin/billing/subscriptions
+├ ○ /admin/billing/user-billing
+├ ○ /admin/billing/webhooks
+├ ○ /admin/cancellations
+├ ○ /admin/dodo-products
+├ ○ /admin/feature-requests
+├ ƒ /admin/feature-requests/[id]
+├ ○ /admin/feedback
+├ ○ /admin/infrastructure
+├ ○ /admin/ledger
+├ ○ /admin/payments
+├ ○ /admin/planning-runs
+├ ƒ /admin/planning-runs/[runId]
+├ ○ /admin/referrals
+├ ○ /admin/runtime
+├ ○ /admin/runtime/pricing
+├ ○ /admin/tools
+├ ○ /admin/transactions
+├ ○ /admin/users
+├ ○ /ads
+├ ƒ /api/admin/audit-logs
+├ ƒ /api/admin/billing/audit-log
+├ ƒ /api/admin/billing/configuration
+├ ƒ /api/admin/billing/overview
+├ ƒ /api/admin/billing/reconciliation
+├ ƒ /api/admin/billing/user-billing
+├ ƒ /api/admin/cancellations
+├ ƒ /api/admin/dodo-products
+├ ƒ /api/admin/feature-requests
+├ ƒ /api/admin/feature-requests/[id]
+├ ƒ /api/admin/feedback
+├ ƒ /api/admin/infrastructure
+├ ƒ /api/admin/infrastructure/[projectId]/plan
+├ ƒ /api/admin/infrastructure/[projectId]/sync
+├ ƒ /api/admin/ledger
+├ ƒ /api/admin/planning-runs
+├ ƒ /api/admin/planning-runs/[runId]
+├ ƒ /api/admin/referrals
+├ ƒ /api/admin/runtime/financials
+├ ƒ /api/admin/runtime/pricing
+├ ƒ /api/admin/runtime/pricing/[ruleId]
+├ ƒ /api/admin/runtime/usage
+├ ƒ /api/admin/self-credits
+├ ƒ /api/admin/stats
+├ ƒ /api/admin/transactions
+├ ƒ /api/admin/users
+├ ƒ /api/admin/users/[id]
+├ ƒ /api/auth/change-email
+├ ƒ /api/auth/change-password
+├ ƒ /api/auth/confirm-email-change
+├ ƒ /api/auth/forgot-password
+├ ƒ /api/auth/github
+├ ƒ /api/auth/github/callback
+├ ƒ /api/auth/google
+├ ƒ /api/auth/google/callback
+├ ƒ /api/auth/login
+├ ƒ /api/auth/logout
+├ ƒ /api/auth/onboarding
+├ ƒ /api/auth/register
+├ ƒ /api/auth/resend-verification
+├ ƒ /api/auth/sessions
+├ ƒ /api/auth/verify-email
+├ ƒ /api/billing/admin/top-ups
+├ ƒ /api/billing/admin/top-ups/[id]
+├ ƒ /api/billing/admin/top-ups/[id]/evidence
+├ ƒ /api/billing/checkout
+├ ƒ /api/billing/overview
+├ ƒ /api/billing/subscription/cancel
+├ ƒ /api/billing/subscription/cancel-feedback
+├ ƒ /api/billing/sync
+├ ƒ /api/billing/top-up
+├ ƒ /api/billing/top-up/[id]
+├ ƒ /api/billing/top-up/[id]/evidence
+├ ƒ /api/billing/top-up/[id]/verify
+├ ƒ /api/billing/webhook
+├ ƒ /api/cofounder
+├ ƒ /api/cofounder/actions/[id]
+├ ƒ /api/credit-costs
+├ ƒ /api/credits
+├ ƒ /api/explore
+├ ƒ /api/feature-requests
+├ ƒ /api/feature-requests/[id]
+├ ƒ /api/feature-requests/[id]/vote
+├ ƒ /api/finances/summary
+├ ƒ /api/github/repos
+├ ƒ /api/health
+├ ƒ /api/health/planning
+├ ƒ /api/internal/credits
+├ ƒ /api/internal/projects
+├ ƒ /api/me
+├ ƒ /api/me/avatar
+├ ƒ /api/me/profile
+├ ƒ /api/projects
+├ ƒ /api/projects/[id]
+├ ƒ /api/projects/[id]/activity
+├ ƒ /api/projects/[id]/agent
+├ ƒ /api/projects/[id]/agent/full-conversation
+├ ƒ /api/projects/[id]/agent/stop
+├ ƒ /api/projects/[id]/analyze-plan
+├ ƒ /api/projects/[id]/assets
+├ ƒ /api/projects/[id]/auto-complete
+├ ƒ /api/projects/[id]/build
+├ ƒ /api/projects/[id]/campaigns
+├ ƒ /api/projects/[id]/capture-preview
+├ ƒ /api/projects/[id]/content-studio
+├ ƒ /api/projects/[id]/database/query
+├ ƒ /api/projects/[id]/database/records
+├ ƒ /api/projects/[id]/database/records/[recordId]
+├ ƒ /api/projects/[id]/database/records/[recordId]/link
+├ ƒ /api/projects/[id]/database/tables
+├ ƒ /api/projects/[id]/deploy
+├ ƒ /api/projects/[id]/domain
+├ ƒ /api/projects/[id]/export
+├ ƒ /api/projects/[id]/fork
+├ ƒ /api/projects/[id]/generate-visual
+├ ƒ /api/projects/[id]/github
+├ ƒ /api/projects/[id]/infrastructure
+├ ƒ /api/projects/[id]/launch
+├ ƒ /api/projects/[id]/like
+├ ƒ /api/projects/[id]/logs
+├ ƒ /api/projects/[id]/market/studio
+├ ƒ /api/projects/[id]/plan-chat
+├ ƒ /api/projects/[id]/recover
+├ ƒ /api/projects/[id]/resources/action-plan
+├ ƒ /api/projects/[id]/resources/competitors
+├ ƒ /api/projects/[id]/resources/market-research
+├ ƒ /api/projects/[id]/resources/marketing-playbook
+├ ƒ /api/projects/[id]/retry
+├ ƒ /api/projects/[id]/runtime
+├ ƒ /api/projects/[id]/runtime/config
+├ ƒ /api/projects/[id]/runtime/control
+├ ƒ /api/projects/[id]/runtime/requests
+├ ƒ /api/projects/[id]/runtime/requests/[requestId]
+├ ƒ /api/projects/[id]/runtime/usage
+├ ƒ /api/projects/[id]/runtime/usage/export
+├ ƒ /api/projects/[id]/secrets
+├ ƒ /api/projects/[id]/secrets/[secretId]
+├ ƒ /api/projects/[id]/seo-audit
+├ ƒ /api/projects/[id]/server/restart
+├ ƒ /api/projects/[id]/settings
+├ ƒ /api/projects/[id]/source
+├ ƒ /api/projects/[id]/source-url
+├ ƒ /api/projects/[id]/status
+├ ƒ /api/projects/[id]/tasks
+├ ƒ /api/projects/[id]/version-diff
+├ ƒ /api/projects/[id]/versions
+├ ƒ /api/projects/[id]/visibility
+├ ƒ /api/public/feedback
+├ ƒ /api/public/feedback/stats
+├ ƒ /api/public/projects/[id]
+├ ƒ /api/public/stats
+├ ƒ /api/referrals
+├ ƒ /api/runtime/keys
+├ ƒ /api/runtime/keys/[keyId]
+├ ƒ /api/runtime/keys/[keyId]/rotate
+├ ƒ /api/runtime/v1
+├ ƒ /api/runtime/v1/health
+├ ƒ /api/start/pending
+├ ƒ /api/user/theme
+├ ƒ /api/users/[id]/follow
+├ ○ /billing/top-up
+├ ○ /competition
+├ ƒ /confirm-email-change
+├ ○ /dashboard
+├ ○ /database-terms
+├ ƒ /developers
+├ ƒ /developers/keys
+├ ƒ /developers/playground
+├ ƒ /developers/usage
+├ ○ /docs
+├ ○ /explore
+├ ○ /feature-requests
+├ ƒ /feature-requests/[id]
+├ ƒ /finances
+├ ○ /forgot-password
+├ ○ /hosting
+├ ○ /lessons
+├ ○ /login
+├ ○ /market
+├ ○ /modes-comparison
+├ ○ /new
+├ ○ /new/github
+├ ○ /new/idea
+├ ○ /new/website
+├ ƒ /pricing
+├ ○ /privacy
+├ ƒ /project/[projectId]
+├ ƒ /project/[projectId]/ads
+├ ƒ /project/[projectId]/campaigns
+├ ƒ /project/[projectId]/collaborate
+├ ƒ /project/[projectId]/competition
+├ ƒ /project/[projectId]/database
+├ ƒ /project/[projectId]/database/[tableName]
+├ ƒ /project/[projectId]/edit
+├ ƒ /project/[projectId]/env
+├ ƒ /project/[projectId]/finances
+├ ƒ /project/[projectId]/hosting
+├ ƒ /project/[projectId]/lessons
+├ ƒ /project/[projectId]/market
+├ ƒ /project/[projectId]/plan
+├ ƒ /project/[projectId]/progress
+├ ƒ /project/[projectId]/readme
+├ ƒ /project/[projectId]/repo-code
+├ ƒ /project/[projectId]/resources
+├ ƒ /project/[projectId]/runtime
+├ ƒ /project/[projectId]/runtime/health
+├ ƒ /project/[projectId]/runtime/keys
+├ ƒ /project/[projectId]/runtime/limits
+├ ƒ /project/[projectId]/runtime/models
+├ ƒ /project/[projectId]/runtime/requests
+├ ƒ /project/[projectId]/runtime/requests/[requestId]
+├ ƒ /project/[projectId]/runtime/usage
+├ ƒ /project/[projectId]/source
+├ ƒ /project/[projectId]/studio
+├ ƒ /project/[projectId]/tasks
+├ ƒ /project/[projectId]/tree
+├ ○ /projects
+├ ƒ /public/[id]
+├ ƒ /referrals
+├ ○ /refund-policy
+├ ○ /register
+├ ○ /resources
+├   /resources/[category]
+│ ├ ● /resources/start
+│ ├ ● /resources/build
+│ ├ ● /resources/launch
+│ └ ● [+5 more paths]
+├   /resources/[category]/[slug]
+│ ├ ● /resources/start/how-to-validate-a-business-idea
+│ ├ ● /resources/start/founder-fundamentals
+│ ├ ● /resources/build/how-to-build-an-mvp
+│ └ ● [+16 more paths]
+├ ○ /robots.txt
+├ ○ /sdk
+├ ƒ /settings
+├ ○ /settings/appearance
+├ ○ /settings/billing
+├ ○ /settings/profile
+├ ○ /settings/security
+├ ○ /sitemap.xml
+├ ○ /start
+├ ○ /terms
+├ ƒ /verify-email
+└ ○ /workspace
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+
+EXIT:0

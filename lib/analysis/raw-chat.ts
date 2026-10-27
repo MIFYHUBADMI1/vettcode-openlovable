@@ -166,6 +166,8 @@ export async function streamRawCompletion(options: {
   prompt: string
   maxOutputTokens?: number
   timeoutMs?: number
+  /** The founder pressed Stop: cut the provider request, not just the UI. */
+  abortSignal?: AbortSignal
   onDelta: (text: string) => void
 }): Promise<RawStreamResult> {
   const apiKey = process.env.OPENROUTER_API_KEY
@@ -173,6 +175,8 @@ export async function streamRawCompletion(options: {
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 180_000)
+  const onExternalAbort = () => controller.abort()
+  options.abortSignal?.addEventListener("abort", onExternalAbort, { once: true })
   const contentParts: string[] = []
   const reasoningParts: string[] = []
   let hitLength = false
@@ -245,5 +249,6 @@ export async function streamRawCompletion(options: {
     return { text, truncated: true, failed: false }
   } finally {
     clearTimeout(timer)
+    options.abortSignal?.removeEventListener("abort", onExternalAbort)
   }
 }

@@ -49,6 +49,8 @@ export interface ActivityItem {
 const ACTION_STATES = new Set<ProjectState>([
   "plan_ready",
   "awaiting_build_confirmation",
+  "analysis_failed",
+  "plan_failed",
   "build_failed",
   "deployment_failed",
   "specification_ready",
@@ -98,6 +100,26 @@ export function interpretProjectState(state: ProjectState, projectId: string): D
         severity: "success",
         journeyStage: "plan",
         founderLabel: "Ready to plan",
+      }
+    case "analysis_failed":
+      return {
+        headline: "Understanding needs attention.",
+        description: "Atai couldn't finish reading your input. Open the project and retry the Understand step.",
+        primaryAction: { label: "Retry understanding", href: workspace },
+        secondaryAction: { label: "Ask Atai", href: collaborate },
+        severity: "error",
+        journeyStage: "vision",
+        founderLabel: "Understand needs attention",
+      }
+    case "plan_failed":
+      return {
+        headline: "Your plan needs attention.",
+        description: "Atai couldn't finish the plan. Open the project and retry the Plan step.",
+        primaryAction: { label: "Retry planning", href: workspace },
+        secondaryAction: { label: "Ask Atai", href: collaborate },
+        severity: "error",
+        journeyStage: "plan",
+        founderLabel: "Plan needs attention",
       }
     case "specification_ready":
     case "plan_ready":
@@ -188,7 +210,14 @@ export function selectActiveProject(projects: ProjectSummary[]): ProjectSummary 
   if (projects.length === 0) return null
 
   const rank = (p: ProjectSummary) => {
-    if (p.state === "build_failed" || p.state === "deployment_failed") return 0
+    if (
+      p.state === "build_failed" ||
+      p.state === "deployment_failed" ||
+      p.state === "analysis_failed" ||
+      p.state === "plan_failed"
+    ) {
+      return 0
+    }
     if (ACTION_STATES.has(p.state)) return 1
     if (ACTIVE_BUILD.has(p.state)) return 2
     if (COMPLETED_WORK.has(p.state)) return 3
@@ -228,7 +257,27 @@ export function getDashboardAttentionItems(input: {
   }
 
   for (const project of input.projects) {
-    if (project.state === "build_failed") {
+    if (project.state === "analysis_failed") {
+      items.push({
+        id: `analysis-fail-${project.id}`,
+        title: "Understanding needs attention",
+        description: `${project.name}: Atai couldn't finish reading your input.`,
+        href: `/project/${project.id}`,
+        actionLabel: "Retry step",
+        severity: "error",
+        projectId: project.id,
+      })
+    } else if (project.state === "plan_failed") {
+      items.push({
+        id: `plan-fail-${project.id}`,
+        title: "Plan needs attention",
+        description: `${project.name}: Atai couldn't finish the plan.`,
+        href: `/project/${project.id}`,
+        actionLabel: "Retry step",
+        severity: "error",
+        projectId: project.id,
+      })
+    } else if (project.state === "build_failed") {
       items.push({
         id: `build-fail-${project.id}`,
         title: "Build needs attention",

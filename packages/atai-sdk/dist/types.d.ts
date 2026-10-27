@@ -155,24 +155,24 @@ export interface EmailSendInput {
 export interface EmailSendResult {
     id: string;
 }
-export interface MessageSendInput {
-    /** Destination in E.164 form (e.g. "+15551234567"). */
-    to: string;
-    body: string;
-}
-export interface MessageSendResult {
-    messageId: string;
-    status: string;
-    segments?: number;
-}
 export interface NotificationSendInput {
-    /** Device token registered with the platform's notification service. */
-    token: string;
+    /** Realtime channel/topic the application's clients subscribe to. */
+    channel: string;
+    /** Event name clients listen for. Defaults to "notification". */
+    event?: string;
     title: string;
     body: string;
+    /** Optional structured payload delivered alongside title/body. */
+    data?: Record<string, unknown>;
+    /** Send on a private channel (subscribers must be authenticated). */
+    private?: boolean;
 }
 export interface NotificationSendResult {
-    messageId: string;
+    /** Fully-qualified topic after project scoping — safe to share with clients. */
+    channel: string;
+    event: string;
+    /** True when the runtime accepted the broadcast. */
+    accepted: boolean;
 }
 export interface MapsGeocodeInput {
     query: string;

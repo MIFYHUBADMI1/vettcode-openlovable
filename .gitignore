@@ -9,6 +9,7 @@ __v0_jsx-dev-runtime.ts
 # Environment variables
 .env
 .env*.local
+.tmp/
 
 # Common ignores
 node_modules
@@ -28,3 +29,6 @@ tsconfig.tsbuildinfo
 **/*.spec.tsx
 **/__tests__/**
 packages/atai-sdk/tests/**
+
+# Local caches
+.cache/

@@ -1,7 +1,7 @@
 {
   "name": "@atai-group/sdk",
   "version": "1.0.0",
-  "description": "Official Atai Runtime SDK — the typed client for the Atai Runtime API. AI, voice, search, scraping, email, SMS, WhatsApp, notifications, maps, calendar, vectors, database and payments behind one API key.",
+  "description": "Official Atai Runtime SDK — the typed client for the Atai Runtime API. AI, voice, search, scraping, email, notifications, maps, calendar, vectors, database and payments behind one API key.",
   "license": "UNLICENSED",
   "author": {
     "name": "ATAI Enterprises",
@@ -27,9 +27,7 @@
     "embeddings",
     "vectors",
     "email",
-    "sms",
-    "whatsapp",
-    "push-notifications",
+    "realtime-notifications",
     "maps",
     "geocoding",
     "calendar",

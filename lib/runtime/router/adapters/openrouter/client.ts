@@ -35,7 +35,7 @@ export async function executeOpenRouterJsonPost(
     const latencyMs = Date.now() - startedAt
     if (!res.ok) {
       const detail = await res.text().catch(() => "")
-      throw openRouterFailure(
+      throw routingCapabilityFailure(readErrorEnvelope(detail)) ?? openRouterFailure(
         categoryForStatus(res.status),
         "OpenRouter request failed",
         detail.slice(0, 300) || undefined,
@@ -46,7 +46,7 @@ export async function executeOpenRouterJsonPost(
     })
     const errBody = payload as OpenRouterErrorBody
     if (errBody && typeof errBody === "object" && errBody.error && !Array.isArray(errBody)) {
-      throw openRouterFailure(
+      throw routingCapabilityFailure(errBody.error) ?? openRouterFailure(
         categoryForStatus(Number(errBody.error.code ?? 500)),
         "OpenRouter request failed",
         String(errBody.error.message ?? "").slice(0, 300),
@@ -66,9 +66,19 @@ export async function executeOpenRouterJsonPost(
 
 /**
  * POST to the speech endpoint, which returns RAW AUDIO BYTES (not JSON).
- * Normalized into the caller's ArrayBuffer — JSON handling is the mapper's.
+ * Normalized into the caller's ArrayBuffer plus the metadata a client needs
+ * to play the clip: the REAL Content-Type (mp3 vs pcm) and generation id.
+ *
+ * A 2xx is not enough to trust: some routes answer 200 with a JSON error
+ * envelope instead of audio. Anything that is not `audio/*` is parsed as an
+ * error rather than base64-encoded into a broken "audio" payload.
  */
-export async function executeOpenRouterSpeech(body: unknown): Promise<{ bytes: ArrayBuffer; latencyMs: number }> {
+export async function executeOpenRouterSpeech(body: unknown): Promise<{
+  bytes: ArrayBuffer
+  contentType: string | undefined
+  generationId: string | undefined
+  latencyMs: number
+}> {
   const startedAt = Date.now()
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), getOpenRouterTimeoutMs())
@@ -81,11 +91,36 @@ export async function executeOpenRouterSpeech(body: unknown): Promise<{ bytes: A
       redirect: "error",
     })
     const latencyMs = Date.now() - startedAt
+    const contentType = res.headers.get("content-type") ?? undefined
     if (!res.ok) {
       const detail = await res.text().catch(() => "")
-      throw openRouterFailure(categoryForStatus(res.status), "OpenRouter request failed", detail.slice(0, 300) || undefined)
+      throw (
+        routingCapabilityFailure(readErrorEnvelope(detail)) ??
+        openRouterFailure(categoryForStatus(res.status), "OpenRouter request failed", detail.slice(0, 300) || undefined)
+      )
     }
-    return { bytes: await res.arrayBuffer(), latencyMs }
+    if (!contentType?.startsWith("audio/")) {
+      const detail = await res.text().catch(() => "")
+      throw routingCapabilityFailure(readErrorEnvelope(detail)) ?? openRouterFailure(
+        "provider_error",
+        "The AI provider returned an invalid response.",
+        `speech response was not audio (content-type: ${contentType ?? "missing"})${detail ? `: ${detail.slice(0, 240)}` : ""}`,
+      )
+    }
+    const bytes = await res.arrayBuffer()
+    if (bytes.byteLength === 0) {
+      throw openRouterFailure(
+        "provider_error",
+        "The AI provider returned an invalid response.",
+        "speech response contained zero audio bytes",
+      )
+    }
+    return {
+      bytes,
+      contentType,
+      generationId: res.headers.get("x-generation-id") ?? undefined,
+      latencyMs,
+    }
   } catch (e) {
     if (isAlreadyNormalized(e)) throw e
     throw openRouterFailure(
@@ -101,6 +136,8 @@ import {
   categoryForStatus,
   openRouterFailure,
   ProviderNotConfiguredError,
+  readErrorEnvelope,
+  routingCapabilityFailure,
 } from "./errors"
 import { ProviderExecutionError } from "@/lib/runtime/router/adapter"
 
@@ -187,7 +224,7 @@ export async function executeChatCompletion(
         // credential is in the request headers, which are never logged.
         detail: detail.slice(0, 300),
       })
-      throw openRouterFailure(
+      throw routingCapabilityFailure(readErrorEnvelope(detail)) ?? openRouterFailure(
         categoryForStatus(res.status),
         "OpenRouter request failed",
         detail.slice(0, 300) || undefined,
@@ -214,7 +251,7 @@ export async function executeChatCompletion(
         latencyMs,
         detail: String(body.error.message ?? "").slice(0, 300),
       })
-      throw openRouterFailure(
+      throw routingCapabilityFailure(body.error) ?? openRouterFailure(
         categoryForStatus(Number(body.error.code ?? 500)),
         "OpenRouter request failed",
         String(body.error.message ?? "").slice(0, 300),

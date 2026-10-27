@@ -669,7 +669,6 @@ packages:
   '@next/swc-win32-x64-msvc@16.3.5':
     resolution: {integrity: sha512-LNdCHzgLFc+UeqMS84LzXPaeBRKyqDN9OMyFAr1OrB0XrNw78IRrEVtZvvA7245W/HsaoeVOQX9jPjPk8jojwA==}
     engines: {node: '>= 10'}
-    cpu: [x64]
     os: [win32]
 
   '@nodelib/fs.scandir@2.1.5':
