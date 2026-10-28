@@ -2590,6 +2590,11 @@ function LaunchButton({
         surface: "collaborate_launch",
       })
       toast.success("Build started — redirecting to your workspace…")
+      try {
+        sessionStorage.setItem(`atai.watch-build:${projectId}`, "1")
+      } catch {
+        // Storage blocked (private mode) — the workspace still shows its own build card.
+      }
       router.push(`/project/${projectId}`)
       router.refresh()
     } catch (e) {

@@ -28,6 +28,7 @@ import { ensureProtocol, cn } from "@/lib/utils"
 import { ProductPreview, ReferenceSitePreview } from "@/components/workspace/product-preview"
 import { TeamHandoff } from "@/components/workspace/team-handoff"
 import { ProjectIdDialog } from "@/components/project-id-dialog"
+import { BuildStageOverlay } from "@/components/workspace/build-stage-overlay"
 
 const FAILED_STATES: ReadonlySet<ProjectState> = new Set([
   "analysis_failed",
@@ -65,6 +66,7 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
   const [busy, setBusy] = useState(false)
   const [projectIdDialogOpen, setProjectIdDialogOpen] = useState(false)
   const [pendingBuildMutation, setPendingBuildMutation] = useState<"build" | "retry_build">("build")
+  const [buildOverlayOpen, setBuildOverlayOpen] = useState(false)
 
   const project = fetched
   const state = ((statusData as { state?: ProjectState } | undefined)?.state ?? projectState) as ProjectState
@@ -111,7 +113,48 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
     return () => clearTimeout(timer)
   }, [planReady, state, projectId, fetched, router])
 
+  // Auto-resume orphaned builds: when user returns to workspace page with a
+  // build that's in "building" or "deploying" state, immediately trigger status
+  // poll to check completion and resume polling. Fire once per project to avoid
+  // duplicate triggers on re-renders.
+  const autoResumeTriggeredRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!project?.totalumProjectId) return
+    if (state !== "building" && state !== "deploying") return
+
+    // Guard: fire only once per project
+    const projectKey = `${projectId}-${project.totalumProjectId}`
+    if (autoResumeTriggeredRef.current === projectKey) return
+    autoResumeTriggeredRef.current = projectKey
+
+    // Detect orphaned builds: statusData is null/undefined on mount for builds
+    // where the user left the page and returned
+    const isOrphanedBuild = !statusData
+
+    if (isOrphanedBuild) {
+      toast.info("Reconnecting to your build...")
+    }
+
+    // Trigger immediate status poll to resume monitoring
+    void refreshStatus()
+  }, [project?.totalumProjectId, state, projectId, statusData, refreshStatus])
+
+  // A build started on the Collaborate page hands over here — honour the hand-off
+  // by opening the stage room once, so the founder lands on live commentary.
+  useEffect(() => {
+    const key = `atai.watch-build:${projectId}`
+    let flagged = false
+    try {
+      flagged = sessionStorage.getItem(key) === "1"
+      if (flagged) sessionStorage.removeItem(key)
+    } catch {
+      // Storage blocked (private mode) — the inline build card still covers this.
+    }
+    if (flagged) setBuildOverlayOpen(true)
+  }, [projectId])
+
   const stalledStep = steps.find((step) => step.stalled && step.action) ?? null
+
   const currentStepId =
     steps.find((step) => step.status === "at_work" || step.status === "getting_ready" || step.status === "needs_attention")?.id ??
     view?.phase
@@ -129,6 +172,7 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
         await postJson(`/api/projects/${projectId}/retry`, {})
       }
       toast.success(MUTATION_MESSAGE[kind])
+      if (kind === "build" || kind === "retry_build") setBuildOverlayOpen(true)
       await Promise.all([refresh(), refreshSession(), refreshStatus()])
     } finally {
       setBusy(false)
@@ -169,6 +213,22 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
         projectName={project.name}
         initialProjectId={project.requestedProjectId}
         onConfirm={(requestedProjectId) => performMutation(pendingBuildMutation, requestedProjectId)}
+      />
+      <BuildStageOverlay
+        projectId={projectId}
+        projectName={project.name}
+        projectPurpose={project.idea ?? project.specification?.description}
+        sourceUrl={project.sourceUrl}
+        open={buildOverlayOpen}
+        onOpenChange={setBuildOverlayOpen}
+        onRetry={() => {
+          setBuildOverlayOpen(false)
+          void runMutation("retry_build")
+        }}
+        onFinished={() => {
+          void Promise.all([refresh(), refreshSession()])
+          router.refresh()
+        }}
       />
       <nav className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
         <Link href="/projects" className="hover:text-foreground">All Projects</Link>
@@ -327,7 +387,7 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
             </section>
           ) : null}
 
-<section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Product health</p>
             <ul className="mt-4 grid gap-3 sm:grid-cols-2">
               {view.capabilities.map((cap) => (
@@ -359,7 +419,14 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
                 {state === "building" ? <Hammer className="size-4" /> : <Rocket className="size-4" />}
                 {state === "building" ? "Engineering is building" : "The launch team is publishing"}
               </p>
-              <p className="mt-2 text-sm text-muted-foreground">This can take a while. You can stay on this page.</p>
+              <p className="mt-2 text-sm text-muted-foreground">This can take a while. Keep this tab open — the build rides on this session.</p>
+              <button
+                type="button"
+                onClick={() => setBuildOverlayOpen(true)}
+                className="mt-3 inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                Watch the teams work
+              </button>
             </section>
           ) : null}
 
@@ -494,7 +561,7 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
             )}
           </section>
 
-<section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+          <section className="rounded-2xl border border-border bg-card p-5 shadow-sm">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">Grow your business</p>
             <p className="mt-2 text-sm text-muted-foreground">Your co-founder can help you plan the next growth move. Some of these areas are still on the way.</p>
             <div className="mt-4 grid gap-2">
