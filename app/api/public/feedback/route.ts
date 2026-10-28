@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server"
 import { docFeedbackCol } from "@/lib/db/collections"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
+import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { createHash } from "crypto"
 
 const VALID_SECTIONS = [
@@ -29,6 +30,15 @@ const VALID_SECTIONS = [
  */
 export async function POST(req: NextRequest) {
   try {
+    // Unauthenticated upsert with an attacker-chosen dedup key — without a
+    // limit each distinct visitorId inserts a permanent document (storage DoS).
+    await checkRateLimit({
+      action: "doc_feedback",
+      identifier: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous",
+      limit: 60,
+      windowMs: 60 * 60 * 1000,
+    })
+
     const body = await req.json()
     const { sectionId, vote, visitorId: rawVisitorId } = body as {
       sectionId?: string

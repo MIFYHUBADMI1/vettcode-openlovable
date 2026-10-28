@@ -70,14 +70,30 @@ export interface CreditCostTable {
 /** Every API route responds with the `{ ok, data }` / `{ ok: false, error }`
  * envelope from `lib/api/respond.ts`. These helpers unwrap it once so call
  * sites can work with plain payloads. */
-type Envelope<T> = { ok: true; data: T } | { ok: false; error: { code?: string; message?: string } }
+type Envelope<T> = {
+  ok: true
+  data: T
+} | {
+  ok: false
+  error?: { code?: string; message?: string; meta?: Record<string, unknown> }
+}
+
+/** Failures keep the wire contract: `code` for branching, `status` for HTTP
+ * meaning, and `meta` for the numbers a route sent (credits, limits). */
+export interface ApiError extends Error {
+  code?: string
+  status?: number
+  meta?: Record<string, unknown>
+}
 
 function unwrap<T>(body: unknown, status: number): T {
   if (body && typeof body === "object" && "ok" in body) {
     const envelope = body as Envelope<T>
     if (envelope.ok) return envelope.data
-    const err = new Error(envelope.error?.message ?? `Request failed (${status})`) as Error & { code?: string }
+    const err = new Error(envelope.error?.message ?? `Request failed (${status})`) as ApiError
     err.code = envelope.error?.code
+    err.status = status
+    if (envelope.error?.meta) err.meta = envelope.error.meta
     throw err
   }
   throw new Error(`Request failed (${status})`)

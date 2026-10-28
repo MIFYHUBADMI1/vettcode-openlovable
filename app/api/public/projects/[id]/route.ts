@@ -21,9 +21,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         return fail("PROJECT_NOT_FOUND", "This project doesn't exist.", 404)
       }
       
-      // Check if project is public
+      // Check if project is public — answer with the same 404 as a missing
+      // project so this endpoint can't enumerate which ids exist privately.
       if (project.visibility !== "public") {
-        return fail("PROJECT_PRIVATE", "This project is private.", 403)
+        return fail("PROJECT_NOT_FOUND", "This project doesn't exist.", 404)
       }
       
       // Check if project has been deployed

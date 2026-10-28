@@ -16,8 +16,9 @@ export async function GET() {
       const client = await getMongoClient()
       await client.db().command({ ping: 1 })
       checks.mongo = { status: "ok", latencyMs: Date.now() - startedAt }
-    } catch (e) {
-      checks.mongo = { status: "error", error: (e as Error).message, latencyMs: Date.now() - startedAt }
+    } catch {
+      // Driver messages can contain host/auth fragments — status only here.
+      checks.mongo = { status: "error", latencyMs: Date.now() - startedAt }
     }
   }
 

@@ -6,6 +6,7 @@ import { logger } from "@/lib/logging/logger"
 import type { MirrorProject, BuildRun, CreditTransaction, ProjectEvent, ConversationMessage, DeploymentHistoryEntry, ProjectState } from "@/lib/types/project"
 import type { RuntimeEnvironment } from "@/runtime/contracts/capabilities"
 import type { RuntimeProvisioningRecord } from "@/lib/runtime/provisioning/types"
+import { AppError } from "@/lib/errors"
 import {
   getAvailableCredits,
   getCreditHistory,
@@ -118,7 +119,7 @@ export class MongoStore implements DataStore {
       })
     } else {
       // Consume credits through credit-service
-      await consumeCredits({
+      const result = await consumeCredits({
         userId: tx.userId,
         amount: absoluteAmount,
         transactionType: tx.type === 'consume' ? 'build_finalization' : 'admin_adjustment',
@@ -133,6 +134,19 @@ export class MongoStore implements DataStore {
           ...tx.metadata
         }
       })
+
+      // A denied debit must NOT be swallowed: consumeCredits returns
+      // { success: false } (no ledger entry, no balance change) when the
+      // balance is insufficient. Silently returning here made every
+      // post-hoc charge (scrape / plan / deep crawl / reconciliation) a
+      // no-op for an underfunded account — the provider work was delivered
+      // for free and the ledger showed no charge at all.
+      if (!result.success) {
+        throw new AppError(
+          "INSUFFICIENT_CREDITS",
+          `Insufficient credits: ${absoluteAmount.toLocaleString()} required.`,
+        )
+      }
     }
 
     // Cache invalidation still handled locally
@@ -143,7 +157,12 @@ export class MongoStore implements DataStore {
   async reserveCreditsAtomic(userId: string, amount: number, tx: CreditTransaction): Promise<boolean> {
     // Delegate to credit-service reservation logic
     try {
-      await reserveCredits({
+      // credit-service.reserveCredits returns FALSE (it does not throw) when
+      // the balance is insufficient. That boolean is the whole contract of
+      // this method — dropping it made every caller believe the reservation
+      // succeeded, so the "insufficient credits" guards in the build and
+      // planning pipelines could never fire.
+      const reserved = await reserveCredits({
         userId,
         amount,
         buildId: tx.buildRunId || 'unknown',
@@ -161,7 +180,7 @@ export class MongoStore implements DataStore {
       this.cache.delete(`bal:${userId}`)
       this.cache.delete(`tx:${userId}`)
 
-      return true
+      return reserved
     } catch (error) {
       // If reservation fails due to insufficient balance, return false
       if (error instanceof Error && error.message?.includes('Insufficient credits')) {
@@ -219,6 +238,23 @@ export class MongoStore implements DataStore {
     const updated = result ? stripMongoId(result) : null
     this.cacheSet(`proj:${id}`, updated, Date.now())
     return updated
+  }
+
+  /** Records a build-status poll without marking the project itself changed:
+   * `updatedAt` is deliberately untouched so the projects list keeps showing
+   * when the founder last acted, not the last time we polled the builder.
+   * Best-effort — a failed timestamp write must never fail the poll. */
+  async touchBuildPoll(id: string, at: number): Promise<void> {
+    try {
+      const col = await projectsCol()
+      await col.updateOne({ id }, { $set: { lastPolledAt: at } })
+      const cached = this.cache.get(`proj:${id}`)
+      if (cached?.v) {
+        this.cache.set(`proj:${id}`, { v: { ...(cached.v as object), lastPolledAt: at }, t: cached.t })
+      }
+    } catch (e) {
+      logger.warn("store.mongo", "touchBuildPoll failed (non-fatal)", { id, error: (e as Error).message })
+    }
   }
 
   async isRequestedProjectIdAvailable(requestedProjectId: string, excludeProjectId?: string): Promise<boolean> {

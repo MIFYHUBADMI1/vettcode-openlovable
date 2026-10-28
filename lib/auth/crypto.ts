@@ -13,6 +13,20 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash)
 }
 
+// Constant hash used when no real hash exists, so unknown-email and
+// no-password logins burn the same bcrypt time as a real mismatch.
+const DUMMY_HASH = bcrypt.hashSync("dummy-for-timing-equalization", BCRYPT_ROUNDS)
+
+/**
+ * Verify a password when the account has no usable hash (unknown email,
+ * OAuth-only account). Costs the same as a real check so response time
+ * does not leak which emails are registered.
+ */
+export async function verifyPasswordWithoutUser(password: string): Promise<false> {
+  await bcrypt.compare(password, DUMMY_HASH)
+  return false
+}
+
 export function isPasswordStrongEnough(password: string): boolean {
   return typeof password === "string" && password.length >= 8
 }

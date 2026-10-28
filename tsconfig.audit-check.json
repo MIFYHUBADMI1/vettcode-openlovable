@@ -1,0 +1,35 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false
+  },
+  "include": [],
+  "files": [
+    "proxy.ts",
+    "app/api/explore/route.ts",
+    "app/api/health/route.ts",
+    "app/api/health/planning/route.ts",
+    "app/api/public/feedback/route.ts",
+    "app/api/public/projects/[id]/route.ts",
+    "app/api/admin/planning-runs/route.ts",
+    "app/api/admin/planning-runs/[runId]/route.ts",
+    "app/api/admin/billing/user-billing/route.ts",
+    "app/api/auth/login/route.ts",
+    "app/api/projects/[id]/fork/route.ts",
+    "app/api/projects/[id]/deploy/route.ts",
+    "app/api/projects/[id]/status/route.ts",
+    "app/api/projects/[id]/generate-visual/route.ts",
+    "lib/auth/session.ts",
+    "lib/auth/crypto.ts",
+    "lib/billing/credit-service.ts",
+    "lib/utils.ts",
+    "app/api/explore/route.test.ts",
+    "app/api/projects/[id]/fork-refund.test.ts",
+    "app/api/projects/[id]/deploy-claim.test.ts",
+    "lib/billing/credit-service.reversal-race.test.ts",
+    "lib/auth/__tests__/session-revocation.test.ts",
+    "lib/intelligence/overview.test.ts",
+    "proxy.test.ts"
+  ]
+}

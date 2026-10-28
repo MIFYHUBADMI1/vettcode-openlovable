@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth/session"
 import { store, cryptoId } from "@/lib/store/store"
 import { consumeCredits, getAvailableCredits } from "@/lib/billing/credit-service"
 import { projectAssetsCol } from "@/lib/db/collections"
-import { ok, fail, handleRouteError } from "@/lib/api/respond"
+import { fail, failInsufficientCredits, handleRouteError, ok } from "@/lib/api/respond"
 import { uploadImageToImageKit } from "@/lib/imagekit/upload"
 import {
   getOpenRouterBaseUrl,
@@ -97,6 +97,11 @@ export async function POST(
     }
     const aspectRatio: VisualAspectRatio = requestedAspectRatio ?? "16:9"
 
+    // style is forwarded verbatim into the provider prompt — cap its size.
+    if (style !== undefined && (typeof style !== "string" || style.length > 2000)) {
+      return fail("VALIDATION", "Unsupported style.", 422)
+    }
+
     // Optional client intent id → stable ledger identity for THIS generation
     // (validated + scoped to this user/project; never authorization). Absent →
     // previous per-attempt key, so distinct generations stay distinct.
@@ -155,11 +160,11 @@ export async function POST(
     const upfrontCredits = modelInfo.fixedCreditCost ?? VISUAL_FALLBACK_CREDITS
     const available = await getAvailableCredits(user.id)
     if (available < upfrontCredits) {
-      return fail(
-        "INSUFFICIENT_CREDITS",
-        `You need ${upfrontCredits.toLocaleString()} credits for this image. Available: ${available.toLocaleString()}.`,
-        402,
-      )
+      return failInsufficientCredits({
+        required: upfrontCredits,
+        available,
+        message: `You need ${upfrontCredits.toLocaleString()} credits for this image. Available: ${available.toLocaleString()}.`,
+      })
     }
 
     const startTime = Date.now()
@@ -232,11 +237,11 @@ export async function POST(
       },
     })
     if (!charged.success) {
-      return fail(
-        "INSUFFICIENT_CREDITS",
-        "You don't have enough credits to keep this image. Please top up and try again.",
-        402,
-      )
+      return failInsufficientCredits({
+        required: upfrontCredits,
+        available: await getAvailableCredits(user.id),
+        message: "You don't have enough credits to keep this image. Please top up and try again.",
+      })
     }
 
     const response: VisualMockupResponse = {

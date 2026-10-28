@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth/session"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
-import { ok, fail, handleRouteError } from "@/lib/api/respond"
+import { fail, failInsufficientCredits, handleRouteError, ok } from "@/lib/api/respond"
 import { store } from "@/lib/store/store"
 import { checkProjectOwnership } from "@/lib/runtime/ownership"
 import { isSeoAuditEnabledForUser } from "@/lib/marketing/feature-flags"
@@ -112,10 +112,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     intentKey = scopedIntentKey(parsed.data.requestId, { userId: user.id, operation: "seo_audit", projectId: id })
 
     const { cost, available, affordable } = await getSeoAuditAffordability(user.id)
-    if (!affordable) return fail("INSUFFICIENT_CREDITS", `This audit costs ${cost} credits and you have ${available}.`, 402)
+    if (!affordable)
+      return failInsufficientCredits({
+        required: cost,
+        available,
+        message: `This audit costs ${cost} credits and you have ${available}.`,
+      })
 
     charged = await chargeSeoAuditCredits(user.id, id, intentKey)
-    if (!charged) return fail("INSUFFICIENT_CREDITS", "You don't have enough credits for this audit.", 402)
+    if (!charged)
+      return failInsufficientCredits({
+        required: cost,
+        available,
+        message: "You don't have enough credits for this audit.",
+      })
     chargedAmount = cost
 
     const outcome = await runSeoAudit({

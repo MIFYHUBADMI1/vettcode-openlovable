@@ -247,7 +247,7 @@ export function BuildStageOverlay({
             </DialogHeader>
 
             <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-xs leading-5 text-amber-700 dark:text-amber-400">
-              <strong className="font-semibold">Keep this tab open</strong> — the build runs in your browser session. Minimising is fine; closing the tab or refreshing stops it and costs a restart.
+              <strong className="font-semibold">Best watched live</strong> — keep this tab open for the running commentary. If you do leave, the build carries on and your workspace reconnects to it when you come back; you never lose the work or the credits.
             </div>
 
             <div className="flex items-center gap-2" role="img" aria-label={`Stage ${stageIndex + 1} of ${BUILD_STAGES.length}: ${stage.name}`}>

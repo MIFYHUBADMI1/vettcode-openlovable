@@ -231,6 +231,25 @@ export interface MirrorProject {
   /** Every AI stage output produced for this project — including raw model
    * text when an answer could not be parsed. Surfaced on Collaborate. */
   aiArtifacts?: AIArtifact[]
+  /** Timestamp of the last status poll for builds in "building" or "deploying" state.
+   * Used to distinguish stale builds (lastPolledAt > 5 minutes ago) from actively polled builds.
+   * Optional - no migration needed, will populate on next poll for active builds. */
+  lastPolledAt?: number
+  /** Set when a background pipeline run (auto-build, website analysis, deep
+   * crawl) stopped because the owner could not afford the next step. There is
+   * no HTTP request to refuse in that flow, so the shortfall is recorded here
+   * and the credit gate turns it into the same top-up overlay. */
+  creditBlock?: ProjectCreditBlock
+}
+
+/** A credit shortfall raised by a run with no request to answer. Safe numbers
+ * only — never a balance other than the owner's own. */
+export interface ProjectCreditBlock {
+  required: number
+  available: number
+  /** What the founder was trying to get done, e.g. "the website analysis". */
+  action: string
+  at: number
 }
 
 /** Alias used throughout the frontend; kept distinct from `MirrorProject` so
@@ -246,6 +265,10 @@ export interface ProjectSummary {
   sourceUrl?: string
   updatedAt: number
   thumbnailUrl?: string | null
+  /** Present so the projects list can resume a build that is still running
+   * after the founder left the project page (see lib/projects/build-recovery). */
+  totalumProjectId?: string
+  lastPolledAt?: number
   visibility?: "private" | "public"
 }
 

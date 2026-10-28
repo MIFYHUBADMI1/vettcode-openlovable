@@ -13,3 +13,8 @@ export function ensureProtocol(url: string | undefined | null): string {
   if (url.startsWith("http://") || url.startsWith("https://")) return url
   return `https://${url}`
 }
+
+/** Neutralize RegExp metacharacters before user text is compiled into a $regex. */
+export function escapeRegex(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}

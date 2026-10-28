@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/auth/session"
 import { ok, handleRouteError } from "@/lib/api/respond"
 import { usersCol, creditLedgerCol, topupsCol, projectsCol, buildRunsCol } from "@/lib/db/collections"
 import { CREDIT_BACK_REVERSAL_TRANSACTION_TYPES } from "@/lib/billing/reversal-types"
+import { escapeRegex } from "@/lib/utils"
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,7 +23,8 @@ export async function GET(request: NextRequest) {
     // Build user query
     const userQuery: Record<string, unknown> = { deletedAt: { $exists: false } }
     if (search) {
-      const q = search.toLowerCase()
+      // Free text is compiled into $regex — escape metacharacters (ReDoS/500s)
+      const q = escapeRegex(search.toLowerCase())
       userQuery.$or = [
         { name: { $regex: q, $options: "i" } },
         { email: { $regex: q, $options: "i" } },

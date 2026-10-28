@@ -4,6 +4,8 @@ import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { chargeActionPlan, refundResources } from "@/lib/resources/resources-credits"
 import { scopedIntentKey } from "@/lib/billing/operation-identity"
 import { generateWithRetry, logAIFailure } from "@/lib/resources/ai-retry"
+import { refuseInsufficientCredits } from "@/lib/api/credit-refusal"
+import { RESOURCES_CREDIT_COSTS } from "@/lib/resources/credit-costs"
 
 /** Extract the optional client intent id (idempotency identity ONLY — never
  * authorization; `scopedIntentKey` validates it and scopes it to this
@@ -32,7 +34,11 @@ export async function POST(
     const intentKey = await readIntentKey(req, user.id, id)
     const charged = await chargeActionPlan(user.id, id, intentKey)
     if (!charged) {
-      return fail("INSUFFICIENT_CREDITS", "You need 50 credits to generate an action plan.", 402)
+      return refuseInsufficientCredits(
+        user.id,
+        RESOURCES_CREDIT_COSTS.actionPlan,
+        `You need ${RESOURCES_CREDIT_COSTS.actionPlan} credits to generate an action plan.`,
+      )
     }
 
     const spec = project.specification

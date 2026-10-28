@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth/session"
 import { store, cryptoId } from "@/lib/store/store"
-import { ok, fail, handleRouteError } from "@/lib/api/respond"
+import { fail, failInsufficientCredits, handleRouteError, ok } from "@/lib/api/respond"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { reserveCredits, releaseReservation, getAvailableCredits } from "@/lib/billing/credit-service"
 import { getDeploymentCosts } from "@/lib/billing/runtime-config"
@@ -54,15 +54,32 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     // Check credits
     const deployCost = await getDeployCredits()
     const available = await getAvailableCredits(user.id)
-    if (available < deployCost) return fail("INSUFFICIENT_CREDITS", `Deploying requires ${deployCost.toLocaleString()} credits. Available: ${available.toLocaleString()}.`, 402)
+    if (available < deployCost)
+      return failInsufficientCredits({
+        required: deployCost,
+        available,
+        message: `Deploying requires ${deployCost.toLocaleString()} credits. Available: ${available.toLocaleString()}.`,
+      })
+
+    const previousState = project.state
+    // Atomic claim: the state check above is check-then-act, so two
+    // concurrent deploys could both pass it and both debit credits.
+    // claimBuildSlot transitions from any state outside {building, deploying}
+    // in one document operation (same pattern the build route uses).
+    const claimed = await store.claimBuildSlot(id, { state: "deploying" })
+    if (!claimed) return fail("BUSY", "Please wait for the current operation to finish.", 409)
 
     // Check if already deployed
     try {
       const deployStatus = await getDeploymentStatus(project.totalumProjectId)
-      if (deployStatus.status === "deploying") return fail("DEPLOYMENT_RUNNING", "A deployment is already in progress.", 409)
+      if (deployStatus.status === "deploying") {
+        await store.updateProject(id, { state: previousState })
+        return fail("DEPLOYMENT_RUNNING", "A deployment is already in progress.", 409)
+      }
     } catch (err) {
       // If project not found in Totalum, the build may have failed or the project ID is invalid
       if (err instanceof Error && err.message.includes("PROJECT_NOT_FOUND")) {
+        await store.updateProject(id, { state: previousState })
         return fail("TOTALUM_PROJECT_NOT_FOUND", "This project wasn't found in the deployment service. Try rebuilding the project first.", 404)
       }
       // If we can't check status for other reasons, proceed with deploy
@@ -71,12 +88,18 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     // Reserve credits
     const runId = cryptoId()
     const reserved = await reserveCredits({ userId: user.id, amount: deployCost, buildId: runId, reason: "Production deployment", projectId: id })
-    if (!reserved) return fail("INSUFFICIENT_CREDITS", "Could not reserve credits for deployment.", 402)
+    if (!reserved) {
+      await store.updateProject(id, { state: previousState })
+      return failInsufficientCredits({
+        required: deployCost,
+        available,
+        message: "Could not reserve credits for deployment.",
+      })
+    }
 
     // Deploy via Totalum
     const deployStartTime = Date.now()
     try {
-      await store.updateProject(id, { state: "deploying" })
       await store.appendEvent(id, event("deploy", "Starting production deployment..."))
 
       const result = await deployProject(project.totalumProjectId)

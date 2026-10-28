@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth/session"
 import { store, cryptoId } from "@/lib/store/store"
-import { ok, fail, handleRouteError } from "@/lib/api/respond"
+import { fail, failInsufficientCredits, handleRouteError, ok } from "@/lib/api/respond"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { getBuildCost } from "@/lib/billing/build-auth"
 import { reserveCredits, releaseReservation, getAvailableCredits } from "@/lib/billing/credit-service"
@@ -81,7 +81,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (available < creditsNeeded) {
       await store.updateBuildRun(run.id, { status: "failed", error: "insufficient credits" })
       await store.updateProject(id, { state: project.state })
-      return fail("INSUFFICIENT_CREDITS", `You need ${creditsNeeded.toLocaleString()} credits for this edit (${tier} tier). Available: ${available.toLocaleString()}.`, 402)
+      return failInsufficientCredits({
+        required: creditsNeeded,
+        available,
+        message: `You need ${creditsNeeded.toLocaleString()} credits for this edit (${tier} tier). Available: ${available.toLocaleString()}.`,
+      })
     }
 
     const reserved = await reserveCredits({
@@ -94,7 +98,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!reserved) {
       await store.updateBuildRun(run.id, { status: "failed", error: "insufficient credits" })
       await store.updateProject(id, { state: project.state })
-      return fail("INSUFFICIENT_CREDITS", `You need ${creditsNeeded.toLocaleString()} credits for this edit (${tier} tier). Please top up and try again.`, 402)
+      return failInsufficientCredits({
+        required: creditsNeeded,
+        available,
+        message: `You need ${creditsNeeded.toLocaleString()} credits for this edit (${tier} tier). Please top up and try again.`,
+      })
     }
 
     const previousState = project.state

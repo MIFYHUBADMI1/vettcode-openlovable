@@ -59,6 +59,15 @@ function cacheInvalidate(key: string): void {
   sessionCache.delete(key)
 }
 
+/** Drop every cached user for one account — used when sessions are revoked
+ * (ban/suspend/delete/password change) so a cached principal can't keep
+ * authorizing requests after its session rows are gone. */
+function cacheInvalidateUser(userId: string): void {
+  for (const [key, entry] of sessionCache) {
+    if (entry.user?.id === userId) sessionCache.delete(key)
+  }
+}
+
 /**
  * Cookie scope. A cookie's `Domain` must be a suffix of the host the browser
  * is actually talking to (RFC 6265 §5.2.3) — otherwise the browser silently
@@ -206,10 +215,15 @@ export async function getUserId(): Promise<string | null> {
 }
 
 /** Resolve the current user or throw a typed 401 — the standard guard for
- * any API route that requires authentication. */
+ * any API route that requires authentication. Ban/suspension is enforced
+ * here, not only at login: a session created before a ban must die with it. */
 export async function requireUser(): Promise<UserDoc> {
   const user = await getCurrentUser()
   if (!user) throw new AppError("UNAUTHORIZED")
+  if (user.banned || user.suspended) {
+    cacheInvalidateUser(user.id)
+    throw new AppError("UNAUTHORIZED")
+  }
   return user
 }
 
@@ -236,4 +250,5 @@ export async function destroyCurrentSession(): Promise<void> {
 export async function destroyAllSessionsForUser(userId: string): Promise<void> {
   const col = await sessionsCol()
   await col.deleteMany({ userId })
+  cacheInvalidateUser(userId)
 }

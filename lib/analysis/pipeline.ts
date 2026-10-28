@@ -12,6 +12,7 @@ import { analyzeWebsite } from "./understanding"
 import { generateSpecificationFromUnderstanding, generateSpecificationFromIdea } from "./specification"
 import type { ProjectEvent, BuildRun } from "@/lib/types/project"
 import { recordAIArtifacts } from "@/lib/projects/ai-artifacts"
+import { recordCreditBlock } from "@/lib/credits/credit-block"
 import { makeAIArtifact, rawTextFromError, stageFromError, type NewAIArtifact } from "@/lib/types/ai-artifacts"
 
 function event(stage: string, message: string, level: ProjectEvent["level"] = "info"): ProjectEvent {
@@ -93,6 +94,7 @@ export async function autoLaunchBuild(projectId: string) {
   const canAfford = await hasSufficientCredits(project.userId, creditsNeeded)
   if (!canAfford) {
     console.log("[v0] pipeline.autoBuild: insufficient credits", { projectId })
+    await recordCreditBlock(projectId, project.userId, { required: creditsNeeded, action: "your build" })
     await store.appendEvent(projectId, event("build", "💰 Need more credits to fuel the build rocket! Top up and click Build when ready.", "warn"))
     return
   }
@@ -127,6 +129,7 @@ export async function autoLaunchBuild(projectId: string) {
       await store.updateBuildRun(run.id, { status: "failed", error: "insufficient credits" })
       await store.updateProject(projectId, { state: project.state })
       console.log("[v0] pipeline.autoBuild: insufficient credits after claim", { projectId })
+      await recordCreditBlock(projectId, project.userId, { required: creditsNeeded, action: "your build" })
       return
     }
     reservationMade = true
@@ -164,7 +167,14 @@ export async function autoLaunchBuild(projectId: string) {
     console.log("[v0] pipeline.autoBuild: FAILED", { projectId, message: (e as Error).message })
     logger.error("pipeline.autoBuild", "auto-build failed", { projectId, message: (e as Error).message })
     if (reservationMade && activeRun) {
-      await refundReservation(project.userId, creditsNeeded, activeRun.id, projectId)
+      // Best-effort: a failed refund must never mask the build error that
+      // triggered this catch block.
+      await refundReservation(project.userId, creditsNeeded, activeRun.id, projectId).catch((refundError) => {
+        logger.error("pipeline.autoBuild", "refund failed", {
+          projectId,
+          message: (refundError as Error).message,
+        })
+      })
       await store.updateBuildRun(activeRun.id, { status: "failed", error: (e as Error).message })
     }
     await store.updateProject(projectId, { state: "plan_ready" })
@@ -208,6 +218,7 @@ export async function runWebsiteAnalysis(projectId: string, pipelineMode?: "lega
     const canAfford = await hasSufficientCredits(project.userId, scrapeCost)
     if (!canAfford) {
       console.log("[v0] pipeline.website: insufficient credits, aborting", { projectId, userId: project.userId, required: scrapeCost })
+      await recordCreditBlock(projectId, project.userId, { required: scrapeCost, action: "the website analysis" })
       await markPipelineFailure(
         projectId,
         "understand",
@@ -444,6 +455,7 @@ export async function runDeepCrawlAnalysis(projectId: string, pipelineMode?: "le
     // Check credits before crawling (500 for legacy, 1000 for heavy)
     const canAfford = await hasSufficientCredits(project.userId, deepCrawlCost)
     if (!canAfford) {
+      await recordCreditBlock(projectId, project.userId, { required: deepCrawlCost, action: "the full site crawl" })
       await markPipelineFailure(
         projectId,
         "understand",

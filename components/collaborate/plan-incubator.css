@@ -1,0 +1,559 @@
+/* Plan incubator — the live waiting view on /collaborate while the
+   co-founder and its squads draft the first plan. */
+
+.pi-shell {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  /* The waiting view is taller than the folded shell on phones and short
+     laptops — it must scroll, never clip. */
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.pi-inner {
+  position: relative;
+  z-index: 1;
+  margin: auto;
+  width: 100%;
+  max-width: 34rem;
+  padding: 2.5rem 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  text-align: center;
+}
+
+/* Faint drifting grid behind everything — reads as "machinery running".
+   Fixed, so scrolling the waiting view never drags the backdrop with it. */
+.pi-grid {
+  position: fixed;
+  inset: -50%;
+  background-image:
+    linear-gradient(to right, rgb(120 120 140 / 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(120 120 140 / 0.07) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(ellipse 60% 55% at 50% 42%, black, transparent 75%);
+  animation: pi-grid-drift 24s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes pi-grid-drift {
+  from { transform: translateY(0); }
+  to { transform: translateY(34px); }
+}
+
+/* ── Emblem ───────────────────────────────────────────────────────────── */
+
+.pi-emblem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 6.5rem;
+  height: 6.5rem;
+}
+
+.pi-core {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 9999px;
+  color: var(--primary-foreground);
+  background: linear-gradient(140deg, var(--primary), color-mix(in oklab, var(--primary) 55%, #7c3aed));
+  box-shadow: 0 0 24px color-mix(in oklab, var(--primary) 45%, transparent);
+  animation: pi-core-breathe 3.2s ease-in-out infinite;
+}
+
+@keyframes pi-core-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+.pi-halo {
+  position: absolute;
+  inset: 1.4rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in oklab, var(--primary) 55%, transparent);
+  animation: pi-halo-out 2.6s ease-out infinite;
+}
+
+.pi-halo--late { animation-delay: 1.3s; }
+
+@keyframes pi-halo-out {
+  0% { transform: scale(0.7); opacity: 0.8; }
+  70%, 100% { transform: scale(1.9); opacity: 0; }
+}
+
+.pi-orbit {
+  position: absolute;
+  inset: 0.35rem;
+  border-radius: 9999px;
+  border: 1px dashed color-mix(in oklab, var(--primary) 25%, transparent);
+  animation: pi-orbit-spin 9s linear infinite;
+}
+
+.pi-orbit--inner {
+  inset: 1.1rem;
+  border-style: dotted;
+  animation-duration: 5.5s;
+  animation-direction: reverse;
+}
+
+@keyframes pi-orbit-spin {
+  to { transform: rotate(360deg); }
+}
+
+.pi-spark {
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--primary);
+  box-shadow: 0 0 10px 2px color-mix(in oklab, var(--primary) 70%, transparent);
+}
+
+.pi-spark--small { width: 4px; height: 4px; }
+
+/* ── Text ─────────────────────────────────────────────────────────────── */
+
+.pi-title {
+  font-size: 1.35rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.pi-body {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  max-width: 30rem;
+  text-wrap: pretty;
+}
+
+.pi-rotator {
+  min-height: 2.75rem;
+  max-width: 30rem;
+  font-size: 0.8125rem;
+  line-height: 1.35rem;
+  font-style: italic;
+  color: color-mix(in oklab, var(--primary) 70%, var(--foreground));
+  animation: pi-line-in 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes pi-line-in {
+  from { opacity: 0; transform: translateY(8px); filter: blur(2px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+.pi-anim {
+  animation: pi-rise-in 520ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 120ms);
+}
+
+@keyframes pi-rise-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Live feed ────────────────────────────────────────────────────────── */
+
+.pi-feed {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 100%;
+  padding: 0.35rem 0.8rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in oklab, var(--primary) 25%, var(--border));
+  background: color-mix(in oklab, var(--primary) 7%, transparent);
+  font-size: 0.75rem;
+}
+
+.pi-feed-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 9999px;
+  background: #22c55e;
+  animation: pi-blink 1.4s ease-in-out infinite;
+}
+
+@keyframes pi-blink {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgb(34 197 94 / 0.5); }
+  50% { opacity: 0.55; box-shadow: 0 0 0 4px rgb(34 197 94 / 0); }
+}
+
+.pi-feed-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: left;
+  animation: pi-feed-swap 450ms ease-out;
+}
+
+@keyframes pi-feed-swap {
+  from { opacity: 0; transform: translateX(10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Roadmap ──────────────────────────────────────────────────────────── */
+
+.pi-road {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 1rem 1.1rem;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  background: color-mix(in oklab, var(--card) 65%, transparent);
+  text-align: left;
+}
+
+.pi-step {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.35rem 0;
+  animation: pi-rise-in 460ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(200ms + var(--i, 0) * 90ms);
+}
+
+/* Connector between this node and the previous one. */
+.pi-rail {
+  position: absolute;
+  left: 0.8rem;
+  top: -0.85rem;
+  width: 2px;
+  height: 1.5rem;
+  overflow: hidden;
+  border-radius: 2px;
+  background: color-mix(in oklab, var(--border) 80%, transparent);
+}
+
+.pi-rail-fill {
+  position: absolute;
+  inset: 0;
+  transform: scaleY(0);
+  transform-origin: top;
+  border-radius: 2px;
+}
+
+.pi-rail-fill--solid {
+  transform: scaleY(1);
+  background: color-mix(in oklab, var(--primary) 70%, transparent);
+  transition: transform 600ms ease;
+}
+
+.pi-rail-fill--flow {
+  transform: scaleY(1);
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in oklab, var(--primary) 85%, transparent),
+    transparent
+  );
+  animation: pi-rail-flow 1.8s linear infinite;
+}
+
+@keyframes pi-rail-flow {
+  0% { transform: translateY(-100%); opacity: 0; }
+  35%, 65% { opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+
+.pi-node {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--muted-foreground);
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.pi-node:hover { transform: scale(1.1); border-color: color-mix(in oklab, var(--primary) 50%, var(--border)); }
+
+.pi-step--done .pi-node {
+  border-color: color-mix(in oklab, var(--primary) 45%, var(--border));
+  background: color-mix(in oklab, var(--primary) 12%, var(--background));
+  color: var(--primary);
+}
+
+.pi-step--working .pi-node {
+  border-color: var(--primary);
+  color: var(--primary);
+  animation: pi-node-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes pi-node-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--primary) 45%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--primary) 0%, transparent); }
+}
+
+.pi-node-ping {
+  position: absolute;
+  inset: -1px;
+  border-radius: 9999px;
+  border: 1px solid var(--primary);
+  animation: pi-node-ping 1.8s ease-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pi-node-ping {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  70%, 100% { transform: scale(2); opacity: 0; }
+}
+
+.pi-step--attention .pi-node {
+  border-color: color-mix(in oklab, #f59e0b 60%, var(--border));
+  color: #d97706;
+}
+
+.pi-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.pi-step-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.pi-step-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.pi-step--next .pi-step-label { color: var(--muted-foreground); font-weight: 500; }
+
+.pi-step-status {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted-foreground);
+}
+
+.pi-step--working .pi-step-status { color: var(--primary); }
+.pi-step--done .pi-step-status { color: color-mix(in oklab, #22c55e 75%, var(--foreground)); }
+.pi-step--attention .pi-step-status { color: #d97706; }
+
+.pi-step-detail {
+  font-size: 0.7rem;
+  color: var(--muted-foreground);
+  animation: pi-line-in 320ms ease-out;
+}
+
+/* ── Meta row ─────────────────────────────────────────────────────────── */
+
+.pi-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+}
+
+.pi-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+}
+
+.pi-timer-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--primary);
+  animation: pi-blink 1.2s ease-in-out infinite;
+}
+
+.pi-stall {
+  font-size: 0.72rem;
+  color: #b45309;
+}
+
+.pi-quiet-note {
+  font-size: 0.72rem;
+  color: var(--muted-foreground);
+  max-width: 26rem;
+}
+
+.pi-alert {
+  border-radius: 0.6rem;
+  border: 1px solid color-mix(in oklab, var(--destructive) 30%, transparent);
+  background: color-mix(in oklab, var(--destructive) 10%, transparent);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.72rem;
+  color: var(--destructive);
+}
+
+.pi-warn {
+  border-radius: 0.6rem;
+  border: 1px solid rgb(245 158 11 / 0.3);
+  background: rgb(245 158 11 / 0.1);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.72rem;
+  color: #d97706;
+}
+
+/* ── Actions ──────────────────────────────────────────────────────────── */
+
+.pi-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.pi-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 0.85rem;
+  padding: 0.55rem 1.1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: transform 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.pi-btn:hover { transform: translateY(-1px); }
+.pi-btn:disabled { opacity: 0.55; }
+
+.pi-btn--primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.pi-btn--ghost {
+  border: 1px solid var(--border);
+  color: var(--foreground);
+}
+
+.pi-btn--ghost:hover { border-color: color-mix(in oklab, var(--primary) 40%, var(--border)); color: var(--primary); }
+
+.pi-btn--soft {
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--foreground);
+  font-weight: 500;
+}
+
+/* ── Founder prompts ──────────────────────────────────────────────────── */
+
+.pi-prompts {
+  width: 100%;
+  border-radius: 1rem;
+  border: 1px dashed color-mix(in oklab, var(--primary) 35%, var(--border));
+  background: color-mix(in oklab, var(--primary) 5%, transparent);
+  padding: 0.7rem 0.9rem 0.8rem;
+}
+
+.pi-prompts-eyebrow {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: color-mix(in oklab, var(--primary) 70%, var(--muted-foreground));
+  margin-bottom: 0.35rem;
+}
+
+.pi-prompts-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.pi-prompts-text {
+  flex: 1;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-wrap: balance;
+  animation: pi-line-in 450ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pi-prompts-nav {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  color: var(--muted-foreground);
+  transition: border-color 150ms ease, color 150ms ease;
+}
+
+.pi-prompts-nav:hover { border-color: var(--primary); color: var(--primary); }
+
+.pi-link {
+  font-size: inherit;
+  font-weight: 500;
+  color: var(--primary);
+}
+
+.pi-link:hover { text-decoration: underline; text-underline-offset: 2px; }
+
+.pi-foot {
+  font-size: 0.72rem;
+  color: var(--muted-foreground);
+}
+
+@media (max-width: 480px) {
+  .pi-inner { padding: 1.5rem 1rem 2.5rem; }
+  .pi-road { padding: 0.8rem 0.85rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pi-grid,
+  .pi-core,
+  .pi-halo,
+  .pi-orbit,
+  .pi-rotator,
+  .pi-anim,
+  .pi-step,
+  .pi-feed-dot,
+  .pi-feed-text,
+  .pi-timer-dot,
+  .pi-node,
+  .pi-node-ping,
+  .pi-rail-fill--flow,
+  .pi-step-detail,
+  .pi-prompts-text {
+    animation: none;
+  }
+
+  .pi-rail-fill--flow {
+    opacity: 0.6;
+  }
+
+  .pi-node:hover { transform: none; }
+}

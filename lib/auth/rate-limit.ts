@@ -102,17 +102,40 @@ export async function checkRateLimit(params: {
   // in-window doc on the retry path — but at count=1 it can never exceed the
   // limit, so we just let both through and accept a one-request grace on the
   // very first hit of a new window (this is standard fixed-window behaviour).
-  await col.updateOne(
-    { key, windowStart: { $lte: now - params.windowMs } },
-    {
-      $set: {
-        key,
-        count: 1,
-        windowStart,
-        expiresAt,
+  try {
+    await col.updateOne(
+      { key, windowStart: { $lte: now - params.windowMs } },
+      {
+        $set: {
+          key,
+          count: 1,
+          windowStart,
+          expiresAt,
+        },
       },
-    },
-    { upsert: true },
-  )
+      { upsert: true },
+    )
+  } catch (err) {
+    // A concurrent request created the window between our findOneAndUpdate
+    // and this upsert. The unique index on `key` rejects the duplicate
+    // insert with E11000 — that is a normal race, not a server fault, so
+    // fold this request into the window that now exists instead of
+    // surfacing a 500 to the caller.
+    if (!(err instanceof Error && /E11000|duplicate key/i.test(err.message))) throw err
+
+    const folded = await col.findOneAndUpdate(
+      { key, windowStart: { $gt: now - params.windowMs } },
+      { $inc: { count: 1 } },
+      { returnDocument: "after" },
+    )
+    if (folded) {
+      const over = folded.count > params.limit
+      memoryRecord(key, params.windowMs, now, over)
+      if (over) {
+        throw new AppError(params.errorCode ?? "RATE_LIMITED")
+      }
+      return
+    }
+  }
   memoryRecord(key, params.windowMs, now, false)
 }

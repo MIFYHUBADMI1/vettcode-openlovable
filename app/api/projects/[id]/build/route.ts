@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth/session"
 import { store, cryptoId } from "@/lib/store/store"
-import { ok, fail, handleRouteError } from "@/lib/api/respond"
+import { fail, failInsufficientCredits, handleRouteError, ok } from "@/lib/api/respond"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { getBuildCost } from "@/lib/billing/build-auth"
 import { reserveCredits, releaseReservation, getAvailableCredits } from "@/lib/billing/credit-service"
@@ -102,14 +102,22 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (available < creditsNeeded) {
       await store.updateBuildRun(run.id, { status: "failed", error: "insufficient credits" })
       await store.updateProject(id, { state: project.state })
-      return fail("INSUFFICIENT_CREDITS", `You don't have enough credits for this build. Required: ${creditsNeeded.toLocaleString()}, Available: ${available.toLocaleString()}.`, 402)
+      return failInsufficientCredits({
+        required: creditsNeeded,
+        available,
+        message: `You don't have enough credits for this build. Required: ${creditsNeeded.toLocaleString()}, Available: ${available.toLocaleString()}.`,
+      })
     }
 
     const reserved = await reserveCredits({ userId, amount: creditsNeeded, buildId: run.id, reason: `${tier.charAt(0).toUpperCase() + tier.slice(1)} application build`, projectId: id })
     if (!reserved) {
       await store.updateBuildRun(run.id, { status: "failed", error: "insufficient credits" })
       await store.updateProject(id, { state: project.state })
-      return fail("INSUFFICIENT_CREDITS", "You don't have enough credits for this build.", 402)
+      return failInsufficientCredits({
+        required: creditsNeeded,
+        available,
+        message: "You don't have enough credits for this build.",
+      })
     }
 
     // 2. Launch the Totalum project.

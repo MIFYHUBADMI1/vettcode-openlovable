@@ -9,6 +9,8 @@ import { CofounderWorklog, buildCofounderWorklogSteps } from "@/components/cofou
 import { PricingTierBuilder } from "@/components/collaborate/pricing-tier-builder"
 import { ThemeBuilder } from "@/components/collaborate/theme-builder"
 import { ExpectedVisuals } from "@/components/collaborate/expected-visuals"
+import { PlanIncubator } from "@/components/collaborate/plan-incubator"
+import { BuilderReviewPanel, computeBriefCoverage } from "@/components/collaborate/builder-review"
 import { AIOutputsPanel } from "@/components/collaborate/ai-outputs"
 import { ProjectIdDialog } from "@/components/project-id-dialog"
 import { postJson, patchJson, deleteJson, jsonFetcher, postNdjson } from "@/lib/client/api"
@@ -51,6 +53,7 @@ import {
   Zap,
   GitBranch,
   Database,
+  Hammer,
   KeyRound,
   Search,
   Briefcase,
@@ -141,15 +144,6 @@ function SectionIcon({ name, className }: { name: string; className?: string }) 
 
 function cx(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ")
-}
-
-function formatDuration(ms: number): string {
-  const totalSeconds = Math.max(0, Math.floor(ms / 1000))
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-  if (hours > 0) return `${hours}h ${minutes}m`
-  return minutes > 0 ? `${minutes}m ${seconds.toString().padStart(2, "0")}s` : `${seconds}s`
 }
 
 /**
@@ -455,6 +449,9 @@ function PlanNav({
   outputsCount = 0,
   outputsActive = false,
   onOpenOutputs,
+  reviewCount = 0,
+  reviewActive = false,
+  onOpenReview,
 }: {
   spec: ApplicationSpecification
   activeSection: PlanSectionId | null
@@ -466,6 +463,10 @@ function PlanNav({
   outputsCount?: number
   outputsActive?: boolean
   onOpenOutputs?: () => void
+  /** Sections of the plan that travel in the launch brief, for the review entry. */
+  reviewCount?: number
+  reviewActive?: boolean
+  onOpenReview?: () => void
 }) {
   const health = useMemo(() => computePlanHealth(spec), [spec])
   // A nearly empty plan is a wall of missing sections — surface the first
@@ -601,6 +602,31 @@ function PlanNav({
           </div>
         ))}
       </nav>
+
+      {onOpenReview && (
+        <div className="rounded-xl border border-primary/25 bg-primary/5 p-3">
+          <button
+            onClick={onOpenReview}
+            aria-current={reviewActive ? "true" : undefined}
+            className={cx(
+              "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
+              forMobile && "min-h-11",
+              reviewActive
+                ? "bg-primary/15 font-medium text-foreground ring-1 ring-primary/40"
+                : "text-foreground/80 hover:bg-primary/10",
+            )}
+          >
+            <Hammer className="size-4 shrink-0 text-primary" aria-hidden />
+            <span className="flex-1 truncate">Builder review</span>
+            <span className="rounded-full bg-muted px-1.5 py-0.5 font-mono text-[9px] font-semibold text-muted-foreground">
+              {reviewCount}
+            </span>
+          </button>
+          <p className="px-2 pt-1 text-[11px] leading-4 text-muted-foreground">
+            The whole plan, the AI answers behind it, and the exact brief the builder is sent at launch.
+          </p>
+        </div>
+      )}
 
       {onOpenOutputs && (
         <div className="rounded-xl border border-border bg-card p-3">
@@ -3165,6 +3191,9 @@ export function CollaborateClient({
   // outputs panel (formatted ⇄ exact raw model text).
   const [artifacts, setArtifacts] = useState<AIArtifact[]>(initialProject.aiArtifacts ?? [])
   const [showOutputs, setShowOutputs] = useState(false)
+  // The builder review is a third full-column view, mutually exclusive with
+  // the outputs panel and the section editor.
+  const [showReview, setShowReview] = useState(false)
   const [userCredits, setUserCredits] = useState(initialCredits)
   // When true, the chat is shown while a section is selected — the composer
   // shows the "Working on" chip and the AI receives the focus section.
@@ -3666,6 +3695,7 @@ export function CollaborateClient({
     setActiveSection(id as PlanSectionId)
     setChatWithFocus(false)
     setAutoDismissed(true)
+    setShowReview(false)
   }, [])
 
   if (!spec) {
@@ -3681,9 +3711,9 @@ export function CollaborateClient({
     const body = pipelineFailed
       ? pipelineError ?? "This step stopped before it finished. Retry it — anything already learned is kept."
       : projectState === "created"
-        ? "Your project is ready. Your co-founder is starting with what you shared."
+        ? "Your project is live. Your co-founder is starting with what you shared — every word."
         : planning
-          ? "Your team has what it needs. The plan is being drafted now — this page updates automatically."
+          ? "Strategy, product and technology squads are drafting the plan right now — this page updates itself, and the plan lands here when it is ready."
           : "Atai is turning your vision into a plan you can shape together. This usually takes a minute."
 
     // Same journey model as the workspace, so both surfaces agree on which
@@ -3706,129 +3736,50 @@ export function CollaborateClient({
     const automaticRetryRan = (recovery?.attempts ?? 0) > 1
 
     return (
-      <div className="collab-scroll flex min-h-0 flex-1 flex-col overflow-y-auto">
-        <div className="flex flex-1 items-center justify-center p-8 text-center sm:p-12">
-          <div className="flex max-w-md flex-col items-center gap-4">
-          <div
-            className={cn(
-              "flex size-16 items-center justify-center rounded-full",
-              pipelineFailed ? "bg-destructive/10" : "bg-muted",
-            )}
-            aria-hidden
-          >
-            <ClipboardList className={cn("size-7", pipelineFailed ? "text-destructive" : "text-muted-foreground")} />
-          </div>
-          <h2 className="text-xl font-semibold">{title}</h2>
-          <p className="text-sm text-muted-foreground">{body}</p>
-
-          {/* What the running step is actually doing, straight from its events. */}
-          {!pipelineFailed && activeStep && (activeStep.detail || activeStep.elapsedMs !== null) && (
-            <div className="flex flex-col items-center gap-1">
-              {activeStep.detail && <p className="text-xs text-muted-foreground">{activeStep.detail}</p>}
-              {activeStep.elapsedMs !== null && (
-                <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-                  {activeStep.label} · {formatDuration(activeStep.elapsedMs)} since the last update
-                </p>
-              )}
-            </div>
-          )}
-
-          {pipelineFailed && automaticRetryRan && (
-            <p className="text-xs text-muted-foreground">
-              We already retried this step automatically and it stopped again. Retrying now keeps everything already
-              learned.
-            </p>
-          )}
-
-          {retryNote && (
-            <p
-              role="alert"
-              className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
-            >
-              {retryNote}
-            </p>
-          )}
-
-          {pollFailures >= 3 && (
-            <div
-              role="status"
-              className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-600 dark:text-amber-400"
-            >
-              <p>
-                We can&apos;t refresh this project right now{pollError ? ` — ${pollError}` : ""}. We keep trying
-                automatically.
-              </p>
-              <button
-                type="button"
-                onClick={refreshPolling}
-                className="mt-1.5 font-medium underline underline-offset-2"
-              >
-                Try again now
-              </button>
-            </div>
-          )}
-
-          {pipelineFailed ? (
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              {isOwner ? (
-                <button
-                  type="button"
-                  disabled={retryingPipeline}
-                  onClick={() => void retryPipeline()}
-                  className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-                >
-                  {retryingPipeline ? "Retrying…" : retryLabel}
-                </button>
-              ) : null}
-              <a
-                href={`/project/${projectId}`}
-                className="inline-flex items-center justify-center rounded-xl border border-border px-4 py-2 text-sm font-medium text-foreground hover:border-primary/40 hover:text-primary"
-              >
-                Open workspace
-              </a>
-            </div>
-          ) : (
-            <div className="flex flex-col items-center gap-2">
-              {canRestart && isOwner ? (
-                <button
-                  type="button"
-                  disabled={retryingPipeline}
-                  onClick={() => void retryPipeline()}
-                  className="inline-flex items-center justify-center rounded-xl border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-50"
-                >
-                  {retryingPipeline ? "Restarting…" : restartLabel}
-                </button>
-              ) : null}
-              {activeStep?.stalled && !canRestart ? (
-                <p className="text-xs text-amber-600 dark:text-amber-400">
-                  This is taking longer than usual. If the run stops responding it restarts automatically.
-                </p>
-              ) : null}
-              <p className="text-xs text-muted-foreground">
-                Taking longer than expected?{" "}
-                <a href={`/project/${projectId}`} className="font-medium text-primary hover:underline">
-                  Open the workspace
-                </a>{" "}
-                to see each step and restart it.
-              </p>
-            </div>
-          )}
-          </div>
-        </div>
+      <PlanIncubator
+        steps={steps}
+        activeStep={activeStep}
+        projectState={projectState}
+        failed={pipelineFailed}
+        title={title}
+        body={body}
+        automaticRetryRan={automaticRetryRan}
+        retryNote={retryNote}
+        pollFailures={pollFailures}
+        pollError={pollError}
+        elapsedMs={activeStep?.elapsedMs ?? null}
+        now={clock}
+        startedAt={activeStep?.detailAt ?? liveUpdatedAt}
+        isOwner={isOwner}
+        retrying={retryingPipeline}
+        canRestart={canRestart}
+        restartLabel={restartLabel}
+        retryLabel={retryLabel}
+        onRetry={() => void retryPipeline()}
+        onRefreshPolling={refreshPolling}
+        workspaceHref={`/project/${projectId}`}
+      >
         {/* A failed parse must not swallow the answer: show the captured
-            responses (raw text included) right below the retry actions. */}
+            responses (raw text included) inside the same scrolling view. */}
         {pipelineFailed && artifacts.length > 0 && (
-          <div className="border-t border-border">
+          <div className="w-full border-t border-border pt-4">
             <AIOutputsPanel artifacts={artifacts} spec={spec} />
           </div>
         )}
-      </div>
+      </PlanIncubator>
     )
   }
 
   const health = computePlanHealth(spec)
   const firstMissing = health.missing[0] ?? null
   const artifactCount = artifacts.length + (artifacts.some((a) => a.kind === "final_spec") ? 0 : 1)
+  // Recomputed from the saved plan with the same prompt builder the launch
+  // route uses, so the nav badge and the review panel can never drift from
+  // what the builder is actually sent.
+  const coverage = useMemo(
+    () => computeBriefCoverage(spec, initialProject.understanding, initialProject.preferences),
+    [spec, initialProject.understanding, initialProject.preferences],
+  )
   const runActive = Boolean(autoRun && (autoRun.phase === "working" || !autoDismissed))
 
   return (
@@ -3882,6 +3833,7 @@ export function CollaborateClient({
             activeSection={activeSection}
             onSelect={(id) => {
               setShowOutputs(false)
+              setShowReview(false)
               setActiveSection((cur) => (cur === id ? null : id))
               setChatWithFocus(false)
             }}
@@ -3890,6 +3842,15 @@ export function CollaborateClient({
             outputsActive={showOutputs}
             onOpenOutputs={() => {
               setShowOutputs(true)
+              setShowReview(false)
+              setActiveSection(null)
+              setChatWithFocus(false)
+            }}
+            reviewCount={coverage.inBrief.length}
+            reviewActive={showReview}
+            onOpenReview={() => {
+              setShowReview(true)
+              setShowOutputs(false)
               setActiveSection(null)
               setChatWithFocus(false)
             }}
@@ -3911,6 +3872,16 @@ export function CollaborateClient({
               onDiscardAll={() => setAutoDiscardConfirm(true)}
               undoing={undoingSection}
             />
+          ) : showReview ? (
+            <div className="collab-scroll min-h-0 flex-1 overflow-y-auto">
+              <BuilderReviewPanel
+                spec={spec}
+                understanding={initialProject.understanding}
+                preferences={initialProject.preferences}
+                artifacts={artifacts}
+                onClose={() => setShowReview(false)}
+              />
+            </div>
           ) : showOutputs ? (
             <div className="collab-scroll min-h-0 flex-1 overflow-y-auto">
               <AIOutputsPanel
@@ -3953,6 +3924,7 @@ export function CollaborateClient({
               analysis={analysis}
               onOpenSection={(id) => {
                 setShowOutputs(false)
+                setShowReview(false)
                 setActiveSection(id)
                 setChatWithFocus(false)
               }}
@@ -3970,6 +3942,7 @@ export function CollaborateClient({
             onWorkOn={(id) => {
               setActiveSection(id)
               setChatWithFocus(false)
+              setShowReview(false)
             }}
             isOwner={isOwner}
             projectId={projectId}
@@ -4031,7 +4004,15 @@ export function CollaborateClient({
             <div className="flex flex-1 min-h-0 flex-col">
               {mobileView === "plan" && (
                 <div id="collab-panel-plan" role="tabpanel" aria-labelledby="collab-tab-plan" className="collab-scroll min-h-0 flex-1 overflow-y-auto md:mx-auto md:w-full md:max-w-3xl">
-                  {showOutputs ? (
+                  {showReview ? (
+                    <BuilderReviewPanel
+                      spec={spec}
+                      understanding={initialProject.understanding}
+                      preferences={initialProject.preferences}
+                      artifacts={artifacts}
+                      onClose={() => setShowReview(false)}
+                    />
+                  ) : showOutputs ? (
                     <AIOutputsPanel
                       artifacts={artifacts}
                       spec={spec}
@@ -4043,6 +4024,7 @@ export function CollaborateClient({
                       activeSection={activeSection}
                       onSelect={(id) => {
                         const selecting = activeSection !== id
+                        setShowReview(false)
                         setActiveSection(selecting ? id : null)
                         setChatWithFocus(false)
                         if (selecting) setMobileView("chat")
@@ -4053,6 +4035,15 @@ export function CollaborateClient({
                       outputsActive={showOutputs}
                       onOpenOutputs={() => {
                         setShowOutputs(true)
+                        setShowReview(false)
+                        setActiveSection(null)
+                        setChatWithFocus(false)
+                      }}
+                      reviewCount={coverage.inBrief.length}
+                      reviewActive={showReview}
+                      onOpenReview={() => {
+                        setShowReview(true)
+                        setShowOutputs(false)
                         setActiveSection(null)
                         setChatWithFocus(false)
                       }}
@@ -4090,6 +4081,7 @@ export function CollaborateClient({
                         analysis={analysis}
                         onOpenSection={(id) => {
                           setShowOutputs(false)
+                          setShowReview(false)
                           setActiveSection(id)
                           setChatWithFocus(false)
                           // On phones the selected section renders in the chat

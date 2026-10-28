@@ -14,6 +14,7 @@ import { buildToolContext } from "@/lib/cofounder/context"
 import type { ToolOutcome, CofounderConversationMessage } from "@/lib/cofounder/types"
 import { logger } from "@/lib/logging/logger"
 import { store } from "@/lib/store/store"
+import { refuseInsufficientCredits } from "@/lib/api/credit-refusal"
 
 /**
  * POST /api/cofounder/actions/[id] — approve or reject a pending action
@@ -111,7 +112,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         const available = await getAvailableCredits(user.id)
         if (available < action.cost.amount) {
           await finalizePendingAction(action.id, { ok: false, error: { code: "INSUFFICIENT_CREDITS", message: "You don't have enough credits for this action." } })
-          return fail("INSUFFICIENT_CREDITS", `You don't have enough credits for this action. It needs about ${action.cost.amount.toLocaleString()}.`, 402)
+          return refuseInsufficientCredits(
+            user.id,
+            action.cost.amount,
+            `You don't have enough credits for this action. It needs about ${action.cost.amount.toLocaleString()}.`,
+          )
         }
       }
 

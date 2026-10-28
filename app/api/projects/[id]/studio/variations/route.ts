@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { ok, fail, handleRouteError } from "@/lib/api/respond"
+import { fail, failInsufficientCredits, handleRouteError, ok } from "@/lib/api/respond"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { requireStudioProject } from "@/lib/marketing/studio/api-guard"
 import { getBrandProfile, brandContextLines } from "@/lib/marketing/studio/brand"
@@ -50,7 +50,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const { cost, available, affordable } = await getStudioAffordability(userId)
     if (!affordable) {
-      return fail("INSUFFICIENT_CREDITS", `This costs ${cost} credits and you have ${available}.`, 402)
+      return failInsufficientCredits({
+        required: cost,
+        available,
+        message: `This costs ${cost} credits and you have ${available}.`,
+      })
     }
 
     // Phase 3 (Workstream C): same identity discipline as /studio/refine — the
@@ -65,7 +69,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     })
     charged = await chargeStudioCredits(userId, id, intentKey)
     chargeIntentKey = intentKey ?? ""
-    if (!charged) return fail("INSUFFICIENT_CREDITS", "You don't have enough credits for variations.", 402)
+    if (!charged)
+      return failInsufficientCredits({
+        required: cost,
+        available,
+        message: "You don't have enough credits for variations.",
+      })
 
     const { lines } = brandContextLines(await getBrandProfile(id))
     const result = await generateVariations({

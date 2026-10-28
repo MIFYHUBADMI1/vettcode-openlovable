@@ -10,18 +10,14 @@ import { NextRequest } from "next/server"
 import { findUserByEmail } from "@/lib/auth/users"
 import { getAvailableCredits } from "@/lib/billing/credit-service"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
+import { authorizeInternalRequest } from "@/lib/api/internal-key"
 
 export async function GET(req: NextRequest) {
   try {
-    // Auth check
-    const internalKey = process.env.ATAI_INTERNAL_KEY
-    if (!internalKey) {
-      return fail("PROVIDER_NOT_CONFIGURED", "Internal API key is not configured.", 503)
-    }
-
-    const providedKey = req.headers.get("x-internal-key") || req.headers.get("X-Internal-Key")
-    if (!providedKey || providedKey !== internalKey) {
-      return fail("UNAUTHORIZED", "Invalid or missing internal API key.", 401)
+    // Auth check — constant-time comparison, no key material in logs.
+    const auth = authorizeInternalRequest(req.headers)
+    if (!auth.ok) {
+      return fail(auth.code, auth.message, auth.status)
     }
 
     // Get email parameter

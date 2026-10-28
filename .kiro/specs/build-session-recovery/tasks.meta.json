@@ -1,0 +1,65 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Write bug condition exploration test": [
+      {
+        "executionId": "5d121ee8-b504-48ae-9e07-93dce3b38451",
+        "chatSessionId": "sess_551757dd-71ef-4ce1-87c1-90980552e0e9",
+        "timestamp": 1793117929922
+      },
+      {
+        "executionId": "5d121ee8-b504-48ae-9e07-93dce3b38451",
+        "chatSessionId": "sess_551757dd-71ef-4ce1-87c1-90980552e0e9",
+        "timestamp": 1793118749759
+      }
+    ],
+    "2. Write preservation property tests (BEFORE implementing fix)": [
+      {
+        "executionId": "5d121ee8-b504-48ae-9e07-93dce3b38451",
+        "chatSessionId": "sess_551757dd-71ef-4ce1-87c1-90980552e0e9",
+        "timestamp": 1793118757960
+      },
+      {
+        "executionId": "f3a45847-b576-4d41-b7a6-f7a8b678b553",
+        "chatSessionId": "sess_551757dd-71ef-4ce1-87c1-90980552e0e9",
+        "timestamp": 1793119114833
+      },
+      {
+        "executionId": "5c90908a-cc05-4144-8351-9e8ebfa1fbf6",
+        "chatSessionId": "sess_551757dd-71ef-4ce1-87c1-90980552e0e9",
+        "timestamp": 1793165052968
+      }
+    ],
+    "3.1 Add database schema for lastPolledAt tracking": [
+      {
+        "executionId": "24cd96b9-f979-4b67-a1fc-4d540fb5dc0a",
+        "chatSessionId": "sess_551757dd-71ef-4ce1-87c1-90980552e0e9",
+        "timestamp": 1793167403274
+      },
+      {
+        "executionId": "24cd96b9-f979-4b67-a1fc-4d540fb5dc0a",
+        "chatSessionId": "sess_551757dd-71ef-4ce1-87c1-90980552e0e9",
+        "timestamp": 1793167541422
+      }
+    ],
+    "3.2 Implement workspace auto-resume on mount (operating-room.tsx)": [
+      {
+        "executionId": "24cd96b9-f979-4b67-a1fc-4d540fb5dc0a",
+        "chatSessionId": "sess_551757dd-71ef-4ce1-87c1-90980552e0e9",
+        "timestamp": 1793167551853
+      },
+      {
+        "executionId": "24cd96b9-f979-4b67-a1fc-4d540fb5dc0a",
+        "chatSessionId": "sess_551757dd-71ef-4ce1-87c1-90980552e0e9",
+        "timestamp": 1793167691620
+      }
+    ],
+    "3.3 Implement stale build detection in status endpoint (status/route.ts)": [
+      {
+        "executionId": "24cd96b9-f979-4b67-a1fc-4d540fb5dc0a",
+        "chatSessionId": "sess_551757dd-71ef-4ce1-87c1-90980552e0e9",
+        "timestamp": 1793167702364
+      }
+    ]
+  }
+}

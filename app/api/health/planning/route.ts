@@ -5,12 +5,16 @@
  */
 
 import { NextRequest } from "next/server"
-import { ok, fail } from "@/lib/api/respond"
+import { ok, handleRouteError } from "@/lib/api/respond"
+import { requireAdmin } from "@/lib/auth/session"
 import { ModelRegistry } from "@/lib/planning/models/registry"
 import { planningRunsCol } from "@/lib/db/collections"
 
 export async function GET(req: NextRequest) {
   try {
+    // Operator diagnostics (model config, env rollout state) — admins only.
+    await requireAdmin()
+
     const health: any = {
       status: "healthy",
       timestamp: Date.now(),
@@ -21,8 +25,9 @@ export async function GET(req: NextRequest) {
       const col = await planningRunsCol()
       await col.countDocuments({}, { limit: 1 })
       health.checks.database = { status: "ok" }
-    } catch (error) {
-      health.checks.database = { status: "error", error: error instanceof Error ? error.message : String(error) }
+    } catch {
+      // Driver messages can carry host/auth fragments — keep them server-side.
+      health.checks.database = { status: "error" }
       health.status = "degraded"
     }
 
@@ -30,8 +35,8 @@ export async function GET(req: NextRequest) {
       const registry = new ModelRegistry()
       const plannerModel = registry.getModelForStage("planning")
       health.checks.modelConfig = { status: "ok", plannerModel: plannerModel.primary }
-    } catch (error) {
-      health.checks.modelConfig = { status: "error", error: error instanceof Error ? error.message : String(error) }
+    } catch {
+      health.checks.modelConfig = { status: "error" }
       health.status = "degraded"
     }
 
@@ -44,6 +49,6 @@ export async function GET(req: NextRequest) {
 
     return ok(health)
   } catch (error) {
-    return fail("INTERNAL_ERROR", error instanceof Error ? error.message : "Health check failed", 500)
+    return handleRouteError("health.planning", error)
   }
 }

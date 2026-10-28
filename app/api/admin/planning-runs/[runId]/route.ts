@@ -8,7 +8,7 @@
 
 import { NextRequest } from "next/server"
 import { getCurrentUser } from "@/lib/auth/session"
-import { ok, fail } from "@/lib/api/respond"
+import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { PlanningRunTracker } from "@/lib/planning/tracking/planning-run"
 
 export async function GET(
@@ -33,10 +33,6 @@ export async function GET(
 
     return ok({ run })
   } catch (error) {
-    return fail(
-      "INTERNAL_ERROR",
-      error instanceof Error ? error.message : "Failed to fetch planning run",
-      500
-    )
+    return handleRouteError("admin.planning-runs.runId", error)
   }
 }

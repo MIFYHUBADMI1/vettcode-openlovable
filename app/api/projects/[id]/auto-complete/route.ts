@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth/session"
 import { store, cryptoId } from "@/lib/store/store"
-import { ok, fail, handleRouteError } from "@/lib/api/respond"
+import { fail, failInsufficientCredits, handleRouteError, ok } from "@/lib/api/respond"
 import { generateText } from "ai"
 import { MODEL } from "@/lib/analysis/model"
 import { requestRawCompletion } from "@/lib/analysis/raw-chat"
@@ -211,7 +211,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     // Charge before the model call; refunded below if the AI work fails.
     const charged = await chargeAutoCompleteCredits(user.id, id)
     if (!charged) {
-      return fail("INSUFFICIENT_CREDITS", "You don't have enough credits to continue auto-completing.", 402)
+      const [costs, available] = await Promise.all([getCollaborateCosts(), getAvailableCredits(user.id)])
+      return failInsufficientCredits({
+        required: costs.autoCompleteSectionCost,
+        available,
+        message: "You don't have enough credits to continue auto-completing.",
+      })
     }
 
     const prompt = [

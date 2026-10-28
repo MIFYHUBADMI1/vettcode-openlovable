@@ -5,6 +5,8 @@ import { chargeMarketingPlaybook, refundResources } from "@/lib/resources/resour
 import { getMarketingChannels } from "@/lib/resources/business-intelligence"
 import { scopedIntentKey } from "@/lib/billing/operation-identity"
 import { generateWithRetry, logAIFailure } from "@/lib/resources/ai-retry"
+import { refuseInsufficientCredits } from "@/lib/api/credit-refusal"
+import { RESOURCES_CREDIT_COSTS } from "@/lib/resources/credit-costs"
 
 export async function POST(
   req: Request,
@@ -29,7 +31,11 @@ export async function POST(
     const intentKey = scopedIntentKey(body.requestId, { userId: user.id, operation: "resources_playbook", projectId: id })
     const charged = await chargeMarketingPlaybook(user.id, id, intentKey)
     if (!charged) {
-      return fail("INSUFFICIENT_CREDITS", "You need 75 credits to generate a marketing playbook.", 402)
+      return refuseInsufficientCredits(
+        user.id,
+        RESOURCES_CREDIT_COSTS.marketingPlaybook,
+        `You need ${RESOURCES_CREDIT_COSTS.marketingPlaybook} credits to generate a marketing playbook.`,
+      )
     }
 
     const spec = project.specification

@@ -28,6 +28,9 @@ export async function GET() {
           sourceUrl: p.sourceUrl,
           updatedAt: p.updatedAt,
           thumbnailUrl: resolveProjectThumbnail(p.understanding?.screenshots),
+          // Needed by the list to resume a build whose page was left.
+          totalumProjectId: p.totalumProjectId,
+          lastPolledAt: p.lastPolledAt,
         })),
       })
     })

@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
   ArrowLeft, ArrowRight, Globe2, Lightbulb, GitBranch, Search, Trash2,
   Loader2, LayoutGrid, List, SlidersHorizontal, FolderOpen,
@@ -12,6 +13,7 @@ import { toast } from "sonner"
 import { StateBadge } from "@/components/state-badge"
 import { ProjectThumbnail } from "@/components/project-thumbnail"
 import { deleteJson } from "@/lib/client/api"
+import { selectOrphanedBuilds } from "@/lib/projects/build-recovery"
 import { cn } from "@/lib/utils"
 import { type ProjectState, type ProjectSummary } from "@/lib/types/project"
 import type { FinanceTotals } from "@/lib/finances/project-finances"
@@ -253,11 +255,22 @@ function PortfolioOverview({
 
 // ─── Grid card ────────────────────────────────────────────────────────────────
 
+function RecoveringNote({ className }: { className?: string }) {
+  return (
+    <p className={cn("flex items-center gap-1.5 text-[11px] font-medium text-primary", className)}>
+      <Loader2 className="size-3 shrink-0 motion-safe:animate-spin motion-reduce:animate-none" aria-hidden />
+      Reconnecting to your build
+    </p>
+  )
+}
+
 function BusinessCard({
   project,
+  recovering = false,
   onDeleteRequest,
 }: {
   project: EnrichedProject
+  recovering?: boolean
   onDeleteRequest: (p: EnrichedProject) => void
 }) {
   const hasThumbnail = Boolean(project.thumbnailUrl)
@@ -306,6 +319,7 @@ function BusinessCard({
             <p className="mt-0.5 font-mono text-[10px] text-muted-foreground/70 uppercase tracking-widest">
               {modeLabel(project.mode)}
             </p>
+            {recovering ? <RecoveringNote className="mt-1.5" /> : null}
           </div>
 
           {/* Financial summary */}
@@ -360,9 +374,11 @@ function BusinessCard({
 
 function BusinessRow({
   project,
+  recovering = false,
   onDeleteRequest,
 }: {
   project: EnrichedProject
+  recovering?: boolean
   onDeleteRequest: (p: EnrichedProject) => void
 }) {
   const isPlanReady = project.state === "plan_ready"
@@ -384,6 +400,7 @@ function BusinessRow({
             {modeLabel(project.mode)}
             {isPlanReady && <span className="ml-2 text-primary">· Plan ready</span>}
           </p>
+          {recovering ? <RecoveringNote className="mt-1.5 normal-case tracking-normal" /> : null}
         </Link>
       </div>
 
@@ -446,6 +463,33 @@ export function ProjectsWorkspace({
   const [view, setView] = useState<"grid" | "list">("grid")
   const [deleteTarget, setDeleteTarget] = useState<EnrichedProject | null>(null)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [recoveringIds, setRecoveringIds] = useState<string[]>([])
+  const recoveryStartedRef = useRef(false)
+  const router = useRouter()
+
+  // A build the founder left behind — closed tab, refresh, navigation, crash —
+  // keeps running at the builder, but nothing was watching it finish. One status
+  // call per abandoned build is what reconciles it: the endpoint asks the builder,
+  // and a build that finished while nobody looked transitions to ready with its
+  // preview URL and settled credits.
+  useEffect(() => {
+    if (recoveryStartedRef.current || projects.length === 0) return
+    const abandoned = selectOrphanedBuilds(projects)
+    if (abandoned.length === 0) return
+    recoveryStartedRef.current = true
+    setRecoveringIds(abandoned.map((p) => p.id))
+    void (async () => {
+      for (const project of abandoned) {
+        try {
+          await fetch(`/api/projects/${project.id}/status`, { headers: { accept: "application/json" } })
+        } catch {
+          // The stored state stays on screen; opening the workspace retries.
+        }
+      }
+      setRecoveringIds([])
+      router.refresh()
+    })()
+  }, [projects, router])
 
   function requestDelete(p: EnrichedProject) {
     setDeleteTarget(p)
@@ -669,7 +713,7 @@ export function ProjectsWorkspace({
       ) : view === "grid" ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {displayed.map((p) => (
-            <BusinessCard key={p.id} project={p} onDeleteRequest={requestDelete} />
+            <BusinessCard key={p.id} project={p} recovering={recoveringIds.includes(p.id)} onDeleteRequest={requestDelete} />
           ))}
         </div>
       ) : (
@@ -682,7 +726,7 @@ export function ProjectsWorkspace({
             <span />
           </div>
           {displayed.map((p) => (
-            <BusinessRow key={p.id} project={p} onDeleteRequest={requestDelete} />
+            <BusinessRow key={p.id} project={p} recovering={recoveringIds.includes(p.id)} onDeleteRequest={requestDelete} />
           ))}
         </div>
       )}

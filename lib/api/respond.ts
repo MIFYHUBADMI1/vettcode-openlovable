@@ -53,8 +53,43 @@ const DEFAULT_MESSAGES: Record<string, string> = {
   VALIDATION: "Please check the submitted information.",
 }
 
-export function fail(code: string, message?: string, status = 400, headers?: Headers) {
-  return NextResponse.json({ ok: false, error: { code, message: message ?? DEFAULT_MESSAGES[code] ?? "Request failed." } }, { status, headers })
+export function fail(code: string, message?: string, status = 400, headers?: Headers, meta?: Record<string, unknown>) {
+  return NextResponse.json(
+    {
+      ok: false,
+      error: {
+        code,
+        message: message ?? DEFAULT_MESSAGES[code] ?? "Request failed.",
+        ...(meta ? { meta } : {}),
+      },
+    },
+    { status, headers },
+  )
+}
+
+/**
+ * The one way a route should refuse for lack of credits.
+ *
+ * `meta` matters: without it the browser has to read the cost back out of the
+ * sentence, and any rewording silently breaks the top-up overlay. Routes that
+ * already have both numbers in scope should use this instead of hand-writing
+ * `fail("INSUFFICIENT_CREDITS", …)`.
+ */
+export function failInsufficientCredits(input: {
+  required: number
+  available: number
+  message?: string
+}) {
+  const required = Math.max(0, Math.round(input.required))
+  const available = Math.max(0, Math.round(input.available))
+  return fail(
+    "INSUFFICIENT_CREDITS",
+    input.message ??
+      `You need ${required.toLocaleString()} credits for this and have ${available.toLocaleString()} available. Top up to continue.`,
+    402,
+    undefined,
+    { required, available },
+  )
 }
 
 export function handleRouteError(stage: string, error: unknown, headers?: Headers) {

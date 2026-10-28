@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth/session"
 import { store, cryptoId } from "@/lib/store/store"
-import { ok, fail, handleRouteError } from "@/lib/api/respond"
+import { fail, failInsufficientCredits, handleRouteError, ok } from "@/lib/api/respond"
 import { generateText } from "ai"
 import { MODEL } from "@/lib/analysis/model"
 import { requestRawCompletion, streamRawCompletion } from "@/lib/analysis/raw-chat"
@@ -19,6 +19,8 @@ import {
   buildProposal,
 } from "@/lib/analysis/cofounder"
 import { chargeChatCredits, refundCollaboration } from "@/lib/analysis/collaborate-credits"
+import { getAvailableCredits } from "@/lib/billing/credit-service"
+import { getCollaborateCosts } from "@/lib/billing/runtime-config"
 import { getPlanSection } from "@/lib/analysis/plan-sections"
 import {
   appendProjectChatMessages,
@@ -114,7 +116,12 @@ export async function POST(
     // Charge before the model call — refuse when the user can't afford it.
     const charged = await chargeChatCredits(user.id, id)
     if (!charged) {
-      return fail("INSUFFICIENT_CREDITS", "You don't have enough credits for this message.", 402)
+      const [costs, available] = await Promise.all([getCollaborateCosts(), getAvailableCredits(user.id)])
+      return failInsufficientCredits({
+        required: costs.chatMessageCost,
+        available,
+        message: "You don't have enough credits for this message.",
+      })
     }
 
     let createdChat = false

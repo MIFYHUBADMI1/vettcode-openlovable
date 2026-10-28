@@ -36,6 +36,10 @@ export interface DataStore {
   getProject(id: string): Promise<MirrorProject | null>
   listProjects(userId: string, limit?: number): Promise<MirrorProject[]>
   updateProject(id: string, patch: Partial<MirrorProject>): Promise<MirrorProject | null>
+  /** Record when a running build was last polled. Deliberately does not touch
+   * `updatedAt`: polling is not a project change, and a build that polls every
+   * few seconds must not look permanently "just updated". */
+  touchBuildPoll(id: string, at: number): Promise<void>
   isRequestedProjectIdAvailable(requestedProjectId: string, excludeProjectId?: string): Promise<boolean>
   claimRequestedProjectId(id: string, requestedProjectId: string): Promise<MirrorProject | null>
   /** Atomically transitions a project into `building` only if it is not

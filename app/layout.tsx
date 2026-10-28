@@ -4,6 +4,7 @@ import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google"
 import Script from "next/script"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/components/auth/auth-provider"
+import { CreditGateProvider } from "@/components/billing/credit-gate-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { SITE_URL } from "@/lib/env"
 import "./globals.css"
@@ -240,8 +241,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="font-sans antialiased">
         <ThemeProvider>
           <AuthProvider>
-            {children}
-            <Toaster />
+            <CreditGateProvider>
+              {children}
+              <Toaster />
+            </CreditGateProvider>
           </AuthProvider>
         </ThemeProvider>
 

@@ -3,6 +3,10 @@
     {
       "tool": "Read",
       "decision": "allow"
+    },
+    {
+      "tool": "Cmd(dir *)",
+      "decision": "allow"
     }
   ]
 }

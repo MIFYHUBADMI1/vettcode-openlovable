@@ -11,6 +11,7 @@ import { captureAppPreview } from "@/lib/screenshots/capture-app-preview"
 import { projectGitHubCol, usersCol } from "@/lib/db/collections"
 import { pushProjectToGitHub } from "@/lib/integrations/github/push"
 import { ensureRuntimeProvisioned, environmentForLifecycle, RuntimeProvisioningError } from "@/lib/runtime/provisioning"
+import { STALE_BUILD_MS } from "@/lib/projects/build-recovery"
 import type { ConversationMessage, ProjectEvent, BuildSummary } from "@/lib/types/project"
 
 /**
@@ -99,6 +100,26 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         })
       }
 
+      // Nobody has polled this build for a while: the founder closed the tab,
+      // refreshed, navigated away or lost the browser. The build kept running
+      // at the provider, so this poll is the moment we reconnect to it. We do
+      // not need special handling — the regular polling below completes the
+      // build — but the gap is worth recording so completion can tell the
+      // founder their build finished while they were away.
+      const pollGapMs = project.lastPolledAt ? Date.now() - project.lastPolledAt : 0
+      const resumedFromGap = pollGapMs > STALE_BUILD_MS
+      if (resumedFromGap) {
+        logger.info("api.projects.status", "stale build detected - resuming", {
+          id,
+          state: project.state,
+          lastPolledAt: project.lastPolledAt,
+          gapMs: pollGapMs,
+        })
+      }
+      // Track the poll so the next request can tell an active session from an
+      // abandoned one. Best-effort: never fail the poll over a timestamp.
+      await store.touchBuildPoll(id, Date.now())
+
       // RECOVERY: project is stuck in building/deploying but has no totalumProjectId.
       // This happens when the auto-launch from the pipeline failed to persist the
       // totalumProjectId. Reset to specification_ready so the user can retry.
@@ -161,6 +182,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
               developmentUrl: productionUrl || project.developmentUrl,
             })
             await store.appendEvent(id, event("deploy", `Deployed to production${productionUrl ? `: ${productionUrl}` : ""}`))
+            if (resumedFromGap) {
+              await store.appendEvent(id, event("deploy", "Launch finished while you were away — welcome back!"))
+            }
 
             // Phase 8 — automatic runtime provisioning (production). The
             // deployed application needs a production-scoped credential; the
@@ -352,6 +376,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
               ...(buildSummary ? { buildSummary } : {}),
             })
             await store.appendEvent(id, event("build", "Build complete — your app is ready to preview"))
+            if (resumedFromGap) {
+              // Only on the first poll after a real gap: this is the founder
+              // coming back to a build that finished without them.
+              await store.appendEvent(id, event("build", "Build completed while you were away — welcome back!"))
+            }
 
             // Phase 8 — automatic runtime provisioning (development preview).
             // The generated application should receive its Atai runtime
@@ -452,8 +481,35 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
         if (status.status === "failed") {
           logger.warn("api.projects.status", "build failed", { id, error: status.error })
+          // Release the build reservation — the launch-time refund in the
+          // build route only covers synchronous provider failures, so without
+          // this a build that dies minutes later keeps the user's credits.
+          // Idempotent per run (`release_${run.id}`), safe under repeat polls.
+          const failedRuns = await store.listBuildRuns(id, { status: "running", limit: 5 })
+          const failedRun = failedRuns.find((r) => r.totalumProjectId === project.totalumProjectId)
+            ?? failedRuns[0]
+          if (failedRun && (failedRun.creditsReserved ?? 0) > 0) {
+            const { releaseReservation } = await import("@/lib/billing/credit-service")
+            const released = await releaseReservation({
+              userId,
+              amount: failedRun.creditsReserved,
+              buildId: failedRun.id,
+              reason: "Build failed",
+              projectId: id,
+            }).catch((e) => {
+              logger.error("api.projects.status", "credit release after build failure failed", {
+                id, runId: failedRun.id, error: (e as Error).message,
+              })
+              return false
+            })
+            if (released) {
+              await store.appendEvent(id, event("build", "Build failed. Credits were refunded.", "error"))
+            }
+          }
+          if (failedRun) {
+            await store.updateBuildRun(failedRun.id, { status: "failed", completedAt: Date.now(), error: status.error })
+          }
           await store.updateProject(id, { state: "build_failed", error: status.error })
-          await store.appendEvent(id, event("build", "Build failed", "error"))
           const updated = await store.getProject(id)
           return ok({
             state: "build_failed",

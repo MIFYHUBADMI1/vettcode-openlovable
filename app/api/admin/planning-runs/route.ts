@@ -9,7 +9,7 @@
 
 import { NextRequest } from "next/server"
 import { getCurrentUser } from "@/lib/auth/session"
-import { ok, fail } from "@/lib/api/respond"
+import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { PlanningRunTracker } from "@/lib/planning/tracking/planning-run"
 
 export async function GET(req: NextRequest) {
@@ -23,7 +23,12 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const userId = searchParams.get("userId")
     const projectId = searchParams.get("projectId")
-    const limit = parseInt(searchParams.get("limit") || "10", 10)
+    // Clamp once, for EVERY branch. `listRecent` clamps internally, but
+    // `getByUserId` / `getByProjectId` pass the limit straight to Mongo —
+    // a negative limit means "no limit" server-side and a huge one means an
+    // unbounded scan.
+    const rawLimit = parseInt(searchParams.get("limit") || "10", 10)
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 10
 
     const tracker = new PlanningRunTracker()
 
@@ -33,15 +38,11 @@ export async function GET(req: NextRequest) {
     } else if (projectId) {
       runs = await tracker.getByProjectId(projectId, limit)
     } else {
-      runs = await tracker.listRecent(Math.min(Math.max(limit, 1), 100))
+      runs = await tracker.listRecent(limit)
     }
 
     return ok({ runs })
   } catch (error) {
-    return fail(
-      "INTERNAL_ERROR",
-      error instanceof Error ? error.message : "Failed to fetch planning runs",
-      500
-    )
+    return handleRouteError("admin.planning-runs", error)
   }
 }

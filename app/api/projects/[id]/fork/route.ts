@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth/session"
 import { store, cryptoId } from "@/lib/store/store"
-import { ok, fail, handleRouteError } from "@/lib/api/respond"
+import { fail, failInsufficientCredits, handleRouteError, ok } from "@/lib/api/respond"
 import { projectForksCol } from "@/lib/db/collections"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { getAvailableCredits, reserveCredits, releaseReservation, grantCredits } from "@/lib/billing/credit-service"
@@ -64,6 +64,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const reservationId = cryptoId() // used to release on failure
   let reserved = false
+  let chargedAmount = 0 // actual debit, needed by the catch path to refund
   let originalProjectId: string | undefined
 
   try {
@@ -110,16 +111,16 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     // ── Step 1: Balance check ─────────────────────────────────────────────────
     const available = await getAvailableCredits(user.id)
     if (available < pricing.forkCost) {
-      return fail(
-        "INSUFFICIENT_CREDITS",
-        `Forking this ${tier} project costs ${pricing.forkCost.toLocaleString()} credits. You have ${available.toLocaleString()} available.`,
-        402,
-      )
+      return failInsufficientCredits({
+        required: pricing.forkCost,
+        available,
+        message: `Forking this ${tier} project costs ${pricing.forkCost.toLocaleString()} credits. You have ${available.toLocaleString()} available.`,
+      })
     }
 
     // ── Step 2: Deduct credits from forker ───────────────────────────────────
     // reserveCredits permanently consumes the credits (uses consumeCredits internally).
-    // Unlike builds, forks have no refund period — the credit charge is final here.
+    // Unlike builds, forks have no refund period — the credit charge is final on success.
     const charged = await reserveCredits({
       userId: user.id,
       amount: pricing.forkCost,
@@ -130,13 +131,14 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
     })
 
     if (!charged) {
-      return fail(
-        "INSUFFICIENT_CREDITS",
-        `Could not charge ${pricing.forkCost.toLocaleString()} credits. Please check your balance.`,
-        402,
-      )
+      return failInsufficientCredits({
+        required: pricing.forkCost,
+        available,
+        message: `Could not charge ${pricing.forkCost.toLocaleString()} credits. Please check your balance.`,
+      })
     }
     reserved = true
+    chargedAmount = pricing.forkCost
 
     logger.info("api.projects.fork", "credits charged", {
       userId: user.id, projectId: id, tier, amount: pricing.forkCost,
@@ -240,12 +242,12 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
         if (user) {
           await releaseReservation({
             userId: user.id,
-            amount: 0, // not used by releaseReservation — it grants back via grantCredits
+            amount: chargedAmount, // releaseReservation grants exactly this back
             buildId: reservationId,
             reason: "Fork failed — credits refunded",
             projectId: originalProjectId,
           })
-          logger.info("api.projects.fork", "credits refunded after failure", { reservationId })
+          logger.info("api.projects.fork", "credits refunded after failure", { reservationId, chargedAmount })
         }
       } catch (refundErr) {
         logger.error("api.projects.fork", "refund after failure failed", {

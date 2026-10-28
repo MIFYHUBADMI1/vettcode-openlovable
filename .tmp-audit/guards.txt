@@ -1,0 +1,159 @@
+route                                                          methods                      guards
+app/api/admin/audit-logs/route.ts                              GET                          requireAdmin
+app/api/admin/billing/audit-log/route.ts                       GET                          requireAdmin
+app/api/admin/billing/configuration/route.ts                   GET,PATCH                    requireAdmin,zod-validate
+app/api/admin/billing/overview/route.ts                        GET                          requireAdmin
+app/api/admin/billing/reconciliation/route.ts                  GET                          requireAdmin
+app/api/admin/billing/user-billing/route.ts                    GET                          requireAdmin
+app/api/admin/billing/webhooks/route.ts                        GET,POST                     requireAdmin
+app/api/admin/calcom/console/route.ts                          POST                         requireAdmin
+app/api/admin/cancellations/route.ts                           GET                          getCurrentUser
+app/api/admin/dodo-products/route.ts                           DELETE,GET,PATCH,POST        requireAdmin
+app/api/admin/feature-requests/[id]/route.ts                   GET,PATCH                    requireAdmin
+app/api/admin/feature-requests/route.ts                        GET                          requireAdmin
+app/api/admin/feedback/route.ts                                GET                          requireAdmin
+app/api/admin/infrastructure/[projectId]/plan/route.ts         POST                         requireAdmin
+app/api/admin/infrastructure/[projectId]/sync/route.ts         POST                         requireAdmin
+app/api/admin/infrastructure/route.ts                          GET                          requireAdmin
+app/api/admin/ledger/route.ts                                  GET                          requireAdmin
+app/api/admin/planning-runs/[runId]/route.ts                   GET                          getCurrentUser
+app/api/admin/planning-runs/route.ts                           GET                          getCurrentUser
+app/api/admin/referrals/route.ts                               GET                          requireAdmin
+app/api/admin/runtime/financials/route.ts                      GET                          requireAdmin
+app/api/admin/runtime/pricing/[ruleId]/route.ts                DELETE,PATCH                 requireAdmin
+app/api/admin/runtime/pricing/bulk/route.ts                    POST                         requireAdmin
+app/api/admin/runtime/pricing/route.ts                         GET,POST                     requireAdmin
+app/api/admin/runtime/usage/route.ts                           GET                          requireAdmin
+app/api/admin/self-credits/route.ts                            POST                         requireAdmin
+app/api/admin/stats/route.ts                                   GET,POST                     requireAdmin
+app/api/admin/transactions/route.ts                            GET                          requireAdmin
+app/api/admin/users/[id]/route.ts                              GET,PATCH,POST               requireAdmin,rate-limit
+app/api/admin/users/route.ts                                   GET                          requireAdmin
+app/api/auth/change-email/route.ts                             POST                         requireUser,rate-limit
+app/api/auth/change-password/route.ts                          POST                         requireUser,rate-limit
+app/api/auth/confirm-email-change/route.ts                     POST                           <== NO GUARD MATCH
+app/api/auth/forgot-password/route.ts                          POST                         rate-limit
+app/api/auth/github/callback/route.ts                          GET                            <== NO GUARD MATCH
+app/api/auth/github/route.ts                                   GET                            <== NO GUARD MATCH
+app/api/auth/google/callback/route.ts                          GET                            <== NO GUARD MATCH
+app/api/auth/google/route.ts                                   GET                            <== NO GUARD MATCH
+app/api/auth/login/route.ts                                    POST                         rate-limit
+app/api/auth/logout/route.ts                                   POST                           <== NO GUARD MATCH
+app/api/auth/onboarding/route.ts                               POST                         requireUser
+app/api/auth/register/route.ts                                 POST                         rate-limit
+app/api/auth/resend-verification/route.ts                      POST                         requireUser,rate-limit
+app/api/auth/sessions/route.ts                                 DELETE,GET                   requireUser
+app/api/auth/verify-email/route.ts                             POST                           <== NO GUARD MATCH
+app/api/billing/admin/top-ups/[id]/evidence/route.ts           GET                          requireAdmin
+app/api/billing/admin/top-ups/[id]/route.ts                    GET,POST                     requireAdmin
+app/api/billing/admin/top-ups/route.ts                         GET                          requireAdmin
+app/api/billing/checkout/route.ts                              POST                         getCurrentUser
+app/api/billing/overview/route.ts                              GET                          requireUser
+app/api/billing/subscription/cancel-feedback/route.ts          POST                         getCurrentUser
+app/api/billing/subscription/cancel/route.ts                   POST                         getCurrentUser
+app/api/billing/sync/route.ts                                  POST                         requireUser,rate-limit,zod-validate
+app/api/billing/top-up/[id]/evidence/route.ts                  POST                           <== NO GUARD MATCH
+app/api/billing/top-up/[id]/route.ts                           GET                          requireUser
+app/api/billing/top-up/[id]/verify/route.ts                    POST                           <== NO GUARD MATCH
+app/api/billing/top-up/route.ts                                GET,POST                     requireUser
+app/api/billing/upgrade-options/route.ts                       GET                          getCurrentUser
+app/api/billing/webhook/route.ts                               GET,POST                     webhook-hmac
+app/api/cofounder/actions/[id]/route.ts                        POST                         requireUser,rate-limit,zod-validate
+app/api/cofounder/route.ts                                     GET,POST                     requireUser,rate-limit,zod-validate
+app/api/credit-costs/route.ts                                  GET                            <== NO GUARD MATCH
+app/api/credits/route.ts                                       GET                          requireUser
+app/api/explore/route.ts                                       GET                          getCurrentUser
+app/api/feature-requests/[id]/route.ts                         GET                          getCurrentUser
+app/api/feature-requests/[id]/vote/route.ts                    DELETE,POST                  requireUser,rate-limit
+app/api/feature-requests/route.ts                              GET,POST                     requireUser,getCurrentUser,rate-limit
+app/api/finances/summary/route.ts                              GET                          requireUser
+app/api/github/repos/route.ts                                  GET,POST                     requireUser
+app/api/health/planning/route.ts                               GET                            <== NO GUARD MATCH
+app/api/health/route.ts                                        GET                            <== NO GUARD MATCH
+app/api/internal/credits/route.ts                              GET                          internal-key
+app/api/internal/projects/route.ts                             GET                          internal-key
+app/api/me/avatar/route.ts                                     POST                         requireUser
+app/api/me/profile/route.ts                                    PATCH                        requireUser
+app/api/me/route.ts                                            GET                          requireUser
+app/api/projects/[id]/activity/route.ts                        GET                          requireUser
+app/api/projects/[id]/agent/full-conversation/route.ts         GET                          requireUser
+app/api/projects/[id]/agent/route.ts                           POST                         requireUser,rate-limit
+app/api/projects/[id]/agent/stop/route.ts                      POST                         requireUser
+app/api/projects/[id]/analyze-plan/route.ts                    GET,POST                     requireUser
+app/api/projects/[id]/assets/route.ts                          GET,POST                     requireUser
+app/api/projects/[id]/auto-complete/route.ts                   GET,POST                     requireUser,zod-validate
+app/api/projects/[id]/build/route.ts                           POST                         requireUser,rate-limit,zod-validate
+app/api/projects/[id]/campaigns/route.ts                       GET,PATCH,POST               requireUser,ownership,rate-limit,zod-validate
+app/api/projects/[id]/capture-preview/route.ts                 POST                         requireUser
+app/api/projects/[id]/chats/[chatId]/route.ts                  DELETE,GET,PATCH             requireUser
+app/api/projects/[id]/chats/route.ts                           GET,POST                     requireUser
+app/api/projects/[id]/content-studio/route.ts                  GET,PATCH,POST               requireUser,ownership,rate-limit,zod-validate
+app/api/projects/[id]/database/query/route.ts                  POST                         requireUser
+app/api/projects/[id]/database/records/[recordId]/link/route.ts DELETE,POST                  requireUser
+app/api/projects/[id]/database/records/[recordId]/route.ts     DELETE,PATCH                 requireUser
+app/api/projects/[id]/database/records/route.ts                POST                         requireUser
+app/api/projects/[id]/database/tables/route.ts                 GET                          requireUser
+app/api/projects/[id]/deploy/route.ts                          GET,POST                     requireUser,rate-limit
+app/api/projects/[id]/domain/route.ts                          DELETE,PUT                   requireUser
+app/api/projects/[id]/economics/route.ts                       GET                          owned-project
+app/api/projects/[id]/export/route.ts                          GET                          requireUser
+app/api/projects/[id]/fork/route.ts                            GET,POST                     requireUser,rate-limit
+app/api/projects/[id]/generate-visual/route.ts                 GET,POST                     requireUser
+app/api/projects/[id]/github/route.ts                          DELETE,GET,POST              requireUser
+app/api/projects/[id]/infrastructure/route.ts                  GET,POST                     requireUser
+app/api/projects/[id]/launch/route.ts                          POST                         requireUser
+app/api/projects/[id]/like/route.ts                            GET,POST                     requireUser
+app/api/projects/[id]/logs/route.ts                            GET                          requireUser
+app/api/projects/[id]/market/studio/route.ts                   DELETE,GET,POST              requireUser,ownership,rate-limit,zod-validate
+app/api/projects/[id]/plan-chat/route.ts                       POST                         requireUser
+app/api/projects/[id]/recover/route.ts                         POST                         requireUser
+app/api/projects/[id]/resources/action-plan/route.ts           POST                         requireUser
+app/api/projects/[id]/resources/competitors/route.ts           POST                         requireUser
+app/api/projects/[id]/resources/market-research/route.ts       POST                         requireUser
+app/api/projects/[id]/resources/marketing-playbook/route.ts    POST                         requireUser
+app/api/projects/[id]/retry/route.ts                           POST                         requireUser
+app/api/projects/[id]/route.ts                                 DELETE,GET,PATCH             requireUser,zod-validate
+app/api/projects/[id]/runtime/config/route.ts                  GET,PATCH                    owned-project,rate-limit
+app/api/projects/[id]/runtime/control/route.ts                 GET                          owned-project
+app/api/projects/[id]/runtime/requests/[requestId]/route.ts    GET                          owned-project
+app/api/projects/[id]/runtime/requests/route.ts                                               <== NO GUARD MATCH
+app/api/projects/[id]/runtime/route.ts                         GET,POST                     requireUser,ownership,rate-limit
+app/api/projects/[id]/runtime/usage/export/route.ts            GET                          owned-project,rate-limit
+app/api/projects/[id]/runtime/usage/route.ts                   GET                          owned-project
+app/api/projects/[id]/secrets/[secretId]/route.ts              DELETE                       requireUser
+app/api/projects/[id]/secrets/route.ts                         GET,POST                     requireUser
+app/api/projects/[id]/seo-audit/route.ts                       GET,POST                     requireUser,ownership,rate-limit,zod-validate
+app/api/projects/[id]/seo-audits/[auditId]/route.ts            GET                          requireUser,ownership
+app/api/projects/[id]/seo-audits/route.ts                      GET                          requireUser,ownership,zod-validate
+app/api/projects/[id]/server/restart/route.ts                  POST                         requireUser
+app/api/projects/[id]/settings/route.ts                        PATCH                        requireUser
+app/api/projects/[id]/source-url/route.ts                      GET                          requireUser
+app/api/projects/[id]/source/route.ts                          GET                          requireUser
+app/api/projects/[id]/status/route.ts                          GET                          requireUser
+app/api/projects/[id]/studio/brand/route.ts                    GET,PUT                      studio-guard,rate-limit,zod-validate
+app/api/projects/[id]/studio/calendar/route.ts                 GET                          studio-guard,zod-validate
+app/api/projects/[id]/studio/library/[contentId]/route.ts      DELETE,PATCH,POST            studio-guard,zod-validate
+app/api/projects/[id]/studio/library/route.ts                  GET                          studio-guard,zod-validate
+app/api/projects/[id]/studio/refine/route.ts                   POST                         studio-guard,rate-limit,zod-validate
+app/api/projects/[id]/studio/variations/route.ts               POST                         studio-guard,rate-limit,zod-validate
+app/api/projects/[id]/tasks/route.ts                           GET,PATCH,POST               requireUser,ownership,rate-limit,zod-validate
+app/api/projects/[id]/version-diff/route.ts                    GET                          requireUser
+app/api/projects/[id]/versions/route.ts                        GET                          requireUser
+app/api/projects/[id]/visibility/route.ts                      GET,PATCH                    requireUser
+app/api/projects/route.ts                                      GET,POST                     requireUser
+app/api/public/feedback/route.ts                               POST                           <== NO GUARD MATCH
+app/api/public/feedback/stats/route.ts                         GET                            <== NO GUARD MATCH
+app/api/public/projects/[id]/route.ts                          GET                            <== NO GUARD MATCH
+app/api/public/stats/route.ts                                  GET                            <== NO GUARD MATCH
+app/api/referrals/route.ts                                     GET                          requireUser
+app/api/runtime/keys/[keyId]/rotate/route.ts                   POST                         requireUser,rate-limit
+app/api/runtime/keys/[keyId]/route.ts                          DELETE,GET                   requireUser
+app/api/runtime/keys/route.ts                                  GET,POST                     requireUser,ownership,rate-limit,zod-validate
+app/api/runtime/v1/health/route.ts                             GET                          runtime-bearer
+app/api/runtime/v1/route.ts                                    GET,POST                     runtime-bearer
+app/api/start/pending/route.ts                                 DELETE,GET,POST              getCurrentUser
+app/api/user/theme/route.ts                                    GET,PATCH                    requireUser
+app/api/users/[id]/follow/route.ts                             POST                         requireUser
+
+routes with NO guard match: 17
+mutating routes (POST/PUT/PATCH/DELETE) with no rate-limit: 66

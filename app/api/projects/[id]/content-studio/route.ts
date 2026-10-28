@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth/session"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
-import { ok, fail, handleRouteError } from "@/lib/api/respond"
+import { fail, failInsufficientCredits, handleRouteError, ok } from "@/lib/api/respond"
 import { checkProjectOwnership } from "@/lib/runtime/ownership"
 import { isStudioWorkspaceEnabled } from "@/lib/marketing/feature-flags"
 import { isGenerationConfigured } from "@/lib/marketing/studio/generator"
@@ -91,10 +91,20 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!parsed.success) return fail("VALIDATION", "Please choose a template.", 422)
 
     const { cost, available, affordable } = await getStudioAffordability(user.id)
-    if (!affordable) return fail("INSUFFICIENT_CREDITS", `This draft costs ${cost} credits and you have ${available}.`, 402)
+    if (!affordable)
+      return failInsufficientCredits({
+        required: cost,
+        available,
+        message: `This draft costs ${cost} credits and you have ${available}.`,
+      })
 
     charged = await chargeStudioCredits(user.id, id)
-    if (!charged) return fail("INSUFFICIENT_CREDITS", "You don't have enough credits for this draft.", 402)
+    if (!charged)
+      return failInsufficientCredits({
+        required: cost,
+        available,
+        message: "You don't have enough credits for this draft.",
+      })
 
     const draft = await generateMarketingDraft({ userId: user.id, projectId: id, template: parsed.data.template, brief: parsed.data.brief })
 

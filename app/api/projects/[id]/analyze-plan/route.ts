@@ -17,6 +17,7 @@ import { chargeAnalysisCredits, refundCollaboration } from "@/lib/analysis/colla
 import { getCollaborateCosts } from "@/lib/billing/runtime-config"
 import type { PlanAnalysis } from "@/lib/types/plan-analysis"
 import type { ProjectEvent } from "@/lib/types/project"
+import { refuseInsufficientCredits } from "@/lib/api/credit-refusal"
 
 /**
  * POST /api/projects/[id]/analyze-plan
@@ -60,7 +61,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const charged = await chargeAnalysisCredits(user.id, id)
     if (!charged) {
-      return fail("INSUFFICIENT_CREDITS", "You don't have enough credits to run an analysis.", 402)
+      const { planAnalysisCost } = await getCollaborateCosts()
+      return refuseInsufficientCredits(
+        user.id,
+        planAnalysisCost,
+        `You need ${planAnalysisCost.toLocaleString()} credits to run an analysis.`,
+      )
     }
 
     const spec = project.specification

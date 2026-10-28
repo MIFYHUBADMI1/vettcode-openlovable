@@ -56,6 +56,12 @@ export const PUBLIC_API_PREFIXES = [
   "/api/auth/google",
   "/api/billing/webhook",
   "/api/internal/", // Internal server-to-server APIs (authenticated via x-internal-key header)
+  // Intentionally-anonymous surfaces: the handlers are built for logged-out
+  // visitors (getCurrentUser().catch(() => null), pricing shown on public
+  // pages, uptime probes). Without these entries the cookie-presence gate
+  // below 401'd every anonymous visitor — e.g. /explore rendered an empty
+  // grid with a "Failed to load projects" toast for logged-out users.
+  "/api/public/",
   // Atai Runtime invocation API (Phase 4): a SEPARATE authentication domain —
   // customer ATAI_API_KEY via `Authorization: Bearer ...`, never session
   // cookies. Authentication happens inside the route handler via
@@ -90,9 +96,14 @@ export function proxy(request: NextRequest) {
   // Allow explicitly public API routes through without a session cookie.
   // The runtime invocation endpoint is matched EXACTLY (no trailing slash in
   // the SDK's URL construction); exact matching also avoids over-matching a
-  // hypothetical future sibling like /api/runtime/v10.
+  // hypothetical future sibling like /api/runtime/v10. /api/health and
+  // /api/credit-costs are exact for the same reason — /api/health/planning
+  // must stay session-gated (admin diagnostics).
   if (
     pathname === "/api/runtime/v1" ||
+    pathname === "/api/health" ||
+    pathname === "/api/credit-costs" ||
+    pathname === "/api/explore" || pathname.startsWith("/api/explore/") ||
     PUBLIC_API_PREFIXES.some((prefix) => pathname.startsWith(prefix))
   ) {
     return NextResponse.next()

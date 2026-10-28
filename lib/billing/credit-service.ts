@@ -62,9 +62,9 @@ export interface CreditBalance {
  * console.log(`Total: ${balance.total}, Subscription: ${balance.subscription}, Permanent: ${balance.permanent}`);
  * ```
  */
-export async function getBalance(userId: string): Promise<CreditBalance> {
+export async function getBalance(userId: string, session?: ClientSession): Promise<CreditBalance> {
   const users = await usersCol()
-  const user = await users.findOne({ id: userId })
+  const user = await users.findOne({ id: userId }, session ? { session } : {})
 
   if (!user) return { total: 0, subscription: 0, permanent: 0 }
 
@@ -265,9 +265,7 @@ export async function grantCredits(params: {
   projectId?: string
 }): Promise<{ success: boolean; ledgerEntry: CreditLedgerEntry }> {
   const users = await usersCol()
-  const balance = await getBalance(params.userId)
   const field = params.creditType === "subscription" ? "subscriptionCredits" : "permanentCredits"
-  const newBalance = balance.total + params.amount
 
   const client = (await import("@/lib/db/mongodb")).getMongoClient
   const mongoClient = await client()
@@ -276,6 +274,7 @@ export async function grantCredits(params: {
   try {
     let ledgerEntry: CreditLedgerEntry | null = null
     let success = false
+    let newBalance = 0
 
     await session.withTransaction(async () => {
       // Check for duplicate (idempotency)
@@ -289,8 +288,15 @@ export async function grantCredits(params: {
         return
       }
 
+      // Read the balance INSIDE the transaction so the ledger's
+      // balanceBefore/balanceAfter describe the state this grant actually
+      // applied to. Reading it before the transaction opened let two
+      // concurrent grants record the same "before" snapshot.
+      const balance = await getBalance(params.userId, session)
+      newBalance = balance.total + params.amount
+
       // Update user balance (grant — no $gte needed, but idempotency check above prevents duplicates)
-      await users.updateOne(
+      const updateResult = await users.updateOne(
         { id: params.userId },
         {
           $inc: { [field]: params.amount, credits: params.amount },
@@ -298,6 +304,14 @@ export async function grantCredits(params: {
         },
         { session },
       )
+
+      // The user must exist. `updateOne` matching nothing means the credit
+      // was granted to nobody — writing the ledger entry anyway created a
+      // phantom entry for a non-existent account (and made admin grants
+      // report success for a user id that was never registered).
+      if (updateResult.matchedCount === 0) {
+        throw new Error(`Cannot grant credits: user ${params.userId} does not exist`)
+      }
 
       // Record ledger entry
       ledgerEntry = await recordLedgerEntry({
@@ -770,8 +784,10 @@ export async function grantSubscriptionCredits(params: {
         return
       }
 
-      // Grant the credits (increment flat fields)
-      await users.updateOne(
+      // Grant the credits (increment flat fields). Without this matchedCount
+      // guard, a grant for a deleted/never-registered user id would still
+      // write the bucket below ($push upserts a phantom doc) and the ledger.
+      const grantResult = await users.updateOne(
         { id: params.userId },
         {
           $inc: { subscriptionCredits: params.amount, credits: params.amount },
@@ -779,6 +795,9 @@ export async function grantSubscriptionCredits(params: {
         },
         { session },
       )
+      if (grantResult.matchedCount === 0) {
+        throw new Error(`Cannot grant subscription credits: user ${params.userId} does not exist`)
+      }
 
       // Push the new bucket — in the SAME transaction so grant + bucket are atomic
       await users.updateOne(
@@ -1086,15 +1105,7 @@ export async function reverseCredits(params: {
   projectId?: string
 }): Promise<{ success: boolean }> {
   const users = await usersCol()
-  const balance = await getBalance(params.userId)
   const field = params.creditType === "subscription" ? "subscriptionCredits" : "permanentCredits"
-  const available = params.creditType === "subscription" ? balance.subscription : balance.permanent
-
-  // Can't reverse more than available in this bucket
-  const actualReversal = Math.min(params.amount, available)
-  if (actualReversal <= 0) {
-    return { success: false }
-  }
 
   const client = (await import("@/lib/db/mongodb")).getMongoClient
   const mongoClient = await client()
@@ -1102,6 +1113,7 @@ export async function reverseCredits(params: {
 
   try {
     let success = false
+    let reversedAmount = 0
 
     await session.withTransaction(async () => {
       // Idempotency check
@@ -1114,8 +1126,24 @@ export async function reverseCredits(params: {
         return
       }
 
-      // Atomic debit with $gte check
-      const filter: Record<string, unknown> = { id: params.userId, credits: { $gte: actualReversal } }
+      // Read the bucket balance INSIDE the transaction and clamp per retry:
+      // a pre-transaction read could be stale after a transient txn retry and
+      // let a concurrent consume drive this bucket negative.
+      const balance = await getBalance(params.userId, session)
+      const available = params.creditType === "subscription" ? balance.subscription : balance.permanent
+      const actualReversal = Math.min(params.amount, available)
+      // Can't reverse more than available in this bucket
+      if (actualReversal <= 0) {
+        success = false
+        return
+      }
+
+      // Atomic debit with $gte checks on both the flat and the bucket field
+      const filter: Record<string, unknown> = {
+        id: params.userId,
+        credits: { $gte: actualReversal },
+        [field]: { $gte: actualReversal },
+      }
       const updateOps: Record<string, unknown> = {
         $inc: { credits: -actualReversal, [field]: -actualReversal },
         $set: { updatedAt: Date.now() },
@@ -1144,6 +1172,7 @@ export async function reverseCredits(params: {
         projectId: params.projectId,
       })
 
+      reversedAmount = actualReversal
       success = true
     })
 
@@ -1151,7 +1180,7 @@ export async function reverseCredits(params: {
       logger.info("credit.reverse", "Credits reversed", {
         userId: params.userId,
         creditType: params.creditType,
-        amount: actualReversal,
+        amount: reversedAmount,
         transactionType: params.transactionType,
       })
     }

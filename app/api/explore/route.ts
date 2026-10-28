@@ -2,6 +2,8 @@ import { getCurrentUser } from "@/lib/auth/session"
 import { projectsCol, usersCol, projectLikesCol, userFollowsCol } from "@/lib/db/collections"
 import { ok, handleRouteError } from "@/lib/api/respond"
 import { resolveProjectThumbnail } from "@/lib/media/project-thumbnail"
+import { checkRateLimit } from "@/lib/auth/rate-limit"
+import { escapeRegex } from "@/lib/utils"
 
 /**
  * GET /api/explore
@@ -13,9 +15,21 @@ export async function GET(req: Request) {
   try {
     const user = await getCurrentUser().catch(() => null)
     const url = new URL(req.url)
-    const search = url.searchParams.get("q")?.trim() || ""
+
+    // Anonymous callers reach this handler with any junk session cookie
+    // (the proxy only checks presence), so cap the search-driven regex work
+    // per caller before it can pile up against the whole public collection.
+    await checkRateLimit({
+      action: "explore_search",
+      identifier: user?.id ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous",
+      limit: 60,
+      windowMs: 60 * 1000,
+    })
+
+    const rawSearch = url.searchParams.get("q")?.trim() || ""
+    const search = escapeRegex(rawSearch.slice(0, 100))
     const sort = url.searchParams.get("sort") || "recent" // recent | popular | forked
-    const page = Math.max(1, parseInt(url.searchParams.get("page") || "1", 10))
+    const page = Math.min(500, Math.max(1, parseInt(url.searchParams.get("page") || "1", 10) || 1))
     const limit = 24
     const skip = (page - 1) * limit
 

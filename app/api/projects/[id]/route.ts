@@ -6,6 +6,7 @@ import { ProjectUnderstandingSchema } from "@/lib/types/understanding"
 import { ApplicationSpecificationSchema } from "@/lib/types/specification"
 import { singleFlight } from "@/lib/cache/single-flight"
 import { recoverStalledPipeline } from "@/lib/projects/pipeline-recovery"
+import { CREDIT_BLOCK_HEADER, encodeCreditBlockHeader, freshCreditBlock } from "@/lib/projects/credit-block"
 import {
   getPlanSection,
   validatePlanSectionValue,
@@ -15,7 +16,7 @@ import {
 } from "@/lib/analysis/plan-sections"
 import { decisionForProposal } from "@/lib/analysis/cofounder"
 import type { PlanProposal, PlanFinding } from "@/lib/types/plan-analysis"
-import type { ProjectEvent } from "@/lib/types/project"
+import type { MirrorProject, ProjectEvent } from "@/lib/types/project"
 
 /** Validated plan-section update request (accepted AI proposal or manual
  * section edit from the Collaborate workspace). The section allow-list and
@@ -27,6 +28,16 @@ interface SectionUpdateRequest {
   /** When provided, this proposal is being accepted: recorded as a decision
    * and (if present) removed from the cached analysis proposal list. */
   acceptedProposal?: { id: string } | null
+}
+
+/** A background run that stopped for lack of credits has no request to refuse,
+ * so the shortfall is flagged on the poll the workspace is already making. The
+ * body already carries `creditBlock`; the header is what lets the credit gate
+ * notice it without parsing every project response. */
+function creditBlockHeaders(project: Pick<MirrorProject, "creditBlock"> | null) {
+  const block = freshCreditBlock(project)
+  if (!block) return undefined
+  return { headers: { [CREDIT_BLOCK_HEADER]: encodeCreditBlockHeader(block) } }
 }
 
 /** Returns a project the caller owns. Ownership is enforced server-side — a
@@ -58,11 +69,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         })
         if (recovered) {
           const refreshed = await store.getProject(id)
-          if (refreshed) return ok({ project: refreshed })
+          if (refreshed) return ok({ project: refreshed }, creditBlockHeaders(refreshed))
         }
       }
 
-      return ok({ project })
+      return ok({ project }, creditBlockHeaders(project))
     })
   } catch (e) {
     return handleRouteError("api.projects.get", e)

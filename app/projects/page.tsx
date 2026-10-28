@@ -57,6 +57,9 @@ export default async function ProjectsPage() {
       updatedAt: p.updatedAt,
       thumbnailUrl: resolveProjectThumbnail(p.understanding?.screenshots),
       visibility: p.visibility,
+      // Lets the list recognise a build that lost its watching session.
+      totalumProjectId: p.totalumProjectId,
+      lastPolledAt: p.lastPolledAt,
     }
 
     if (finance) {

@@ -419,7 +419,7 @@ export function ProjectWorkspace({ projectId, initialState }: { projectId: strin
                 {state === "building" ? <Hammer className="size-4" /> : <Rocket className="size-4" />}
                 {state === "building" ? "Engineering is building" : "The launch team is publishing"}
               </p>
-              <p className="mt-2 text-sm text-muted-foreground">This can take a while. Keep this tab open — the build rides on this session.</p>
+              <p className="mt-2 text-sm text-muted-foreground">This can take a while. Stay here for the live commentary — and if you do leave, the build carries on and this page reconnects to it when you return.</p>
               <button
                 type="button"
                 onClick={() => setBuildOverlayOpen(true)}
