@@ -16,6 +16,7 @@ import "server-only"
  */
 
 import { generateText } from "ai"
+import { aiSignal } from "@/lib/api/ai-context"
 import { MODEL } from "@/lib/analysis/model"
 import { AppError } from "@/lib/errors"
 import { logger } from "@/lib/logging/logger"
@@ -141,7 +142,7 @@ export async function generateCopy(input: {
       prompt,
       maxOutputTokens: MAX_OUTPUT_TOKENS,
       temperature: 0.7,
-      abortSignal: AbortSignal.timeout(GENERATION_TIMEOUT_MS),
+      abortSignal: aiSignal(AbortSignal.timeout(GENERATION_TIMEOUT_MS)),
     })
     const text = (result.text ?? "").trim()
     if (!text) {

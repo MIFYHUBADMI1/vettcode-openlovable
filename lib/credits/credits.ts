@@ -1,6 +1,7 @@
 import { store, cryptoId } from "@/lib/store/store"
 import { logger } from "@/lib/logging/logger"
 import { getBuildTierCosts, getMirrorPipelineCosts, DEFAULT_MIRROR_PIPELINE_COSTS } from "@/lib/billing/runtime-config"
+import { getAvailableCredits } from "@/lib/billing/credit-service"
 
 /**
  * Atai Credit system (spec sections 22 & 23). Atai bills users in
@@ -185,7 +186,7 @@ export async function getBalance(userId: string) {
 }
 
 export async function hasSufficientCredits(userId: string, amount: number) {
-  const balance = await store.getBalance(userId)
+  const balance = await getAvailableCredits(userId)
   return balance >= amount
 }
 

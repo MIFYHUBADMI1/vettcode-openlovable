@@ -94,6 +94,11 @@ export function failInsufficientCredits(input: {
 
 export function handleRouteError(stage: string, error: unknown, headers?: Headers) {
   if (error instanceof AppError) {
+    if (error.status === 429 && error.retryAfterSeconds !== undefined) {
+      const retryHeaders = new Headers(headers)
+      retryHeaders.set("Retry-After", String(error.retryAfterSeconds))
+      return fail(error.code, error.message, error.status, retryHeaders)
+    }
     return fail(error.code, error.message, error.status, headers)
   }
   if (error instanceof TotalumError) {

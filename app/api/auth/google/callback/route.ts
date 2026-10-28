@@ -49,6 +49,13 @@ export async function GET(req: Request) {
       stage = "find-email-user"
       const existingByEmail = await findUserByEmail(profile.email)
       if (existingByEmail) {
+        // Linking a Google identity onto an existing password account must
+        // require a verified Google email — otherwise anyone who can put an
+        // arbitrary unverified address on a Google profile could take over
+        // that account.
+        if (!profile.emailVerified) {
+          return NextResponse.redirect(`${appUrl}/login?error=google_email_unverified`)
+        }
         await linkGoogleToUser(existingByEmail.id, profile.googleId, profile.imageUrl)
         user = { ...existingByEmail, googleId: profile.googleId }
       } else {

@@ -1,4 +1,5 @@
 import { OPENROUTER_BASE_URL, MODEL_ID } from "@/lib/analysis/model"
+import { aiSignal } from "@/lib/api/ai-context"
 
 /**
  * Tolerant, dependency-free completion call used to SALVAGE an answer the AI
@@ -55,6 +56,7 @@ export async function requestRawCompletion(options: {
   prompt: string
   maxOutputTokens?: number
   timeoutMs?: number
+  abortSignal?: AbortSignal
 }): Promise<RawCompletion | null> {
   const apiKey = process.env.OPENROUTER_API_KEY
   if (!apiKey) return null
@@ -78,7 +80,7 @@ export async function requestRawCompletion(options: {
         max_tokens: options.maxOutputTokens ?? 2048,
         stream: false,
       }),
-      signal: controller.signal,
+      signal: aiSignal(AbortSignal.any([controller.signal, ...(options.abortSignal ? [options.abortSignal] : [])])),
     })
 
     const body = await response.text()
@@ -199,7 +201,7 @@ export async function streamRawCompletion(options: {
         max_tokens: options.maxOutputTokens ?? 4096,
         stream: true,
       }),
-      signal: controller.signal,
+      signal: aiSignal(AbortSignal.any([controller.signal, ...(options.abortSignal ? [options.abortSignal] : [])])),
     })
 
     if (!response.ok || !response.body) return { text: "", truncated: false, failed: true }

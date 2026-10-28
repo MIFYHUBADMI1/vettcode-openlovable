@@ -1,21 +1,27 @@
 # Atai
 
-> Atai.ink is an AI business-building platform. Founders turn an idea, a website, a URL, or a GitHub project into a real digital business — plan, build, launch, manage, and grow in one place.
+> Atai helps people start, run, manage, and grow their own online businesses with specialized AI teams. Building the website or digital product is one step; hosting it, serving customers, running daily operations, and marketing what you sell are the purpose.
 
-Atai (Advanced Technologies and AI Enterprises) is not a generic website cloner. It is an AI co-founder for non-technical founders and operators: collaborative planning, application generation, hosting, and day-to-day business operations.
+Atai (Advanced Technologies and AI Enterprises) is not an app generator for its own sake. It is a business partner for people who want to own a livelihood: plan an offer and who it serves, create and host the product that supports it, manage customers and payments, and work on growth.
 
-The Atai SDK and a single Atai API key are supporting infrastructure inside that product. Generated apps and developers can call AI, payments, maps, messaging, auth, search, data, and related services without stitching many vendors. That key is one capability of the platform, not the product itself.
+The Atai SDK and a single Atai API key are supporting infrastructure inside that product. Businesses and developers can call AI, payments, maps, messaging, auth, search, data, and related services without stitching many vendors. That key is one capability of the platform, not the product itself.
 
-## What founders do here
+## Mission
 
-- Describe a business idea or start from a site / GitHub repo
-- Collaborate on a plain-language plan before any build spend
-- Generate and deploy a working application
-- Operate customers, billing, and growth from the workspace
+Economic opportunity should not depend on being able to afford a whole team. Atai's aim is to reduce the barriers to business ownership, including for people starting with very little. It does not promise income, customers, or business success.
+
+Atai was founded by Masereka Adorable Kimulya, a self-taught programmer from Kasese, Uganda. Their early story — saving for a first phone, learning to code, working in carpentry, and the failed MixifyHub project — is at https://atai.ink/founder. A book and documentary with the working title The Rise of Atai are in progress and not yet released.
+
+## What owners do here
+
+- Describe the business they want to run, in plain language
+- Collaborate on a plan for customers, offer, and pricing before any build spend
+- Create and host the website or digital product the business needs
+- Operate customers, records, payments, and growth from one workspace
 
 ## Developers (optional)
 
-Same infrastructure the builder uses, via `@atai-group/sdk` and an Atai API key (`atai_proj_...`). See /developers and /sdk. Start at the homepage if you are launching a business, not an integration.
+Same infrastructure the business builder uses, via `@atai-group/sdk` and an Atai API key (`atai_proj_...`). See /developers and /sdk. Start at the homepage if you are launching a business, not an integration.
 
 ## Links
 
@@ -23,6 +29,7 @@ Same infrastructure the builder uses, via `@atai-group/sdk` and an Atai API key 
 - Start: https://atai.ink/start
 - Pricing: https://atai.ink/pricing
 - About: https://atai.ink/about
+- Founder story: https://atai.ink/founder
 - Docs: https://atai.ink/docs
 - Developers: https://atai.ink/developers
 - SDK: https://atai.ink/sdk
@@ -33,4 +40,4 @@ Same infrastructure the builder uses, via `@atai-group/sdk` and an Atai API key 
 
 ## Organization
 
-Atai is built by ATAI Enterprises (https://atai.ink).
+Atai is built by ATAI Enterprises (https://atai.ink). Founder: Masereka Adorable Kimulya (https://atai.ink/founder).

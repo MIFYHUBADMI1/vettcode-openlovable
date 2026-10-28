@@ -91,17 +91,18 @@ export async function autoLaunchBuild(projectId: string) {
   const tier = project.specification.complexity ?? classifyComplexity(project.specification)
   const pipelineMode = project.pipelineMode ?? "legacy"
   const creditsNeeded = await getTierCost(tier, pipelineMode)
-  const canAfford = await hasSufficientCredits(project.userId, creditsNeeded)
-  if (!canAfford) {
-    console.log("[v0] pipeline.autoBuild: insufficient credits", { projectId })
-    await recordCreditBlock(projectId, project.userId, { required: creditsNeeded, action: "your build" })
-    await store.appendEvent(projectId, event("build", "💰 Need more credits to fuel the build rocket! Top up and click Build when ready.", "warn"))
-    return
-  }
-
+  const claimed = await store.claimBuildSlot(projectId, { state: "building" }, ["plan_ready", "awaiting_build_confirmation"])
+  if (!claimed) return
   let activeRun: BuildRun | null = null
   let reservationMade = false
   try {
+    const canAfford = await hasSufficientCredits(project.userId, creditsNeeded)
+    if (!canAfford) {
+      await store.updateProject(projectId, { state: "plan_ready" })
+      await recordCreditBlock(projectId, project.userId, { required: creditsNeeded, action: "your build", resume: "build" })
+      await store.appendEvent(projectId, event("build", "More credits are needed to start this build. Top up to continue.", "warn"))
+      return
+    }
     await store.appendEvent(projectId, event("build", "🎪 Setting up the build circus... Juggling code, APIs, and databases!"))
     const prompt = buildInitialBuildPrompt(project.specification, project.understanding, project.preferences)
     const run: BuildRun = {
@@ -117,19 +118,13 @@ export async function autoLaunchBuild(projectId: string) {
     activeRun = run
     await store.createBuildRun(run)
 
-    const claimed = await store.claimBuildSlot(projectId, { state: "building" })
-    if (!claimed) {
-      console.log("[v0] pipeline.autoBuild: could not claim build slot", { projectId })
-      return
-    }
-
     const modeLabel = pipelineMode === "heavy" ? "Heavy Mode" : "Legacy"
     const reserved = await reserveCredits(project.userId, creditsNeeded, run.id, `${tier.charAt(0).toUpperCase() + tier.slice(1)} application build (${modeLabel})`, projectId)
     if (!reserved) {
       await store.updateBuildRun(run.id, { status: "failed", error: "insufficient credits" })
-      await store.updateProject(projectId, { state: project.state })
+      await store.updateProject(projectId, { state: "plan_ready" })
       console.log("[v0] pipeline.autoBuild: insufficient credits after claim", { projectId })
-      await recordCreditBlock(projectId, project.userId, { required: creditsNeeded, action: "your build" })
+      await recordCreditBlock(projectId, project.userId, { required: creditsNeeded, action: "your build", resume: "build" })
       return
     }
     reservationMade = true
@@ -154,6 +149,7 @@ export async function autoLaunchBuild(projectId: string) {
     await store.updateProject(projectId, {
       state: "building",
       totalumProjectId: launch.projectId,
+      creditBlock: undefined,
     })
 
     // Initialize infrastructure subscription with Testing plan
@@ -218,7 +214,7 @@ export async function runWebsiteAnalysis(projectId: string, pipelineMode?: "lega
     const canAfford = await hasSufficientCredits(project.userId, scrapeCost)
     if (!canAfford) {
       console.log("[v0] pipeline.website: insufficient credits, aborting", { projectId, userId: project.userId, required: scrapeCost })
-      await recordCreditBlock(projectId, project.userId, { required: scrapeCost, action: "the website analysis" })
+      await recordCreditBlock(projectId, project.userId, { required: scrapeCost, action: "the website analysis", resume: "analysis" })
       await markPipelineFailure(
         projectId,
         "understand",
@@ -455,7 +451,7 @@ export async function runDeepCrawlAnalysis(projectId: string, pipelineMode?: "le
     // Check credits before crawling (500 for legacy, 1000 for heavy)
     const canAfford = await hasSufficientCredits(project.userId, deepCrawlCost)
     if (!canAfford) {
-      await recordCreditBlock(projectId, project.userId, { required: deepCrawlCost, action: "the full site crawl" })
+      await recordCreditBlock(projectId, project.userId, { required: deepCrawlCost, action: "the full site crawl", resume: "analysis" })
       await markPipelineFailure(
         projectId,
         "understand",

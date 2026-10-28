@@ -17,6 +17,7 @@ import "server-only"
  */
 
 import { generateText } from "ai"
+import { aiSignal } from "@/lib/api/ai-context"
 import { z } from "zod"
 import { MODEL } from "@/lib/analysis/model"
 import { AppError } from "@/lib/errors"
@@ -126,7 +127,7 @@ export async function generateRefinement(input: {
       prompt,
       maxOutputTokens: MAX_OUTPUT_TOKENS,
       temperature: 0.4,
-      abortSignal: AbortSignal.timeout(TIMEOUT_MS),
+      abortSignal: aiSignal(AbortSignal.timeout(TIMEOUT_MS)),
     })
     const text = (result.text ?? "").trim()
     if (!text) throw new Error("empty refinement")
@@ -212,7 +213,7 @@ export async function generateVariations(input: {
       prompt,
       maxOutputTokens: MAX_OUTPUT_TOKENS,
       temperature: 0.8,
-      abortSignal: AbortSignal.timeout(TIMEOUT_MS),
+      abortSignal: aiSignal(AbortSignal.timeout(TIMEOUT_MS)),
     })
     const variants = parseVariations(result.text ?? "", input.count)
     if (variants.length === 0) throw new Error("no variants in model output")

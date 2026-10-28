@@ -15,8 +15,10 @@ import { findUserByEmail } from "@/lib/auth/users"
 import { store } from "@/lib/store/store"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { authorizeInternalRequest } from "@/lib/api/internal-key"
+import { checkInternalLimit } from "@/lib/api/internal-limit"
+import { getAppUrl } from "@/lib/env"
 
-const Atai_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://Atai.atai.ink"
+const Atai_URL = getAppUrl()
 
 export async function GET(req: NextRequest) {
   try {
@@ -27,10 +29,11 @@ export async function GET(req: NextRequest) {
     if (!auth.ok) {
       return fail(auth.code, auth.message, auth.status)
     }
+    await checkInternalLimit(req.headers)
 
     // ── Input ───────────────────────────────────────────────────────────────
     const email = req.nextUrl.searchParams.get("email")
-    if (!email || typeof email !== "string") {
+    if (!email || email.length > 254) {
       return fail("VALIDATION", "email query parameter is required.", 422)
     }
 

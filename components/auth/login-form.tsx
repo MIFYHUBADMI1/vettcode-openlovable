@@ -15,6 +15,9 @@ export function LoginForm() {
   if (error === "github_no_email") {
     initialError = "Your GitHub account has no public email. Please add a public email in GitHub settings and try again."
   }
+  if (error === "google_email_unverified") {
+    initialError = "Google hasn't verified that email address, so we can't link it to an existing Atai account. Sign in with your password instead."
+  }
   if (error === "account_banned") initialError = "This account has been banned. Please contact support."
   if (error === "account_suspended") initialError = "This account has been suspended. Please contact support."
 

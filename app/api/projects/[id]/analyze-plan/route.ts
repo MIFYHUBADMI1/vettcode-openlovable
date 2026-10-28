@@ -31,7 +31,12 @@ import { refuseInsufficientCredits } from "@/lib/api/credit-refusal"
  */
 const ANALYSIS_FRESHNESS_MS = 1000 * 60 * 30 // 30 minutes
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+import { withAiProtection } from "@/lib/api/ai-protection"
+import { aiSignal } from "@/lib/api/ai-context"
+
+export const POST = withAiProtection("analysis", post)
+
+async function post(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireUser()
     const { id } = await params
@@ -89,7 +94,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         prompt: context,
         maxOutputTokens: 4096,
         maxRetries: 3,
-        abortSignal: AbortSignal.timeout(180_000),
+        abortSignal: aiSignal(),
       })
       text = result.text
     } catch (aiError) {

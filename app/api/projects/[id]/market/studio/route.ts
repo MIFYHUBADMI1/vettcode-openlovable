@@ -101,7 +101,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   }
 }
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+import { withAiProtection } from "@/lib/api/ai-protection"
+
+export const POST = withAiProtection("studio", post)
+
+async function post(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireUser()
     const { id } = await params

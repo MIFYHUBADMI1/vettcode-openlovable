@@ -1,8 +1,9 @@
 import { requireUser } from "@/lib/auth/session"
 import { store } from "@/lib/store/store"
-import { ok, fail, handleRouteError } from "@/lib/api/respond"
+import { ok, fail, failInsufficientCredits, handleRouteError } from "@/lib/api/respond"
 import { retryProjectStep } from "@/lib/projects/pipeline-recovery"
 import { logger } from "@/lib/logging/logger"
+import { getAvailableCredits } from "@/lib/billing/credit-service"
 
 /**
  * POST /api/projects/[id]/retry
@@ -25,6 +26,10 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       return fail("UNAUTHORIZED_PROJECT_ACCESS", "We couldn't find this project.", 404)
     }
 
+    if (project.creditBlock) {
+      const available = await getAvailableCredits(user.id)
+      if (available < project.creditBlock.required) return failInsufficientCredits({ required: project.creditBlock.required, available })
+    }
     const result = await retryProjectStep(id)
     if (!result.ok) {
       logger.warn("api.projects.retry", "retry rejected", {

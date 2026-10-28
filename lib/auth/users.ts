@@ -1,4 +1,4 @@
-import { ObjectId } from "mongodb"
+import { ObjectId, type ClientSession } from "mongodb"
 import { usersCol, ensureIndexes } from "@/lib/db/collections"
 import type { UserDoc } from "@/lib/types/db"
 import { cryptoId, store } from "@/lib/store/store"
@@ -224,9 +224,14 @@ export async function markEmailVerified(userId: string): Promise<void> {
   }
 }
 
-export async function setPasswordHash(userId: string, passwordHash: string): Promise<void> {
+export async function setPasswordHash(userId: string, passwordHash: string, session?: ClientSession): Promise<boolean> {
   const col = await usersCol()
-  await col.updateOne({ id: userId }, { $set: { passwordHash, updatedAt: Date.now() } })
+  const result = await col.updateOne(
+    { id: userId, deletedAt: { $exists: false } },
+    { $set: { passwordHash, updatedAt: Date.now() } },
+    { session },
+  )
+  return result.matchedCount > 0
 }
 
 export async function touchLastLogin(userId: string): Promise<void> {

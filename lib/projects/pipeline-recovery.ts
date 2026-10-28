@@ -190,7 +190,7 @@ async function runWithAutoRetry(projectId: string, initialPhase: "understand" | 
     }
 
     const after = await store.getProject(projectId)
-    if (!after || !isPipelineFailure(after.state)) return
+    if (!after || !isPipelineFailure(after.state) || after.creditBlock) return
     // The pipeline knows which phase actually failed (a scratch run starts as
     // Understand but fails while planning).
     const failedPhase = after.pipelineRecovery?.phase ?? phase
@@ -251,6 +251,7 @@ export async function startProjectPipeline(
       ? "plan"
       : "understand"
   await store.updateProject(projectId, {
+    creditBlock: undefined,
     pipelineRecovery: { phase, attempts: 0, lastAttemptAt: Date.now(), autoRestarts },
   })
   await store.appendEvent(
@@ -301,6 +302,7 @@ export async function startPlanRegeneration(
 
   const reusable = canReuseUnderstanding(project)
   await store.updateProject(projectId, {
+    creditBlock: undefined,
     pipelineRecovery: {
       phase: "plan",
       attempts: 0,

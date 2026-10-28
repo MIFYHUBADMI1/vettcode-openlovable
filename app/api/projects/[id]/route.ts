@@ -34,7 +34,7 @@ interface SectionUpdateRequest {
  * so the shortfall is flagged on the poll the workspace is already making. The
  * body already carries `creditBlock`; the header is what lets the credit gate
  * notice it without parsing every project response. */
-function creditBlockHeaders(project: Pick<MirrorProject, "creditBlock"> | null) {
+function creditBlockHeaders(project: MirrorProject | null) {
   const block = freshCreditBlock(project)
   if (!block) return undefined
   return { headers: { [CREDIT_BLOCK_HEADER]: encodeCreditBlockHeader(block) } }

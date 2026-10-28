@@ -3,6 +3,7 @@ import { docFeedbackCol } from "@/lib/db/collections"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { createHash } from "crypto"
+import { getVerifiedClientIp } from "@/lib/api/client-ip"
 
 const VALID_SECTIONS = [
   "getting-started",
@@ -30,11 +31,12 @@ const VALID_SECTIONS = [
  */
 export async function POST(req: NextRequest) {
   try {
+    const clientIp = getVerifiedClientIp(req) ?? "anonymous"
     // Unauthenticated upsert with an attacker-chosen dedup key — without a
     // limit each distinct visitorId inserts a permanent document (storage DoS).
     await checkRateLimit({
       action: "doc_feedback",
-      identifier: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous",
+      identifier: clientIp,
       limit: 60,
       windowMs: 60 * 60 * 1000,
     })
@@ -57,7 +59,7 @@ export async function POST(req: NextRequest) {
     const visitorId = rawVisitorId
       ? createHash("sha256").update(rawVisitorId).digest("hex").slice(0, 16)
       : createHash("sha256")
-          .update(`${req.headers.get("x-forwarded-for") ?? "anonymous"}-${req.headers.get("user-agent") ?? ""}`)
+          .update(`${clientIp}-${req.headers.get("user-agent") ?? ""}`)
           .digest("hex")
           .slice(0, 16)
 

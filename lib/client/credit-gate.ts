@@ -1,107 +1,74 @@
 "use client"
 
-import { CREDIT_BLOCK_FRESH_MS, CREDIT_BLOCK_HEADER } from "@/lib/projects/credit-block"
-
-/**
- * The credit gate.
- *
- * Every credit-consuming route answers the same way when a founder cannot
- * afford the work: HTTP 402 with `{ ok:false, error:{ code, message } }`. There
- * are three dozen of those call sites and they do not all share a helper — some
- * use `postJson`, plenty call `fetch` directly — so this module wraps `fetch`
- * once instead of asking every panel to remember to report a shortfall.
- *
- * On a 402 it does two things: it remembers the interrupted request (so paying
- * can resume it) and it publishes a signal the billing overlay listens for. The
- * original `Response` is returned untouched, so existing toasts and banners
- * keep working exactly as they do today.
- *
- * Streaming (ndjson) replies are not covered: routes that charge for a stream
- * check the balance before the first frame, so those refusals arrive as a plain
- * 402 through this same path.
- */
+import { CREDIT_BLOCK_FRESH_MS, CREDIT_BLOCK_HEADER, sanitizeCreditBlock } from "@/lib/projects/credit-block"
+import { deleteCreditRequestBody, readCreditRequestBody, saveCreditRequestBody } from "./credit-request-storage"
 
 export const CREDIT_GATE_EVENT = "atai:credit-shortfall"
-export const INSUFFICIENT_CREDIT_CODES: readonly string[] = [
-  "INSUFFICIENT_CREDITS",
-  "runtime_insufficient_entitlement",
-]
-
-const PENDING_KEY = "atai:pending-action"
-/** Long enough to come back from a payment page, short enough that a stale
- * request is never replayed against a project the founder has since changed. */
+export const INSUFFICIENT_CREDIT_CODES: readonly string[] = ["INSUFFICIENT_CREDITS", "runtime_insufficient_entitlement"]
 export const PENDING_TTL_MS = 30 * 60 * 1000
+const PENDING_KEY = "atai:pending-action"
+const HANDOFF_KEY = "atai:payment-handoff"
 const MAX_BODY_CHARS = 20_000
 const REPLAYABLE_METHODS = new Set(["POST", "PATCH", "PUT", "DELETE"])
-/** Never intercept our own money endpoints — a loop here would be endless. */
-const SKIP_PATH = /^\/api\/billing\/(checkout|upgrade-options)(\?|$)/
+const SKIP_PATH = /^\/api\/(billing|auth)(\/|\?|$)/
+type CreditGateWindow = Window & { __ataiCreditGate?: boolean; __ataiCreditGateFetch?: typeof fetch }
 
 export type ReplayMethod = "POST" | "PATCH" | "PUT" | "DELETE"
-
 export interface ReplayableRequest {
   url: string
   method: ReplayMethod
-  /** JSON or urlencoded text, re-sent verbatim. */
   body: string | null
   contentType: string | null
-  /** Plain-text form fields, rebuilt into a FormData on replay. A form carrying
-   * a file cannot be stashed in sessionStorage, so those stay report-only. */
   form: Array<[string, string]> | null
+  bodyId?: string
+  headers?: Record<string, string>
 }
-
 export interface CreditShortfall {
   code: string
   message: string | null
   required: number | null
   available: number | null
-  /** Human name for what they were doing, e.g. "your build". */
   action: string
   at: number
   request: ReplayableRequest | null
-  /** Set when a background run recorded the shortfall on its project instead
-   * of refusing a live request. That flow has nothing to resume. */
   pipeline?: true
+  userId?: string
 }
-
-// ─── Pure parsing ─────────────────────────────────────────────────────────────
 
 export function isInsufficientCreditsCode(code?: string | null): boolean {
   return typeof code === "string" && INSUFFICIENT_CREDIT_CODES.includes(code)
 }
-
+function cleanNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 ? Math.round(value) : null
+}
 function firstNumber(text: string, patterns: RegExp[]): number | null {
   for (const pattern of patterns) {
-    const match = pattern.exec(text)
-    const raw = match?.[1]
+    const raw = pattern.exec(text)?.[1]
     if (!raw) continue
     const value = Number(raw.replace(/[,_\s]/g, ""))
-    if (Number.isFinite(value) && value > 0) return Math.round(value)
+    if (Number.isFinite(value) && value >= 0) return Math.round(value)
   }
   return null
 }
-
-/** Route messages vary in wording, so read the numbers out of the prose when a
- * route did not send structured `meta`. Never invents a figure: null means
- * "we do not know", and the overlay then says so instead of guessing. */
 export function extractShortfallFacts(message: string): { required: number | null; available: number | null } {
-  const required = firstNumber(message, [
-    /required:?\s*([\d,_\s]*\d)/i,
-    /you\s+need\s+([\d,_\s]*\d)\s*credits?/i,
-    /needs?\s+([\d,_\s]*\d)\s*credits?/i,
-    /requires?\s+([\d,_\s]*\d)\s*credits?/i,
-    /costs?\s+([\d,_\s]*\d)\s*credits?/i,
-    /\bneed\s+([\d,_\s]*\d)\b/i,
-  ])
-  const available = firstNumber(message, [
-    /available:?\s*([\d,_\s]*\d)/i,
-    /you\s+have\s+([\d,_\s]*\d)\s*(?:available|credits?)/i,
-    /your\s+balance\s+is\s+([\d,_\s]*\d)/i,
-  ])
-  return { required, available }
+  return {
+    required: firstNumber(message, [
+      /required:?\s*([\d,_\s]*\d)/i,
+      /you\s+need\s+([\d,_\s]*\d)\s*credits?/i,
+      /needs?\s+([\d,_\s]*\d)\s*credits?/i,
+      /requires?\s+([\d,_\s]*\d)\s*credits?/i,
+      /costs?\s+([\d,_\s]*\d)\s*credits?/i,
+      /\bneed\s+([\d,_\s]*\d)\b/i,
+    ]),
+    available: firstNumber(message, [
+      /available:?\s*([\d,_\s]*\d)/i,
+      /you\s+have\s+([\d,_\s]*\d)\s*(?:available|credits?)/i,
+      /your\s+balance\s+is\s*([\d,_\s]*\d)/i,
+    ]),
+  }
 }
-
 const ACTION_LABELS: Array<[RegExp, string]> = [
-  [/\/build(\?|$)/, "your build"],
+  [/\/(build|launch)(\?|$)/, "your build"],
   [/\/retry(\?|$)/, "the retry"],
   [/\/agent(\?|$)/, "your edit request"],
   [/\/deploy(\?|$)/, "launching your site"],
@@ -111,204 +78,151 @@ const ACTION_LABELS: Array<[RegExp, string]> = [
   [/\/analyze-plan(\?|$)/, "the plan analysis"],
   [/\/generate-visual(\?|$)/, "the visual mockup"],
   [/\/seo-audit(\?|$)/, "the SEO audit"],
-  [/\/content-studio(\?|$)/, "the content studio"],
-  [/\/studio\/(refine|variations)(\?|$)/, "the content studio"],
-  [/\/market\/studio(\?|$)/, "the market studio"],
+  [/\/(content-studio|market\/studio|studio\/(refine|variations))(\?|$)/, "the content studio"],
   [/\/resources\/(action-plan|market-research|competitors|marketing-playbook)(\?|$)/, "the resource report"],
   [/\/api\/runtime\//, "an AI call"],
 ]
-
 export function describeAction(url: string): string {
-  for (const [pattern, label] of ACTION_LABELS) {
-    if (pattern.test(url)) return label
+  return ACTION_LABELS.find(([pattern]) => pattern.test(url))?.[1] ?? "this"
+}
+export function parseCreditShortfall(body: unknown, request: ReplayableRequest | null, at = Date.now()): CreditShortfall | null {
+  if (!body || typeof body !== "object") return null
+  const envelope = body as { ok?: unknown; error?: { code?: unknown; message?: unknown; meta?: { required?: unknown; available?: unknown } } }
+  const code = envelope.error?.code
+  if (envelope.ok !== false || typeof code !== "string" || !isInsufficientCreditsCode(code)) return null
+  const message = typeof envelope.error?.message === "string" ? envelope.error.message : null
+  const facts = message ? extractShortfallFacts(message) : { required: null, available: null }
+  return {
+    code, message,
+    required: cleanNumber(envelope.error?.meta?.required) ?? facts.required,
+    available: cleanNumber(envelope.error?.meta?.available) ?? facts.available,
+    action: request ? describeAction(request.url) : "this", at, request,
   }
-  return "this"
+}
+export function parseCreditBlockHeader(value: string | null, now = Date.now(), projectPath?: string): CreditShortfall | null {
+  if (!value) return null
+  let raw: unknown
+  try { raw = JSON.parse(decodeURIComponent(value)) } catch { return null }
+  const block = sanitizeCreditBlock(raw)
+  if (!block || block.at > now || now - block.at > CREDIT_BLOCK_FRESH_MS) return null
+  const project = projectPath?.match(/^\/api\/projects\/([A-Za-z0-9_-]+)(?:\?.*)?$/)
+  const resume = block.resume ?? (block.action === "your build" ? "build" : "analysis")
+  return {
+    code: "INSUFFICIENT_CREDITS", message: null, ...block, pipeline: true,
+    request: project ? {
+      url: `/api/projects/${project[1]}/${resume === "build" ? "launch" : "retry"}`,
+      method: "POST", body: "{}", contentType: "application/json", form: null,
+    } : null,
+  }
 }
 
-function cleanNumber(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value) && value > 0) return Math.round(value)
+function sameOriginPath(input: RequestInfo | URL): string | null {
+  const raw = typeof input === "string" ? input : input instanceof URL ? input.href : input.url
+  if (raw.startsWith("//") || raw.includes("\\")) return null
+  try {
+    const origin = typeof window === "undefined" ? "http://localhost" : window.location.origin
+    const url = new URL(raw, origin)
+    if (url.origin !== origin || !url.pathname.startsWith("/api/") || SKIP_PATH.test(url.pathname)) return null
+    return `${url.pathname}${url.search}`
+  } catch { return null }
+}
+function requestHeaders(input: RequestInfo | URL, init?: RequestInit): Headers {
+  return new Headers(init?.headers ?? (typeof input === "object" && !(input instanceof URL) ? input.headers : undefined))
+}
+function replayHeaders(headers: Headers): Record<string, string> | undefined {
+  const preserved: Record<string, string> = {}
+  for (const name of ["accept", "idempotency-key"]) {
+    const value = headers.get(name)
+    if (value) preserved[name] = value
+  }
+  return Object.keys(preserved).length ? preserved : undefined
+}
+export function captureRequest(input: RequestInfo | URL, init?: RequestInit): ReplayableRequest | null {
+  const url = sameOriginPath(input)
+  const method = String(init?.method ?? (typeof input === "object" && !(input instanceof URL) ? input.method : "GET")).toUpperCase()
+  if (!url || !REPLAYABLE_METHODS.has(method)) return null
+  const headers = requestHeaders(input, init)
+  if (headers.has("authorization")) return null
+  const base: ReplayableRequest = { url, method: method as ReplayMethod, body: null, contentType: headers.get("content-type"), form: null }
+  const preserved = replayHeaders(headers)
+  if (preserved) base.headers = preserved
+  const raw = init?.body
+  if (raw == null) {
+    if (typeof input === "object" && !(input instanceof URL) && input.body !== null) return null
+    return base
+  }
+  if (typeof raw === "string" && raw.length <= MAX_BODY_CHARS) return { ...base, body: raw }
+  if (raw instanceof URLSearchParams && raw.toString().length <= MAX_BODY_CHARS) {
+    return { ...base, body: raw.toString(), contentType: headers.get("content-type") ?? "application/x-www-form-urlencoded;charset=UTF-8" }
+  }
+  if (raw instanceof FormData) {
+    const form: Array<[string, string]> = []
+    for (const [name, value] of raw.entries()) {
+      if (typeof value !== "string") return null
+      form.push([name, value])
+    }
+    if (JSON.stringify(form).length <= MAX_BODY_CHARS) return { ...base, contentType: null, form }
+  }
   return null
 }
 
-export function parseCreditShortfall(
-  body: unknown,
-  request: ReplayableRequest | null,
-  at = Date.now(),
-): CreditShortfall | null {
-  if (!body || typeof body !== "object") return null
-  const envelope = body as { ok?: unknown; error?: { code?: unknown; message?: unknown; meta?: unknown } }
-  if (envelope.ok !== false) return null
-  const rawCode = envelope.error?.code
-  if (typeof rawCode !== "string" || !isInsufficientCreditsCode(rawCode)) return null
-  const code = rawCode
-
-  const message = typeof envelope.error?.message === "string" ? envelope.error.message : null
-  const facts = message ? extractShortfallFacts(message) : { required: null, available: null }
-  const meta = (envelope.error?.meta ?? null) as { required?: unknown; available?: unknown } | null
-
-  return {
-    code,
-    message,
-    required: cleanNumber(meta?.required) ?? facts.required,
-    available: cleanNumber(meta?.available) ?? facts.available,
-    action: request ? describeAction(request.url) : "this",
-    at,
-    request,
-  }
-}
-
-// ─── A background run's shortfall, carried on a normal response ───────────────
-
-/** A project poll can flag that a background run stopped for lack of credits —
- * there was no request to refuse in that flow. Returns null for anything
- * malformed, not a shortfall, or too old to act on. */
-export function parseCreditBlockHeader(
-  value: string | null,
-  now = Date.now(),
-): CreditShortfall | null {
-  if (!value) return null
-  let parsed: unknown
+export function savePendingAction(shortfall: CreditShortfall): boolean {
+  if (typeof window === "undefined" || !shortfall.request) return false
   try {
-    parsed = JSON.parse(decodeURIComponent(value))
-  } catch {
-    return null
-  }
-  if (!parsed || typeof parsed !== "object") return null
-  const raw = parsed as { required?: unknown; available?: unknown; action?: unknown; at?: unknown }
-  const required = cleanNumber(raw.required)
-  const available = cleanNumber(raw.available) ?? 0
-  const at = typeof raw.at === "number" && Number.isFinite(raw.at) ? raw.at : null
-  const action = typeof raw.action === "string" && raw.action.trim() ? raw.action.trim() : null
-  if (required === null || at === null || action === null) return null
-  if (required <= available) return null
-  if (now - at > CREDIT_BLOCK_FRESH_MS) return null
-  return {
-    code: "INSUFFICIENT_CREDITS",
-    message: null,
-    required,
-    available,
-    action,
-    at,
-    request: null,
-    pipeline: true,
-  }
+    const previous = peekPendingAction()
+    window.sessionStorage.setItem(PENDING_KEY, JSON.stringify(shortfall))
+    if (previous?.request?.bodyId && previous.request.bodyId !== shortfall.request.bodyId) {
+      void deleteCreditRequestBody(previous.request.bodyId).catch(() => {})
+    }
+    return true
+  } catch { return false }
 }
-
-// ─── The interrupted request, kept across the payment redirect ────────────────
-
-export function savePendingAction(shortfall: CreditShortfall): void {
-  if (typeof window === "undefined" || !shortfall.request) return
-  try {
-    window.sessionStorage.setItem(PENDING_KEY, JSON.stringify({ v: 1, ...shortfall }))
-  } catch {
-    /* Private mode or a full quota: the overlay still opens, it just cannot resume. */
-  }
-}
-
-function readPending(): CreditShortfall | null {
+export function peekPendingAction(now = Date.now()): CreditShortfall | null {
   if (typeof window === "undefined") return null
   try {
     const raw = window.sessionStorage.getItem(PENDING_KEY)
     if (!raw) return null
-    const parsed = JSON.parse(raw) as Partial<CreditShortfall> & { request?: ReplayableRequest }
-    if (!parsed || typeof parsed.at !== "number" || !parsed.request) return null
-    const stored = parsed.request
-    if (!stored?.url?.startsWith("/") || !REPLAYABLE_METHODS.has(String(stored.method).toUpperCase())) {
+    const parsed = JSON.parse(raw) as CreditShortfall
+    const request = parsed?.request
+    if (!request || typeof parsed.at !== "number" || !Number.isFinite(parsed.at) || !REPLAYABLE_METHODS.has(request.method)) return null
+    if (typeof request.url !== "string" || sameOriginPath(request.url) !== request.url) return null
+    if (now - parsed.at > PENDING_TTL_MS || parsed.at > now) {
+      clearPendingAction()
       return null
     }
-    return {
-      code: typeof parsed.code === "string" ? parsed.code : "INSUFFICIENT_CREDITS",
-      message: typeof parsed.message === "string" ? parsed.message : null,
-      required: cleanNumber(parsed.required),
-      available: cleanNumber(parsed.available),
-      action: typeof parsed.action === "string" ? parsed.action : "this",
-      at: parsed.at,
-      request: {
-        url: stored.url,
-        method: String(stored.method).toUpperCase() as ReplayMethod,
-        body: typeof stored.body === "string" ? stored.body : null,
-        contentType: typeof stored.contentType === "string" ? stored.contentType : null,
-        form: Array.isArray(stored.form)
-          ? stored.form.filter(
-              (entry): entry is [string, string] =>
-                Array.isArray(entry) && typeof entry[0] === "string" && typeof entry[1] === "string",
-            )
-          : null,
-      },
-    }
-  } catch {
-    return null
-  }
+    return parsed
+  } catch { return null }
 }
-
-/** The stored action, or null when nothing is waiting or it has gone stale. */
-export function peekPendingAction(now = Date.now()): CreditShortfall | null {
-  const pending = readPending()
-  if (!pending) return null
-  if (now - pending.at > PENDING_TTL_MS) {
-    clearPendingAction()
-    return null
-  }
-  return pending
-}
-
-/** Take it once: a replay must never fire twice for the same payment. */
-export function takePendingAction(now = Date.now()): CreditShortfall | null {
-  const pending = peekPendingAction(now)
-  if (pending) clearPendingAction()
-  return pending
-}
-
 export function clearPendingAction(): void {
   if (typeof window === "undefined") return
   try {
+    const raw = window.sessionStorage.getItem(PENDING_KEY)
     window.sessionStorage.removeItem(PENDING_KEY)
-  } catch {
-    /* nothing to clear */
-  }
+    const bodyId = raw ? (JSON.parse(raw) as CreditShortfall).request?.bodyId : undefined
+    if (bodyId) void deleteCreditRequestBody(bodyId).catch(() => {})
+  } catch { /* Storage may be disabled. */ }
 }
-
-// ─── The payment handoff ──────────────────────────────────────────────────────
-
-const HANDOFF_KEY = "atai:payment-handoff"
-
-/** Set just before we leave for the payment page. Whether the payment provider
- * appends anything to our return URL is out of our hands, so the flag — not a
- * query parameter — is what tells a returning founder "finish the resume". */
 export function markPaymentHandoff(at = Date.now()): void {
-  if (typeof window === "undefined") return
-  try {
-    window.sessionStorage.setItem(HANDOFF_KEY, JSON.stringify({ at }))
-  } catch {
-    /* storage blocked: nothing to resume, nothing to mark */
-  }
+  if (typeof window !== "undefined") window.sessionStorage.setItem(HANDOFF_KEY, JSON.stringify({ at }))
 }
-
-export function takePaymentHandoff(now = Date.now()): boolean {
+export function clearPaymentHandoff(): void {
+  if (typeof window === "undefined") return
+  try { window.sessionStorage.removeItem(HANDOFF_KEY) } catch { /* Storage may be disabled. */ }
+}
+export function hasPaymentHandoff(now = Date.now()): boolean {
   if (typeof window === "undefined") return false
-  let stored: string | null = null
   try {
-    stored = window.sessionStorage.getItem(HANDOFF_KEY)
-    window.sessionStorage.removeItem(HANDOFF_KEY)
-  } catch {
-    return false
-  }
-  if (!stored) return false
-  try {
-    const parsed = JSON.parse(stored) as { at?: unknown }
-    return typeof parsed.at === "number" && now - parsed.at <= PENDING_TTL_MS
-  } catch {
-    return false
-  }
+    const raw = window.sessionStorage.getItem(HANDOFF_KEY)
+    if (!raw) return false
+    const at = (JSON.parse(raw) as { at?: unknown }).at
+    if (typeof at === "number" && at <= now && now - at <= PENDING_TTL_MS) return true
+    clearPaymentHandoff()
+  } catch { /* Storage may be disabled. */ }
+  return false
 }
-
-// ─── Signal bus ───────────────────────────────────────────────────────────────
-
 export function publishCreditShortfall(shortfall: CreditShortfall): void {
-  if (typeof window === "undefined") return
-  window.dispatchEvent(new CustomEvent<CreditShortfall>(CREDIT_GATE_EVENT, { detail: shortfall }))
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent<CreditShortfall>(CREDIT_GATE_EVENT, { detail: shortfall }))
 }
-
 export function subscribeToCreditGate(handler: (shortfall: CreditShortfall) => void): () => void {
   if (typeof window === "undefined") return () => undefined
   const listener = (event: Event) => {
@@ -319,186 +233,102 @@ export function subscribeToCreditGate(handler: (shortfall: CreditShortfall) => v
   return () => window.removeEventListener(CREDIT_GATE_EVENT, listener)
 }
 
-// ─── The fetch wrapper ────────────────────────────────────────────────────────
-
-function sameOriginPath(input: RequestInfo | URL): string | null {
-  if (typeof input === "string") {
-    if (input.startsWith("/")) return input
-    if (/^[a-z]+:\/\//i.test(input)) {
-      if (typeof window === "undefined") return null
-      try {
-        const url = new URL(input)
-        return url.origin === window.location.origin ? `${url.pathname}${url.search}` : null
-      } catch {
-        return null
-      }
-    }
-    return null
-  }
-  if (input instanceof URL) {
-    if (typeof window === "undefined") return null
-    return input.origin === window.location.origin ? `${input.pathname}${input.search}` : null
-  }
-  return sameOriginPath(input.url)
-}
-
-function contentTypeOf(init: RequestInit | undefined): string | null {
-  const headers = init?.headers
-  if (!headers) return null
-  if (typeof Headers !== "undefined" && headers instanceof Headers) return headers.get("content-type")
-  if (Array.isArray(headers)) {
-    const found = headers.find(([name]) => name?.toLowerCase() === "content-type")
-    return found?.[1] ?? null
-  }
-  const record = headers as Record<string, string>
-  for (const name of Object.keys(record)) {
-    if (name.toLowerCase() === "content-type") return record[name]
-  }
-  return null
-}
-
-/**
- * Snapshot a request so it can be re-sent after a payment.
- *
- * Returns null when the body cannot be reproduced: an upload, a stream, or a
- * `Request` whose body was already consumed. Those shortfalls are still
- * reported, the overlay just promises "run it again" instead of "resumed".
- */
-export function captureRequest(input: RequestInfo | URL, init?: RequestInit): ReplayableRequest | null {
-  const path = sameOriginPath(input)
-  if (!path || SKIP_PATH.test(path)) return null
-
-  const method = String(
-    init?.method ?? (typeof input === "object" && !(input instanceof URL) ? input.method : "GET"),
-  ).toUpperCase()
-  if (!REPLAYABLE_METHODS.has(method)) return null
-  const replayMethod = method as ReplayMethod
-
-  const raw = init?.body
-  if (raw === undefined || raw === null) {
-    // A `Request` object can carry its own body, which is a stream we cannot
-    // re-read after it has been sent.
-    if (typeof input === "object" && !(input instanceof URL) && input.body != null) return null
-    return { url: path, method: replayMethod, body: null, contentType: contentTypeOf(init), form: null }
-  }
-
-  if (typeof raw === "string") {
-    if (raw.length > MAX_BODY_CHARS) return null
-    return { url: path, method: replayMethod, body: raw, contentType: contentTypeOf(init), form: null }
-  }
-
-  if (raw instanceof URLSearchParams) {
-    const text = raw.toString()
-    if (text.length > MAX_BODY_CHARS) return null
-    return {
-      url: path,
-      method: replayMethod,
-      body: text,
-      contentType: "application/x-www-form-urlencoded;charset=UTF-8",
-      form: null,
-    }
-  }
-
-  if (typeof FormData !== "undefined" && raw instanceof FormData) {
-    const fields: Array<[string, string]> = []
-    for (const [name, value] of raw.entries()) {
-      if (typeof value !== "string") return null // a file: not storable, not replayable
-      fields.push([name, value])
-    }
-    if (JSON.stringify(fields).length > MAX_BODY_CHARS) return null
-    return { url: path, method: replayMethod, body: null, contentType: null, form: fields }
-  }
-
-  return null
-}
-
-type WindowWithGate = Window & { __ataiCreditGate?: boolean }
-
-/** A blocked run is polled on a timer, so the same shortfall arrives over and
- * over. Offer it once — the founder can always get it again by retrying. */
-const seenPipelineBlocks = new Set<string>()
-
-function notePipelineBlock(key: string): boolean {
-  if (seenPipelineBlocks.has(key)) return false
-  if (seenPipelineBlocks.size > 60) seenPipelineBlocks.clear()
-  seenPipelineBlocks.add(key)
-  return true
-}
-
-/** Idempotent: hot reloads and repeated provider mounts must not stack wraps. */
 export function installCreditGateInterceptor(): void {
   if (typeof window === "undefined") return
-  const target = window as WindowWithGate
+  const target = window as CreditGateWindow
   if (target.__ataiCreditGate) return
   target.__ataiCreditGate = true
-
   const nativeFetch = window.fetch.bind(window)
-
+  target.__ataiCreditGateFetch = nativeFetch
+  const seenBlocks = new Set<string>()
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const response = await nativeFetch(input as RequestInfo, init)
-
-    if (response.status === 402) {
+    const path = sameOriginPath(input)
+    let outgoing: Request | null = null
+    let snapshot: Promise<{ request: ReplayableRequest; body: Blob } | null> | null = null
+    const basic = captureRequest(input, init)
+    const method = String(init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase()
+    if (path && !basic && REPLAYABLE_METHODS.has(method) && !requestHeaders(input, init).has("authorization")) {
       try {
-        const request = captureRequest(input, init)
-        const clone = await response.clone().json().catch(() => null)
-        const shortfall = parseCreditShortfall(clone, request)
-        if (shortfall) {
-          savePendingAction(shortfall)
-          publishCreditShortfall(shortfall)
-        }
-      } catch {
-        /* Diagnostics must never break the caller's own error handling. */
-      }
-      return response
+        outgoing = new Request(input instanceof Request ? input : new URL(path, window.location.origin), init)
+        const clone = outgoing.clone()
+        snapshot = clone.blob().then((body) => ({
+          body,
+          request: { url: path, method: method as ReplayMethod, body: null, contentType: clone.headers.get("content-type"), form: null, headers: replayHeaders(clone.headers) },
+        })).catch(() => null)
+      } catch { /* A consumed request cannot be replayed. */ }
     }
-
-    // A background run that could not afford its next step flags it here.
+    const response = outgoing ? await nativeFetch(outgoing) : await nativeFetch(input, init)
+    if (!path) return response
     try {
-      const header = response.headers.get(CREDIT_BLOCK_HEADER)
-      if (header) {
-        const path = sameOriginPath(input)
-        const shortfall = parseCreditBlockHeader(header)
-        if (path && shortfall && notePipelineBlock(`${path}:${shortfall.at}`)) {
+      if (response.status === 402) {
+        const payload: unknown = await response.clone().json().catch(() => null)
+        let request = basic
+        const captured = snapshot ? await snapshot : null
+        if (captured) {
+          try {
+            request = { ...captured.request, bodyId: await saveCreditRequestBody(captured.body, Date.now() + PENDING_TTL_MS) }
+          } catch { request = null }
+        }
+        const shortfall = parseCreditShortfall(payload, request)
+        if (shortfall) {
+          if (!request || !savePendingAction(shortfall)) {
+            clearPendingAction()
+            shortfall.request = null
+          }
+          publishCreditShortfall(shortfall)
+        }
+      } else {
+        const shortfall = parseCreditBlockHeader(response.headers.get(CREDIT_BLOCK_HEADER), Date.now(), path)
+        const key = shortfall ? `${path}:${shortfall.at}` : ""
+        if (shortfall && !seenBlocks.has(key)) {
+          seenBlocks.add(key)
           publishCreditShortfall(shortfall)
         }
       }
-    } catch {
-      /* same rule as above */
-    }
+    } catch { /* The caller still receives its original response. */ }
     return response
   }
 }
 
-/** Re-send the request the founder was making. Throws like any API helper when
- * it fails again, so the caller can fall back to the overlay. */
 export async function replayPendingAction(pending: CreditShortfall): Promise<unknown> {
   const request = pending.request
-  if (!request) throw new Error("Nothing to resume.")
-
-  const headers: Record<string, string> = { accept: "application/json" }
+  if (!request || !REPLAYABLE_METHODS.has(request.method) || sameOriginPath(request.url) !== request.url) throw new Error("Nothing safe to resume.")
+  const headers = new Headers(request.headers)
   let body: BodyInit | undefined
-  if (request.form && request.form.length > 0) {
+  if (request.bodyId) {
+    const saved = await readCreditRequestBody(request.bodyId)
+    if (!saved) throw new Error("Your saved upload has expired. Please select it again.")
+    body = saved
+  } else if (request.form !== null) {
     const form = new FormData()
     for (const [name, value] of request.form) form.append(name, value)
-    // No content-type here: the browser must set the multipart boundary itself.
     body = form
   } else if (request.body !== null) {
-    headers["content-type"] = request.contentType ?? "application/json"
     body = request.body
   }
-
-  const res = await fetch(request.url, { method: request.method, credentials: "include", headers, body })
-  const payload = (await res.json().catch(() => null)) as
-    | { ok?: boolean; error?: { code?: string; message?: string; meta?: unknown } }
-    | null
-  if (payload && payload.ok === false) {
-    const err = new Error(payload.error?.message ?? "Could not resume your action.") as Error & {
-      code?: string
-      meta?: { required?: number; available?: number } | null
+  if (request.contentType) headers.set("content-type", request.contentType)
+  // Replaying must not recapture the body or replace the pending action on another refusal.
+  const send = typeof window === "undefined" ? fetch : (window as CreditGateWindow).__ataiCreditGateFetch ?? fetch
+  const res = await send(request.url, { method: request.method, credentials: "include", headers, body })
+  const contentType = res.headers.get("content-type") ?? ""
+  let payload: unknown
+  if (contentType.includes("ndjson")) {
+    const frames = (await res.text()).split("\n").filter((line) => line.trim()).map((line) => JSON.parse(line) as Record<string, unknown>)
+    const failure = frames.find((frame) => frame.error)
+    if (res.ok && !failure && !frames.some((frame) => frame.done === true)) {
+      throw new Error("The reply ended before completion could be confirmed. Check your conversation before trying again.")
     }
-    err.code = payload.error?.code
-    err.meta = (payload.error?.meta as { required?: number; available?: number } | null) ?? null
-    throw err
+    payload = failure ? { ok: false, error: failure.error } : frames
+  } else if (contentType.includes("json")) {
+    payload = await res.json()
+  } else {
+    payload = await res.text()
   }
-  return payload && "data" in payload ? (payload as { data: unknown }).data : null
+  const envelope = payload as { ok?: boolean; error?: { code?: string; message?: string; meta?: unknown } } | null
+  if (!res.ok || envelope?.ok === false) {
+    throw Object.assign(new Error(envelope?.error?.message ?? "Could not resume your action."), {
+      code: envelope?.error?.code, meta: envelope?.error?.meta, status: res.status,
+    })
+  }
+  return envelope && typeof envelope === "object" && "data" in envelope ? envelope.data : payload
 }

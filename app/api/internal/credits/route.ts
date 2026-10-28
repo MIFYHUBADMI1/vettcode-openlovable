@@ -11,6 +11,7 @@ import { findUserByEmail } from "@/lib/auth/users"
 import { getAvailableCredits } from "@/lib/billing/credit-service"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { authorizeInternalRequest } from "@/lib/api/internal-key"
+import { checkInternalLimit } from "@/lib/api/internal-limit"
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,10 +20,11 @@ export async function GET(req: NextRequest) {
     if (!auth.ok) {
       return fail(auth.code, auth.message, auth.status)
     }
+    await checkInternalLimit(req.headers)
 
     // Get email parameter
     const email = req.nextUrl.searchParams.get("email")
-    if (!email) {
+    if (!email || email.length > 254) {
       return fail("VALIDATION", "email query parameter is required.", 422)
     }
 

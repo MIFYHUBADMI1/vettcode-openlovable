@@ -4,6 +4,7 @@ import type { ReferralDoc, UserDoc } from "@/lib/types/db"
 import { cryptoId } from "@/lib/store/id"
 import { logger } from "@/lib/logging/logger"
 import { grantCredits } from "@/lib/billing/credit-service"
+import { getMongoClient } from "@/lib/db/mongodb"
 
 /**
  * Atai referral system.
@@ -166,144 +167,73 @@ export async function captureReferral(
 
 // ─── Verification Reward ────────────────────────────────────────────────────
 
-/**
- * Award the 500-credit verification reward to the referrer when the
- * referred user verifies their account. Idempotent — safe to call
- * multiple times.
- */export async function processVerificationReward(userId: string): Promise<boolean> {
-  await ensureIndexes()
-
-  const col = await usersCol()
-  const user = await col.findOne({ id: userId, deletedAt: { $exists: false } })
-  if (!user?.emailVerified) return false
-
-  const referrals = await referralsCol()
-  const referral = await referrals.findOne({ referredUserId: userId })
-  if (!referral) return false // Not referred by anyone
-  if (referral.verificationRewardIssued) return false // Already rewarded
-  if (referral.referrerUserId === userId) return false // Self-referral safety
-
-  // Check referrer still exists and is not deleted
-  const referrer = await col.findOne({ id: referral.referrerUserId, deletedAt: { $exists: false } })
-  if (!referrer) {
-    logger.warn("referral.verification_reward", "referrer not found", { referralId: referral.id })
-    return false
-  }
-
-  // Fraud check: if referral is blocked, skip
-  if (referral.status === "blocked") return false
-
-  const now = Date.now()
-
-  // Atomically claim the reward — only one call can succeed
-  const result = await referrals.findOneAndUpdate(
-    { _id: referral._id, verificationRewardIssued: false },
-    { $set: { verificationRewardIssued: true, status: "verified", updatedAt: now } },
-    { returnDocument: "after" },
-  )
-  if (!result) return false // Already rewarded (concurrent call won)
-
-  // Grant credits via credit-service (admin-configured amount)
-  const rewards = await getRuntimeRewards()
-  await grantCredits({
-    userId: referral.referrerUserId,
-    amount: rewards.referralVerificationReward,
-    creditType: "permanent",
-    transactionType: "referral_bonus",
-    idempotencyKey: `referral_verification_${referral.id}`,
-    metadata: {
-      reason: "Referral verification reward",
-      referredUserId: userId,
-    },
-  })
-
-  logger.info("referral.verification_reward", "awarded", {
-    referralId: referral.id,
-    referrerUserId: referral.referrerUserId,
-    referredUserId: userId,
-    credits: rewards.referralVerificationReward,
-  })
-
-  return true
+export async function processVerificationReward(userId: string): Promise<boolean> {
+  return processReward(userId, "verification")
 }
 
-// ─── Milestone Reward ───────────────────────────────────────────────────────
+export async function processMilestoneCheck(referredUserId: string): Promise<boolean> {
+  return processReward(referredUserId, "milestone")
+}
 
-/**
- * Calculate and update the eligible usage for a referred user, then
- * check if the 75k milestone has been reached.
- *
- * Called when a build run succeeds. The qualifying usage amount should
- * be the credits consumed on that successful build.
- */
-export async function processMilestoneCheck(
-  referredUserId: string,
-  additionalUsage: number,
-): Promise<boolean> {
+async function processReward(referredUserId: string, kind: "verification" | "milestone"): Promise<boolean> {
   await ensureIndexes()
-
   const referrals = await referralsCol()
-  const referral = await referrals.findOne({ referredUserId })
-  if (!referral) return false
-  if (referral.milestoneRewardIssued) return false
-  if (referral.status === "blocked") return false
-  if (referral.referrerUserId === referredUserId) return false
-
-  const col = await usersCol()
-
-  // Check referrer still exists
-  const referrer = await col.findOne({ id: referral.referrerUserId, deletedAt: { $exists: false } })
-  if (!referrer) return false
-
-  const now = Date.now()
-  const updatedUsage = referral.eligibleUsage + additionalUsage
+  const users = await usersCol()
   const rewards = await getRuntimeRewards()
-
-  if (updatedUsage >= rewards.referralMilestoneThreshold) {
-    // Atomically claim the milestone reward — only one call can succeed
-    const result = await referrals.findOneAndUpdate(
-      { _id: referral._id, milestoneRewardIssued: false },
-      { $set: { milestoneRewardIssued: true, eligibleUsage: updatedUsage, status: "milestone_reached", updatedAt: now } },
-      { returnDocument: "after" },
-    )
-    if (!result) {
-      // Already rewarded — just update usage counter
-      await referrals.updateOne(
-        { _id: referral._id },
-        { $set: { eligibleUsage: updatedUsage, updatedAt: now } },
+  const session = (await getMongoClient()).startSession()
+  const issued = kind === "verification" ? "verificationRewardIssued" : "milestoneRewardIssued"
+  try {
+    return await session.withTransaction(async () => {
+      const referral = await referrals.findOne({ referredUserId }, { session })
+      if (!referral || referral[issued] || referral.status === "blocked") return false
+      const user = await users.findOne({ id: referredUserId, deletedAt: { $exists: false }, banned: { $ne: true }, suspended: { $ne: true } }, { session })
+      const referrer = await users.findOne({ id: referral.referrerUserId, deletedAt: { $exists: false }, banned: { $ne: true }, suspended: { $ne: true } }, { session })
+      if (!user?.emailVerified || !referrer) return false
+      const flags = new Set(referral.fraudFlags ?? [])
+      if (referrer.id === referredUserId) flags.add("self_referral")
+      if (user.referredBy !== referrer.id) flags.add("attribution_mismatch")
+      if (referrer.referredBy === referredUserId) flags.add("circular_referral")
+      const count = await referrals.countDocuments({ referrerUserId: referrer.id }, { session })
+      if (count > 20) flags.add("high_referral_count")
+      const approved = new Set(referral.review?.decision === "approve" ? referral.review.approvedFlags : [])
+      const hardFlags = new Set(["self_referral", "attribution_mismatch", "circular_referral"])
+      if ([...flags].some((flag) => hardFlags.has(flag) || !approved.has(flag))) {
+        await referrals.updateOne({ _id: referral._id }, { $set: { fraudFlags: [...flags], updatedAt: Date.now() } }, { session })
+        logger.warn("referral.reward_deferred", "Referral requires review before rewards", { referralId: referral.id })
+        return false
+      }
+      let eligibleUsage = referral.eligibleUsage
+      if (kind === "milestone") {
+        // Recompute from unique successful runs so duplicate poll/webhook events add nothing.
+        const usage = await (await buildRunsCol()).aggregate<{ total: number }>([
+          { $match: { userId: referredUserId, status: "succeeded", startedAt: { $gte: referral.createdAt } } },
+          { $group: { _id: null, total: { $sum: { $max: [0, { $ifNull: ["$creditsConsumed", "$creditsReserved"] }] } } } },
+        ], { session }).toArray()
+        eligibleUsage = usage[0]?.total ?? 0
+        await referrals.updateOne({ _id: referral._id }, { $set: { eligibleUsage, updatedAt: Date.now() } }, { session })
+        if (eligibleUsage < rewards.referralMilestoneThreshold) return false
+      }
+      const claim = await referrals.findOneAndUpdate(
+        { _id: referral._id, [issued]: false, status: { $ne: "blocked" } },
+        { $set: { [issued]: true, status: kind === "milestone" ? "milestone_reached" : referral.milestoneRewardIssued ? "milestone_reached" : "verified", updatedAt: Date.now() } },
+        { session, returnDocument: "after" },
       )
-      return false
-    }
-
-    // Award milestone credits to referrer via credit-service (admin-configured amount)
-    await grantCredits({
-      userId: referral.referrerUserId,
-      amount: rewards.referralMilestoneReward,
-      creditType: "permanent",
-      transactionType: "referral_bonus",
-      idempotencyKey: `referral_milestone_${referral.id}`,
-      metadata: {
-        reason: "Referral usage milestone",
-        referredUserId,
-        eligibleUsage: updatedUsage,
-      },
-    })
-
-    logger.info("referral.milestone_reward", "awarded", {
-      referralId: referral.id,
-      referrerUserId: referral.referrerUserId,
-      referredUserId,
-      credits: rewards.referralMilestoneReward,
-    })
-    return true
+      if (!claim) return false
+      const grant = await grantCredits({
+        userId: referrer.id,
+        amount: kind === "verification" ? rewards.referralVerificationReward : rewards.referralMilestoneReward,
+        creditType: "permanent",
+        transactionType: "referral_bonus",
+        idempotencyKey: `referral_${kind}_${referral.id}`,
+        metadata: { reason: kind === "verification" ? "Referral verification reward" : "Referral usage milestone", referredUserId, eligibleUsage },
+        session,
+      })
+      if (!grant.success) throw new Error("Referral reward was not committed")
+      return true
+    }) ?? false
+  } finally {
+    await session.endSession()
   }
-
-  // Below threshold — just update usage counter
-  await referrals.updateOne(
-    { _id: referral._id },
-    { $set: { eligibleUsage: updatedUsage, updatedAt: now } },
-  )
-  return false
 }
 
 /**
@@ -354,7 +284,7 @@ export async function runFraudChecks(referralId: string): Promise<string[]> {
   if (flags.length > 0) {
     await referrals.updateOne(
       { id: referralId },
-      { $set: { fraudFlags: flags, updatedAt: Date.now() } },
+      { $addToSet: { fraudFlags: { $each: flags } }, $set: { updatedAt: Date.now() } },
     )
     logger.warn("referral.fraud_check", "flags raised", { referralId, flags })
   }

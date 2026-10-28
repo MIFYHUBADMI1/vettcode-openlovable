@@ -24,16 +24,16 @@ export function LandingHero({
         <div className="flex flex-col items-start">
           <p className="lp-badge mb-3 inline-flex items-center gap-2 rounded-full border border-indigo-500/20 bg-indigo-500/8 px-4 py-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-300">
             <span className="lp-live-dot size-1.5 rounded-full bg-indigo-500" />
-            The AI business building platform
+            Your business. Your AI teams.
           </p>
 
           <h1 className="lp-h1 max-w-2xl text-balance text-[1.85rem] font-black leading-[1.12] tracking-[-0.04em] sm:text-4xl lg:text-[2.75rem]">
-            Turn your idea into a{" "}
-            <span className="lp-gradient-text">real business.</span>
+            Start, run, and grow{" "}
+            <span className="lp-gradient-text">your own business.</span>
           </h1>
 
           <p className="lp-copy mt-3 max-w-lg text-pretty text-sm leading-6 text-muted-foreground sm:text-base">
-            Give Atai an idea, a URL, a website you like, or a GitHub repository. Atai helps you understand it, plan around it, and turn it into a real full-stack product — infrastructure configured out of the box, ready to launch and grow.
+            You bring the ambition. Atai brings specialized AI teams to help you plan your online business, build and host its website or product, manage daily operations, and market what you sell. All working toward customers, sales, and an income of your own.
           </p>
 
           <div className="lp-hero-input mt-5 w-full">

@@ -15,7 +15,11 @@ async function readIntentKey(req: Request, userId: string, projectId: string): P
   return scopedIntentKey(body?.requestId, { userId, operation: "resources_action_plan", projectId })
 }
 
-export async function POST(
+import { withAiProtection } from "@/lib/api/ai-protection"
+
+export const POST = withAiProtection("resources", post)
+
+async function post(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {

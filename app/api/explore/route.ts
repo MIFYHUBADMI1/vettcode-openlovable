@@ -4,6 +4,7 @@ import { ok, handleRouteError } from "@/lib/api/respond"
 import { resolveProjectThumbnail } from "@/lib/media/project-thumbnail"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { escapeRegex } from "@/lib/utils"
+import { getVerifiedClientIp } from "@/lib/api/client-ip"
 
 /**
  * GET /api/explore
@@ -21,7 +22,7 @@ export async function GET(req: Request) {
     // per caller before it can pile up against the whole public collection.
     await checkRateLimit({
       action: "explore_search",
-      identifier: user?.id ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anonymous",
+      identifier: user?.id ?? getVerifiedClientIp(req) ?? "anonymous",
       limit: 60,
       windowMs: 60 * 1000,
     })

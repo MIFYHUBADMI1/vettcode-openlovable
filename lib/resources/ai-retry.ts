@@ -1,6 +1,7 @@
 import { generateText } from "ai"
 import { MODEL } from "@/lib/analysis/model"
 import { logger } from "@/lib/logging/logger"
+import { aiSignal } from "@/lib/api/ai-context"
 
 /**
  * Retry wrapper for AI generation — free models can be flaky.
@@ -13,14 +14,17 @@ export async function generateWithRetry(
 ): Promise<string> {
   const { maxOutputTokens = 2000, maxRetries = 2 } = options
   let lastError: Error | null = null
+  const signal = aiSignal()
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    signal.throwIfAborted()
     try {
       const result = await generateText({
         model: MODEL,
         system: messages.system,
         prompt: messages.prompt,
         maxOutputTokens,
+        abortSignal: signal,
       })
       return result.text
     } catch (err) {

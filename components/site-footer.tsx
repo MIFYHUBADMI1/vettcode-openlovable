@@ -20,19 +20,20 @@ const FOOTER_COLS = [
   {
     heading: "Platform",
     links: [
-      { href: "/new/idea", label: "Start from an idea" },
-      { href: "/new/website", label: "Mirror a website" },
-      { href: "/new/github", label: "Build from GitHub" },
-      { href: "/#plan", label: "Plan Mode" },
+      { href: "/new/idea", label: "Start your business" },
+      { href: "/#plan", label: "Plan your offer" },
+      { href: "/#manage", label: "Run your business" },
+      { href: "/#grow", label: "Reach customers" },
       { href: "/pricing", label: "Pricing" },
-      { href: "/explore", label: "Explore projects" },
+      { href: "/explore", label: "Explore businesses" },
     ],
   },
   {
     heading: "Company",
     links: [
       { href: "/about", label: "About Atai" },
-      { href: "/about#team", label: "The team" },
+      { href: "/founder", label: "Our founder’s story" },
+      { href: "/about#team", label: "Your AI teams" },
       { href: "/docs", label: "Documentation" },
       { href: "/resources", label: "Resources" },
       { href: "/developers", label: "Developers" },
@@ -90,13 +91,13 @@ export function SiteFooter({ activePage, links, wrapperClassName }: SiteFooterPr
           <div className="flex flex-col gap-5">
             <BrandLogo size={32} />
             <p className="text-sm leading-7 text-muted-foreground max-w-xs">
-              Advanced Technologies & AI Enterprises. The AI business-building platform — from idea to launch to growth.
+              Start, run, and grow your own online business with specialized AI teams. From your first offer to daily operations and reaching customers.
             </p>
             <p className="font-mono text-xs text-muted-foreground/60">
-              From idea → business → growth.
+              Your business. Your AI teams.
             </p>
             <div className="flex flex-wrap gap-2 mt-1">
-              {["AI Co-Founder", "Engineering", "Growth", "Research", "Funding"].map((t) => (
+              {["Planning", "Building", "Hosting", "Operations", "Marketing"].map((t) => (
                 <span key={t} className="rounded-md border border-border bg-muted/50 px-2 py-0.5 font-mono text-[10px] text-muted-foreground">
                   {t}
                 </span>
@@ -127,7 +128,7 @@ export function SiteFooter({ activePage, links, wrapperClassName }: SiteFooterPr
                       href={session ? "/dashboard" : "/new/idea"}
                       className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
                     >
-                      {session ? "Go to dashboard →" : "Start free →"}
+                      {session ? "Open my businesses →" : "Start my business →"}
                     </Link>
                   </li>
                 )}
@@ -142,7 +143,7 @@ export function SiteFooter({ activePage, links, wrapperClassName }: SiteFooterPr
             © 2026 Atai — Advanced Technologies and AI Enterprises.
           </p>
           <p className="font-mono text-xs text-muted-foreground/50">
-            Built for founders who aren&apos;t thinking small.
+            Making business ownership more accessible.
           </p>
         </div>
       </div>

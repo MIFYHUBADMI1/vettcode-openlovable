@@ -120,7 +120,23 @@ export function parseRuntimeRequest(
  * @param request      UNTRUSTED — raw request body (parsed/validated here).
  * @param requestId    Correlation ID (reused when auth already created one).
  */
+import { runRuntimeAi } from "@/lib/runtime/control/ai-limits"
+import { aiContext } from "@/lib/api/ai-context"
+
 export async function routeRuntimeRequest(
+  authContext: RuntimeAuthContext & { requestId?: string },
+  body: unknown,
+  requestId?: string,
+): Promise<RuntimeResponse> {
+  const request = parseRuntimeRequest(body, requestId)
+  const execute = () => executeRuntimeRequest(authContext, body, requestId)
+  if (!hasCapability(request.capability) || !hasOperation(request.capability, request.operation)) return execute()
+  requireRuntimeScope(authContext, requiredScopeFor(request.capability) as CapabilityScope)
+  const expensive = (request.capability.startsWith("ai.") && request.capability !== "ai.models") || ["search.web", "web.scrape", "web.crawl"].includes(request.capability)
+  return expensive ? runRuntimeAi(authContext.userId, request.capability, execute) : execute()
+}
+
+async function executeRuntimeRequest(
   authContext: RuntimeAuthContext & { requestId?: string },
   body: unknown,
   requestId?: string,
@@ -214,6 +230,7 @@ export async function routeRuntimeRequest(
   }
 
   for (const [attempt, adapter] of candidates.entries()) {
+    if (aiContext.getStore()?.signal.aborted) throw runtimeError("runtime_provider_timeout")
     const isLastCandidate = attempt === candidates.length - 1
     const attemptStartedAt = Date.now()
 

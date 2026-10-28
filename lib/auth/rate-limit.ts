@@ -1,62 +1,11 @@
 import { rateLimitsCol, ensureIndexes } from "@/lib/db/collections"
 import { AppError } from "@/lib/errors"
 
-/**
- * Fixed-window rate limiter backed by Mongo (spec sections 7 & 28). Reused
- * across login attempts, registration, resend-verification, and password
- * reset requests. Keys are `${action}:${identifier}` so different actions
- * for the same identifier (e.g. same email) don't share a bucket.
- *
- * Atomicity: the entire check-and-increment is a single findOneAndUpdate so
- * two concurrent requests for the same key can never both read a count below
- * the limit and both slip through (the previous read → decide → increment
- * sequence had a classic TOCTOU race).
- *
- * Window reset: when the existing window has expired we use $setOnInsert /
- * $set to atomically reset the document to count=1 for the new window.
- *
- * Process-local overlay: if THIS instance has already seen a key exceed its
- * window, later hits 429 without another Mongo write (attack / hot-key path).
- * Cross-instance enforcement still uses Mongo on the under-limit path.
- */
-
-type MemoryBucket = { count: number; windowStart: number; windowMs: number; over: boolean }
-
-const memoryBuckets = new Map<string, MemoryBucket>()
+const rejectedUntil = new Map<string, number>()
 const MEMORY_BUCKET_CAP = 5_000
 
-function pruneMemory(now: number) {
-  if (memoryBuckets.size < 2_000) return
-  for (const [key, bucket] of memoryBuckets) {
-    if (now - bucket.windowStart >= bucket.windowMs) memoryBuckets.delete(key)
-  }
-  if (memoryBuckets.size > MEMORY_BUCKET_CAP) memoryBuckets.clear()
-}
-
-function memoryRejects(key: string, limit: number, windowMs: number, now: number): boolean {
-  const bucket = memoryBuckets.get(key)
-  if (!bucket) return false
-  if (now - bucket.windowStart >= windowMs) {
-    memoryBuckets.delete(key)
-    return false
-  }
-  return bucket.over || bucket.count > limit
-}
-
-function memoryRecord(key: string, windowMs: number, now: number, over: boolean) {
-  pruneMemory(now)
-  const existing = memoryBuckets.get(key)
-  if (!existing || now - existing.windowStart >= windowMs) {
-    memoryBuckets.set(key, { count: 1, windowStart: now, windowMs, over })
-    return
-  }
-  existing.count += 1
-  existing.over = existing.over || over
-}
-
-/** Test-only. */
 export function resetMemoryRateLimitForTests() {
-  memoryBuckets.clear()
+  rejectedUntil.clear()
 }
 
 export async function checkRateLimit(params: {
@@ -68,74 +17,46 @@ export async function checkRateLimit(params: {
 }): Promise<void> {
   const key = `${params.action}:${params.identifier}`
   const now = Date.now()
+  function reject(expiresAt: number): never {
+    const error = new AppError(params.errorCode ?? "RATE_LIMITED")
+    error.retryAfterSeconds = Math.max(1, Math.ceil((expiresAt - now) / 1000))
+    throw error
+  }
+  const cached = rejectedUntil.get(key)
+  if (cached && cached > now) reject(cached)
+  rejectedUntil.delete(key)
 
-  if (memoryRejects(key, params.limit, params.windowMs, now)) {
-    throw new AppError(params.errorCode ?? "RATE_LIMITED")
+  function enforce(bucket: { count: number; windowStart: number }) {
+    if (bucket.count <= params.limit) return
+    const expiresAt = bucket.windowStart + params.windowMs
+    for (const [cachedKey, until] of rejectedUntil) {
+      if (until <= now) rejectedUntil.delete(cachedKey)
+    }
+    if (rejectedUntil.size >= MEMORY_BUCKET_CAP) rejectedUntil.delete(rejectedUntil.keys().next().value!)
+    // Use Mongo's window, not the time this instance first encountered the bucket.
+    rejectedUntil.set(key, expiresAt)
+    reject(expiresAt)
   }
 
   await ensureIndexes()
   const col = await rateLimitsCol()
-  const windowStart = now
-  const expiresAt = new Date(now + params.windowMs)
-
-  // ── Attempt an in-window increment first (the common hot path) ──────────
-  // Only touches documents whose window has NOT yet expired so we never
-  // accidentally increment a stale bucket.
-  const inWindow = await col.findOneAndUpdate(
-    { key, windowStart: { $gt: now - params.windowMs } },
-    { $inc: { count: 1 } },
-    { returnDocument: "after" },
-  )
-
+  const activeFilter = { key, windowStart: { $gt: now - params.windowMs } }
+  const inWindow = await col.findOneAndUpdate(activeFilter, { $inc: { count: 1 } }, { returnDocument: "after" })
   if (inWindow) {
-    const over = inWindow.count > params.limit
-    memoryRecord(key, params.windowMs, now, over)
-    if (over) {
-      throw new AppError(params.errorCode ?? "RATE_LIMITED")
-    }
+    enforce(inWindow)
     return
   }
 
-  // ── No active window found — create/reset the bucket atomically ─────────
-  // upsert:true creates the doc if absent; if another concurrent request
-  // already created it (race on first request), our filter won't match an
-  // in-window doc on the retry path — but at count=1 it can never exceed the
-  // limit, so we just let both through and accept a one-request grace on the
-  // very first hit of a new window (this is standard fixed-window behaviour).
   try {
     await col.updateOne(
       { key, windowStart: { $lte: now - params.windowMs } },
-      {
-        $set: {
-          key,
-          count: 1,
-          windowStart,
-          expiresAt,
-        },
-      },
+      { $set: { key, count: 1, windowStart: now, expiresAt: new Date(now + params.windowMs) } },
       { upsert: true },
     )
-  } catch (err) {
-    // A concurrent request created the window between our findOneAndUpdate
-    // and this upsert. The unique index on `key` rejects the duplicate
-    // insert with E11000 — that is a normal race, not a server fault, so
-    // fold this request into the window that now exists instead of
-    // surfacing a 500 to the caller.
-    if (!(err instanceof Error && /E11000|duplicate key/i.test(err.message))) throw err
-
-    const folded = await col.findOneAndUpdate(
-      { key, windowStart: { $gt: now - params.windowMs } },
-      { $inc: { count: 1 } },
-      { returnDocument: "after" },
-    )
-    if (folded) {
-      const over = folded.count > params.limit
-      memoryRecord(key, params.windowMs, now, over)
-      if (over) {
-        throw new AppError(params.errorCode ?? "RATE_LIMITED")
-      }
-      return
-    }
+  } catch (error) {
+    if (!(error instanceof Error && /E11000|duplicate key/i.test(error.message))) throw error
+    const folded = await col.findOneAndUpdate(activeFilter, { $inc: { count: 1 } }, { returnDocument: "after" })
+    if (!folded) throw new AppError("DATABASE_UNAVAILABLE")
+    enforce(folded)
   }
-  memoryRecord(key, params.windowMs, now, false)
 }

@@ -47,7 +47,7 @@ export interface DataStore {
    * or follow-up prompt from double-launching a provider run
    * (check-then-act race). Returns null if the project could not be
    * claimed (already active, or not found). */
-  claimBuildSlot(id: string, patch: Partial<MirrorProject>): Promise<MirrorProject | null>
+  claimBuildSlot(id: string, patch: Partial<MirrorProject>, fromStates?: ProjectState[]): Promise<MirrorProject | null>
   /** Atomically moves a project from one of `fromStates` into `analyzing`,
    * clearing the previous error. Returns null when another run already holds
    * the slot (or the project vanished), so a retry can never double-start a

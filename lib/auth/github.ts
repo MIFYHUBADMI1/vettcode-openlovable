@@ -1,4 +1,5 @@
 import { AppError } from "@/lib/errors"
+import { getOAuthRedirectUri } from "@/lib/env"
 
 const AUTH_ENDPOINT = "https://github.com/login/oauth/authorize"
 const TOKEN_ENDPOINT = "https://github.com/login/oauth/access_token"
@@ -16,13 +17,7 @@ export function getGitHubOAuthConfig(): GitHubOAuthConfig {
   if (!clientId || !clientSecret) {
     throw new AppError("GITHUB_AUTH_FAILED" as never, "GitHub sign-in is not configured. Add GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET.", 503)
   }
-  const base = process.env.GITHUB_REDIRECT_URI
-    ?? process.env.OAUTH_BASE_URL
-    ?? process.env.NEXTAUTH_URL
-    ?? "http://localhost:3000"
-  const redirectUri = base.endsWith("/api/auth/github/callback")
-    ? base
-    : `${base.replace(/\/$/, "")}/api/auth/github/callback`
+  const redirectUri = getOAuthRedirectUri("github", process.env.GITHUB_REDIRECT_URI ?? process.env.OAUTH_BASE_URL ?? process.env.NEXTAUTH_URL)
   return { clientId, clientSecret, redirectUri }
 }
 

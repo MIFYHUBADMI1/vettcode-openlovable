@@ -50,7 +50,7 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
   const isHome = !activePage
   const [mobileOpen, setMobileOpen] = useState(false)
 
-  const startLabel = session ? "Open dashboard" : "Get started free"
+  const startLabel = session ? "Open my businesses" : "Start my business"
 
   const inner = (
     <>
@@ -64,19 +64,19 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
           <>
             <DropdownMenu>
               <DropdownMenuTrigger className={NAV_LINK}>
-                Product
+                Your business
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="min-w-56">
                 <DropdownMenuItem onClick={() => { document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" }) }}>
                   How Atai works
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => { document.getElementById("plan")?.scrollIntoView({ behavior: "smooth" }) }}>
-                  Plan Mode
+                  Plan your business
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/new/idea")}>Start from an idea</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/new/website")}>Mirror a website</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/new/github")}>Build from GitHub</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => router.push("/explore")}>Explore projects</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/new/idea")}>Start a business idea</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/new/website")}>Start with inspiration</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/new/github")}>Bring an existing codebase</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push("/explore")}>Explore businesses</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             <Link href="/pricing" className={NAV_LINK}>Pricing</Link>
@@ -141,7 +141,7 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
             </div>
             <AuthTrigger view="signup" next="/new/idea" className={cn(buttonVariants({ size: "sm" }), "gap-1.5")}>
               <span className="sm:hidden">Start</span>
-              <span className="hidden sm:inline">Get started</span>
+              <span className="hidden sm:inline">Start my business</span>
               <ArrowRight className="hidden size-3.5 sm:block" />
             </AuthTrigger>
           </>
@@ -190,9 +190,9 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
                 <a href="#how-it-works" className={NAV_LINK} onClick={() => setMobileOpen(false)}>
                   <Zap className="size-3.5" /> How Atai works
                 </a>
-                <Link href="/new/idea" className={NAV_LINK} onClick={() => setMobileOpen(false)}>Start from an idea</Link>
-                <Link href="/new/website" className={NAV_LINK} onClick={() => setMobileOpen(false)}>Mirror a website</Link>
-                <Link href="/new/github" className={NAV_LINK} onClick={() => setMobileOpen(false)}>Build from GitHub</Link>
+                <Link href="/new/idea" className={NAV_LINK} onClick={() => setMobileOpen(false)}>Start a business idea</Link>
+                <Link href="/new/website" className={NAV_LINK} onClick={() => setMobileOpen(false)}>Start with inspiration</Link>
+                <Link href="/new/github" className={NAV_LINK} onClick={() => setMobileOpen(false)}>Bring an existing codebase</Link>
                 <Link href="/pricing" className={NAV_LINK} onClick={() => setMobileOpen(false)}>Pricing</Link>
                 <Link href="/resources" className={NAV_LINK} onClick={() => setMobileOpen(false)}>Resources</Link>
                 <Link href="/docs" className={NAV_LINK} onClick={() => setMobileOpen(false)}>Docs</Link>
@@ -215,13 +215,13 @@ export function SiteHeader({ activePage, links = defaultLinks, variant = "defaul
               <>
                 <AuthTrigger view="login" className={NAV_LINK} onClick={() => setMobileOpen(false)}>Sign in</AuthTrigger>
                 <AuthTrigger view="signup" next="/new/idea" className={cn(buttonVariants(), "mt-2 justify-center")} onClick={() => setMobileOpen(false)}>
-                  Get started free
+                  Start my business
                 </AuthTrigger>
               </>
             )}
             {session && (
               <Link href="/dashboard" className={cn(buttonVariants(), "mt-2 justify-center")} onClick={() => setMobileOpen(false)}>
-                Open dashboard
+                Open my businesses
               </Link>
             )}
           </div>

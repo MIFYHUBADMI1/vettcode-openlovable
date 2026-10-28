@@ -263,20 +263,21 @@ export async function grantCredits(params: {
   metadata?: Record<string, unknown>
   /** Trusted server-derived project context, persisted on the ledger entry. */
   projectId?: string
+  session?: ClientSession
 }): Promise<{ success: boolean; ledgerEntry: CreditLedgerEntry }> {
+  if (params.session && !params.session.inTransaction()) throw new Error("Credit grants require an active transaction")
   const users = await usersCol()
   const field = params.creditType === "subscription" ? "subscriptionCredits" : "permanentCredits"
 
   const client = (await import("@/lib/db/mongodb")).getMongoClient
-  const mongoClient = await client()
-  const session = mongoClient.startSession()
+  const session = params.session ?? (await client()).startSession()
 
   try {
     let ledgerEntry: CreditLedgerEntry | null = null
     let success = false
     let newBalance = 0
 
-    await session.withTransaction(async () => {
+    const grant = async () => {
       // Check for duplicate (idempotency)
       const existingLedger = await (await creditLedgerCol()).findOne(
         { idempotencyKey: params.idempotencyKey },
@@ -331,9 +332,11 @@ export async function grantCredits(params: {
       })
 
       success = true
-    })
+    }
+    if (params.session) await grant()
+    else await session.withTransaction(grant)
 
-    if (success && ledgerEntry) {
+    if (!params.session && success && ledgerEntry) {
       logger.info("credit.grant", "Credits granted", {
         userId: params.userId,
         creditType: params.creditType,
@@ -345,7 +348,7 @@ export async function grantCredits(params: {
 
     return { success, ledgerEntry: ledgerEntry! }
   } finally {
-    await session.endSession()
+    if (!params.session) await session.endSession()
   }
 }
 
@@ -1036,52 +1039,6 @@ export async function grantWelcomeBonus(userId: string): Promise<boolean> {
     idempotencyKey: `welcome_${userId}`,
     referenceType: "signup",
     referenceId: userId,
-  })
-  return result.success
-}
-
-/**
- * Grant referral verification reward.
- * Idempotent per referrer per referred user.
- */
-export async function grantReferralVerificationReward(
-  referrerUserId: string,
-  referredUserId: string,
-): Promise<boolean> {
-  const { getRewardSettings } = await import("@/lib/billing/runtime-config")
-  const rewards = await getRewardSettings()
-  const result = await grantCredits({
-    userId: referrerUserId,
-    creditType: "permanent",
-    amount: rewards.referralVerificationReward,
-    transactionType: "referral_bonus",
-    idempotencyKey: `ref_verify_${referrerUserId}_${referredUserId}`,
-    referenceType: "referral",
-    referenceId: referredUserId,
-    metadata: { rewardType: "verification" },
-  })
-  return result.success
-}
-
-/**
- * Grant referral milestone reward.
- * Idempotent per referrer per referred user.
- */
-export async function grantReferralMilestoneReward(
-  referrerUserId: string,
-  referredUserId: string,
-): Promise<boolean> {
-  const { getRewardSettings } = await import("@/lib/billing/runtime-config")
-  const rewards = await getRewardSettings()
-  const result = await grantCredits({
-    userId: referrerUserId,
-    creditType: "permanent",
-    amount: rewards.referralMilestoneReward,
-    transactionType: "referral_bonus",
-    idempotencyKey: `ref_milestone_${referrerUserId}_${referredUserId}`,
-    referenceType: "referral",
-    referenceId: referredUserId,
-    metadata: { rewardType: "milestone" },
   })
   return result.success
 }

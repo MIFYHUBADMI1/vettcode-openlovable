@@ -77,7 +77,13 @@ export async function GET(
   }
 }
 
-export async function POST(
+import { withAiProtection } from "@/lib/api/ai-protection"
+import { aiSignal } from "@/lib/api/ai-context"
+import { validateImage } from "@/lib/imagekit/validate-image"
+
+export const POST = withAiProtection("visual", post)
+
+async function post(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -329,12 +335,11 @@ async function generateImageViaOpenRouter(params: {
       n: 1,
       ...(aspectRatio ? { aspect_ratio: aspectRatio } : {}),
     }),
-    signal: AbortSignal.timeout(GENERATION_TIMEOUT_MS),
+    signal: aiSignal(AbortSignal.timeout(GENERATION_TIMEOUT_MS)),
   })
 
   if (!response.ok) {
-    const errorBody = await response.text().catch(() => "")
-    console.error("[generate-visual] OpenRouter error:", response.status, errorBody.slice(0, 500))
+    console.error("[generate-visual] OpenRouter error:", response.status)
     throw new ImageProviderError(
       response.status,
       `OpenRouter image generation failed with status ${response.status}`,
@@ -388,17 +393,18 @@ async function persistGeneratedImage(params: {
 }): Promise<string> {
   const { base64, mimeType, projectId, sectionLabel } = params
   const buffer = Buffer.from(base64, "base64")
+  const image = await validateImage(buffer, mimeType)
   try {
     const upload = await uploadImageToImageKit({
-      file: buffer,
+      file: image.file,
       fileName: `${sectionLabel.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-expected-visual-${Date.now()}.${extensionFor(mimeType)}`,
       mimeType,
       folder: `/Atai/projects/${projectId}/visuals`,
     })
     return upload.url
-  } catch (error) {
-    console.error("[generate-visual] ImageKit upload failed, using inline image:", error)
-    return `data:${mimeType};base64,${base64}`
+  } catch {
+    console.error("[generate-visual] ImageKit upload failed, using validated inline image")
+    return `data:${image.mimeType};base64,${image.file.toString("base64")}`
   }
 }
 

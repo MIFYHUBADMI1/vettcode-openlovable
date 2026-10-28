@@ -2,6 +2,7 @@ import { MongoClient, type Db } from "mongodb"
 import { getMongoUri } from "@/lib/env"
 import { isBenignDisconnect } from "@/lib/server/benign-disconnect"
 import { logger } from "@/lib/logging/logger"
+import { assertTransactionSupport } from "@/lib/db/transaction-readiness"
 
 /**
  * Cached MongoDB client/connection (spec section 20). Connects lazily on
@@ -70,7 +71,15 @@ function connect(): Promise<MongoClient> {
   // predecessor is never closed. Repeated socket timeouts leaked clients and
   // connections until the cluster refused new ones, and every checkout then
   // died with MongoWaitQueueTimeoutError.
-  return client.connect()
+  return client.connect().then(async (connected) => {
+    try {
+      await assertTransactionSupport(connected)
+      return connected
+    } catch (error) {
+      await connected.close()
+      throw error
+    }
+  })
 }
 
 export async function getMongoClient(): Promise<MongoClient> {

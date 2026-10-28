@@ -4,17 +4,18 @@ import { hashPassword, verifyPassword, isPasswordStrongEnough } from "@/lib/auth
 import { setPasswordHash } from "@/lib/auth/users"
 import { createSession, setSessionCookie, destroyAllSessionsForUser } from "@/lib/auth/session"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
+import { checkAuthRequest } from "@/lib/auth/request-limit"
+import { readAuthBody } from "@/lib/api/request-body"
 
 /** Change the authenticated user's password. Requires current password. */
 export async function POST(req: Request) {
   try {
+    await checkAuthRequest(req, "change_password")
     const user = await requireUser()
-    const body = (await req.json().catch(() => ({}))) as {
-      currentPassword?: string
-      newPassword?: string
-    }
+    const body = await readAuthBody(req)
 
-    if (!body.currentPassword || !body.newPassword) {
+    if (typeof body.currentPassword !== "string" || typeof body.newPassword !== "string" ||
+        !body.currentPassword || !body.newPassword || body.currentPassword.length > 1024 || body.newPassword.length > 1024) {
       return fail("VALIDATION", "Please provide your current and new password.", 422)
     }
 

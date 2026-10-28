@@ -6,6 +6,8 @@ import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { issueAndSendVerificationEmail } from "@/lib/auth/verification"
 import { captureReferral } from "@/lib/referrals/referrals"
 import { logger } from "@/lib/logging/logger"
+import { checkAuthRequest } from "@/lib/auth/request-limit"
+import { readAuthBody } from "@/lib/api/request-body"
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -17,15 +19,17 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
  */
 export async function POST(req: Request) {
   try {
-    const body = (await req.json().catch(() => ({}))) as { email?: string; password?: string; name?: string; ref?: string }
-    const email = (body.email ?? "").trim()
-    const password = body.password ?? ""
-    const name = (body.name ?? "").trim()
-    const referralCode = (body.ref ?? "").trim().toUpperCase()
+    await checkAuthRequest(req, "register")
+    const body = await readAuthBody(req)
+    const email = typeof body.email === "string" ? body.email.trim() : ""
+    const password = typeof body.password === "string" ? body.password : ""
+    const name = typeof body.name === "string" ? body.name.trim() : ""
+    const referralCode = typeof body.ref === "string" ? body.ref.trim().toUpperCase() : ""
 
-    if (!EMAIL_RE.test(email)) return fail("VALIDATION", "Please enter a valid email address.", 422)
+    if (email.length > 254 || !EMAIL_RE.test(email)) return fail("VALIDATION", "Please enter a valid email address.", 422)
     if (!name || name.length > 80) return fail("VALIDATION", "Please enter your name.", 422)
-    if (!isPasswordStrongEnough(password)) return fail("VALIDATION", "Password must be at least 8 characters.", 422)
+    if (referralCode.length > 100) return fail("VALIDATION", "Please enter a valid referral code.", 422)
+    if (!isPasswordStrongEnough(password) || password.length > 1024) return fail("VALIDATION", "Choose a password between 8 and 1,024 characters.", 422)
 
     await checkRateLimit({ action: "register", identifier: normalizeEmail(email), limit: 5, windowMs: 60 * 60 * 1000 })
 

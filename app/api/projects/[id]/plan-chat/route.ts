@@ -63,7 +63,12 @@ function event(stage: string, message: string, level: ProjectEvent["level"] = "i
  * messages form the model's collaboration memory, so past conversations stay
  * separate while accepted plan decisions remain shared across all of them.
  */
-export async function POST(
+import { withAiProtection } from "@/lib/api/ai-protection"
+import { aiSignal, trackAiCompletion } from "@/lib/api/ai-context"
+
+export const POST = withAiProtection("chat", post)
+
+async function post(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -88,7 +93,7 @@ export async function POST(
       /** NDJSON streaming response: prose arrives as it is written. */
       stream?: boolean
     }
-    const message = (body.message ?? "").trim()
+    const message = typeof body.message === "string" ? body.message.trim() : ""
     if (!message) {
       return fail("VALIDATION", "Please include a message.", 422)
     }
@@ -188,7 +193,7 @@ export async function POST(
         // provider reports these as retryable network errors). Without retries
         // a single ~10s connect timeout is a 500 for the founder.
         maxRetries: 3,
-        abortSignal: AbortSignal.timeout(180_000), // generous enough to survive retry + slow free-tier queueing
+        abortSignal: aiSignal(),
       })
       reply = result.text
       truncated = result.finishReason === "length"
@@ -308,6 +313,8 @@ async function streamChatTurn(ctx: ChatTurnContext): Promise<Response> {
 
   const turn = new AbortController()
   let founderLeft = false
+  let finish!: () => void
+  trackAiCompletion(new Promise<void>((resolve) => { finish = resolve }))
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -351,6 +358,7 @@ async function streamChatTurn(ctx: ChatTurnContext): Promise<Response> {
             system: COFOUNDER_CHAT_SYSTEM,
             prompt: ctx.context,
             maxOutputTokens: 4096,
+            abortSignal: turn.signal,
           })
           if (salvaged?.text.trim()) {
             rawReply = salvaged.text
@@ -403,6 +411,7 @@ async function streamChatTurn(ctx: ChatTurnContext): Promise<Response> {
         }
         send({ error: { code: "UNKNOWN", message: "The co-founder's reply stopped mid-sentence. Please try again." } })
       } finally {
+        finish()
         try {
           controller.close()
         } catch {

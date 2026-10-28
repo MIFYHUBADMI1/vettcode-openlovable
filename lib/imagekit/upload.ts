@@ -1,9 +1,7 @@
 import { getImageKitConfig } from "@/lib/env"
 import { AppError } from "@/lib/errors"
 import { logger } from "@/lib/logging/logger"
-
-const ALLOWED_MIME = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"])
-const MAX_BYTES = 5 * 1024 * 1024 // 5MB
+import { validateImage } from "@/lib/imagekit/validate-image"
 
 export interface UploadResult {
   fileId: string
@@ -24,19 +22,16 @@ export async function uploadImageToImageKit(params: {
   mimeType: string
   folder: string
 }): Promise<UploadResult> {
-  if (!ALLOWED_MIME.has(params.mimeType)) {
-    throw new AppError("IMAGE_UPLOAD_FAILED", "Only PNG, JPEG, WEBP, or GIF images are allowed.")
-  }
-  if (params.file.byteLength > MAX_BYTES) {
-    throw new AppError("IMAGE_UPLOAD_FAILED", "Images must be smaller than 5MB.")
-  }
-
+  const image = await validateImage(params.file, params.mimeType)
+  const stem = params.fileName.replace(/\.[^.]*$/, "").replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 150) || "image"
+  const fileName = `${stem}.${image.extension}`
   const config = getImageKitConfig()
   const form = new FormData()
-  form.append("file", new Blob([params.file], { type: params.mimeType }), params.fileName)
-  form.append("fileName", params.fileName)
+  form.append("file", new Blob([new Uint8Array(image.file)], { type: image.mimeType }), fileName)
+  form.append("fileName", fileName)
   form.append("folder", params.folder)
   form.append("useUniqueFileName", "true")
+  form.append("overwriteFile", "false")
 
   const auth = Buffer.from(`${config.privateKey}:`).toString("base64")
 
@@ -46,15 +41,15 @@ export async function uploadImageToImageKit(params: {
       method: "POST",
       headers: { Authorization: `Basic ${auth}` },
       body: form,
+      signal: AbortSignal.timeout(30_000),
     })
-  } catch (error) {
-    logger.error("imagekit.upload_network_error", "Image upload network error", { error: String(error) })
+  } catch {
+    logger.error("imagekit.upload_network_error", "Image upload network error")
     throw new AppError("IMAGE_UPLOAD_FAILED")
   }
 
   if (!response.ok) {
-    const body = await response.text().catch(() => "")
-    logger.error("imagekit.upload_failed", "ImageKit rejected upload", { status: response.status, body })
+    logger.error("imagekit.upload_failed", "ImageKit rejected upload", { status: response.status })
     throw new AppError("IMAGE_UPLOAD_FAILED")
   }
 
@@ -66,6 +61,13 @@ export async function uploadImageToImageKit(params: {
     height?: number
   }
 
+  try {
+    const url = new URL(data.url)
+    const endpoint = new URL(config.urlEndpoint)
+    if (typeof data.fileId !== "string" || !data.fileId || typeof data.filePath !== "string" || !data.filePath.startsWith(`${params.folder}/`) || typeof data.url !== "string" || url.protocol !== "https:" || url.origin !== endpoint.origin || url.username || url.password) throw new Error()
+  } catch {
+    throw new AppError("IMAGE_UPLOAD_FAILED")
+  }
   return {
     fileId: data.fileId,
     filePath: data.filePath,

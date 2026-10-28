@@ -34,15 +34,7 @@ export function getGoogleOAuthConfig(): GoogleOAuthConfig {
   if (!clientId || !clientSecret) {
     throw new AppError("GOOGLE_AUTH_FAILED", "Google sign-in is not configured yet.", 503)
   }
-  // OAuth redirect must point to where the app is ACTUALLY running,
-  // not the public canonical URL. Allow an explicit override via
-  // GOOGLE_REDIRECT_URI or OAUTH_BASE_URL for local dev.
-  const base = process.env.GOOGLE_REDIRECT_URI
-    ?? process.env.OAUTH_BASE_URL
-    ?? getAppUrl()
-  const redirectUri = base.endsWith("/api/auth/google/callback")
-    ? base
-    : `${base}/api/auth/google/callback`
+  const redirectUri = getOAuthRedirectUri("google", process.env.GOOGLE_REDIRECT_URI ?? process.env.OAUTH_BASE_URL)
   return {
     clientId,
     clientSecret,
@@ -108,15 +100,33 @@ export function getAuthSecret(): string {
 }
 
 export function getAppUrl(): string {
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
-  return "http://localhost:3000"
+  const production = process.env.NODE_ENV === "production"
+  const configured = process.env.NEXT_PUBLIC_APP_URL
+  const raw = configured || (!production && process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : !production ? "http://localhost:3000" : "")
+  try {
+    const url = new URL(raw)
+    if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || url.search || url.hash || url.pathname !== "/") throw new Error()
+    if (production && (url.protocol !== "https:" || /^(localhost|127\.|0\.|\[::1\])/.test(url.hostname))) throw new Error()
+    return url.origin
+  } catch {
+    throw new AppError("UNKNOWN", "The application URL is not configured correctly.", 503)
+  }
 }
 
-/**
- * Canonical site URL used across SEO metadata, structured data, sitemaps, and robots.
- * Resolves from NEXT_PUBLIC_APP_URL → VERCEL_URL → localhost at runtime.
- */
+export function getOAuthRedirectUri(provider: "google" | "github", configuredBase?: string): string {
+  const canonical = getAppUrl()
+  const callbackPath = `/api/auth/${provider}/callback`
+  try {
+    const url = new URL(configuredBase ?? canonical)
+    if (!["http:", "https:"].includes(url.protocol) || url.username || url.password || url.search || url.hash || !["/", callbackPath].includes(url.pathname)) throw new Error()
+    if (process.env.NODE_ENV === "production" && url.origin !== canonical) throw new Error()
+    url.pathname = callbackPath
+    return url.toString()
+  } catch {
+    throw new AppError("UNKNOWN", "The sign-in callback URL is not configured correctly.", 503)
+  }
+}
+
 export const SITE_URL = getAppUrl()
 
 /**
@@ -164,8 +174,15 @@ export function getDodoConfig(): DodoConfig {
   return {
     apiKey,
     webhookKey: webhookKey ?? "",
-    environment: process.env.DODO_PAYMENTS_ENVIRONMENT ?? "test_mode",
+    environment: getPaymentEnvironment(),
   }
+}
+
+export function getPaymentEnvironment(): "test_mode" | "live_mode" {
+  const environment = process.env.DODO_PAYMENTS_ENVIRONMENT
+  if (environment === "test_mode" || environment === "live_mode") return environment
+  if (!environment && process.env.NODE_ENV !== "production") return "test_mode"
+  throw new AppError("PAYMENT_UNAVAILABLE", "Payment environment is not configured correctly.", 503)
 }
 
 export function isDodoConfigured(): boolean {

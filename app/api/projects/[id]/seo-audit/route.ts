@@ -73,7 +73,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 /**
  * POST /api/projects/:id/seo-audit — run a fresh audit (charges credits).
  */
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+import { withAiProtection } from "@/lib/api/ai-protection"
+
+export const POST = withAiProtection("analysis", post)
+
+async function post(req: Request, { params }: { params: Promise<{ id: string }> }) {
   let charged = false
   let chargedAmount = 0
   let failedAuditId: string | null = null

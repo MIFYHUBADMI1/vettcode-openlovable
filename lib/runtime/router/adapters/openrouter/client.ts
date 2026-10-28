@@ -29,7 +29,7 @@ export async function executeOpenRouterJsonPost(
       method: "POST",
       headers: openRouterHeaders(),
       body: JSON.stringify(body),
-      signal: controller.signal,
+      signal: aiSignal(controller.signal),
       redirect: "error",
     })
     const latencyMs = Date.now() - startedAt
@@ -87,7 +87,7 @@ export async function executeOpenRouterSpeech(body: unknown): Promise<{
       method: "POST",
       headers: openRouterHeaders(),
       body: JSON.stringify(body),
-      signal: controller.signal,
+      signal: aiSignal(controller.signal),
       redirect: "error",
     })
     const latencyMs = Date.now() - startedAt
@@ -140,6 +140,7 @@ import {
   routingCapabilityFailure,
 } from "./errors"
 import { ProviderExecutionError } from "@/lib/runtime/router/adapter"
+import { aiSignal } from "@/lib/api/ai-context"
 
 /**
  * Atai Runtime — OpenRouter HTTP client (server-only).
@@ -210,7 +211,7 @@ export async function executeChatCompletion(
       method: "POST",
       headers: openRouterHeaders(),
       body: JSON.stringify(request),
-      signal: controller.signal,
+      signal: aiSignal(controller.signal),
       redirect: "error", // never follow redirects to arbitrary hosts (§98)
     })
     const latencyMs = Date.now() - startedAt

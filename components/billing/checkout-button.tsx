@@ -42,7 +42,6 @@ export function CheckoutButton({
     setError(null)
 
     try {
-      await onBeforeCheckout?.()
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -52,7 +51,7 @@ export function CheckoutButton({
       const json = await res.json()
 
       if (json.ok && json.data?.checkoutUrl) {
-        // Keep loading=true — user will be navigated away
+        await onBeforeCheckout?.()
         window.location.href = json.data.checkoutUrl
       } else {
         const msg = json.error?.message ?? "Failed to start checkout. Please try again."

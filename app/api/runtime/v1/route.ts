@@ -10,6 +10,8 @@ import { capabilityAvailability } from "@/lib/runtime/router/adapters/availabili
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { tryAcquireRuntimeSlot, releaseRuntimeSlot } from "@/lib/runtime/concurrency"
 import { enforceProjectRuntimeLimits } from "@/lib/runtime/control/enforce-limits"
+import { aiContext } from "@/lib/api/ai-context"
+import { readJsonBody } from "@/lib/api/request-body"
 
 /**
  * Atai Runtime API — versioned route boundary (Phase 5).
@@ -59,23 +61,17 @@ export async function POST(req: Request) {
     }
 
     // 3. Parse the untrusted body (kept separate from trusted identity).
-    const raw = await req.text().catch(() => "")
-    if (raw.length > MAX_RUNTIME_BODY_BYTES) {
-      return fail("runtime_invalid_request", "The request body is too large.", 413)
-    }
-    let body: unknown = null
+    let body: unknown
     try {
-      body = raw ? JSON.parse(raw) : null
-    } catch {
-      body = null
-    }
-    if (body === null) {
-      return fail("runtime_invalid_request", "A JSON request body is required.", 422)
+      body = await readJsonBody(req, MAX_RUNTIME_BODY_BYTES)
+    } catch (error) {
+      const tooLarge = error instanceof Error && "status" in error && error.status === 413
+      return fail("runtime_invalid_request", tooLarge ? "The request body is too large." : "A JSON request body is required.", tooLarge ? 413 : 422)
     }
 
     // 4–7. Router lifecycle: validate → capability/operation → scope →
     //      resolve → execute → normalize.
-    const response = await routeRuntimeRequest(auth, body, auth.requestId)
+    const response = await aiContext.run({ signal: req.signal }, () => routeRuntimeRequest(auth, body, auth.requestId))
 
     return ok(response)
   } catch (e) {

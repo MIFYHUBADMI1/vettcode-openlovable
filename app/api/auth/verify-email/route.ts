@@ -5,22 +5,21 @@ import { markEmailVerified } from "@/lib/auth/users"
 import { AppError } from "@/lib/errors"
 import { processVerificationReward } from "@/lib/referrals/referrals"
 import { logger } from "@/lib/logging/logger"
+import { checkAuthRequest } from "@/lib/auth/request-limit"
+import { readAuthBody } from "@/lib/api/request-body"
 
-/**
- * Consumes an email-verification token (spec section 5). Tokens are single
- * use (`usedAt` set atomically on first use) and time-limited via the Mongo
- * TTL index, so an expired token simply won't be found.
- */
+// Expiry must be checked in the claim: Mongo's TTL cleanup is asynchronous.
 export async function POST(req: Request) {
   try {
-    const body = (await req.json().catch(() => ({}))) as { token?: string }
-    const token = body.token ?? ""
-    if (!token) return fail("VERIFICATION_INVALID", undefined, 400)
+    await checkAuthRequest(req, "verify_email")
+    const body = await readAuthBody(req)
+    const token = typeof body.token === "string" ? body.token : ""
+    if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return fail("VERIFICATION_INVALID", undefined, 400)
 
     const col = await verificationTokensCol()
     const tokenHash = hashToken(token)
     const record = await col.findOneAndUpdate(
-      { tokenHash, purpose: "email_verify", usedAt: { $exists: false } },
+      { tokenHash, purpose: "email_verify", usedAt: { $exists: false }, expiresAt: { $gt: new Date() } },
       { $set: { usedAt: Date.now() } },
       { returnDocument: "after" },
     )

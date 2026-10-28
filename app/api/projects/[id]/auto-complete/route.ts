@@ -126,7 +126,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   }
 }
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+import { withAiProtection } from "@/lib/api/ai-protection"
+import { aiSignal } from "@/lib/api/ai-context"
+
+export const POST = withAiProtection("autocomplete", post)
+
+async function post(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireUser()
     const { id } = await params
@@ -238,7 +243,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         // Free-tier models intermittently fail to open a connection at all;
         // one retry cycle is cheaper than a failed section for the founder.
         maxRetries: 3,
-        abortSignal: AbortSignal.timeout(180_000),
+        abortSignal: aiSignal(),
       })
       text = result.text
     } catch (aiError) {

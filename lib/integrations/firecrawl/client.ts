@@ -1,5 +1,6 @@
 import "server-only"
 import { logger } from "@/lib/logging/logger"
+import { aiSignal } from "@/lib/api/ai-context"
 
 /** Thin server-side Firecrawl HTTP client. The API key is read from the server
  * environment and never exposed to the browser (spec section 26). */
@@ -29,14 +30,13 @@ async function firecrawlFetch<T>(path: string, body: unknown, timeoutMs: number,
         "content-type": "application/json",
         authorization: `Bearer ${key}`,
       },
-      signal: controller.signal,
+      signal: aiSignal(controller.signal),
     }
     if (method === "POST") opts.body = JSON.stringify(body)
     const res = await fetch(`${FIRECRAWL_BASE}${path}`, opts)
     if (!res.ok) {
-      const text = await res.text().catch(() => "")
       logger.error("firecrawl.http", "request failed", { path, status: res.status })
-      throw new Error(`Website crawl request failed (${res.status}): ${text.slice(0, 200)}`)
+      throw new Error(`Website crawl request failed (${res.status})`)
     }
     return (await res.json()) as T
   } finally {

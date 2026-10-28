@@ -1,6 +1,6 @@
-import { Analytics } from "@vercel/analytics/next"
+import { PrivacyAnalytics } from "@/components/privacy-analytics"
 import type { Metadata, Viewport } from "next"
-import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google"
+import localFont from "next/font/local"
 import Script from "next/script"
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/components/auth/auth-provider"
@@ -9,19 +9,28 @@ import { Toaster } from "@/components/ui/sonner"
 import { SITE_URL } from "@/lib/env"
 import "./globals.css"
 
-const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta" })
-const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" })
+// Local fonts keep compilation independent of Google Fonts availability.
+const jakarta = localFont({
+  src: "../node_modules/@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2",
+  variable: "--font-jakarta",
+  weight: "200 800",
+})
+const geistMono = localFont({
+  src: "../node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2",
+  variable: "--font-geist-mono",
+  weight: "100 900",
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Atai.ink | Turn your idea into a real business",
+    default: "Atai | Start, Run & Grow Your Own Business with AI Teams",
     template: "%s | Atai",
   },
   description:
-    "Atai.ink is the AI business-building platform. Plan, build, launch, manage, and grow a digital business from an idea, a website, a URL, or a GitHub project.",
+    "Start, run, and grow your own online business with Atai's specialized AI teams. Get help with planning, hosting, daily operations, marketing, and reaching customers.",
   applicationName: "Atai",
-  keywords: ["Atai.ink", "AI business builder", "AI co-founder", "AI application builder", "founder platform", "plan mode", "MVP builder", "AI-powered web development"],
+  keywords: ["Atai", "Atai.ink", "AI business builder", "AI business teams", "start an online business", "business management", "ATAI Enterprises"],
   verification: {
     google: "fVuc4AOfzEAxCg2a5vgQ967z_AGcs2MbUn6QUjl70b4",
     other: { "pressplaced-verification": "fc52a89ec5ab0207" },
@@ -32,15 +41,15 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: SITE_URL,
     siteName: "Atai",
-    title: "Atai.ink | Turn your idea into a real business",
-    description: "Plan, build, launch, manage, and grow your digital business with Atai.ink. Powered by ATAI Enterprises.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai.ink — Turn your idea into a real business" }],
+    title: "Atai | Start, Run & Grow Your Own Business with AI Teams",
+    description: "Your business. Your AI teams. Get help with planning, your website or product, hosting, daily operations, and reaching customers.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai — AI teams for your business" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Atai.ink | Turn your idea into a real business",
-    description: "Plan, build, launch, manage, and grow your digital business with Atai.ink. Powered by ATAI Enterprises.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai.ink — Turn your idea into a real business" }],
+    title: "Atai | Start, Run & Grow Your Own Business with AI Teams",
+    description: "Your business. Your AI teams. Get help with planning, your website or product, hosting, daily operations, and reaching customers.",
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai — AI teams for your business" }],
   },
   icons: { icon: "/favicon.png", apple: "/favicon.png" },
   authors: [{ name: "ATAI Enterprises", url: "https://atai.ink" }],
@@ -84,11 +93,17 @@ const STRUCTURED_DATA = JSON.stringify({
       url: SITE_URL,
       logo: {
         "@type": "ImageObject",
-        url: `${SITE_URL}/logo.png`,
-        width: 512,
-        height: 512,
+        url: `${SITE_URL}/favicon.png`,
+        width: 1280,
+        height: 1280,
       },
-      description: "The AI platform that turns ideas into real businesses. Plan, build, launch, manage, and grow digital businesses with AI.",
+      description: "The company behind Atai, helping more people start, run, and grow online businesses with specialized AI teams.",
+      founder: {
+        "@type": "Person",
+        "@id": `${SITE_URL}/founder#person`,
+        name: "Masereka Adorable Kimulya",
+        url: `${SITE_URL}/founder`,
+      },
       email: "support@atai.ink",
       telephone: "+256761819885",
       sameAs: [
@@ -111,32 +126,19 @@ const STRUCTURED_DATA = JSON.stringify({
       applicationSubCategory: "AI Business Builder",
       operatingSystem: "Web",
       url: SITE_URL,
-      description: "Atai.ink is the AI business-building platform. Turn ideas into real businesses through AI collaboration, automated building, deployment, and management. One platform for the entire business lifecycle.",
+      description: "Atai helps people start, run, manage, and grow online businesses with specialized AI teams. Plan an offer, create and host the website or product it needs, manage daily operations, and work on marketing and reaching customers.",
       image: `${SITE_URL}/og-image.png`,
-      offers: {
-        "@type": "Offer",
-        price: "0",
-        priceCurrency: "USD",
-        description: "500 free credits to start. Build your first business with no credit card required.",
-      },
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: "4.8",
-        ratingCount: "150",
-        bestRating: "5",
-        worstRating: "1",
-      },
       author: { "@id": `${SITE_URL}/#organization` },
       publisher: { "@id": `${SITE_URL}/#organization` },
       provider: { "@id": `${SITE_URL}/#organization` },
       featureList: [
-        "AI co-founder collaboration for business planning",
-        "Automated full-stack application generation",
-        "One-click deployment with hosting and infrastructure",
-        "Business management dashboard",
-        "Customer and payment processing",
-        "Analytics and growth tools",
-        "Unified developer API for 40+ infrastructure services",
+        "Business planning with an AI co-founder",
+        "Market research and offer development",
+        "Websites and digital products for your business",
+        "Hosting, customer accounts, and databases",
+        "Daily business management",
+        "Customer and payment tools",
+        "Marketing, analytics, and growth support",
       ],
     },
     {
@@ -155,18 +157,13 @@ const STRUCTURED_DATA = JSON.stringify({
         availability: "https://schema.org/InStock",
         seller: { "@id": `${SITE_URL}/#organization` },
       },
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: "4.9",
-        ratingCount: "200",
-      },
     },
     {
       "@type": "WebSite",
       "@id": `${SITE_URL}/#website`,
       url: SITE_URL,
       name: "Atai",
-      description: "Turn your idea into a real business with AI",
+      description: "Start, run, and grow your own online business with specialized AI teams.",
       publisher: { "@id": `${SITE_URL}/#organization` },
       potentialAction: {
         "@type": "SearchAction",
@@ -177,45 +174,8 @@ const STRUCTURED_DATA = JSON.stringify({
         "query-input": "required name=search_term_string",
       },
     },
-    {
-      "@type": "FAQPage",
-      mainEntity: [
-        {
-          "@type": "Question",
-          name: "What is Atai?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Atai is an AI business-building platform that helps founders turn ideas into real businesses. It acts as an AI co-founder, helping you plan, build, launch, manage, and grow digital businesses without needing technical expertise or a large team.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "How much does Atai cost?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Atai offers 500 free credits to get started with no credit card required. After that, it's pay-as-you-go pricing based on usage. Planning costs 50-200 credits, building costs 2000-8000 credits depending on complexity.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "Can developers use Atai's infrastructure?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Yes! The same unified infrastructure that powers Atai's business builder is available to developers through the Atai SDK. Access 40+ services including AI, payments, maps, messaging,auth,search,crawl and more through one API.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "Do I need coding experience to use Atai?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "No. Atai is designed for founders and entrepreneurs without technical backgrounds. The AI collaborates with you to plan and build your business. However, developers can also use Atai's infrastructure through the SDK for their own projects.",
-          },
-        },
-      ],
-    },
   ],
-})
+}).replace(/</g, "\\u003c")
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
@@ -248,7 +208,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </AuthProvider>
         </ThemeProvider>
 
-        {process.env.NODE_ENV === "production" && <Analytics />}
+        {process.env.NODE_ENV === "production" && <PrivacyAnalytics />}
       </body>
     </html>
   )

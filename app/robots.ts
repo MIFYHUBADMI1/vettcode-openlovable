@@ -10,6 +10,7 @@ export default function robots(): MetadataRoute.Robots {
   const publicAllow = [
     "/",
     "/about",
+    "/founder",
     "/pricing",
     "/docs",
     "/developers",

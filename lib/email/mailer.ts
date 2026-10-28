@@ -12,6 +12,9 @@ function getTransporter() {
     host: config.host,
     port: config.port,
     secure: config.port === 465,
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
     auth: { user: config.user, pass: config.password },
   })
   return cachedTransporter
@@ -28,8 +31,8 @@ export async function sendMail(params: { to: string; subject: string; html: stri
       html: params.html,
       text: params.text,
     })
-  } catch (error) {
-    logger.error("email.send_failed", "SMTP delivery failed", { to: params.to, subject: params.subject, error: String(error) })
+  } catch {
+    logger.error("email.send_failed", "SMTP delivery failed")
     throw new AppError("EMAIL_UNAVAILABLE")
   }
 }

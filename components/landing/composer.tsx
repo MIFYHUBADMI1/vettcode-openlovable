@@ -92,73 +92,72 @@ const MODES: {
 }[] = [
   {
     id: "idea",
-    title: "Idea",
-    support: "Start with an idea. Atai will help turn it into a real business and product.",
-    placeholder: "Describe the business in your own words — the problem, who it's for, what should exist.",
-    example: "Example: “A platform that helps small clinics manage bookings, patients, and payments in one place.”",
+    title: "Business idea",
+    support: "Start with who you want to help.",
+    placeholder: "What would you sell, who would you help, or what skill could become your business?",
+    example: "Example: “I want to earn a living tutoring students online. Help me plan my service, take bookings, and reach my first customers.”",
     pills: [
-      "Build an MVP for my idea",
-      "Turn my business idea into a product",
-      "Create a booking platform for clinics",
+      "Start an online tutoring business",
+      "Sell my handmade products online",
+      "Turn my skills into a service business",
     ],
     icon: Lightbulb,
   },
   {
     id: "website",
-    title: "Mirror",
-    support: "Give Atai a reference site and describe what you want to create from it.",
-    placeholder: "Paste a website you want Atai to understand as a starting point...",
-    example: "Example: “https://linear.app — build a version of this experience for my business.”",
-    pills: ["Recreate this experience", "Improve this product for my market"],
+    title: "Inspiration",
+    support: "A reference for your own business.",
+    placeholder: "Paste a business website that inspires you. What would you offer, and to whom?",
+    example: "Share a website link, then describe your own customers and what you would do differently.",
+    pills: ["Explore a business model for my market", "Find what could make my business different"],
     icon: Globe,
   },
   {
     id: "url",
-    title: "URL",
-    support: "Atai will use the website as context for your request.",
-    placeholder: "Paste a URL and tell Atai what to do with it...",
-    example: "Example: “https://example.com — analyze this site and help me build something better.”",
-    pills: ["Analyze a website", "Build from this URL"],
+    title: "Website",
+    support: "Use a website as business context.",
+    placeholder: "Paste a website link and describe the business opportunity you want to explore.",
+    example: "Example: “https://example.com — help me understand the offer, the customers, and a business I could start in this market.”",
+    pills: ["Explore the customers this business serves", "Plan a business around this opportunity"],
     icon: Link2,
   },
   {
     id: "github",
-    title: "GitHub",
-    support: "Let Atai understand an existing codebase and work from it.",
-    placeholder: "Paste a GitHub repository URL...",
-    example: "Example: “https://github.com/vercel/next.js — understand this codebase and help me productize it.”",
-    pills: ["Import a repository", "Extend an existing app"],
+    title: "Codebase",
+    support: "An existing product is a starting point.",
+    placeholder: "Paste a GitHub repository URL and describe the business you want to build around it.",
+    example: "Bring your code, then tell Atai who it could help and what you would sell.",
+    pills: ["Plan a business around my existing product", "Define an offer for my first customers"],
     icon: GitBranch,
   },
 ]
 
 const TYPING_HINTS: Record<StartMode, string[]> = {
   idea: [
-    "Describe the business in your own words — the problem, who it's for, what should exist.",
-    "A booking platform for small clinics…",
-    "A marketplace connecting local farmers with restaurants…",
-    "An AI assistant for independent freelancers…",
+    "What would you sell, who would you help, or what skill could become your business?",
+    "I want to teach languages online and find my first students…",
+    "I make handmade products and want to start selling online…",
+    "I want to turn my bookkeeping skills into a business…",
   ],
   website: [
-    "Paste a website you want Atai to understand as a starting point…",
-    "https://linear.app — build a version of this experience for my business.",
-    "https://www.doctolib.com — a booking platform for my market.",
+    "Paste a business website that inspires you. What would you offer, and to whom?",
+    "Share a website link and tell Atai what you would do differently for your customers…",
   ],
   url: [
-    "Paste a URL and tell Atai what to do with it…",
-    "https://example.com — analyze this site and help me build something better.",
+    "Paste a website link and describe the business opportunity you want to explore…",
+    "https://example.com — who does this business serve, and what could I offer my market?",
   ],
   github: [
-    "Paste a GitHub repository URL…",
-    "https://github.com/vercel/next.js — understand this codebase and help me productize it.",
+    "Paste a GitHub repository URL and describe the business you want to build around it…",
+    "Who could your product help, and what would they pay for?",
   ],
 }
 
 const TYPE_CUES: Record<StartMode, string> = {
-  idea: "Type your idea here",
-  website: "Paste a website",
-  url: "Paste a URL",
-  github: "Paste a repo",
+  idea: "Type your business idea",
+  website: "Paste your inspiration",
+  url: "Paste a website link",
+  github: "Paste your GitHub link",
 }
 
 const AGENTS = [
@@ -652,8 +651,8 @@ export function LandingComposer({
     >
       {showIntro ? (
         <>
-          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Start with Atai</p>
-          <h2 className="mt-1.5 text-base font-semibold tracking-tight sm:text-lg">Tell Atai what you want to build.</h2>
+          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Your business starts here</p>
+          <h2 className="mt-1.5 text-base font-semibold tracking-tight sm:text-lg">What business would you love to run?</h2>
         </>
       ) : null}
 
@@ -744,14 +743,14 @@ export function LandingComposer({
                 className="inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:text-foreground"
                 onClick={() => selectMode(detected)}
               >
-                Use {detected === "github" ? "GitHub" : detected === "website" ? "Mirror" : "URL"} mode
+                Use {MODES.find((item) => item.id === detected)?.title} mode
               </button>
             ) : null}
           </div>
         )}
 
         <label htmlFor="landing-prompt" className="sr-only">
-          Describe what you want Atai to build
+          Describe the business you want to start
         </label>
         <textarea
           ref={textareaRef}
@@ -929,7 +928,7 @@ export function LandingComposer({
           <button
             type="submit"
             disabled={!canSend}
-            aria-label={submitting ? "Preparing Atai" : "Start with Atai"}
+            aria-label={submitting ? "Preparing your business plan" : "Plan my business"}
             className={cn(
               "grid size-9 shrink-0 place-items-center rounded-full transition-transform duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:translate-y-px",
               canSend
@@ -990,7 +989,7 @@ export function LandingComposer({
       </div>
 
       <p className="mt-3 text-[11px] leading-5 text-muted-foreground">
-        Atai prepares a plan first. Your application is only built after you review and approve it.
+        No coding knowledge needed. Start with a business plan you can review and shape. Nothing is built until you approve.
       </p>
 
       {listening ? (

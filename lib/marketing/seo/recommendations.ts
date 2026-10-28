@@ -218,7 +218,7 @@ export async function generateSeoRecommendations(input: {
       prompt,
       maxOutputTokens: MAX_OUTPUT_TOKENS,
       temperature: 0.2,
-      abortSignal: AbortSignal.timeout(TIMEOUT_MS),
+      abortSignal: (await import("@/lib/api/ai-context")).aiSignal(AbortSignal.timeout(TIMEOUT_MS)),
     })
     const recommendations = parseSeoRecommendations(result.text ?? "", allowed)
     if (recommendations.length === 0) throw new Error("no grounded recommendations in model output")

@@ -1,6 +1,7 @@
 import "server-only"
 import { logger } from "@/lib/logging/logger"
 import { ProviderExecutionError } from "@/lib/runtime/router/adapter"
+import { aiSignal } from "@/lib/api/ai-context"
 import { categoryForNetworkError, isAlreadyNormalized } from "./errors"
 
 /**
@@ -80,7 +81,7 @@ export async function providerFetch(opts: ProviderFetchOptions): Promise<Provide
       method: opts.method === "GET" ? "GET" : opts.method,
       headers: opts.headers,
       ...(opts.body !== undefined ? { body: opts.body } : {}),
-      signal: controller.signal,
+      signal: aiSignal(controller.signal),
       redirect: "error", // never follow redirects to arbitrary hosts
     })
 

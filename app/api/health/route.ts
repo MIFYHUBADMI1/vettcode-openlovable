@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getMongoClient } from "@/lib/db/mongodb"
+import { assertTransactionSupport } from "@/lib/db/transaction-readiness"
 import { isFirecrawlConfigured } from "@/lib/integrations/firecrawl/service"
 import { isTotalumConfigured } from "@/lib/integrations/totalum/client"
 import { isMongoConfigured } from "@/lib/env"
@@ -14,7 +15,7 @@ export async function GET() {
   } else {
     try {
       const client = await getMongoClient()
-      await client.db().command({ ping: 1 })
+      await assertTransactionSupport(client)
       checks.mongo = { status: "ok", latencyMs: Date.now() - startedAt }
     } catch {
       // Driver messages can contain host/auth fragments — status only here.
@@ -26,7 +27,7 @@ export async function GET() {
   checks.firecrawl = { status: isFirecrawlConfigured() ? "configured" : "not_configured" }
   checks.totalum = { status: isTotalumConfigured() ? "configured" : "not_configured" }
 
-  const healthy = checks.mongo?.status === "ok" || checks.mongo?.status === "not_configured"
+  const healthy = checks.mongo?.status === "ok" || (process.env.NODE_ENV !== "production" && checks.mongo?.status === "not_configured")
   const totalLatency = Date.now() - startedAt
 
   return NextResponse.json(

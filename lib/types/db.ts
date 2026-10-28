@@ -126,6 +126,7 @@ export interface ReferralDoc {
   eligibleUsage: number
   /** Risk/fraud flags for admin review. */
   fraudFlags?: string[]
+  review?: { decision: "approve" | "block"; adminId: string; reason: string; reviewedAt: number; approvedFlags: string[] }
   createdAt: number
   updatedAt: number
 }

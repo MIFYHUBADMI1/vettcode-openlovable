@@ -4,6 +4,8 @@ import { verifyPassword, verifyPasswordWithoutUser } from "@/lib/auth/crypto"
 import { createSession, setSessionCookie } from "@/lib/auth/session"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { AppError } from "@/lib/errors"
+import { checkAuthRequest } from "@/lib/auth/request-limit"
+import { readAuthBody } from "@/lib/api/request-body"
 
 /**
  * Email/password login (spec section 3). Rate-limited per email to slow
@@ -15,10 +17,11 @@ import { AppError } from "@/lib/errors"
  */
 export async function POST(req: Request) {
   try {
-    const body = (await req.json().catch(() => ({}))) as { email?: string; password?: string }
-    const email = (body.email ?? "").trim()
-    const password = body.password ?? ""
-    if (!email || !password) return fail("VALIDATION", "Please enter your email and password.", 422)
+    await checkAuthRequest(req, "login")
+    const body = await readAuthBody(req)
+    const email = typeof body.email === "string" ? body.email.trim() : ""
+    const password = typeof body.password === "string" ? body.password : ""
+    if (!email || email.length > 254 || !password || password.length > 1024) return fail("VALIDATION", "Please enter your email and password.", 422)
 
     await checkRateLimit({ action: "login", identifier: normalizeEmail(email), limit: 10, windowMs: 15 * 60 * 1000 })
 

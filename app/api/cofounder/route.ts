@@ -33,7 +33,11 @@ const PostBodySchema = z.object({
   currentSurface: z.string().max(60).optional(),
 }).strip()
 
-export async function POST(req: Request) {
+import { withAiProtection } from "@/lib/api/ai-protection"
+
+export const POST = withAiProtection("chat", post)
+
+async function post(req: Request) {
   try {
     const user = await requireUser()
     await checkRateLimit({

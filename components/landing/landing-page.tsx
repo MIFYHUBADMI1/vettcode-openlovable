@@ -20,7 +20,7 @@ import {
 export default function LandingPage() {
   const { session } = useSession()
   const ctaHref = session ? "/dashboard" : "/register"
-  const ctaLabel = session ? "Open dashboard" : "Get started free"
+  const ctaLabel = session ? "Open my businesses" : "Start my business"
 
   return (
     <main className="lp-root min-h-svh overflow-x-hidden bg-background text-foreground">

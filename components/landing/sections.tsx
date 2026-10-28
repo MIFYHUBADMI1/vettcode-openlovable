@@ -26,38 +26,38 @@ import { AuthTrigger } from "@/components/auth/auth-trigger"
 import { useSession } from "@/lib/client/api"
 
 const LIFECYCLE = [
-  { id: "idea", title: "Idea", body: "Share your business vision." },
-  { id: "plan", title: "Plan", body: "Collaborate with your AI co-founder." },
-  { id: "build", title: "Build", body: "Create your application with AI agents." },
-  { id: "launch", title: "Launch", body: "Deploy and configure everything you need." },
-  { id: "manage", title: "Manage", body: "Run your application and business from one place." },
-  { id: "grow", title: "Grow", body: "Use analytics, iteration, and product tools to scale." },
+  { id: "idea", title: "Idea", body: "Start with your skills, an idea, or a problem you want to solve." },
+  { id: "plan", title: "Plan", body: "Define your customers, your offer, and how the business could earn." },
+  { id: "build", title: "Build", body: "Create the website or digital product your business needs." },
+  { id: "launch", title: "Launch", body: "Get online with hosting, a database, and the tools to serve customers." },
+  { id: "manage", title: "Manage", body: "Keep track of customers, payments, and daily operations in one place." },
+  { id: "grow", title: "Grow", body: "Work on marketing, learn what brings customers, and improve your offer." },
 ]
 
 const START_CARDS = [
-  { href: "/new/idea", icon: Lightbulb, title: "Your Idea", body: "Describe what you want to build." },
-  { href: "/new/website", icon: Globe2, title: "A Website", body: "Use a website as a reference." },
-  { href: "/new/website", icon: Link2, title: "A URL", body: "Give Atai a web address to analyze." },
-  { href: "/new/github", icon: GitBranch, title: "GitHub", body: "Bring an existing repository." },
+  { href: "/new/idea", icon: Lightbulb, title: "A business idea", body: "Tell Atai what you could offer and who you want to help." },
+  { href: "/new/website", icon: Globe2, title: "Some inspiration", body: "Learn from a business you admire and shape your own approach." },
+  { href: "/new/website", icon: Link2, title: "A website", body: "Share a website to explore its customers, offer, and market." },
+  { href: "/new/github", icon: GitBranch, title: "An existing product", body: "Bring a GitHub codebase and plan the business around it." },
 ]
 
-const PIPELINE = ["Plan", "AI Agents", "Build", "Test", "Security", "Deploy", "Live"]
+const PIPELINE = ["Business plan", "AI teams", "Create", "Try it out", "Security checks", "Publish", "Go live"]
 
 const INFRA = [
-  { icon: Database, title: "Database", body: "Structured data models and records from day one." },
-  { icon: Shield, title: "Authentication", body: "Sign-up, login, sessions, and account flows included." },
-  { icon: Server, title: "Hosting", body: "Deploy to a live environment with HTTPS and CDN." },
-  { icon: Globe2, title: "Domains", body: "Publish on a subdomain or connect your own domain." },
-  { icon: Zap, title: "AI", body: "AI capabilities can be wired into the product you ship." },
-  { icon: BarChart3, title: "Infrastructure", body: "Storage, usage, and project limits without assembling DevOps." },
+  { icon: Database, title: "Business records", body: "Keep the information your website or product needs in a database." },
+  { icon: Shield, title: "Customer accounts", body: "Let customers sign up and log in to their accounts." },
+  { icon: Server, title: "Hosting", body: "Put your website or product online with a secure web connection." },
+  { icon: Globe2, title: "Your web address", body: "Use an Atai subdomain or connect your own domain so people can find you." },
+  { icon: Zap, title: "AI features", body: "Add AI features where they support what your business offers." },
+  { icon: BarChart3, title: "Usage and limits", body: "See storage, usage, and limits for your website or product." },
 ]
 
 const AUDIENCE = [
-  { icon: Lightbulb, title: "Founders", body: "Turn an idea into a real product." },
-  { icon: Building2, title: "Entrepreneurs", body: "Launch digital businesses without assembling a large technical team." },
-  { icon: Rocket, title: "Startups", body: "Build and iterate faster." },
-  { icon: Users, title: "Small businesses", body: "Create and manage digital products." },
-  { icon: Brain, title: "Co-founders", body: "Work alongside AI to plan and execute." },
+  { icon: Lightbulb, title: "First-time owners", body: "Take your first steps toward a business, even if you have never run one." },
+  { icon: Building2, title: "Small businesses", body: "Bring your business online and make day-to-day work easier to manage." },
+  { icon: Rocket, title: "Entrepreneurs", body: "Develop a new offer, learn from customers, and find ways to grow." },
+  { icon: Users, title: "Creators and freelancers", body: "Explore how your skills or knowledge could become a paid offer." },
+  { icon: Brain, title: "Small teams", body: "Work with specialized AI teams while staying in charge of your business." },
 ]
 
 export function LandingTrust() {
@@ -65,10 +65,10 @@ export function LandingTrust() {
     <section className="border-y border-border/60 bg-card/30 py-12">
       <div className="mx-auto max-w-6xl px-6 text-center lg:px-10">
         <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">
-          Everything you need to go from idea to business
+          A business to own. AI teams to help you run it.
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-          {["Plan with AI", "Build the product", "Deploy live", "Manage operations", "Keep iterating"].map((item) => (
+          {["Plan your business", "Build and host", "Manage operations", "Reach customers", "Work toward sales"].map((item) => (
             <span key={item} className="rounded-full border border-border bg-background px-3 py-1.5 text-sm text-muted-foreground">
               {item}
             </span>
@@ -85,9 +85,9 @@ export function LandingLifecycle() {
       <div className="mx-auto max-w-6xl px-6 lg:px-10">
         <FadeIn>
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="text-4xl font-black tracking-tight sm:text-5xl">More than an AI app builder.</h2>
+            <h2 className="text-4xl font-black tracking-tight sm:text-5xl">A team for every stage of your business.</h2>
             <p className="mt-4 text-lg leading-8 text-muted-foreground">
-              Atai helps you go from an idea to a fully managed digital business — all in one platform.
+              Starting is one step. Atai’s specialized AI teams help with the work of running a business, serving customers, and finding ways to grow. You stay in charge.
             </p>
           </div>
         </FadeIn>
@@ -118,7 +118,7 @@ export function LandingStart() {
           <div className="max-w-2xl">
             <h2 className="text-4xl font-black tracking-tight sm:text-5xl">Start with what you have.</h2>
             <p className="mt-4 text-lg leading-8 text-muted-foreground">
-              Whether you have an idea, a website, a URL, or an existing GitHub project, Atai gives you a path forward.
+              A skill, an idea, or a problem worth solving is enough to begin. If you already have a website or product, bring it along. The goal is a business you can run and grow.
             </p>
           </div>
         </FadeIn>
@@ -150,16 +150,16 @@ export function LandingPlan() {
       <div className="mx-auto max-w-6xl px-6 lg:px-10">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <FadeIn>
-            <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">Plan · AI collaboration</p>
-            <h2 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">Turn your idea into a plan.</h2>
+            <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">Plan · Your business first</p>
+            <h2 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">Start with customers and an offer.</h2>
             <p className="mt-4 text-lg leading-8 text-muted-foreground">
-              Don&apos;t jump straight into code. Work with AI to refine your business, product, users, features, pricing, and requirements before you build.
+              Who could you help, what could you offer, and what would you charge? Work with your AI team to shape a business plan before deciding what website or digital product you need.
             </p>
             <ul className="mt-8 space-y-3 text-sm text-muted-foreground">
               {[
-                "Your vision is understood before anything is generated.",
-                "AI suggests improvements you can accept, reject, or refine.",
-                "The plan becomes the source of truth Atai builds from.",
+                "Define your customers, their needs, and the value you could offer.",
+                "Explore pricing and refine AI suggestions to fit your goals.",
+                "Use the plan to guide what you build and how you serve customers.",
               ].map((item) => (
                 <li key={item} className="flex gap-2">
                   <Check className="mt-0.5 size-4 shrink-0 text-indigo-500" />
@@ -188,9 +188,9 @@ export function LandingBuild() {
       <div className="mx-auto max-w-6xl px-6 lg:px-10">
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <FadeIn className="lg:order-2">
-            <h2 className="text-4xl font-black tracking-tight sm:text-5xl">From plan to working product.</h2>
+            <h2 className="text-4xl font-black tracking-tight sm:text-5xl">Build what your business needs.</h2>
             <p className="mt-4 text-lg leading-8 text-muted-foreground">
-              Once your plan is ready, Atai turns it into a working application with the infrastructure your product needs.
+              Work with Atai’s AI teams to create the website or digital product that supports your offer. It is a way to reach and serve customers, not the whole business.
             </p>
             <div className="mt-8 flex flex-wrap gap-2">
               {PIPELINE.map((step, index) => (
@@ -201,7 +201,7 @@ export function LandingBuild() {
               ))}
             </div>
             <p className="mt-6 text-sm text-muted-foreground">
-              Atai is built for engineering rigor — not impossible guarantees. You still review, refine, and own the result.
+              Review and test the result before customers use it. You decide what goes live and what needs more work.
             </p>
           </FadeIn>
           <FadeIn delay={100} className="lg:order-1">
@@ -224,9 +224,9 @@ export function LandingInfra() {
       <div className="mx-auto max-w-6xl px-6 lg:px-10">
         <FadeIn>
           <div className="max-w-2xl">
-            <h2 className="text-4xl font-black tracking-tight sm:text-5xl">Your business. Our infrastructure.</h2>
+            <h2 className="text-4xl font-black tracking-tight sm:text-5xl">The essentials behind your online business.</h2>
             <p className="mt-4 text-lg leading-8 text-muted-foreground">
-              Atai handles the technical foundation so you can focus on building your business.
+              Your business needs a place online, a way for customers to sign in, and somewhere to keep its information. Atai brings these technical tools together so you have less to set up separately.
             </p>
           </div>
         </FadeIn>
@@ -253,12 +253,12 @@ export function LandingManage() {
         <div className="grid items-center gap-12 lg:grid-cols-2">
           <FadeIn>
             <p className="font-mono text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 dark:text-indigo-300">Launch · Manage</p>
-            <h2 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">Your product is only the beginning.</h2>
+            <h2 className="mt-4 text-4xl font-black tracking-tight sm:text-5xl">Stay on top of the everyday work.</h2>
             <p className="mt-4 text-lg leading-8 text-muted-foreground">
-              Launch without the technical maze. Manage the application and everything around it from one place.
+              Going live is the start of running the business. Keep track of customers and payments, review activity, and manage your website and business records from one workspace. Your AI teams help with the work; you make the decisions.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
-              {["Overview", "Applications", "Customers", "Payments", "Database", "AI", "Analytics", "Domains", "Deployment"].map((item) => (
+              {["Business overview", "Websites and products", "Customers", "Payments", "Business records", "AI tools", "Performance", "Web addresses", "Publishing"].map((item) => (
                 <span key={item} className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground">
                   {item}
                 </span>
@@ -285,9 +285,9 @@ export function LandingGrow() {
       <div className="mx-auto max-w-6xl px-6 lg:px-10">
         <FadeIn>
           <div className="max-w-2xl">
-            <h2 className="text-4xl font-black tracking-tight sm:text-5xl">Build it. Launch it. Grow it.</h2>
+            <h2 className="text-4xl font-black tracking-tight sm:text-5xl">Your business needs customers, not just a launch.</h2>
             <p className="mt-4 text-lg leading-8 text-muted-foreground">
-              Launch is not the finish line. Keep improving the product, understanding usage, and iterating with AI after you ship.
+              Work with your AI growth team on marketing, reaching the right people, and understanding what leads to sales. Use what you learn to improve your offer and keep serving your customers.
             </p>
           </div>
         </FadeIn>
@@ -311,7 +311,13 @@ export function LandingAudience() {
     <section id="audience" className="border-y border-border/60 bg-card/20 py-24">
       <div className="mx-auto max-w-6xl px-6 lg:px-10">
         <FadeIn>
-          <h2 className="text-4xl font-black tracking-tight sm:text-5xl">Built for people building something.</h2>
+          <h2 className="text-4xl font-black tracking-tight sm:text-5xl">Business ownership should be within reach.</h2>
+          <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">
+            Economic opportunity should not depend on being able to afford a whole team. Atai’s purpose is to reduce the barriers to starting, running, managing, and growing an online business with specialized AI teams. The aim is to help anyone take part, not to promise income or business success.
+          </p>
+          <Link href="/founder" className="mt-4 inline-block text-sm text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            Meet Masereka Adorable Kimulya, Atai’s founder
+          </Link>
         </FadeIn>
         <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {AUDIENCE.map((item, index) => (
@@ -342,9 +348,9 @@ export function LandingFinalCta({
       <div className="lp-cta-finale" aria-hidden />
       <div className="relative mx-auto max-w-4xl px-6 text-center lg:px-10">
         <FadeIn>
-          <h2 className="text-4xl font-black tracking-tight sm:text-6xl">Your idea is only the beginning.</h2>
+          <h2 className="text-4xl font-black tracking-tight sm:text-6xl">Your own business. You don’t have to do it alone.</h2>
           <p className="mt-5 text-lg leading-8 text-white/70">
-            Build the product. Launch the business. Grow what comes next.
+            Bring your ambition. Start with a plan, and work with your AI teams to launch, manage, and grow a business of your own.
           </p>
           <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
             {session ? (

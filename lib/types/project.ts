@@ -250,6 +250,7 @@ export interface ProjectCreditBlock {
   /** What the founder was trying to get done, e.g. "the website analysis". */
   action: string
   at: number
+  resume?: "build" | "analysis"
 }
 
 /** Alias used throughout the frontend; kept distinct from `MirrorProject` so

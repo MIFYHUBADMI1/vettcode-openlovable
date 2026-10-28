@@ -1,5 +1,5 @@
 import { cookies, headers } from "next/headers"
-import { ObjectId } from "mongodb"
+import { ObjectId, type ClientSession } from "mongodb"
 import { sessionsCol } from "@/lib/db/collections"
 import { generateToken, hashToken } from "@/lib/auth/crypto"
 import { findUserById, type UserDoc } from "@/lib/auth/users"
@@ -14,59 +14,6 @@ import { AppError } from "@/lib/errors"
  */
 const COOKIE = "Atai_session"
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 30 // 30 days
-
-// ─── Session resolution cache ────────────────────────────────────────────────
-// getCurrentUser is the hottest DB path: 2 checkouts (sessions + users) on
-// every authenticated request. A short-TTL in-memory cache collapses repeated
-// lookups for the same token into zero DB calls, relieving pool pressure that
-// previously caused MongoWaitQueueTimeoutError under moderate concurrency.
-//
-// Safety: keyed by token HASH (never the raw token), entries expire in 30s,
-// and the cache is invalidated on logout (destroyCurrentSession) so revocation
-// is still prompt. The cache only stores the user document, not the session —
-// a revoked session's next request simply misses the cache and re-queries.
-
-const SESSION_CACHE_MAX = 200
-const SESSION_CACHE_TTL_MS = 30_000
-
-interface CacheEntry {
-  user: UserDoc | null
-  expiresAt: number
-}
-
-const sessionCache = new Map<string, CacheEntry>()
-
-function cacheGet(key: string): CacheEntry | null {
-  const entry = sessionCache.get(key)
-  if (!entry) return null
-  if (Date.now() > entry.expiresAt) {
-    sessionCache.delete(key)
-    return null
-  }
-  return entry
-}
-
-function cacheSet(key: string, user: UserDoc | null): void {
-  // Evict oldest entries when the cache is full
-  if (sessionCache.size >= SESSION_CACHE_MAX) {
-    const oldest = sessionCache.keys().next().value
-    if (oldest) sessionCache.delete(oldest)
-  }
-  sessionCache.set(key, { user, expiresAt: Date.now() + SESSION_CACHE_TTL_MS })
-}
-
-function cacheInvalidate(key: string): void {
-  sessionCache.delete(key)
-}
-
-/** Drop every cached user for one account — used when sessions are revoked
- * (ban/suspend/delete/password change) so a cached principal can't keep
- * authorizing requests after its session rows are gone. */
-function cacheInvalidateUser(userId: string): void {
-  for (const [key, entry] of sessionCache) {
-    if (entry.user?.id === userId) sessionCache.delete(key)
-  }
-}
 
 /**
  * Cookie scope. A cookie's `Domain` must be a suffix of the host the browser
@@ -118,6 +65,7 @@ function isLocalHost(host: string): boolean {
  * observe never gets a DOWNGRADED cookie.
  */
 async function isSecureOrigin(): Promise<boolean> {
+  if (process.env.NODE_ENV === "production") return true
   const canonicalHttps = (process.env.NEXT_PUBLIC_APP_URL || "").startsWith("https://")
   let proto: string | null = null
   try {
@@ -181,30 +129,18 @@ async function getSessionToken(): Promise<string | null> {
   return jar.get(COOKIE)?.value ?? null
 }
 
-/** Resolve the current request's authenticated user, or null if there is no
- * valid, unexpired session. Never throws — callers decide how to respond to
- * an unauthenticated request. Uses a 30s in-memory cache keyed by token hash
- * to avoid 2 DB checkouts on every request. */
 export async function getCurrentUser(): Promise<UserDoc | null> {
   const token = await getSessionToken()
   if (!token) return null
   const tokenHash = hashToken(token)
 
-  // Fast path: cache hit — zero DB checkouts
-  const cached = cacheGet(tokenHash)
-  if (cached) return cached.user
-
-  // Slow path: resolve from DB (2 checkouts: sessions + users)
+  // Authoritative reads enforce revocations and account restrictions across instances.
   const col = await sessionsCol()
   const session = await col.findOne({ tokenHash, expiresAt: { $gt: new Date() } })
-  if (!session) {
-    cacheSet(tokenHash, null)
-    return null
-  }
+  if (!session) return null
   const user = await findUserById(session.userId)
-  const result = user ?? null
-  cacheSet(tokenHash, result)
-  return result
+  if (!user || user.banned || user.suspended) return null
+  return user
 }
 
 /** Returns the current user id, throwing-free — used by routes that must
@@ -220,10 +156,7 @@ export async function getUserId(): Promise<string | null> {
 export async function requireUser(): Promise<UserDoc> {
   const user = await getCurrentUser()
   if (!user) throw new AppError("UNAUTHORIZED")
-  if (user.banned || user.suspended) {
-    cacheInvalidateUser(user.id)
-    throw new AppError("UNAUTHORIZED")
-  }
+  if (user.banned || user.suspended) throw new AppError("UNAUTHORIZED")
   return user
 }
 
@@ -237,8 +170,6 @@ export async function requireAdmin(): Promise<UserDoc> {
 export async function destroyCurrentSession(): Promise<void> {
   const token = await getSessionToken()
   if (token) {
-    // Invalidate the session cache so the next request doesn't serve a stale user
-    cacheInvalidate(hashToken(token))
     const col = await sessionsCol()
     await col.deleteOne({ tokenHash: hashToken(token) })
   }
@@ -247,8 +178,7 @@ export async function destroyCurrentSession(): Promise<void> {
 
 /** Revoke every active session for a user — used on password change and
  * account deletion (spec section 6). */
-export async function destroyAllSessionsForUser(userId: string): Promise<void> {
+export async function destroyAllSessionsForUser(userId: string, session?: ClientSession): Promise<void> {
   const col = await sessionsCol()
-  await col.deleteMany({ userId })
-  cacheInvalidateUser(userId)
+  await col.deleteMany({ userId }, { session })
 }

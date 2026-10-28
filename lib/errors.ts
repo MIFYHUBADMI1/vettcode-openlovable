@@ -82,6 +82,7 @@ const STATUS_BY_CODE: Record<ErrorCode, number> = {
 export class AppError extends Error {
   code: ErrorCode
   status: number
+  retryAfterSeconds?: number
   constructor(code: ErrorCode, message?: string, status?: number) {
     super(message ?? ERROR_MESSAGES[code])
     this.code = code

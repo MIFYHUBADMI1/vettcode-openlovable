@@ -3,13 +3,15 @@ import { ok, handleRouteError } from "@/lib/api/respond"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
 import { issueAndSendVerificationEmail } from "@/lib/auth/verification"
 import { logger } from "@/lib/logging/logger"
+import { checkAuthRequest } from "@/lib/auth/request-limit"
 
 /**
  * Resend the verification email for the signed-in user (spec section 5).
  * Tightly rate-limited (3/hour) since each call sends a real email.
  */
-export async function POST() {
+export async function POST(req: Request) {
   try {
+    await checkAuthRequest(req, "resend_verification")
     const user = await requireUser()
     logger.info("api.auth.resend_verification", "requested", { userId: user.id })
     if (user.emailVerified) {

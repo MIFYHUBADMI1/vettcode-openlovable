@@ -1,6 +1,7 @@
 import "server-only"
 import { ProviderNotConfiguredError } from "../shared/errors"
 import { boundedTimeoutMs } from "../shared/http"
+import { getPaymentEnvironment } from "@/lib/env"
 
 /**
  * Atai Runtime — Dodo Payments adapter configuration (server-only).
@@ -26,10 +27,12 @@ export const DODO_ENVIRONMENT_BASE_URLS = {
 export const DEFAULT_DODO_TIMEOUT_MS = 30_000
 
 export function getDodoBaseUrl(): string {
-  return (
-    process.env.DODO_PAYMENTS_BASE_URL ||
-    DODO_ENVIRONMENT_BASE_URLS[getDodoEnvironment()]
-  )
+  const canonical = DODO_ENVIRONMENT_BASE_URLS[getDodoEnvironment()]
+  const override = process.env.DODO_PAYMENTS_BASE_URL
+  if (process.env.NODE_ENV === "production" && override && override.replace(/\/$/, "") !== canonical) {
+    throw new ProviderNotConfiguredError("dodo")
+  }
+  return override || canonical
 }
 
 /** The server-side Dodo Payments credential (missing → provider config problem). */
@@ -59,9 +62,7 @@ export function getDodoDefaultCheckoutProductId(): string | undefined {
 
 /** Dodo Payments environment: test_mode or live_mode. */
 export function getDodoEnvironment(): "test_mode" | "live_mode" {
-  const env = process.env.DODO_PAYMENTS_ENVIRONMENT
-  if (env === "live_mode") return "live_mode"
-  return "test_mode"
+  return getPaymentEnvironment()
 }
 
 /** Headers for a Dodo Payments API request: provider credential only. */

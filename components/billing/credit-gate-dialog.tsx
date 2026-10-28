@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import useSWR from "swr"
 import { Coins, Sparkles } from "lucide-react"
 import {
@@ -37,9 +37,11 @@ function optionLine(option: UpgradeOption): string {
 function OptionCard({
   option,
   returnPath,
+  coversShortfall,
 }: {
   option: UpgradeOption
   returnPath: string
+  coversShortfall: boolean
 }) {
   return (
     <div
@@ -71,7 +73,7 @@ function OptionCard({
         onBeforeCheckout={markPaymentHandoff}
         className="w-full shrink-0 sm:w-auto"
       >
-        Pay {price(option.priceUSD)} and continue
+        {coversShortfall ? `Pay ${price(option.priceUSD)} and continue` : `Add ${credits(option.credits)} credits`}
       </CheckoutButton>
     </div>
   )
@@ -87,30 +89,32 @@ export function CreditGateDialog({
   open,
   shortfall,
   onOpenChange,
+  checking = false,
+  resumeError = null,
+  onResume,
 }: {
   open: boolean
   shortfall: CreditShortfall | null
   onOpenChange: (open: boolean) => void
+  checking?: boolean
+  resumeError?: string | null
+  onResume?: () => void
 }) {
   const { session } = useSession()
-  const [returnPath, setReturnPath] = useState("/settings/billing")
-
-  // Set after mount: the path is per-visit, so baking it into the first render
-  // would make server and client markup disagree.
-  useEffect(() => {
-    setReturnPath(window.location.pathname)
-  }, [])
+  const returnPath = usePathname() ?? "/settings/billing"
 
   const required = shortfall?.required ?? null
   const query = required === null ? "" : `?required=${required}`
   const { data, error, isLoading } = useSWR<UpgradeAdvice>(
     open ? `/api/billing/upgrade-options${query}` : null,
     jsonFetcher,
-    { revalidateOnFocus: false, dedupingInterval: 30_000, keepPreviousData: true },
+    { revalidateOnFocus: true, dedupingInterval: 2_000 },
   )
 
-  const available = session?.credits.available ?? data?.available ?? null
-  const costKnown = data?.costKnown ?? required !== null
+  const available = session?.credits.available ?? data?.available ?? shortfall?.available ?? null
+  const costKnown = required !== null
+  const gap = required !== null && available !== null ? Math.max(0, required - available) : null
+  const funded = gap === 0
   const options = data?.options ?? []
   const resumePromise = shortfall?.request
     ? "Once the credits land you come straight back here and it carries on by itself."
@@ -118,7 +122,7 @@ export function CreditGateDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="gap-0 sm:max-w-md">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] gap-0 overflow-y-auto sm:max-w-lg">
         <DialogHeader className="pr-8">
           <div className="flex items-center gap-2 text-primary">
             <Coins className="size-4" aria-hidden />
@@ -130,23 +134,29 @@ export function CreditGateDialog({
               : "Add credits to continue"}
           </DialogTitle>
           <DialogDescription>
-            {costKnown && available !== null && data ? (
+            {funded ? "You now have enough credits to continue." : costKnown && available !== null ? (
               <>
-                This costs <strong className="font-semibold text-foreground tabular-nums">{credits(data.required ?? 0)}</strong>{" "}
+                This costs <strong className="font-semibold text-foreground tabular-nums">{credits(required ?? 0)}</strong>{" "}
                 credits. You have{" "}
                 <strong className="font-semibold text-foreground tabular-nums">{credits(available)}</strong>{" "}
                 available — that leaves you{" "}
-                <strong className="font-semibold text-foreground tabular-nums">{credits(data.shortfall)}</strong> short.
+                <strong className="font-semibold text-foreground tabular-nums">{credits(gap ?? 0)}</strong> short.
               </>
             ) : (
               shortfall?.message ??
-              `You're out of credits, so this can't start yet. Top up and it will run straight away.`
+              "Your balance does not cover this action. Add credits to continue."
             )}
           </DialogDescription>
         </DialogHeader>
 
         <div className="mt-4 flex flex-col gap-2.5">
-          {isLoading ? (
+          {checking ? (
+            <p role="status" className="rounded-xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground">
+              Confirming your credits. This resumes automatically when they arrive — you do not need to pay again.
+            </p>
+          ) : funded && shortfall?.request && onResume ? (
+            <Button onClick={onResume}>Continue {shortfall.action === "this" ? "your action" : shortfall.action}</Button>
+          ) : funded ? null : isLoading ? (
             <>
               <Skeleton className="h-[76px] rounded-xl" />
               <Skeleton className="h-[76px] rounded-xl" />
@@ -161,7 +171,7 @@ export function CreditGateDialog({
             </div>
           ) : (
             options.map((option) => (
-              <OptionCard key={`${option.kind}:${option.productId}`} option={option} returnPath={returnPath} />
+              <OptionCard key={`${option.kind}:${option.productId}`} option={option} returnPath={returnPath} coversShortfall={gap !== null && option.credits >= gap} />
             ))
           )}
 
@@ -172,6 +182,7 @@ export function CreditGateDialog({
           ) : null}
         </div>
 
+        {resumeError ? <p role="alert" className="mt-3 text-sm text-destructive">{resumeError}</p> : null}
         <p className="mt-3 text-xs leading-relaxed text-muted-foreground">{resumePromise}</p>
 
         <DialogFooter className="mt-4 sm:justify-between">

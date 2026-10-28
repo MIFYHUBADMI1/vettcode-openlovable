@@ -10,6 +10,7 @@ import { toToolOutcome } from "./errors"
 import { isAbortTimeoutError } from "@/lib/api/upstream-error"
 import { cofounderMessage, appendCofounderMessages } from "./conversation"
 import type { CofounderConversationMessage, ToolContext, ToolDefinition } from "./types"
+import { aiSignal } from "@/lib/api/ai-context"
 
 /**
  * The bounded Co-founder agent loop (spec sections 38–40, 59).
@@ -184,7 +185,7 @@ export async function runAgentTurn(input: AgentTurnInput): Promise<AgentTurnResu
       maxRetries: 2,
       // One bound for the whole multi-step turn. Without it a queued free-tier
       // model can hold the request open for minutes and the panel just spins.
-      abortSignal: AbortSignal.timeout(AGENT_TURN_TIMEOUT_MS),
+      abortSignal: aiSignal(AbortSignal.timeout(AGENT_TURN_TIMEOUT_MS)),
     })
 
     finalText = result.text

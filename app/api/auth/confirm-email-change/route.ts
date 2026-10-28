@@ -4,6 +4,8 @@ import { hashToken } from "@/lib/auth/crypto"
 import { normalizeEmail } from "@/lib/auth/users"
 import { AppError } from "@/lib/errors"
 import { logger } from "@/lib/logging/logger"
+import { checkAuthRequest } from "@/lib/auth/request-limit"
+import { readAuthBody } from "@/lib/api/request-body"
 
 /**
  * Confirms an email change by consuming the verification token sent to the
@@ -11,14 +13,15 @@ import { logger } from "@/lib/logging/logger"
  */
 export async function POST(req: Request) {
   try {
-    const body = (await req.json().catch(() => ({}))) as { token?: string }
-    const token = body.token ?? ""
-    if (!token) return fail("VERIFICATION_INVALID", "Invalid or expired link.", 400)
+    await checkAuthRequest(req, "confirm_email_change")
+    const body = await readAuthBody(req)
+    const token = typeof body.token === "string" ? body.token : ""
+    if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return fail("VERIFICATION_INVALID", "Invalid or expired link.", 400)
 
     const tokenCol = await verificationTokensCol()
     const tokenHash = hashToken(token)
     const record = await tokenCol.findOneAndUpdate(
-      { tokenHash, purpose: "email_change", usedAt: { $exists: false } },
+      { tokenHash, purpose: "email_change", usedAt: { $exists: false }, expiresAt: { $gt: new Date() } },
       { $set: { usedAt: Date.now() } },
       { returnDocument: "after" },
     )

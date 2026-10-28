@@ -10,12 +10,15 @@ import { getAppUrl, isSmtpConfigured } from "@/lib/env"
 import { normalizeEmail } from "@/lib/auth/users"
 import { AppError } from "@/lib/errors"
 import { logger } from "@/lib/logging/logger"
+import { checkAuthRequest } from "@/lib/auth/request-limit"
+import { readAuthBody } from "@/lib/api/request-body"
 
 /** Request an email change — sends a confirmation link to the new email. */
 export async function POST(req: Request) {
   try {
+    await checkAuthRequest(req, "change_email")
     const user = await requireUser()
-    const body = (await req.json().catch(() => ({}))) as { newEmail?: string }
+    const body = await readAuthBody(req)
 
     if (!body.newEmail || typeof body.newEmail !== "string") {
       return fail("VALIDATION", "Please provide a new email address.", 422)
@@ -24,7 +27,7 @@ export async function POST(req: Request) {
     const newEmail = normalizeEmail(body.newEmail)
 
     // Basic email format check
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+    if (newEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
       return fail("VALIDATION", "Please enter a valid email address.", 422)
     }
 

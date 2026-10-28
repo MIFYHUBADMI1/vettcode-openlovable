@@ -447,13 +447,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
               await store.updateBuildRun(run.id, { status: "succeeded", completedAt: Date.now() })
               await reconcileCredits(userId, run.creditsReserved, run.creditsReserved, run.id)
 
-              // Check referral milestone after successful build
-              const qualifyingUsage = run.creditsConsumed ?? run.creditsReserved
-              if (qualifyingUsage > 0) {
-                await processMilestoneCheck(userId, qualifyingUsage).catch((e) => {
-                  logger.error("api.projects.status", "referral milestone check failed", { id, error: (e as Error).message })
-                })
-              }
+              await processMilestoneCheck(userId).catch((e) => {
+                logger.error("api.projects.status", "referral milestone check failed", { id, error: (e as Error).message })
+              })
             }
 
             const updated = await store.getProject(id)
@@ -502,9 +498,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
               })
               return false
             })
-            if (released) {
-              await store.appendEvent(id, event("build", "Build failed. Credits were refunded.", "error"))
-            }
+            // Keep both states active until the idempotent refund succeeds so polling can retry.
+            if (!released) return fail("DATABASE_UNAVAILABLE", "Credit recovery is pending. Please retry shortly.", 503)
+            await store.appendEvent(id, event("build", "Build failed. Credits were refunded.", "error"))
           }
           if (failedRun) {
             await store.updateBuildRun(failedRun.id, { status: "failed", completedAt: Date.now(), error: status.error })

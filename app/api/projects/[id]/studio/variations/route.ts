@@ -28,7 +28,11 @@ const BodySchema = z
   })
   .strict()
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+import { withAiProtection } from "@/lib/api/ai-protection"
+
+export const POST = withAiProtection("studio", post)
+
+async function post(req: Request, { params }: { params: Promise<{ id: string }> }) {
   let charged = false
   let userId = ""
   let projectId = ""

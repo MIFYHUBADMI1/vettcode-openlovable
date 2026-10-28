@@ -1,16 +1,17 @@
 import { requireUser } from "@/lib/auth/session"
 import { store } from "@/lib/store/store"
-import { ok, fail, handleRouteError } from "@/lib/api/respond"
+import { getAvailableCredits } from "@/lib/billing/credit-service"
+import { ok, fail, failInsufficientCredits, handleRouteError } from "@/lib/api/respond"
 import { autoLaunchBuild } from "@/lib/analysis/pipeline"
 import { prepareRequestedProjectId } from "@/lib/projects/project-actions"
 
 /**
  * POST /api/projects/[id]/launch
  *
- * Transitions a project from "plan_ready" → build.
- * Called when the founder clicks "Submit Plan & Start Building" on the
- * Collaborate page. No credits are reserved here — autoLaunchBuild()
- * handles the full credit reservation + Totalum launch flow.
+ * Starts a build for a project whose plan is ready, waiting for the launcher
+ * to acknowledge the provider handoff. No credits are reserved here —
+ * autoLaunchBuild() owns the atomic build-slot claim and the reservation, so
+ * this route can safely be replayed after a founder tops up.
  *
  * AC 9, 10, 12 (Requirement 2).
  */
@@ -28,8 +29,7 @@ export async function POST(
       return fail("UNAUTHORIZED_PROJECT_ACCESS", "Project not found.", 404)
     }
 
-    // AC 12: 409 if not in plan_ready state
-    if (project.state !== "plan_ready") {
+    if (project.totalumProjectId || !["plan_ready", "awaiting_build_confirmation"].includes(project.state)) {
       return fail(
         "INVALID_STATE",
         `This project cannot be launched from its current state (${project.state}). It must be in 'plan_ready' state.`,
@@ -46,15 +46,17 @@ export async function POST(
       return fail(preparedProjectId.code, preparedProjectId.message, preparedProjectId.status)
     }
 
-    // Transition to awaiting_build_confirmation while autoLaunchBuild runs.
-    // autoLaunchBuild will move it to "building" (or keep at plan_ready on failure).
-    await store.updateProject(id, { state: "awaiting_build_confirmation" })
-
-    // Fire-and-forget — autoLaunchBuild handles credit reservation, Totalum
-    // launch, and all state transitions from awaiting_build_confirmation onward.
-    void autoLaunchBuild(id)
-
-    return ok({ state: "awaiting_build_confirmation" })
+    // The launcher claims the build slot atomically; never reopen it with an unconditional state write.
+    await autoLaunchBuild(id)
+    const updated = await store.getProject(id)
+    if (updated?.state === "building") return ok({ state: updated.state })
+    if (updated?.creditBlock) {
+      const available = await getAvailableCredits(user.id)
+      if (available < updated.creditBlock.required) {
+        return failInsufficientCredits({ required: updated.creditBlock.required, available })
+      }
+    }
+    return fail("BUILD_NOT_STARTED", "The build could not start. Please try again.", 409)
   } catch (e) {
     return handleRouteError("api.projects.launch", e)
   }

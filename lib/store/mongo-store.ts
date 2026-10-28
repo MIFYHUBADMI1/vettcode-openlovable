@@ -68,14 +68,7 @@ export class MongoStore implements DataStore {
   }
 
   async getBalance(userId: string): Promise<number> {
-    const now = Date.now()
-    const cached = this.cacheGet<number>(`bal:${userId}`, now)
-    if (cached !== undefined) return cached
-
-    // Delegate to credit-service
-    const balance = await getAvailableCredits(userId)
-    this.cacheSet(`bal:${userId}`, balance, now)
-    return balance
+    return getAvailableCredits(userId)
   }
 
   async listTransactions(userId: string, limit = 100): Promise<CreditTransaction[]> {
@@ -281,7 +274,7 @@ export class MongoStore implements DataStore {
     }
   }
 
-  async claimBuildSlot(id: string, patch: Partial<MirrorProject>): Promise<MirrorProject | null> {
+  async claimBuildSlot(id: string, patch: Partial<MirrorProject>, fromStates?: ProjectState[]): Promise<MirrorProject | null> {
     const col = await projectsCol()
     const updatedAt = Date.now()
     // The `state: { $nin: [...] }` filter and the `$set` transition happen
@@ -290,7 +283,7 @@ export class MongoStore implements DataStore {
     // a provider run — the second one's filter simply won't match once the
     // first has applied its update.
     const result = await col.findOneAndUpdate(
-      { id, state: { $nin: ["building", "deploying"] } },
+      { id, state: fromStates ? { $in: fromStates } : { $nin: ["building", "deploying"] } },
       { $set: { ...patch, updatedAt } },
       { returnDocument: "after" },
     )

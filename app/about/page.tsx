@@ -1,65 +1,63 @@
 import type { Metadata } from "next"
-import Link from "next/link"
-import { buttonVariants } from "@/components/ui/button"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { SITE_URL } from "@/lib/env"
-import { AboutContent } from "./about-content"
+import { ABOUT_FAQ, AboutContent } from "./about-content"
 
-/* ═══════════════════════════════════════════════════════════════
-   METADATA
-   ═══════════════════════════════════════════════════════════════ */
+const description = "Why Atai exists: helping more people start, run, and grow online businesses with AI teams. Meet founder Masereka Adorable Kimulya from Kasese, Uganda."
 
 export const metadata: Metadata = {
-  title: "About Atai | The AI Business-Building Platform",
-  description:
-    "Atai gives founders an AI co-founder, specialist teams, technology and infrastructure to turn ideas into real businesses — then build, launch, operate and scale them from one platform.",
+  title: "About Atai: Our Mission, AI Teams & Founder",
+  description,
   alternates: { canonical: "/about" },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: `${SITE_URL}/about`,
     siteName: "Atai",
-    title: "About Atai | The AI Business-Building Platform",
-    description:
-      "You bring the vision. Atai brings the team. From idea to business to growth.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "About Atai — The AI Business-Building Platform" }],
+    title: "About Atai: Our Mission, AI Teams & Founder",
+    description,
+    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "Atai — AI teams for your business" }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "About Atai | The AI Business-Building Platform",
-    description: "You bring the vision. Atai brings the team. From idea to business to growth.",
-    images: [{ url: "/og-image.png", width: 1200, height: 630, alt: "About Atai — The AI Business-Building Platform" }],
+    title: "About Atai: Our Mission, AI Teams & Founder",
+    description,
+    images: ["/og-image.png"],
   },
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   PAGE (server shell — metadata only)
-   ═══════════════════════════════════════════════════════════════ */
-
 export default function AboutPage() {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "AboutPage",
+        "@id": `${SITE_URL}/about#webpage`,
+        name: "About Atai: Our Mission, AI Teams & Founder",
+        description,
+        url: `${SITE_URL}/about`,
+        inLanguage: "en",
+        isPartOf: { "@id": `${SITE_URL}/#website` },
+        about: { "@id": `${SITE_URL}/#organization` },
+        mentions: { "@id": `${SITE_URL}/founder#person` },
+      },
+      {
+        "@type": "FAQPage",
+        "@id": `${SITE_URL}/about#questions`,
+        mainEntity: ABOUT_FAQ.map(({ q, a }) => ({
+          "@type": "Question",
+          name: q,
+          acceptedAnswer: { "@type": "Answer", text: a },
+        })),
+      },
+    ],
+  }
+
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "WebPage",
-            name: "About Atai",
-            description: "Atai is the AI business-building platform that gives founders an AI co-founder, specialist teams, technology and infrastructure to turn ideas into real businesses.",
-            url: `${SITE_URL}/about`,
-            isPartOf: { "@type": "WebSite", name: "Atai", url: SITE_URL },
-            about: {
-              "@type": "Organization",
-              name: "Atai",
-              description: "AI-powered business-building platform for founders.",
-              brand: { "@type": "Organization", name: "ATAI Enterprises", url: "https://atai.ink" },
-            },
-          }),
-        }}
-      />
-      <main className="workspace-environment min-h-svh overflow-hidden bg-background text-foreground">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, "\\u003c") }} />
+      <main className="workspace-environment min-h-svh overflow-x-clip bg-background text-foreground">
         <span className="workspace-signal" aria-hidden="true" />
         <SiteHeader activePage="/about" />
         <AboutContent />

@@ -8,7 +8,11 @@ import { generateWithRetry, logAIFailure } from "@/lib/resources/ai-retry"
 import { refuseInsufficientCredits } from "@/lib/api/credit-refusal"
 import { RESOURCES_CREDIT_COSTS } from "@/lib/resources/credit-costs"
 
-export async function POST(
+import { withAiProtection } from "@/lib/api/ai-protection"
+
+export const POST = withAiProtection("resources", post)
+
+async function post(
   req: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
