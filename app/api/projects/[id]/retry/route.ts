@@ -4,6 +4,11 @@ import { ok, fail, failInsufficientCredits, handleRouteError } from "@/lib/api/r
 import { retryProjectStep } from "@/lib/projects/pipeline-recovery"
 import { logger } from "@/lib/logging/logger"
 import { getAvailableCredits } from "@/lib/billing/credit-service"
+import { checkAiQuota } from "@/lib/api/ai-quota"
+
+/** States whose manual retry restarts an Understand/Plan AI run. Build and
+ * launch retries are provider work and stay on their own quotas. */
+const AI_RESTART_STATES = new Set(["created", "analysis_failed", "plan_failed"])
 
 /**
  * POST /api/projects/[id]/retry
@@ -30,6 +35,9 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       const available = await getAvailableCredits(user.id)
       if (available < project.creditBlock.required) return failInsufficientCredits({ required: project.creditBlock.required, available })
     }
+    // A manual restart of Understand/Plan costs real provider and model work;
+    // it draws from the same per-account quota as a fresh analysis request.
+    if (AI_RESTART_STATES.has(project.state)) await checkAiQuota("analysis", user.id)
     const result = await retryProjectStep(id)
     if (!result.ok) {
       logger.warn("api.projects.retry", "retry rejected", {

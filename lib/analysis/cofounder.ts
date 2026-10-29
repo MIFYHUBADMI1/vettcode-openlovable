@@ -1,5 +1,5 @@
 import type { ApplicationSpecification } from "@/lib/types/specification"
-import { PLAN_SECTIONS, sectionStatus, computePlanHealth, isPlaceholderValue, clampPlanSectionValue, type PlanSectionDef } from "@/lib/analysis/plan-sections"
+import { PLAN_SECTIONS, sectionStatus, computePlanHealth, isPlaceholderValue, clampPlanSectionValue, readCombinedFoundation, type PlanSectionDef } from "@/lib/analysis/plan-sections"
 import { PlanAnalysisSchema, type PlanAnalysis, type PlanFinding, type PlanProposal } from "@/lib/types/plan-analysis"
 import { SECTION_DEPENDENCIES } from "@/lib/types/plan-analysis"
 import type { ConversationMessage, ProjectPreferences } from "@/lib/types/project"
@@ -76,6 +76,13 @@ export function buildSectionFocusBlock(sectionId: string, spec: ApplicationSpeci
   return [
     `FOCUS SECTION: ${def.label} (${def.group})`,
     `Current content: ${current}`,
+    sectionId === "marketingPlan"
+      ? "This is ONE combined go-to-market section: cover marketing, launch and growth together in one coherent plan."
+      : sectionId === "designDirection"
+        ? "This is ONE combined design section: cover brand identity, visual system, typography, theme and responsive behaviour together in one coherent direction."
+        : sectionId === "vision"
+          ? "This is ONE combined foundation section: cover the vision, purpose, problem and solution together in one coherent story."
+          : "",
     related.length ? `Sections commonly affected by this one: ${related.join(", ")}` : "",
   ]
     .filter(Boolean)
@@ -136,6 +143,7 @@ export function buildCollaborateContext(input: CollaborateContextInput): string 
   const { spec, preferences, decisions, findings, conversation, activeSection, historyLimit = 12, founderVision, sourceUrl } = input
   const health = computePlanHealth(spec)
   const missing = health.sections.filter((x) => x.status !== "complete").map((x) => x.label)
+  const foundation = readCombinedFoundation(spec)
 
   const blocks: string[] = []
 
@@ -145,7 +153,7 @@ export function buildCollaborateContext(input: CollaborateContextInput): string 
       `Name: ${spec.title}`,
       `Type: ${spec.applicationType}`,
       `Description: ${spec.description}`,
-      `Purpose: ${spec.purpose}`,
+      foundation ? `Vision & foundation: ${briefLine(foundation)}` : "",
       founderVision ? `Founder vision (original words): ${founderVision}` : "",
       sourceUrl ? `Reference URL: ${sourceUrl}` : "",
       preferencesBlock(preferences),
@@ -217,51 +225,35 @@ export function buildCollaborateContext(input: CollaborateContextInput): string 
  * production-ready, comprehensive content while keeping token costs reasonable
  * through template reuse. */
 const SECTION_DETAIL_TEMPLATES = {
-  problem: `When working on Problem, provide a COMPLETE problem analysis:
+  vision: `When working on Vision, Purpose, Problem & Solution, write ONE combined foundation — never three disconnected mini-sections. Keep the finished foundation under about 7,000 characters so nothing is trimmed from the end:
 
-## Core Problem Statement
+## Vision
+Where this business is going in the long run and what it becomes if it works. 2-3 sentences, specific to this product.
+
+## Purpose
+Why this business exists and what it is here to do for its customers — the mission in plain language.
+
+## Problem
+### Core Problem Statement
 2-3 clear sentences defining the fundamental problem.
+### Impact & Pain Points
+3-5 specific bullets on how this problem hurts the target user: what breaks down, what gets delayed, what costs more than it should, what risk or frustration exists.
+### Current Alternatives
+2-3 bullets on how people solve this today and why those solutions fall short.
+### The Opportunity
+Why now — what market or technology shift makes this solvable.
 
-## Impact & Pain Points
-3-5 specific bullets on how this problem hurts the target user:
-- What breaks down?
-- What gets delayed?
-- What costs more than it should?
-- What frustration or risk exists?
+## Solution
+### Core Solution
+2-3 sentences: what this product does to solve the problem.
+### Key Differentiators
+3-5 bullets on what makes this solution unique, better, or faster than the alternatives.
+### User Benefits
+3-5 specific bullets on the tangible outcomes users get (time, money, new capability, risk removed).
+### How It Works
+2-3 sentences on the high-level approach; explain what the product DOES, not just what it IS.
 
-## Current Alternatives
-2-3 bullets on how people solve this today and why those solutions fail or fall short.
-
-## The Opportunity
-1 paragraph: Why now? What changed that makes this solvable? What market or tech shift creates the opening?
-
-## Success Metrics  
-2-3 bullets: How will we know the problem is solved? What changes for users?
-
-Format with markdown. Be specific — no generic business-speak.`,
-
-  solution: `When working on Solution, provide a COMPLETE solution breakdown:
-
-## Core Solution
-2-3 sentences: What does this product do to solve the problem?
-
-## Key Differentiators
-3-5 bullets: What makes this solution unique, better, or faster than alternatives?
-
-## User Benefits
-3-5 specific bullets: What tangible outcomes do users get?
-- Time saved?
-- Money saved?
-- New capability unlocked?
-- Risk eliminated?
-
-## How It Works (High-Level)
-2-3 sentences on the technical or operational approach. Stay high-level unless asked for depth.
-
-## Why This Will Work
-2-3 sentences: Prior art, validation, or proof points that this approach is sound.
-
-Be specific about what the product DOES, not just what it IS.`,
+Be specific — no generic business-speak.`,
 
   features: `When working on Key Features, provide DETAILED feature specs that an AI builder can follow:
 
@@ -338,90 +330,54 @@ What happens when a user cancels? Data retention? Refund policy?
 
 Be specific — this guides payment integration and subscription logic in the built app.`,
 
-  brandIdentity: `When working on Brand & Visual Identity, provide:
+  marketingPlan: `When working on the Marketing Plan, write ONE combined go-to-market plan that covers marketing, launch AND growth together — never three disconnected mini-plans. Keep the finished plan under about 7,000 characters so nothing is trimmed from the end:
 
-## Brand Colors
+## Positioning & Message
+Who the product is for and the one message that makes them care. Ground it in the target customers and value proposition already in the plan.
 
-**Primary Brand Color**: Hex code + description (e.g., #3B82F6 — bright blue, energetic and trustworthy)
+## Acquisition Channels
+For EACH channel (minimum 3), name it and give a concrete tactic this business can actually run:
+- **Channel** — tactic — first action — effort/cost — the signal it works
+Cover owned (content, SEO, community), earned (press, partners, referrals) and paid — say why each fits THIS business.
 
-**Secondary/Accent Color**: Hex code + use case
+## Launch Sequence
+### Pre-launch (2-4 weeks out)
+Waitlist or pilot, assets to prepare, who to line up, what to test.
+### Launch week
+Day-by-day actions, where to announce, what to measure.
+### First 30 days
+What to double down on, what to kill, the first traction milestone.
 
-**Neutral Palette**: Background, surface, border colors (light mode and dark mode if applicable)
+## Growth After Launch
+- Retention: what makes customers come back?
+- Referral or network loop: how do existing customers bring new ones?
+- Expansion: upgrades, new segments, or new channels?
+- Content or product compounding: what asset keeps paying off?
+- 90-day milestones with numbers.
 
-**Semantic Colors**: Success (green), warning (yellow), error (red), info (blue) — specify hex codes
+## Metrics & Budget
+The 3-5 numbers that prove this plan is working, plus an honest monthly budget or time commitment.
 
-## Logo & Mark
+Be specific to THIS business — real channel names, real tactics, real numbers where the plan supports them. No generic marketing advice.`,
 
-**Logo Style**: Wordmark? Icon + text? Symbol only?
+  designDirection: `When working on the Design Direction, write ONE combined design direction covering brand identity, the visual system, typography, theme AND responsive behaviour together — never disconnected mini-sections. Keep the finished direction under about 7,000 characters so nothing is trimmed from the end:
 
-**Logo Personality**: Minimal? Bold? Playful? Professional? Technical?
+## Brand Identity
+The brand's personality in 3-5 words and what each implies visually. Logo/mark approach and favicon. Imagery and graphic style (illustration vs photography, shapes, icon style).
 
-**Favicon Approach**: Letter? Icon? Abstract mark?
-
-## Visual Personality
-
-Choose 3-5 words that describe the brand's visual feel:
-- Modern, minimal, clean?
-- Bold, vibrant, energetic?
-- Serious, professional, trustworthy?
-- Friendly, approachable, warm?
-
-## Imagery & Graphics Style
-
-- Illustrations? Photos? Abstract shapes? Icons?
-- Rounded corners? Sharp edges?
-- Shadows and depth? Flat design?
-
-Be specific — these choices directly affect the generated UI.`,
-
-  themePreferences: `When working on Theme & Appearance, provide:
-
-## Color Theme
-
-**Default Theme**: Light / Dark / System (auto-switch based on OS)
-
-**Theme Options for Users**: 
-- Should users be able to toggle light/dark mode? 
-- Fixed theme or user choice?
+## Visual System
+A concrete colour palette with hex codes: primary, accent, neutrals (background, surface, border) for light and dark, plus semantic success/warning/error/info. UI style (minimal, modern SaaS, glass, bold), component density (compact, comfortable, spacious), corner radius, and shadow/depth approach. Say how these choices show up in real components (tables, forms, cards).
 
 ## Typography
+Heading, body and mono font families (real font names available on Google Fonts or system fonts), weights for H1-H3 and body, line-height, and tracking. State the type scale and where each is used.
 
-**Heading Font**: Font family name (e.g., "Inter", "Poppins", "System UI")
-- Weight for H1, H2, H3?
-- Tracking (tight, normal, wide)?
+## Theme & Appearance
+Default theme (light, dark, or system), whether users can toggle it, and how both modes stay legible with the palette above.
 
-**Body Font**: Font family name
-- Weight: 400 (normal) or 500 (medium)?
-- Line height: relaxed (1.6) or tight (1.4)?
+## Responsive & Devices
+How layouts adapt on phones, tablets and desktop: navigation pattern per breakpoint, how data tables and dashboards reflow, touch targets, and which surfaces are desktop-only. Name the worst-case screen the design must survive.
 
-**Monospace Font** (for code, numbers, technical data):
-Font family (e.g., "Fira Code", "JetBrains Mono", "Courier")
-
-## UI Style
-
-**Design System Approach**:
-- Minimal (Apple/Linear style — lots of whitespace, subtle borders)?
-- Glassmorphism (frosted glass, backdrop blur, translucent surfaces)?
-- Modern SaaS (shadcn/ui, Tailwind style — clean, functional, accessible)?
-- Bold/Vibrant (high contrast, saturated colors, strong shadows)?
-
-**Component Density**:
-- Compact (tight spacing, small padding)?
-- Comfortable (balanced)?
-- Spacious (generous whitespace)?
-
-**Radius/Roundness**:
-- Sharp (no border radius)?
-- Subtle (small radius, 4-6px)?
-- Rounded (medium radius, 8-12px)?
-- Pill-shaped (large radius, 16px+)?
-
-**Shadows & Depth**:
-- Flat (no shadows)?
-- Subtle (soft shadows)?
-- Elevated (pronounced depth)?
-
-Be specific — the builder will apply these choices to every component.`,
+Be specific — the builder applies this direction to every screen.`,
 
   flows: `When working on User Flows, provide DETAILED flow descriptions:
 
@@ -611,6 +567,9 @@ How you behave:
 - **Runtime integration awareness**: When the founder describes features needing AI, messaging, payments, maps, search, or similar capabilities, ground it in the ATAI RUNTIME CAPABILITIES from the context. Name the Atai capability, explain what it will do for the product, and reflect it in the "Runtime & Integrations" section when proposing updates. Never invent capabilities not listed in the context.
 - **Atai SDK usage**: If the founder asks how to wire runtime features, follow HOW TO CALL ATAI in the context: @atai-group/sdk, ATAI_API_KEY, origin https://atai.ink, path /api/runtime/v1. Never invent endpoints, SDK names, or provider keys.
 - **SEO specificity**: When working on "SEO & Search", propose concrete keywords derived from what this product actually does and who it serves. Map keywords to specific pages, specify metadata, cover sitemap/robots, and include Google Search Console verification. No generic marketing fluff.
+- **Marketing plan specificity**: "Marketing Plan" is ONE combined section covering marketing, launch AND growth. Always give the whole go-to-market story together — acquisition channels with concrete tactics, a phased launch sequence, and post-launch growth loops with milestones. Never answer with only marketing, only launch, or only growth, and never generic advice.
+- **Design specificity**: "Design Direction" is ONE combined section covering brand identity, visual system, typography, theme AND responsive behaviour. Always give the whole direction together — a palette with hex codes, real font names with weights, UI style and density, the light/dark strategy, and per-device behaviour. Never answer with only one of those pieces, and never generic "modern and clean" advice.
+- **Foundation specificity**: "Vision, Purpose, Problem & Solution" is ONE combined section. Always give the whole foundation together — the long-term vision, the mission, a concrete problem statement with who feels it, and how the product solves it. Never answer with only one of them, and never generic business-speak.
 - **Plain language**: Use business-friendly language. No technical jargon unless the founder asks for it.
 - **Scannable formatting**: Use markdown (## headings, ### subheadings, **bold** labels, bullet lists). For reviews, one heading per topic with 2-4 bullets. If you use tables, put blank lines before and one row per line—never dense pipe tables on one line.
 - **Founder decides**: Advise, recommend, and propose — never pretend to have already changed anything.
@@ -675,7 +634,10 @@ Rules:
 - Include 3-8 findings covering the most consequential issues and at most 2 genuine strengths.
 - Include at most 3 proposals — only where a concrete, well-founded improvement is possible from the existing context.
 - Severity meanings: "gap" = section missing entirely, "weakness" = present but vague/broad/risky, "strength" = solid, keep it up.
-- When reviewing "Runtime & Integrations", measure the section against the ATAI RUNTIME CAPABILITIES context: a generic infrastructure list (storage, websockets, third-party APIs) that does not name @atai-group/sdk, ATAI_API_KEY, /api/runtime/v1, and catalog capabilities is a weakness — propose a rewrite. Flag invented capabilities as weaknesses, and treat needed-but-missing capabilities as gaps.`
+- When reviewing "Runtime & Integrations", measure the section against the ATAI RUNTIME CAPABILITIES context: a generic infrastructure list (storage, websockets, third-party APIs) that does not name @atai-group/sdk, ATAI_API_KEY, /api/runtime/v1, and catalog capabilities is a weakness — propose a rewrite. Flag invented capabilities as weaknesses, and treat needed-but-missing capabilities as gaps.
+- "Marketing Plan" is ONE combined section: a proposal for it must cover marketing, launch AND growth together (acquisition channels, a phased launch sequence, and post-launch growth loops with milestones) — never only one of the three and never a single shallow paragraph.
+- "Design Direction" is ONE combined section: a proposal for it must cover brand identity, the visual system (palette with hex codes, UI style, density, radius, shadows), typography with real font names and weights, the light/dark theme strategy, AND responsive behaviour per device — never only one of those pieces and never generic "modern and clean" advice.
+- "Vision, Purpose, Problem & Solution" is ONE combined section: a proposal for it must cover the vision, the mission, a concrete problem statement and the solution with differentiators together — never only one of those parts and never generic business-speak.`
 
 // ─── Response parsing ─────────────────────────────────────────────────────────
 
@@ -886,9 +848,12 @@ You will receive the project's compact plan brief (every section, one line each)
 
 Write the complete replacement text for the focus section:
 - Business language, concrete and specific to THIS business — no generic filler, no technical jargon.
-- 2-5 short paragraphs or tight bullet points. This is a founder's plan, not an essay.
+- 2-5 short paragraphs or tight bullet points, unless a section-specific instruction below requires a fuller multi-part plan. This is a founder's plan, not an essay.
 - For the "Runtime & Integrations" section: write THIS product's Atai runtime contract, not a generic architecture list. Always include (1) @atai-group/sdk, (2) ATAI_API_KEY that Atai provisions for unified access, (3) origin https://atai.ink and path /api/runtime/v1, (4) only catalog capabilities this product genuinely needs, each named as capability id and SDK call (e.g. ai.text / atai.ai.chat) plus one sentence on what it does here. Never list generic infrastructure (data storage, file storage, websockets, background jobs, admin dashboards, logging, unnamed third-party APIs). Never mention OpenAI, Stripe, Resend, or other provider keys. End-user sign-in stays the app's built-in auth. If no catalog capability applies, say so and still name the SDK and ATAI_API_KEY.
 - For the "SEO & Search" section: derive everything from the brief — target keywords from what the product actually does and who it serves, the pages those keywords map to, on-page metadata (titles and descriptions), whether a blog or content pages genuinely help THIS business, local or niche directories if relevant, and verifying the deployed domain in Google Search Console. Concrete and specific — never generic SEO advice.
+- For the "Marketing Plan" section: ONE combined, detailed go-to-market plan covering marketing, launch AND growth. Use markdown headings and include (1) positioning and message, (2) at least three acquisition channels with concrete tactics and the signal each works, (3) a phased launch sequence — pre-launch, launch week, first 30 days, (4) post-launch growth loops (retention, referrals, expansion, content compounding) with 90-day milestones, and (5) the 3-5 metrics and honest budget/time commitment that judge the plan. Never write a single shallow paragraph and never split it into separate marketing, launch and growth plans. Keep the whole plan under about 7,000 characters so the end is never trimmed.
+- For the "Design Direction" section: ONE combined design direction covering brand identity and personality, a colour palette with hex codes (primary, accent, neutrals and semantic colours), the visual system (UI style, density, radius, shadows), typography (real heading/body/mono font names with weights and type scale), theme (default light/dark/system and whether users can toggle), and responsive behaviour per device including the worst-case screen. Use markdown headings; never cover only one of those pieces and never give generic "modern and clean" advice. Keep it under about 7,000 characters so the end is never trimmed.
+- For the "Vision, Purpose, Problem & Solution" section: ONE combined foundation in a single coherent story. Use markdown headings and include (1) the long-term vision, (2) the mission and why the business exists, (3) a concrete problem statement — who feels it, what breaks down, what it costs, and how people cope today — and (4) how this product solves it, why it is different, and the tangible outcomes users get. Never write only one of those parts and never generic business-speak. Keep it under about 7,000 characters so the end is never trimmed.
 - If the plan lacks information you would need, choose sensible defaults consistent with the brief rather than asking questions — the founder can edit anything afterwards.
 - Same language as the plan brief.
 

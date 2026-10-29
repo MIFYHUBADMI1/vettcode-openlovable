@@ -51,7 +51,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     const user = await requireUser()
     const { id } = await params
 
-    const fetcher = singleFlight<Response>(`api.projects.get:${id}`)
+    // Per-caller key: the shared response is the owner's project payload, so
+    // concurrent requests from different users must not share an in-flight
+    // closure (the ownership check inside would only gate the first caller).
+    const fetcher = singleFlight<Response>(`api.projects.get:${user.id}:${id}`)
     return fetcher(async () => {
       const project = await store.getProject(id)
       if (!project || project.userId !== user.id)

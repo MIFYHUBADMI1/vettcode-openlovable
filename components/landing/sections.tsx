@@ -60,6 +60,27 @@ const AUDIENCE = [
   { icon: Brain, title: "Small teams", body: "Work with specialized AI teams while staying in charge of your business." },
 ]
 
+const DIFFERENTIATION = [
+  {
+    icon: Users,
+    title: "Instead of hiring a full team",
+    tradeoff: "Salaries, hiring, and management come before anything reaches customers.",
+    atai: "Specialized AI teams start from your plan and cover building, operations, and marketing in one place.",
+  },
+  {
+    icon: Link2,
+    title: "Instead of stitching separate tools",
+    tradeoff: "A site builder, automations, and marketing tools each need setup and do not share context.",
+    atai: "Your plan, website or product, daily operations, and marketing stay connected to the same business.",
+  },
+  {
+    icon: Rocket,
+    title: "Instead of putting it off",
+    tradeoff: "Waiting until you can afford help or feel ready leaves the idea on hold.",
+    atai: "Start with a skill, an idea, a website, or a codebase — and stay in charge as the business grows.",
+  },
+]
+
 export function LandingTrust() {
   return (
     <section className="border-y border-border/60 bg-card/30 py-12">
@@ -72,6 +93,38 @@ export function LandingTrust() {
             <span key={item} className="rounded-full border border-border bg-background px-3 py-1.5 text-sm text-muted-foreground">
               {item}
             </span>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+export function LandingDifferentiation() {
+  return (
+    <section id="why-atai" className="scroll-mt-24 py-24">
+      <div className="mx-auto max-w-6xl px-6 lg:px-10">
+        <FadeIn>
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="text-4xl font-black tracking-tight sm:text-5xl">Why founders choose Atai over hiring or stitching tools</h2>
+            <p className="mt-4 text-lg leading-8 text-muted-foreground">
+              Starting a business means weighing real trade-offs. Atai is built so one person can run the work that usually needs a team or a stack of disconnected tools — while staying in charge of the business.
+            </p>
+          </div>
+        </FadeIn>
+        <div className="mt-14 grid gap-4 md:grid-cols-3">
+          {DIFFERENTIATION.map((item, index) => (
+            <FadeIn key={item.title} delay={index * 70}>
+              <article className="h-full rounded-2xl border border-border/70 bg-card p-6">
+                <item.icon className="size-5 text-indigo-500" />
+                <h3 className="mt-4 text-lg font-bold">{item.title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.tradeoff}</p>
+                <p className="mt-4 flex gap-2 text-sm leading-6">
+                  <Check className="mt-0.5 size-4 shrink-0 text-indigo-500" />
+                  <span>{item.atai}</span>
+                </p>
+              </article>
+            </FadeIn>
           ))}
         </div>
       </div>

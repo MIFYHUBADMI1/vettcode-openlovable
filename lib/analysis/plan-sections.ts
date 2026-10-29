@@ -10,17 +10,21 @@ import { isRuntimeIntegrationsGrounded } from "@/lib/analysis/runtime-capabiliti
  * deterministic — derived from field population — so the UI never fabricates
  * a score. "Needs work" is only ever added by AI findings, never guessed.
  *
- * Marketing, Launch and Growth are plan sections: the generator drafts them on
- * the spec and the founder can refine them here. Every non-metadata field the
- * AI writes to `ApplicationSpecification` has a section — nothing the AI
- * produced is hidden from the Collaborate workspace.
+ * Marketing Plan is ONE combined section covering marketing, launch and
+ * growth together, Design Direction is ONE combined section covering brand
+ * identity, visual system, typography, theme and responsive behaviour, and
+ * Vision, Purpose, Problem & Solution is ONE combined foundation section.
+ * The legacy spec fields behind those merges are still read and cleared so
+ * plans drafted before the merges show their whole story instead of half of
+ * it. Every non-metadata field the AI writes to `ApplicationSpecification`
+ * has a section — nothing the AI produced is hidden from the Collaborate
+ * workspace.
  */
 
 export type PlanSectionId =
   | BusinessPlanField
   | "overview"
   | "applicationType"
-  | "purpose"
   | "targetUsers"
   | "userRoles"
   | "features"
@@ -30,11 +34,8 @@ export type PlanSectionId =
   | "backend"
   | "integrations"
   | "designDirection"
-  | "responsive"
   | "additionalInstructions"
   | "seo"
-  | "brandIdentity"
-  | "themePreferences"
   | "pricingTiersDetail"
 
 export type PlanSectionStatus = "missing" | "complete" | "needs_work"
@@ -54,6 +55,118 @@ export interface PlanSectionDef {
 
 const s = (v: string | undefined | null): string => (v ?? "").trim()
 
+/** The fields the combined marketing section reads (full spec or a partial
+ * stored record both satisfy this). */
+type MarketingPlanSource = Pick<ApplicationSpecification, "marketingPlan" | "launchPlan" | "growthPlan">
+
+const MARKETING_PLAN_PARTS: ReadonlyArray<{
+  heading: string
+  read: (spec: MarketingPlanSource) => string
+}> = [
+  { heading: "Marketing", read: (spec) => s(spec.marketingPlan) },
+  { heading: "Launch", read: (spec) => s(spec.launchPlan) },
+  { heading: "Growth", read: (spec) => s(spec.growthPlan) },
+]
+
+/** The combined Marketing Plan value.
+ *
+ * One section now covers marketing, launch and growth. Plans drafted while
+ * those were three sections keep their words: when more than one of the
+ * legacy fields still carries content, the parts are merged under headings so
+ * nothing is silently dropped. Explicit generator placeholders never count as
+ * content. New drafts write the whole plan to `marketingPlan` (and retire the
+ * legacy copies, see applySectionUpdate). */
+export function readCombinedMarketingPlan(spec: MarketingPlanSource | undefined | null): string {
+  if (!spec) return ""
+  const defined = MARKETING_PLAN_PARTS.map((part) => ({ heading: part.heading, value: part.read(spec) })).filter(
+    (part) => part.value && !isPlaceholderValue(part.value),
+  )
+  if (defined.length === 0) {
+    // Keep a lone placeholder visible so the section still reads as missing
+    // instead of looking like it was never generated at all.
+    return MARKETING_PLAN_PARTS.map((part) => part.read(spec)).find(Boolean) ?? ""
+  }
+  if (defined.length === 1) return defined[0].value
+  return defined.map((part) => `## ${part.heading}\n${part.value}`).join("\n\n")
+}
+
+/** The fields the combined design section reads (full spec or a partial
+ * stored record both satisfy this). */
+type DesignDirectionSource = Pick<
+  ApplicationSpecification,
+  "designDirection" | "brandIdentity" | "appearance" | "typography" | "themePreferences" | "responsiveRequirements"
+>
+
+const DESIGN_DIRECTION_PARTS: ReadonlyArray<{
+  heading: string
+  read: (spec: DesignDirectionSource) => string
+}> = [
+  { heading: "Design direction", read: (spec) => s(spec.designDirection) },
+  { heading: "Brand identity", read: (spec) => s(spec.brandIdentity) },
+  { heading: "Visual system", read: (spec) => s(spec.appearance) },
+  { heading: "Typography", read: (spec) => s(spec.typography) },
+  { heading: "Theme & appearance", read: (spec) => s(spec.themePreferences) },
+  { heading: "Responsive & devices", read: (spec) => s(spec.responsiveRequirements) },
+]
+
+/** The combined Design Direction value.
+ *
+ * One section now covers design direction, brand identity, visual system,
+ * typography, theme and responsive behaviour. Plans drafted while those were
+ * separate sections keep their words: when more than one legacy field still
+ * carries content, the parts are merged under headings so nothing is silently
+ * dropped. Explicit generator placeholders never count as content. New drafts
+ * write the whole direction to `designDirection` (and retire the legacy
+ * copies, see applySectionUpdate). */
+export function readCombinedDesignDirection(spec: DesignDirectionSource | undefined | null): string {
+  if (!spec) return ""
+  const defined = DESIGN_DIRECTION_PARTS.map((part) => ({ heading: part.heading, value: part.read(spec) })).filter(
+    (part) => part.value && !isPlaceholderValue(part.value),
+  )
+  if (defined.length === 0) {
+    // Keep a lone placeholder visible so the section still reads as missing
+    // instead of looking like it was never generated at all.
+    return DESIGN_DIRECTION_PARTS.map((part) => part.read(spec)).find(Boolean) ?? ""
+  }
+  if (defined.length === 1) return defined[0].value
+  return defined.map((part) => `## ${part.heading}\n${part.value}`).join("\n\n")
+}
+
+/** The fields the combined foundation section reads. */
+type FoundationSource = Pick<ApplicationSpecification, "vision" | "purpose" | "problem" | "solution">
+
+const FOUNDATION_PARTS: ReadonlyArray<{
+  heading: string
+  read: (spec: FoundationSource) => string
+}> = [
+  { heading: "Vision", read: (spec) => s(spec.vision) },
+  { heading: "Purpose", read: (spec) => s(spec.purpose) },
+  { heading: "Problem", read: (spec) => s(spec.problem) },
+  { heading: "Solution", read: (spec) => s(spec.solution) },
+]
+
+/** The combined Vision, Purpose, Problem & Solution value.
+ *
+ * One section now covers the whole foundation. Plans drafted while those were
+ * separate sections keep their words: when more than one field still carries
+ * content, the parts are merged under headings so nothing is silently dropped.
+ * Explicit generator placeholders never count as content. New drafts write the
+ * whole foundation to `vision` (and retire the legacy copies, see
+ * applySectionUpdate). */
+export function readCombinedFoundation(spec: FoundationSource | undefined | null): string {
+  if (!spec) return ""
+  const defined = FOUNDATION_PARTS.map((part) => ({ heading: part.heading, value: part.read(spec) })).filter(
+    (part) => part.value && !isPlaceholderValue(part.value),
+  )
+  if (defined.length === 0) {
+    // Keep a lone placeholder visible so the section still reads as missing
+    // instead of looking like it was never generated at all.
+    return FOUNDATION_PARTS.map((part) => part.read(spec)).find(Boolean) ?? ""
+  }
+  if (defined.length === 1) return defined[0].value
+  return defined.map((part) => `## ${part.heading}\n${part.value}`).join("\n\n")
+}
+
 export const PLAN_SECTIONS: PlanSectionDef[] = [
   {
     id: "applicationType",
@@ -72,36 +185,13 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
     read: (spec) => s(spec.description) || s(spec.purpose),
   },
   {
-    id: "purpose",
-    label: "Purpose",
-    icon: "Target",
-    group: "Foundation",
-    emptyHint: "Let's state what this application exists to do.",
-    read: (spec) => s(spec.purpose),
-  },
-  {
-    id: "problem",
-    label: "Problem",
-    icon: "Puzzle",
-    group: "Foundation",
-    emptyHint: "Let's define the specific problem this business solves.",
-    read: (spec) => s(spec.problem) || s(spec.purpose),
-  },
-  {
-    id: "solution",
-    label: "Solution",
-    icon: "Wrench",
-    group: "Foundation",
-    emptyHint: "Let's describe how the product solves the problem.",
-    read: (spec) => s(spec.solution) || s(spec.description),
-  },
-  {
     id: "vision",
-    label: "Vision",
+    label: "Vision, Purpose, Problem & Solution",
     icon: "Telescope",
     group: "Foundation",
-    emptyHint: "Let's capture the long-term vision for this business.",
-    read: (spec) => s(spec.vision),
+    emptyHint:
+      "Let's define one clear foundation — the vision, why it matters (purpose), the problem you solve, and how you solve it.",
+    read: (spec) => readCombinedFoundation(spec),
   },
   {
     id: "targetUsers",
@@ -140,24 +230,9 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
     label: "Marketing Plan",
     icon: "Megaphone",
     group: "Market",
-    emptyHint: "Let's plan how customers will find this business.",
-    read: (spec) => s(spec.marketingPlan),
-  },
-  {
-    id: "launchPlan",
-    label: "Launch Plan",
-    icon: "Rocket",
-    group: "Market",
-    emptyHint: "Let's plan the concrete first-launch steps.",
-    read: (spec) => s(spec.launchPlan),
-  },
-  {
-    id: "growthPlan",
-    label: "Growth Plan",
-    icon: "TrendingUp",
-    group: "Market",
-    emptyHint: "Let's plan how the business grows after launch.",
-    read: (spec) => s(spec.growthPlan),
+    emptyHint:
+      "Let's build one go-to-market plan — who it's for, how customers find you, the launch, and how the business grows after it.",
+    read: (spec) => readCombinedMarketingPlan(spec),
   },
   {
     id: "features",
@@ -216,16 +291,9 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
     label: "Design Direction",
     icon: "PenTool",
     group: "Product",
-    emptyHint: "Let's describe how the app should look and feel.",
-    read: (spec) => s(spec.designDirection),
-  },
-  {
-    id: "responsive",
-    label: "Responsive & Devices",
-    icon: "Smartphone",
-    group: "Product",
-    emptyHint: "Let's define how layouts adapt across phones, tablets, and desktop.",
-    read: (spec) => s(spec.responsiveRequirements),
+    emptyHint:
+      "Let's settle one design direction — brand identity, visual system, typography, theme, and how it adapts across devices.",
+    read: (spec) => readCombinedDesignDirection(spec),
   },
   {
     id: "seo",
@@ -274,38 +342,6 @@ export const PLAN_SECTIONS: PlanSectionDef[] = [
     group: "Business",
     emptyHint: "Let's set out the plans, prices, limits, and upgrade paths.",
     read: (spec) => s(spec.pricingTiers),
-  },
-  {
-    id: "brandIdentity",
-    label: "Brand & Visual Identity",
-    icon: "Palette",
-    group: "Product",
-    emptyHint: "Let's define your brand colors, logo approach, and visual personality.",
-    read: (spec) => s(spec.brandIdentity),
-  },
-  {
-    id: "appearance",
-    label: "Visual System",
-    icon: "SunMoon",
-    group: "Product",
-    emptyHint: "Let's define the theme, color tokens, density, and light/dark strategy for the build.",
-    read: (spec) => s(spec.appearance),
-  },
-  {
-    id: "typography",
-    label: "Typography",
-    icon: "Type",
-    group: "Product",
-    emptyHint: "Let's pin the heading, body, and mono fonts the generated app must use.",
-    read: (spec) => s(spec.typography),
-  },
-  {
-    id: "themePreferences",
-    label: "Theme & Appearance",
-    icon: "Monitor",
-    group: "Product",
-    emptyHint: "Let's choose your app's color theme, typography, dark mode strategy, and UI style.",
-    read: (spec) => s(spec.themePreferences),
   },
   {
     id: "additionalInstructions",
@@ -416,10 +452,7 @@ export const GENERATOR_MANAGED_SECTIONS: ReadonlySet<string> = new Set(["feature
  * clearSectionUpdate. Includes SEO (a founder-owned text section). */
 export const TEXT_PLAN_SECTIONS: ReadonlySet<string> = new Set([
   "applicationType",
-  "purpose",
   "vision",
-  "problem",
-  "solution",
   "valueProposition",
   "businessModel",
   "revenueModel",
@@ -427,12 +460,7 @@ export const TEXT_PLAN_SECTIONS: ReadonlySet<string> = new Set([
   "seo",
   "marketPositioning",
   "marketingPlan",
-  "launchPlan",
-  "growthPlan",
   "designDirection",
-  "responsive",
-  "appearance",
-  "typography",
   "additionalInstructions",
 ])
 
@@ -448,25 +476,35 @@ export function clearSectionUpdate(
   if (sectionId === "backend") return { ...spec, backendRequirements: [] }
   if (sectionId === "integrations") return { ...spec, integrations: [] }
   if (sectionId === "features" || sectionId === "flows" || sectionId === "data") return spec
+  // One combined section: clearing it retires the legacy launch/growth copies too.
+  if (sectionId === "marketingPlan") {
+    return { ...spec, marketingPlan: "", launchPlan: "", growthPlan: "" }
+  }
+  // One combined section: clearing it retires the five legacy design copies too.
+  if (sectionId === "designDirection") {
+    return {
+      ...spec,
+      designDirection: "",
+      brandIdentity: "",
+      themePreferences: "",
+      appearance: "",
+      typography: "",
+      responsiveRequirements: "",
+    }
+  }
+  // One combined foundation section: clearing it retires the legacy purpose,
+  // problem and solution copies too.
+  if (sectionId === "vision") {
+    return { ...spec, vision: "", purpose: "", problem: "", solution: "" }
+  }
   // Map plan-section ids to their spec text fields. "seo" (the SEO & Search
   // section) stores in seoPlan; every other text section shares its id.
   const businessFields = new Set<string>([
-    "vision",
-    "problem",
-    "solution",
     "valueProposition",
     "businessModel",
     "revenueModel",
     "runtimeIntegrations",
     "marketPositioning",
-    "brandIdentity",
-    "themePreferences",
-    "appearance",
-    "typography",
-    "designDirection",
-    "marketingPlan",
-    "launchPlan",
-    "growthPlan",
     "additionalInstructions",
   ])
   if (sectionId === "seo") return { ...spec, seoPlan: "" }
@@ -481,10 +519,6 @@ export function clearSectionUpdate(
       return { ...spec, description: "" }
     case "applicationType":
       return { ...spec, applicationType: "" }
-    case "purpose":
-      return { ...spec, purpose: "" }
-    case "responsive":
-      return { ...spec, responsiveRequirements: "" }
     case "auth":
       return { ...spec, authenticationRequirements: "" }
     default:
@@ -586,24 +620,39 @@ export function applySectionUpdate(
   options?: ApplySectionUpdateOptions,
 ): ApplicationSpecification {
   const businessFields = new Set<string>([
-    "vision",
-    "problem",
-    "solution",
     "valueProposition",
     "businessModel",
     "revenueModel",
     "runtimeIntegrations",
     "marketPositioning",
-    "brandIdentity",
-    "themePreferences",
-    "appearance",
-    "typography",
-    "designDirection",
-    "launchPlan",
-    "marketingPlan",
-    "growthPlan",
     "additionalInstructions",
   ])
+  // One combined Marketing Plan replaced the separate marketing/launch/growth
+  // sections. The whole plan is stored in marketingPlan and the legacy copies
+  // are retired together, so the section never shows the same content twice.
+  if (sectionId === "marketingPlan") {
+    return { ...spec, marketingPlan: value, launchPlan: "", growthPlan: "" }
+  }
+  // One combined Design Direction replaced the five separate design sections.
+  // The whole direction is stored in designDirection and the legacy copies are
+  // retired together, so the section never shows the same content twice.
+  if (sectionId === "designDirection") {
+    return {
+      ...spec,
+      designDirection: value,
+      brandIdentity: "",
+      themePreferences: "",
+      appearance: "",
+      typography: "",
+      responsiveRequirements: "",
+    }
+  }
+  // One combined foundation section replaced the separate vision/purpose/
+  // problem/solution sections. The whole foundation is stored in vision and
+  // the legacy copies are retired together, so nothing shows twice.
+  if (sectionId === "vision") {
+    return { ...spec, vision: value, purpose: "", problem: "", solution: "" }
+  }
   // The SEO & Search section stores under seoPlan — the plan content itself
   // is kept verbatim and becomes mandatory build instructions.
   if (sectionId === "seo") return { ...spec, seoPlan: value }
@@ -619,10 +668,6 @@ export function applySectionUpdate(
       return { ...spec, description: value }
     case "applicationType":
       return { ...spec, applicationType: value }
-    case "purpose":
-      return { ...spec, purpose: value }
-    case "responsive":
-      return { ...spec, responsiveRequirements: value }
     case "userRoles":
       return { ...spec, userRoles: splitListValue(value) }
     case "backend":
@@ -669,6 +714,13 @@ export interface SectionQualityRequirements {
 /** Quality requirements per section — used to assess if a section has enough
  * detail for production-ready builds */
 export const SECTION_QUALITY_REQUIREMENTS: Partial<Record<PlanSectionId, SectionQualityRequirements>> = {
+  marketingPlan: {
+    // One section now carries marketing, launch and growth — it needs the
+    // depth of all three combined, not a single paragraph.
+    minWordCount: 400,
+    requiredPatterns: [/launch/i, /growth/i, /channel|acquisition/i, /metric|retention|loop/i],
+    maxPlaceholders: 1,
+  },
   features: {
     minWordCount: 400,
     requiredPatterns: [/user story/i, /functionality|feature/i],
@@ -689,12 +741,11 @@ export const SECTION_QUALITY_REQUIREMENTS: Partial<Record<PlanSectionId, Section
     requiredPatterns: [/field|entity|table/i],
     maxPlaceholders: 2,
   },
-  problem: {
-    minWordCount: 150,
-    maxPlaceholders: 1,
-  },
-  solution: {
-    minWordCount: 150,
+  vision: {
+    // One section now carries vision, purpose, problem and solution — it needs
+    // the depth of all four, not a single mission sentence.
+    minWordCount: 350,
+    requiredPatterns: [/vision|purpose/i, /problem/i, /solution/i],
     maxPlaceholders: 1,
   },
   auth: {
@@ -707,14 +758,11 @@ export const SECTION_QUALITY_REQUIREMENTS: Partial<Record<PlanSectionId, Section
     requiredPatterns: [/keyword|meta|search|google/i],
     maxPlaceholders: 1,
   },
-  brandIdentity: {
-    minWordCount: 150,
-    requiredPatterns: [/color|brand|logo|visual/i],
-    maxPlaceholders: 1,
-  },
-  themePreferences: {
-    minWordCount: 150,
-    requiredPatterns: [/theme|font|dark|light/i],
+  designDirection: {
+    // One section now carries brand identity, visual system, typography,
+    // theme and responsive behaviour — it needs the depth of all of them.
+    minWordCount: 350,
+    requiredPatterns: [/color|palette/i, /font|type/i, /theme|dark|light/i, /responsive|mobile|device/i],
     maxPlaceholders: 1,
   },
 }

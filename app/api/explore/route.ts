@@ -62,10 +62,11 @@ export async function GET(req: Request) {
       return ok({ projects: [], total: 0, page, pages: 0 })
     }
 
-    // Fetch author info for all projects
+    // Fetch author info for all projects. Email is deliberately excluded —
+    // this endpoint is anonymous, so it must not serve account identifiers.
     const userIds = [...new Set(projects.map(p => p.userId))]
     const usersData = await (await usersCol()).find({ id: { $in: userIds } }, {
-      projection: { id: 1, name: 1, email: 1, imageUrl: 1 }
+      projection: { id: 1, name: 1, imageUrl: 1 }
     }).toArray()
     const usersMap = Object.fromEntries(usersData.map(u => [u.id, u]))
 
@@ -110,7 +111,6 @@ export async function GET(req: Request) {
         author: author ? {
           id: author.id,
           name: author.name,
-          email: author.email,
           imageUrl: author.imageUrl ?? null,
           following: followingSet.has(author.id),
           isCurrentUser: user?.id === author.id,

@@ -2,6 +2,7 @@ import { NextRequest } from "next/server"
 import { docFeedbackCol } from "@/lib/db/collections"
 import { ok, fail, handleRouteError } from "@/lib/api/respond"
 import { checkRateLimit } from "@/lib/auth/rate-limit"
+import { readJsonBody } from "@/lib/api/request-body"
 import { createHash } from "crypto"
 import { getVerifiedClientIp } from "@/lib/api/client-ip"
 
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
       windowMs: 60 * 60 * 1000,
     })
 
-    const body = await req.json()
+    const body = await readJsonBody(req, 2048)
     const { sectionId, vote, visitorId: rawVisitorId } = body as {
       sectionId?: string
       vote?: string

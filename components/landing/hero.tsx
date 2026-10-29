@@ -33,7 +33,10 @@ export function LandingHero({
           </h1>
 
           <p className="lp-copy mt-3 max-w-lg text-pretty text-sm leading-6 text-muted-foreground sm:text-base">
-            You bring the ambition. Atai brings specialized AI teams to help you plan your online business, build and host its website or product, manage daily operations, and market what you sell. All working toward customers, sales, and an income of your own.
+            First-time owners, small businesses, entrepreneurs, creators, and small teams: bring your ambition. Atai’s specialized AI teams help you plan your online business, build and host its website or product, manage daily operations, and market what you sell — all working toward customers, sales, and an income of your own.
+          </p>
+          <p className="lp-copy mt-2 max-w-lg text-pretty text-sm leading-6 text-muted-foreground">
+            Unlike hiring a full team or juggling separate tools, Atai’s specialized AI teams collaborate in one workspace from plan through growth.
           </p>
 
           <div className="lp-hero-input mt-5 w-full">

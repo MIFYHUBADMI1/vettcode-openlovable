@@ -39,11 +39,18 @@ export const ApplicationSpecificationSchema = z.object({
   applicationType: z.string(),
   title: z.string(),
   description: z.string(),
+  /** Short statement of what the app does.
+   * @deprecated Read through readCombinedFoundation; new drafts store the
+   * whole foundation in `vision`. Still required so older plans validate. */
   purpose: z.string(),
   // ── Business-plan layer (Collaborate workspace, atai-pivot spec) ──
   // All optional with defaults so pre-existing specs validate unchanged.
+  /** Combined foundation — vision, purpose, problem and solution in one
+   * document. The purpose/problem/solution fields are legacy copies. */
   vision: z.string().optional(),
+  /** @deprecated Legacy section. See purpose. */
   problem: z.string().optional(),
+  /** @deprecated Legacy section. See purpose. */
   solution: z.string().optional(),
   valueProposition: z.string().optional(),
   businessModel: z.string().optional(),
@@ -52,13 +59,21 @@ export const ApplicationSpecificationSchema = z.object({
   pricingTiers: z.string().optional(),
   /** Comprehensive pricing structure with detailed tier breakdown */
   pricingStructure: z.string().optional(),
-  /** Brand colors, logo guidance, and visual personality */
+  /** Brand colors, logo guidance, and visual personality.
+   * @deprecated Legacy field from when brand identity was a separate section.
+   * Still stored so older plans validate; read through readCombinedDesignDirection. */
   brandIdentity: z.string().optional(),
-  /** Theme selection, dark mode strategy, and UI style preferences */
+  /** Theme selection, dark mode strategy, and UI style preferences.
+   * @deprecated Legacy field from when theme & appearance was a separate section.
+   * See brandIdentity. */
   themePreferences: z.string().optional(),
-  /** Visual system: theme, color tokens, density, light/dark — carried into the build. */
+  /** Visual system: theme, color tokens, density, light/dark — carried into the build.
+   * @deprecated Legacy field from when the visual system was a separate section.
+   * See brandIdentity. */
   appearance: z.string().optional(),
-  /** Heading, body, and mono fonts the generated app must use. */
+  /** Heading, body, and mono fonts the generated app must use.
+   * @deprecated Legacy field from when typography was a separate section.
+   * See brandIdentity. */
   typography: z.string().optional(),
   /** Atai Runtime capabilities the generated app will consume (@atai-group/sdk) —
    * planned in the Collaborate workspace, honored by the build prompt. */
@@ -68,8 +83,12 @@ export const ApplicationSpecificationSchema = z.object({
    * metadata, sitemap/robots, structured data, and site-verification tags. */
   seoPlan: z.string().optional(),
   marketPositioning: z.string().optional(),
+  /** Combined go-to-market plan — marketing, launch and growth in one document. */
   marketingPlan: z.string().optional(),
+  /** @deprecated Legacy fields from when launch/growth were separate sections.
+   * Still stored so older plans validate; read through readCombinedMarketingPlan. */
   launchPlan: z.string().optional(),
+  /** @deprecated See launchPlan. */
   growthPlan: z.string().optional(),
   targetUsers: z.array(z.string()).default([]),
   userRoles: z.array(z.string()).default([]),
@@ -79,7 +98,12 @@ export const ApplicationSpecificationSchema = z.object({
   authenticationRequirements: z.string().optional(),
   backendRequirements: z.array(z.string()).default([]),
   integrations: z.array(z.string()).default([]),
+  /** Combined design direction — brand identity, visual system, typography,
+   * theme and responsive behaviour in one document. */
   designDirection: z.string().optional(),
+  /** @deprecated Legacy field from when responsive behaviour was a separate
+   * section. Still stored so older plans validate; read through
+   * readCombinedDesignDirection. */
   responsiveRequirements: z.string().optional(),
   additionalInstructions: z.string().default(""),
   complexity: z.enum(["simple", "medium", "complex"]).optional(),
@@ -90,20 +114,14 @@ export type ApplicationSpecification = z.infer<typeof ApplicationSpecificationSc
  * workspace. Optional — older projects may not have them yet. */
 export const BUSINESS_PLAN_FIELDS = [
   "vision",
-  "problem",
-  "solution",
   "valueProposition",
   "businessModel",
   "revenueModel",
   "pricingTiers",
-  "appearance",
-  "typography",
   "runtimeIntegrations",
   "seoPlan",
   "marketPositioning",
   "marketingPlan",
-  "launchPlan",
-  "growthPlan",
 ] as const
 export type BusinessPlanField = (typeof BUSINESS_PLAN_FIELDS)[number]
 

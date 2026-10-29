@@ -7,6 +7,7 @@ import { LandingHero } from "@/components/landing/hero"
 import {
   LandingAudience,
   LandingBuild,
+  LandingDifferentiation,
   LandingFinalCta,
   LandingGrow,
   LandingInfra,
@@ -28,6 +29,7 @@ export default function LandingPage() {
       <SiteHeader />
       <LandingHero ctaHref={ctaHref} ctaLabel={ctaLabel} />
       <LandingTrust />
+      <LandingDifferentiation />
       <LandingLifecycle />
       <LandingStart />
       <LandingPlan />

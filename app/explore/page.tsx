@@ -24,7 +24,6 @@ interface ExploreProject {
   author: {
     id: string
     name: string
-    email: string
     imageUrl: string | null
     following: boolean
     isCurrentUser: boolean

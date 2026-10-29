@@ -6,6 +6,7 @@
  *
  * @see https://docs.dodopayments.com/features/adaptive-currency
  */
+import { isIP } from "net"
 
 export const COUNTRY_TO_CURRENCY: Record<string, string> = {
   // Africa
@@ -64,7 +65,9 @@ export async function detectCountryFromRequest(req: Request): Promise<string | n
   const forwarded = req.headers.get("x-forwarded-for")
   const ip = forwarded ? forwarded.split(",")[0].trim() : null
 
-  if (ip && ip !== "::1" && ip !== "127.0.0.1") {
+  // Only interpolate a syntactically valid IP into the lookup URL: the header
+  // is caller-supplied, and anything else would be attacker-controlled path.
+  if (ip && isIP(ip) && ip !== "::1" && ip !== "127.0.0.1") {
     try {
       const res = await fetch(`http://ip-api.com/json/${ip}?fields=countryCode`, {
         signal: AbortSignal.timeout(2000),

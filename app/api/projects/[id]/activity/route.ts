@@ -9,7 +9,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     const { id } = await params
 
     // Use single-flight to deduplicate concurrent requests for the same project
-    const fetcher = singleFlight<Response>(`api.projects.activity:${id}`)
+    // Per-caller key: the response is the owner's event log, so concurrent
+    // requests from different users must not share an in-flight closure.
+    const fetcher = singleFlight<Response>(`api.projects.activity:${user.id}:${id}`)
     return fetcher(async () => {
       const project = await store.getProject(id)
       if (!project || project.userId !== user.id) return fail("UNAUTHORIZED_PROJECT_ACCESS", "We couldn't find this project.", 404)

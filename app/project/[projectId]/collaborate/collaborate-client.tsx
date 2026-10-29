@@ -7,7 +7,6 @@ import { toast } from "sonner"
 import { CofounderMarkdown } from "@/components/cofounder/markdown"
 import { CofounderWorklog, buildCofounderWorklogSteps } from "@/components/cofounder/cofounder-worklog"
 import { PricingTierBuilder } from "@/components/collaborate/pricing-tier-builder"
-import { ThemeBuilder } from "@/components/collaborate/theme-builder"
 import { ExpectedVisuals } from "@/components/collaborate/expected-visuals"
 import { PlanIncubator } from "@/components/collaborate/plan-incubator"
 import { BuilderReviewPanel, computeBriefCoverage } from "@/components/collaborate/builder-review"
@@ -229,15 +228,11 @@ const SECTION_MENTION_TERMS: Array<{ id: PlanSectionId; terms: string[] }> = [
   { id: "targetUsers", terms: ["target customers", "target audience", "target users"] },
   { id: "userRoles", terms: ["user roles", "role-based access"] },
   { id: "valueProposition", terms: ["value proposition"] },
+  { id: "vision", terms: ["vision", "mission", "purpose statement", "problem statement", "core problem", "solution idea"] },
   { id: "marketPositioning", terms: ["market positioning"] },
-  { id: "marketingPlan", terms: ["marketing plan", "go-to-market"] },
-  { id: "launchPlan", terms: ["launch plan"] },
-  { id: "growthPlan", terms: ["growth plan", "growth loop"] },
-  { id: "designDirection", terms: ["design direction"] },
-  { id: "brandIdentity", terms: ["brand identity", "visual identity"] },
-  { id: "responsive", terms: ["responsive"] },
+  { id: "marketingPlan", terms: ["marketing plan", "go-to-market", "launch plan", "growth plan", "growth loop"] },
+  { id: "designDirection", terms: ["design direction", "brand identity", "visual identity", "visual system", "typography", "theme & appearance", "color palette", "responsive"] },
   { id: "seo", terms: ["seo"] },
-  { id: "themePreferences", terms: ["theme & appearance", "color palette"] },
 ]
 
 /** Up to three plan sections referenced by an assistant answer, in the order
@@ -826,21 +821,13 @@ function SectionDetail({
       </div>
 
       {editing ? (
-        sectionId === "pricingTiers" || sectionId === "themePreferences" ? (
+        sectionId === "pricingTiers" ? (
           <div className="space-y-3">
-            {sectionId === "pricingTiers" ? (
-              <PricingTierBuilder
-                value={draft}
-                onChange={onDraftChange}
-                readonly={false}
-              />
-            ) : (
-              <ThemeBuilder
-                value={draft}
-                onChange={onDraftChange}
-                readonly={false}
-              />
-            )}
+            <PricingTierBuilder
+              value={draft}
+              onChange={onDraftChange}
+              readonly={false}
+            />
             <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:items-center">
               <button
                 onClick={save}
@@ -937,24 +924,6 @@ function SectionDetail({
           {sectionId === "pricingTiers" && raw ? (
             <div className="space-y-3">
               <PricingTierBuilder
-                value={raw}
-                onChange={() => { }}
-                readonly={true}
-              />
-              <div className="rounded-xl border border-border bg-card p-4">
-                <details className="text-xs">
-                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground font-medium">
-                    View as markdown
-                  </summary>
-                  <div className="mt-3">
-                    <CofounderMarkdown>{raw}</CofounderMarkdown>
-                  </div>
-                </details>
-              </div>
-            </div>
-          ) : sectionId === "themePreferences" && raw ? (
-            <div className="space-y-3">
-              <ThemeBuilder
                 value={raw}
                 onChange={() => { }}
                 readonly={true}
@@ -2699,9 +2668,13 @@ function InsightsPanel({
     { key: "Market", label: "Market", ids: PLAN_SECTIONS.filter((d) => d.group === "Market").map((d) => d.id) },
   ]
 
-  const gaps = (analysis?.findings ?? []).filter((f) => f.severity === "gap")
-  const weaknesses = (analysis?.findings ?? []).filter((f) => f.severity === "weakness")
-  const strengths = (analysis?.findings ?? []).filter((f) => f.severity === "strength")
+  // Cached analyses can predate the merged Marketing Plan section. Findings
+  // and proposals that name a section the plan no longer has aren't actionable.
+  const visibleFindings = (analysis?.findings ?? []).filter((f) => getPlanSection(f.section))
+  const visibleProposals = (analysis?.proposals ?? []).filter((p) => getPlanSection(p.section))
+  const gaps = visibleFindings.filter((f) => f.severity === "gap")
+  const weaknesses = visibleFindings.filter((f) => f.severity === "weakness")
+  const strengths = visibleFindings.filter((f) => f.severity === "strength")
 
   const nbaSection = analysis?.nextBestAction?.section
 
@@ -2834,13 +2807,13 @@ function InsightsPanel({
                   </div>
                 ),
             )}
-            {(analysis.proposals ?? []).length > 0 && (
+            {visibleProposals.length > 0 && (
               <div className="rounded-xl border border-primary/25 bg-primary/5 p-3">
                 <p className="text-xs font-medium text-foreground">
-                  This analysis includes {(analysis.proposals ?? []).length} suggested update{(analysis.proposals ?? []).length > 1 ? "s" : ""}.
+                  This analysis includes {visibleProposals.length} suggested update{visibleProposals.length > 1 ? "s" : ""}.
                 </p>
                 <div className="mt-2 flex flex-col gap-2">
-                  {(analysis.proposals ?? []).map((p) => (
+                  {visibleProposals.map((p) => (
                     <AnalysisProposalRow
                       key={p.id}
                       projectId={projectId}

@@ -54,6 +54,8 @@ export async function exchangeGitHubCode(code: string): Promise<{ accessToken: s
       code,
       redirect_uri: config.redirectUri,
     }),
+    // A stalled provider call would otherwise hold the auth request open.
+    signal: AbortSignal.timeout(10_000),
   })
   if (!res.ok) throw new AppError("GITHUB_AUTH_FAILED" as never, "GitHub token exchange failed.", 502)
   const data = await res.json() as { access_token?: string; error?: string }
@@ -64,6 +66,7 @@ export async function exchangeGitHubCode(code: string): Promise<{ accessToken: s
 export async function getGitHubProfile(accessToken: string): Promise<GitHubProfile> {
   const res = await fetch(`${API_BASE}/user`, {
     headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/vnd.github+json" },
+    signal: AbortSignal.timeout(10_000),
   })
   if (!res.ok) throw new AppError("GITHUB_AUTH_FAILED" as never, "Failed to fetch GitHub profile.", 502)
   const data = await res.json() as {
@@ -81,6 +84,7 @@ export async function getGitHubProfile(accessToken: string): Promise<GitHubProfi
 export async function getGitHubPrimaryEmail(accessToken: string): Promise<string | null> {
   const res = await fetch(`${API_BASE}/user/emails`, {
     headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/vnd.github+json" },
+    signal: AbortSignal.timeout(10_000),
   })
   if (!res.ok) return null
   const emails = await res.json() as Array<{ email: string; primary: boolean; verified: boolean }>

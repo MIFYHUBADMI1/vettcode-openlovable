@@ -22,6 +22,7 @@ import { AppError } from "@/lib/errors"
 import { logger } from "@/lib/logging/logger"
 import type { StudioTemplate } from "@/lib/types/db"
 import type { ApplicationSpecification } from "@/lib/types/specification"
+import { readCombinedDesignDirection, readCombinedMarketingPlan } from "@/lib/analysis/plan-sections"
 
 /** Fixed, product-owned templates. The AI only fills these scaffolds. */
 export const STUDIO_TEMPLATES: readonly StudioTemplate[] = [
@@ -61,8 +62,9 @@ export function studioTemplateLabel(template: StudioTemplate): string {
 /**
  * Derive a compact "brand voice" from the plan sections the project ALREADY
  * holds. There is no dedicated brand-voice field in the specification, so this
- * assembles one from `brandIdentity` (visual/personality prose),
- * `marketingPlan`, `marketPositioning`, `valueProposition` and `targetUsers`.
+ * assembles one from the combined `designDirection` section (brand and
+ * personality prose), `marketingPlan`, `marketPositioning`, `valueProposition`
+ * and `targetUsers`.
  * Returns the contributing sources so the UI can be honest that the voice is
  * DERIVED FROM THE PLAN, not an independent measurement or a stored preference.
  */
@@ -76,10 +78,10 @@ export function deriveBrandVoice(spec: ApplicationSpecification | undefined): { 
       sources.push(label)
     }
   }
-  add("Brand & visual identity", spec?.brandIdentity)
+  add("Design direction", readCombinedDesignDirection(spec))
   add("Value proposition", spec?.valueProposition)
   add("Market positioning", spec?.marketPositioning)
-  add("Marketing plan", spec?.marketingPlan)
+  add("Marketing plan", readCombinedMarketingPlan(spec))
   const audience = (spec?.targetUsers ?? []).map((s) => (s ?? "").trim()).filter(Boolean).slice(0, 6)
   if (audience.length) {
     parts.push(`Target audience: ${audience.join(", ")}`)

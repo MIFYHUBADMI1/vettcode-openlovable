@@ -28,7 +28,7 @@ import "server-only"
  *  server-resolved identities.
  */
 
-import { computePlanHealth, isPlaceholderValue, type PlanSectionId } from "@/lib/analysis/plan-sections"
+import { computePlanHealth, isPlaceholderValue, readCombinedDesignDirection, readCombinedMarketingPlan, type PlanSectionId } from "@/lib/analysis/plan-sections"
 import { creditLedgerCol, referralsCol } from "@/lib/db/collections"
 import { ensureRuntimeIndexes, runtimeUsageCol } from "@/lib/db/runtime-collections"
 import { logger } from "@/lib/logging/logger"
@@ -99,7 +99,7 @@ export interface SiteAvailability {
 }
 
 export interface AiPlanDocument {
-  id: "seoPlan" | "marketingPlan" | "launchPlan" | "growthPlan" | "marketPositioning" | "brandIdentity"
+  id: "seoPlan" | "marketingPlan" | "marketPositioning" | "designDirection"
   label: string
   present: boolean
   characterCount: number
@@ -196,12 +196,10 @@ export interface GrowthOverviewInput {
 const WINDOW_MS = 30 * 24 * 60 * 60 * 1000 // 30-day measurement window (< MAX_RANGE_MS 90d)
 
 const AI_PLAN_DOC_DEFS: Array<{ id: AiPlanDocument["id"]; label: string }> = [
-  { id: "growthPlan", label: "Growth plan" },
-  { id: "marketingPlan", label: "Marketing plan" },
-  { id: "launchPlan", label: "Launch plan" },
+  { id: "marketingPlan", label: "Marketing plan (marketing, launch & growth)" },
   { id: "seoPlan", label: "SEO plan" },
   { id: "marketPositioning", label: "Market positioning" },
-  { id: "brandIdentity", label: "Brand identity" },
+  { id: "designDirection", label: "Design direction (brand, visual system & responsive)" },
 ]
 
 const TRUST_NOTES = [
@@ -352,8 +350,16 @@ export function readPlanKnowledge(project: MirrorProject): PlanKnowledge {
 export function readAiPlanDocuments(project: MirrorProject): AiPlanDocument[] {
   const spec = project.specification as Partial<ApplicationSpecification> | undefined
   return AI_PLAN_DOC_DEFS.map(({ id, label }) => {
-    const raw = spec?.[id]
-    const text = typeof raw === "string" ? raw.trim() : ""
+    // Marketing and design are each one combined section; older plans may
+    // still hold the legacy split fields, so read them together.
+    const text =
+      id === "marketingPlan"
+        ? readCombinedMarketingPlan(spec).trim()
+        : id === "designDirection"
+          ? readCombinedDesignDirection(spec).trim()
+          : typeof spec?.[id] === "string"
+            ? (spec[id] as string).trim()
+            : ""
     const present = text.length > 0 && !isPlaceholderValue(text)
     return {
       id,

@@ -10,6 +10,11 @@ import type { WebhookEventDoc } from "@/lib/types/db"
 
 export const runtime = "nodejs"
 
+// This route must hash the raw bytes for HMAC verification, so it can't use
+// readJsonBody. Dodo event payloads are a few KB; anything past 1 MB is abuse
+// and is rejected before it gets buffered.
+const MAX_WEBHOOK_BYTES = 1_000_000
+
 /**
  * Dodo webhook ingestion (Phase 3 restructure):
  *
@@ -49,7 +54,21 @@ export async function POST(req: Request) {
   let rawBody = ""
 
   try {
+    const declaredLength = Number(req.headers.get("content-length") ?? "0")
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_WEBHOOK_BYTES) {
+      return NextResponse.json(
+        { ok: false, error: { code: "PAYLOAD_TOO_LARGE", message: "Payload too large" } },
+        { status: 413 },
+      )
+    }
+
     rawBody = await req.text()
+    if (rawBody.length > MAX_WEBHOOK_BYTES) {
+      return NextResponse.json(
+        { ok: false, error: { code: "PAYLOAD_TOO_LARGE", message: "Payload too large" } },
+        { status: 413 },
+      )
+    }
     webhookId = req.headers.get("webhook-id") ?? ""
 
     logger.info("webhook.dodo", "Received webhook", {

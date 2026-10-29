@@ -47,6 +47,7 @@ import {
   type Tone,
 } from "@/components/project-plan/plan-primitives"
 import { getCurrentUser } from "@/lib/auth/session"
+import { readCombinedDesignDirection, readCombinedFoundation, readCombinedMarketingPlan } from "@/lib/analysis/plan-sections"
 import { store } from "@/lib/store/store"
 import { STATE_LABELS, type Project } from "@/lib/types/project"
 
@@ -54,43 +55,27 @@ import { STATE_LABELS, type Project } from "@/lib/types/project"
 
 type BusinessFieldKey =
   | "vision"
-  | "problem"
-  | "solution"
   | "valueProposition"
   | "businessModel"
   | "revenueModel"
   | "pricingTiers"
   | "pricingStructure"
-  | "brandIdentity"
-  | "themePreferences"
-  | "appearance"
-  | "typography"
   | "runtimeIntegrations"
   | "seoPlan"
   | "marketPositioning"
   | "marketingPlan"
-  | "launchPlan"
-  | "growthPlan"
 
 const BUSINESS_FIELDS: { key: BusinessFieldKey; label: string }[] = [
-  { key: "vision", label: "Vision" },
-  { key: "problem", label: "Problem" },
-  { key: "solution", label: "Solution" },
+  { key: "vision", label: "Vision, purpose, problem & solution" },
   { key: "valueProposition", label: "Value proposition" },
   { key: "businessModel", label: "Business model" },
   { key: "revenueModel", label: "Revenue model" },
   { key: "pricingTiers", label: "Pricing tiers" },
   { key: "pricingStructure", label: "Pricing structure" },
-  { key: "brandIdentity", label: "Brand identity" },
-  { key: "themePreferences", label: "Theme preferences" },
-  { key: "appearance", label: "Appearance" },
-  { key: "typography", label: "Typography" },
   { key: "runtimeIntegrations", label: "Runtime integrations" },
   { key: "seoPlan", label: "SEO plan" },
   { key: "marketPositioning", label: "Market positioning" },
   { key: "marketingPlan", label: "Marketing plan" },
-  { key: "launchPlan", label: "Launch plan" },
-  { key: "growthPlan", label: "Growth plan" },
 ]
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
@@ -216,13 +201,20 @@ export default async function ProjectPlanPage({ params }: { params: Promise<{ pr
   const integrations = s?.integrations ?? []
   const enabledFeatures = features.filter((f) => f.enabled)
 
-  const business = BUSINESS_FIELDS.map((f) => ({ ...f, value: (s?.[f.key] ?? "").trim() })).filter(
-    (f) => f.value.length > 0,
-  )
+  const foundation = readCombinedFoundation(s).trim()
+  const business = BUSINESS_FIELDS.map((f) => ({
+    ...f,
+    value:
+      f.key === "marketingPlan"
+        ? readCombinedMarketingPlan(s)
+        : f.key === "vision"
+          ? foundation
+          : (s?.[f.key] ?? ""),
+  })).filter((f) => f.value.trim().length > 0)
 
+  const designDirection = readCombinedDesignDirection(s).trim()
   const designRows = [
-    s?.designDirection ? { label: "Design direction", value: s.designDirection } : null,
-    s?.responsiveRequirements ? { label: "Responsive requirements", value: s.responsiveRequirements } : null,
+    designDirection ? { label: "Design direction", value: designDirection } : null,
     s?.additionalInstructions ? { label: "Additional instructions", value: s.additionalInstructions } : null,
   ].filter((r): r is { label: string; value: string } => Boolean(r))
 

@@ -44,8 +44,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     const userId = user.id
     const { id } = await params
 
-    // Use single-flight to deduplicate concurrent status checks for the same project
-    const fetcher = singleFlight<Response>(`api.projects.status:${id}`)
+    // Use single-flight to deduplicate concurrent status checks for the same
+    // project. The key includes the caller because the shared response embeds
+    // the project payload — two users polling at once must never share it.
+    const fetcher = singleFlight<Response>(`api.projects.status:${userId}:${id}`)
     return fetcher(async () => {
       const project = await store.getProject(id)
       if (!project || project.userId !== userId) return fail("UNAUTHORIZED_PROJECT_ACCESS", "We couldn't find this project.", 404)
@@ -235,6 +237,30 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
           if (deployStatus.status === "error") {
             const latestDeploy = [...(project.deploymentHistory || [])].reverse().find(d => d.status === "deploying")
+            // Release the deploy reservation. The deploy route only refunds
+            // synchronous provider failures; a deployment accepted by the
+            // provider and later reported as errored would otherwise keep the
+            // user's credits forever. Idempotent per run
+            // (`release_${latestDeploy.id}`), safe under repeat polls.
+            const refundAmount = latestDeploy?.creditsCharged ?? 0
+            if (latestDeploy && refundAmount > 0) {
+              const { releaseReservation } = await import("@/lib/billing/credit-service")
+              const released = await releaseReservation({
+                userId,
+                amount: refundAmount,
+                buildId: latestDeploy.id,
+                reason: "Deployment failed",
+                projectId: id,
+              }).catch((e) => {
+                logger.error("api.projects.status", "credit release after deployment failure failed", {
+                  id, deployId: latestDeploy.id, error: (e as Error).message,
+                })
+                return false
+              })
+              // Keep the record in "deploying" until the idempotent refund
+              // succeeds so the next poll can retry it.
+              if (!released) return fail("DATABASE_UNAVAILABLE", "Credit recovery is pending. Please retry shortly.", 503)
+            }
             if (latestDeploy) {
               try {
                 await store.updateDeploymentRecord(id, latestDeploy.id, {
@@ -256,7 +282,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
               }
             }
             await store.updateProject(id, { state: "ready" })
-            await store.appendEvent(id, event("deploy", "Deployment failed.", "error"))
+            await store.appendEvent(id, event("deploy", refundAmount > 0 ? "Deployment failed. Credits were refunded." : "Deployment failed.", "error"))
             const updated = await store.getProject(id)
             return ok({
               state: "ready",

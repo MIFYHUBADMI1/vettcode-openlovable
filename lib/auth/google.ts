@@ -53,6 +53,8 @@ export async function exchangeGoogleCode(code: string): Promise<GoogleProfile> {
       redirect_uri: config.redirectUri,
       grant_type: "authorization_code",
     }),
+    // A stalled provider call would otherwise hold the auth request open.
+    signal: AbortSignal.timeout(10_000),
   })
 
   if (!tokenResponse.ok) {

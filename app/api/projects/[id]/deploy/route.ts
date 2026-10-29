@@ -250,6 +250,27 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         }
       } else if (deployStatus.status === "error" && project.state === "deploying") {
         const latestDeploy = [...(project.deploymentHistory || [])].reverse().find(d => d.status === "deploying")
+        // Same rule as the status poller: an accepted deployment that later
+        // errors must return its reservation. Idempotent per run
+        // (`release_${latestDeploy.id}`), safe under repeat polls.
+        const refundAmount = latestDeploy?.creditsCharged ?? 0
+        if (latestDeploy && refundAmount > 0) {
+          const released = await releaseReservation({
+            userId: project.userId,
+            amount: refundAmount,
+            buildId: latestDeploy.id,
+            reason: "Deployment failed",
+            projectId: id,
+          }).catch((e) => {
+            logger.error("api.projects.deploy.status", "credit release after deployment failure failed", {
+              id, deployId: latestDeploy.id, error: (e as Error).message,
+            })
+            return false
+          })
+          // Keep the record in "deploying" until the idempotent refund
+          // succeeds so the next poll can retry it.
+          if (!released) return fail("DATABASE_UNAVAILABLE", "Credit recovery is pending. Please retry shortly.", 503)
+        }
         if (latestDeploy) {
           try {
             await store.updateDeploymentRecord(id, latestDeploy.id, {
@@ -271,7 +292,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
           }
         }
         await store.updateProject(id, { state: "ready" })
-        await store.appendEvent(id, event("deploy", "Deployment failed.", "error"))
+        await store.appendEvent(id, event("deploy", refundAmount > 0 ? "Deployment failed. Credits were refunded." : "Deployment failed.", "error"))
       }
 
       return ok({
@@ -286,8 +307,47 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       if (err instanceof Error && (err.message.includes("PROJECT_NOT_FOUND") || err.message.includes("404"))) {
         // If the project was in deploying state, reset it
         if (project.state === "deploying") {
+          const latestDeploy = [...(project.deploymentHistory || [])].reverse().find((d) => d.status === "deploying")
+          // A project missing from the provider can never finish deploying,
+          // so the reservation must come back. Idempotent per run.
+          const refundAmount = latestDeploy?.creditsCharged ?? 0
+          if (latestDeploy && refundAmount > 0) {
+            const released = await releaseReservation({
+              userId: project.userId,
+              amount: refundAmount,
+              buildId: latestDeploy.id,
+              reason: "Deployment failed",
+              projectId: id,
+            }).catch((e) => {
+              logger.error("api.projects.deploy.status", "credit release after project-not-found failed", {
+                id, deployId: latestDeploy.id, error: (e as Error).message,
+              })
+              return false
+            })
+            if (!released) return fail("DATABASE_UNAVAILABLE", "Credit recovery is pending. Please retry shortly.", 503)
+          }
+          if (latestDeploy) {
+            try {
+              await store.updateDeploymentRecord(id, latestDeploy.id, {
+                status: "failed",
+                completedAt: Date.now(),
+                error: "Project not found in deployment service",
+              })
+            } catch (e) {
+              console.error("[deploy] failed to update deployment history (non-fatal)", e)
+            }
+            try {
+              const peCol = await publishEventsCol()
+              await peCol.updateOne(
+                { id: latestDeploy.id },
+                { $set: { status: "failed", error: "Project not found in deployment service", durationMs: Date.now() - latestDeploy.startedAt } },
+              )
+            } catch (e) {
+              console.error("[deploy] failed to update publish analytics (non-fatal)", e)
+            }
+          }
           await store.updateProject(id, { state: "ready" })
-          await store.appendEvent(id, event("deploy", "Deployment failed: Project not found in deployment service.", "error"))
+          await store.appendEvent(id, event("deploy", refundAmount > 0 ? "Deployment failed: Project not found in deployment service. Credits were refunded." : "Deployment failed: Project not found in deployment service.", "error"))
         }
         const latest = [...(project.deploymentHistory || [])].reverse().find((d) => d.productionUrl || d.customDomain)
         return ok({

@@ -234,12 +234,16 @@ async function post(req: Request, { params }: { params: Promise<{ id: string }> 
 
     let text = ""
     let aiFailure: unknown = null
+    // Marketing Plan, Design Direction and the combined foundation are each
+    // one multi-part document, so they need more room than a single-topic
+    // section before the accepted length cap trims them.
+    const outputBudget = section === "marketingPlan" || section === "designDirection" || section === "vision" ? 3072 : 2048
     try {
       const result = await generateText({
         model: MODEL,
         system: COFOUNDER_AUTOCOMPLETE_SYSTEM,
         prompt,
-        maxOutputTokens: 2048,
+        maxOutputTokens: outputBudget,
         // Free-tier models intermittently fail to open a connection at all;
         // one retry cycle is cheaper than a failed section for the founder.
         maxRetries: 3,
@@ -257,7 +261,7 @@ async function post(req: Request, { params }: { params: Promise<{ id: string }> 
       const salvaged = await requestRawCompletion({
         system: COFOUNDER_AUTOCOMPLETE_SYSTEM,
         prompt,
-        maxOutputTokens: 2048,
+        maxOutputTokens: outputBudget,
       })
       if (salvaged?.text.trim()) {
         text = salvaged.text
