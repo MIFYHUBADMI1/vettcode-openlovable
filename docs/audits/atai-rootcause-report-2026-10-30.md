@@ -81,6 +81,8 @@ Baseline for regressions: `lib/planning` + `lib/analysis` suites were green at l
 
 ## 5. Smallest safe implementation plan (dependency + risk order)
 
+> **STATUS 2026-10-30: fixes #1–#3 and #5 (RB-01, RB-02, RB-03, RC-06) and #4 (RC-07) have landed** with the pinned tests flipped to regression tests, plus new provenance tests (`spec-provenance.test.ts`) and capability-drift tests (`prompt-builder.test.ts`). RB-02 keeps founder text verbatim (per the nothing-hidden rule) but reclassifies it via an OPEN QUESTIONS block; RC-07 now generates the brief's capability catalog from `runtime-capabilities.ts` and flags runtime-impossible claims (refunds/cancel/SMS) both in the brief and as an amber warning in Builder Review. Phase B (items RC-04/RC-05) remains gated on reviewer sign-off.
+
 Nothing below creates a second pipeline, duplicates project state, touches credits, or changes billing.
 
 1. **RB-01 (low risk, additive):** extend `buildInitialBuildPrompt` with an optional `originalIdea?: string`; render it as a fenced, injection-neutralized "THE FOUNDER'S ORIGINAL WORDS (authoritative intent)" block; pass `project.idea` at the four launch call sites. Flip RB-01 test.
