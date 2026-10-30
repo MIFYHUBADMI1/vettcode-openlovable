@@ -12,8 +12,8 @@ export function buildCreatePayload(pending: PendingStart) {
   if (mode === "github") {
     const repo = extractGithubRepo(prompt) ?? prompt
     const match = repo.match(/(?:github\.com\/)?([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)/i)
-    const words = prompt.replace(/https?:\/\/\S+/gi, " ").trim().split(/\s+/).filter(Boolean)
-    const hasInstruction = words.length >= 4
+    const words = prompt.replace(/https?:\/\/\S+/gi, " ").replace(/github\.com\/\S+/gi, " ").trim().split(/\s+/).filter(Boolean)
+    const hasInstruction = words.length > 0
     return {
       mode: "github" as const,
       name,

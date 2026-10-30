@@ -41,6 +41,8 @@ import {
   type StartMode,
   validateStartInput,
   promptForStart,
+  splitLinkPrompt,
+  combineLinkPrompt,
 } from "@/lib/start/detect-input"
 import {
   DEFAULT_COMPOSER_PREFS,
@@ -108,7 +110,7 @@ const MODES: {
     title: "Inspiration",
     support: "A reference for your own business.",
     placeholder: "Paste a business website that inspires you. What would you offer, and to whom?",
-    example: "Share a website link, then describe your own customers and what you would do differently.",
+    example: "Add the link above, then tell Atai what you would offer, to whom, and what you would do differently.",
     pills: ["Explore a business model for my market", "Find what could make my business different"],
     icon: Globe,
   },
@@ -117,7 +119,7 @@ const MODES: {
     title: "Website",
     support: "Use a website as business context.",
     placeholder: "Paste a website link and describe the business opportunity you want to explore.",
-    example: "Example: “https://example.com — help me understand the offer, the customers, and a business I could start in this market.”",
+    example: "Add the link above, then tell Atai what to look for — the offer, the customers, a business you could start.",
     pills: ["Explore the customers this business serves", "Plan a business around this opportunity"],
     icon: Link2,
   },
@@ -126,11 +128,35 @@ const MODES: {
     title: "Codebase",
     support: "An existing product is a starting point.",
     placeholder: "Paste a GitHub repository URL and describe the business you want to build around it.",
-    example: "Bring your code, then tell Atai who it could help and what you would sell.",
+    example: "Add the repository link above, then tell Atai who it could help and what you would sell.",
     pills: ["Plan a business around my existing product", "Define an offer for my first customers"],
     icon: GitBranch,
   },
 ]
+
+const LINK_UI: Record<
+  "website" | "url" | "github",
+  { urlLabel: string; urlPlaceholder: string; notesLabel: string; notesPlaceholder: string }
+> = {
+  website: {
+    urlLabel: "Inspiration website",
+    urlPlaceholder: "https://the-website-that-inspires-you.com",
+    notesLabel: "Instructions for Atai — optional",
+    notesPlaceholder: "What should Atai focus on when reading this website — the offer, the customers, the pricing…",
+  },
+  url: {
+    urlLabel: "Website",
+    urlPlaceholder: "https://their-website.com",
+    notesLabel: "Instructions for Atai — optional",
+    notesPlaceholder: "Tell Atai the business opportunity you want to explore around this website…",
+  },
+  github: {
+    urlLabel: "GitHub repository",
+    urlPlaceholder: "https://github.com/owner/repo",
+    notesLabel: "Instructions for Atai — optional",
+    notesPlaceholder: "Tell Atai who this product could help and what you want to build or change…",
+  },
+}
 
 const TYPING_HINTS: Record<StartMode, string[]> = {
   idea: [
@@ -184,10 +210,10 @@ const AUTO_MODES = [
   { id: "build", name: "Build", hint: "Product and app creation" },
 ]
 
-function resizeTextarea(el: HTMLTextAreaElement | null) {
+function resizeTextarea(el: HTMLTextAreaElement | null, min = 88) {
   if (!el) return
   el.style.height = "auto"
-  el.style.height = `${Math.min(Math.max(el.scrollHeight, 88), 240)}px`
+  el.style.height = `${Math.min(Math.max(el.scrollHeight, min), 240)}px`
 }
 
 function formatSize(size: number) {
@@ -228,6 +254,8 @@ export function LandingComposer({
   const levelCloseRef = useRef<(() => void) | null>(null)
 
   const [prompt, setPrompt] = useState("")
+  const [linkUrl, setLinkUrl] = useState("")
+  const [linkNotes, setLinkNotes] = useState("")
   const [title, setTitle] = useState("")
   const [mode, setMode] = useState<StartMode>(lockedMode ?? "idea")
   const [agents, setAgents] = useState<string[]>(["atai"])
@@ -286,12 +314,24 @@ export function LandingComposer({
     promptRef.current = prompt
   }, [prompt])
 
+  // In link modes the composer shows two fields (URL + instructions) over the
+  // same single `prompt` string, so prefs, voice, and downstream extraction
+  // keep working unchanged. Re-derive the split whenever the prompt arrives
+  // from elsewhere (mode switch, pills, dictation, restored draft).
+  useEffect(() => {
+    if (mode === "idea") return
+    if (prompt.trim() === combineLinkPrompt(linkUrl, linkNotes)) return
+    const split = splitLinkPrompt(mode, prompt)
+    setLinkUrl(split.url)
+    setLinkNotes(split.notes)
+  }, [mode, prompt, linkUrl, linkNotes])
+
   // Type an animated, mode-specific hint into the empty textarea so the field
   // reads as "type here" rather than another block of copy. DOM-driven to
   // avoid re-rendering the whole composer on every character.
   useEffect(() => {
     const el = textareaRef.current
-    if (!el || hasPrompt) return
+    if (!el || hasPrompt || mode !== "idea") return
 
     const reduceMotion =
       typeof window.matchMedia === "function" &&
@@ -340,8 +380,8 @@ export function LandingComposer({
   }, [mode, hasPrompt, active.placeholder])
 
   useEffect(() => {
-    resizeTextarea(textareaRef.current)
-  }, [prompt])
+    resizeTextarea(textareaRef.current, mode === "idea" ? 88 : 64)
+  }, [prompt, linkNotes, mode])
 
   useEffect(() => () => {
     listeningRef.current = false
@@ -411,6 +451,17 @@ export function LandingComposer({
     }
     fromDictationRef.current = false
     applyPrompt(value)
+  }
+
+  function changeLink(nextUrl: string, nextNotes: string) {
+    const combined = combineLinkPrompt(nextUrl, nextNotes)
+    if (!fromDictationRef.current) {
+      voiceBaseRef.current = listeningRef.current ? combined.trimEnd() : ""
+    }
+    fromDictationRef.current = false
+    setLinkUrl(nextUrl)
+    setLinkNotes(nextNotes)
+    applyPrompt(combined)
   }
 
   function stopLevelMeter() {
@@ -631,7 +682,7 @@ export function LandingComposer({
     startPending(mode, title.trim())
   }
 
-  function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+  function onKeyDown(event: KeyboardEvent<HTMLElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault()
       submit()
@@ -749,21 +800,67 @@ export function LandingComposer({
           </div>
         )}
 
-        <label htmlFor="landing-prompt" className="sr-only">
-          Describe the business you want to start
-        </label>
-        <textarea
-          ref={textareaRef}
-          id="landing-prompt"
-          value={prompt}
-          rows={3}
-          onChange={handlePromptChange}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          onKeyDown={onKeyDown}
-          placeholder={active.placeholder}
-          className="min-h-[88px] max-h-[240px] w-full resize-none bg-transparent px-3.5 pt-3 pb-1.5 text-sm leading-6 outline-none caret-indigo-500 placeholder:text-indigo-600/75 dark:placeholder:text-indigo-300/75"
-        />
+        {mode === "idea" ? (
+          <>
+            <label htmlFor="landing-prompt" className="sr-only">
+              Describe the business you want to start
+            </label>
+            <textarea
+              ref={textareaRef}
+              id="landing-prompt"
+              value={prompt}
+              rows={3}
+              onChange={handlePromptChange}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              onKeyDown={onKeyDown}
+              placeholder={active.placeholder}
+              className="min-h-[88px] max-h-[240px] w-full resize-none bg-transparent px-3.5 pt-3 pb-1.5 text-sm leading-6 outline-none caret-indigo-500 placeholder:text-indigo-600/75 dark:placeholder:text-indigo-300/75"
+            />
+          </>
+        ) : (
+          <div className="px-3.5 pt-3 pb-1.5">
+            <label
+              htmlFor="landing-link"
+              className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+            >
+              {LINK_UI[mode].urlLabel}
+              <span className="ml-1.5 font-normal normal-case tracking-normal text-destructive">*</span>
+            </label>
+            <input
+              id="landing-link"
+              type="url"
+              inputMode="url"
+              autoComplete="off"
+              spellCheck={false}
+              value={linkUrl}
+              onChange={(event) => changeLink(event.target.value, linkNotes)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              onKeyDown={onKeyDown}
+              placeholder={LINK_UI[mode].urlPlaceholder}
+              className="mt-1.5 h-11 w-full rounded-xl border border-border/70 bg-card/70 px-3.5 font-mono text-sm text-foreground outline-none transition-colors placeholder:font-sans placeholder:text-muted-foreground/60 focus-visible:border-indigo-500/50 focus-visible:ring-2 focus-visible:ring-ring"
+            />
+            <label
+              htmlFor="landing-prompt"
+              className="mt-3 block text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground"
+            >
+              {LINK_UI[mode].notesLabel}
+            </label>
+            <textarea
+              ref={textareaRef}
+              id="landing-prompt"
+              value={linkNotes}
+              rows={2}
+              onChange={(event) => changeLink(linkUrl, event.target.value)}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
+              onKeyDown={onKeyDown}
+              placeholder={LINK_UI[mode].notesPlaceholder}
+              className="mt-1.5 min-h-[64px] max-h-[240px] w-full resize-none bg-transparent text-sm leading-6 outline-none caret-indigo-500 placeholder:text-muted-foreground/70"
+            />
+          </div>
+        )}
         <p aria-hidden className="px-3.5 pb-2.5 text-xs leading-5 text-muted-foreground/80 italic">
           {active.example}
         </p>

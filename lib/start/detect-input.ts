@@ -50,6 +50,46 @@ export function detectStartMode(value: string): StartMode | null {
   return null
 }
 
+export type SplitLinkPrompt = { url: string; notes: string }
+
+/**
+ * Split a free-text start prompt into its link and the instruction around it,
+ * for the two-field composer (URL input + instructions textarea). The composer
+ * recombines as `url notes`, so downstream extraction stays unchanged.
+ */
+export function splitLinkPrompt(mode: StartMode, value: string): SplitLinkPrompt {
+  const text = value.trim()
+  if (!text) return { url: "", notes: "" }
+  let match: RegExpMatchArray | null = null
+  if (mode === "github") {
+    match = text.match(GITHUB_IN_TEXT)
+    if (!match) {
+      const short = text.match(/^([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)(?=\s|$)/)
+      if (short) return { url: short[1], notes: text.slice(short[0].length).replace(/\s+/g, " ").trim() }
+      return { url: "", notes: text }
+    }
+  } else if (mode === "website" || mode === "url") {
+    match = text.match(URL_IN_TEXT)
+    if (!match) return { url: "", notes: text }
+  } else {
+    return { url: "", notes: text }
+  }
+  const index = match.index ?? 0
+  const url = /^https?:\/\//i.test(match[0]) ? match[0] : `https://${match[0]}`
+  const notes = (text.slice(0, index) + " " + text.slice(index + match[0].length))
+    .replace(/^\s*[—–:\-]\s*/, "")
+    .replace(/\s+/g, " ")
+    .trim()
+  return { url, notes }
+}
+
+export function combineLinkPrompt(url: string, notes: string): string {
+  const u = url.trim()
+  const n = notes.trim()
+  if (!u) return n
+  return n ? `${u} ${n}` : u
+}
+
 export function promptForStart(mode: StartMode, value: string): string {
   return value.trim()
 }
